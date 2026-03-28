@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Tower Defense Trainer</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code','Consolas',monospace}
+canvas{position:fixed;top:0;left:0;z-index:0}
+#hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
+.hud-item{text-align:center;pointer-events:none}
+.hud-label{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600}
+.hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
+#tier-bar{position:fixed;top:52px;left:0;right:0;z-index:10;text-align:center;pointer-events:none;font-size:10px}
+#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:12px 16px;text-align:center;background:linear-gradient(transparent,#0d0500cc 30%,#0d0500ee);pointer-events:none}
+#input-panel *{pointer-events:auto}
+.prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
+.prompt-text{font-size:18px;font-weight:700;color:#ffcc66;margin:4px 0;text-shadow:0 0 10px #ff8c0044}
+.input-boxes{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
+.input-box{padding:6px 16px;border:1.5px solid #3d1f00;border-radius:4px;font-size:16px;font-weight:600;color:#5a3800;background:#0d0500;min-width:64px;text-align:center;transition:all .2s}
+.input-box.active{border-color:#ff8c00;color:#ff8c00;box-shadow:0 0 10px #ff8c0044}
+.input-box.done{border-color:#ff8c0088;color:#ff8c00;background:#ff8c0011}
+.hint-text{font-size:12px;color:#996622;margin-top:6px;padding:4px 10px;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:4px}
+.input-help{font-size:10px;color:#3d1f00;margin-top:8px}
+.wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
+#labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
+.enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s}
+.enemy-label-inner{background:#0d0500dd;border:1px solid;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:80px;word-break:break-word;white-space:normal}
+.enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+.sel-arrow{text-align:center;color:#ffcc66;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite}
+#overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s}
+#overlay.hidden{opacity:0;pointer-events:none}
+#overlay h1{font-size:56px;font-weight:900;letter-spacing:14px;color:#ff8c00;text-shadow:0 0 20px #ff8c00,0 0 40px #ff8c0044;margin-bottom:4px}
+#overlay h2{font-size:16px;font-weight:400;letter-spacing:8px;color:#cc6600;margin-bottom:20px}
+#overlay .btn{font-family:inherit;font-size:15px;font-weight:700;color:#0d0500;background:#ff8c00;border:none;padding:12px 36px;cursor:pointer;letter-spacing:3px;text-transform:uppercase;box-shadow:0 0 20px #ff8c0066;margin-top:16px}
+#overlay .btn:hover{background:#ffaa22}
+#overlay .desc{font-size:12px;line-height:1.7;color:#996622;max-width:380px;text-align:center;margin-bottom:12px}
+#overlay .sub{font-size:11px;color:#5a3800;margin-top:12px;text-align:center}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;width:100%;max-width:320px}
+.stat-box{background:#1a0800;border:1px solid #ff8c0022;border-radius:4px;padding:10px 6px;text-align:center}
+.stat-box .sl{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-bottom:3px}
+.stat-box .sv{font-size:20px;font-weight:700;color:#ff8c00}
+.mastery-bar{display:flex;height:14px;border-radius:3px;overflow:hidden;border:1px solid #ff8c0022;margin:4px 0}
+.mastery-legend{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-size:9px;margin-bottom:10px}
+.weak-item{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#996622;margin-bottom:3px;padding:3px 8px;background:#1a0800;border-radius:3px;border:1px solid #ffffff08}
+#mute-btn{position:fixed;top:10px;right:12px;z-index:30;font-size:18px;background:transparent;border:1px solid #ff8c0033;border-radius:4px;color:#ff8c00;cursor:pointer;padding:3px 7px;opacity:.7}
+#queue-bar{position:fixed;bottom:130px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
+.q-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin:0 2px;opacity:.7}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes float-up{0%{transform:translateY(0) translateX(-50%);opacity:1}100%{transform:translateY(-50px) translateX(-50%);opacity:0}}
+.flash-msg{position:fixed;top:35%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;z-index:15;pointer-events:none;animation:float-up .8s ease-out forwards;text-shadow:0 0 20px currentColor}
+/* Cartridge selector */
+.cart-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:20px 0;max-width:500px}
+.cart-card{background:#1a0800;border:2px solid #ff8c0033;border-radius:8px;padding:16px;width:140px;cursor:pointer;text-align:center;transition:all .2s}
+.cart-card:hover{border-color:#ff8c00;box-shadow:0 0 16px #ff8c0033}
+.cart-icon{font-size:28px;margin-bottom:6px}
+.cart-name{font-size:12px;font-weight:700;color:#ff8c00;letter-spacing:1px;margin-bottom:4px}
+.cart-desc{font-size:9px;color:#5a3800;margin-bottom:8px}
+.cart-progress{display:flex;gap:3px;justify-content:center}
+.cart-dot{width:8px;height:8px;border-radius:50%;border:1px solid #ff8c0044}
+.cart-dot.filled{background:#ff8c00}
+/* Typed input */
+.typed-input{padding:8px 16px;border:1.5px solid #ff8c00;border-radius:4px;font-size:20px;font-weight:700;color:#ff8c00;background:#0d0500;min-width:120px;text-align:center;font-family:inherit;outline:none;box-shadow:0 0 10px #ff8c0044;caret-color:#ffcc66}
+.typed-input::placeholder{color:#3d1f00}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+<div id="hud" style="display:none">
+  <div class="hud-item"><div class="hud-label">WAVE</div><div class="hud-val" id="h-wave">1/12</div></div>
+  <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="h-score">0</div></div>
+  <div class="hud-item"><div class="hud-label">LIVES</div><div class="hud-val" id="h-lives"></div></div>
+  <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="h-streak">0</div></div>
+</div>
+<div id="tier-bar" style="display:none"></div>
+<div id="labels"></div>
+<div id="input-panel" style="display:none"></div>
+<div id="queue-bar" style="display:none"></div>
+<div id="overlay"></div>
+<button id="mute-btn" title="Mute">🔊</button>
+
+<script>
+// ═══════════════════════════════════════════════
+//  AMBER PALETTE
+// ═══════════════════════════════════════════════
+const AMB={
+  black:0x0d0500, darkest:0x1a0800, dark:0x2d1200, mid:0x5a2800,
+  bright:0xcc6600, hot:0xff8c00, glow:0xffaa22, white:0xffcc66,
+  css:{black:'#0d0500',dark:'#2d1200',mid:'#5a2800',bright:'#cc6600',hot:'#ff8c00',glow:'#ffaa22',white:'#ffcc66'}
+};
+const MASTERY_COLORS=['#ff4422','#ff6b35','#ffaa22','#66aaff','#44ff88','#44ff88'];
+const MASTERY_LABELS=['New','Learning','Familiar','Practiced','Proficient','Mastered'];
+
+// ═══════════════════════════════════════════════
+//  SOUND ENGINE
+// ═══════════════════════════════════════════════
+const SFX=(()=>{
+  let ctx=null,muted=false,masterGain=null,bgmPlaying=false,bgmNodes=null;
+  function getCtx(){if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();masterGain=ctx.createGain();masterGain.gain.value=1;masterGain.connect(ctx.destination)}if(ctx.state==='suspended')ctx.resume();return ctx}
+  function out(){getCtx();return masterGain}
+  function makeDistCurve(a=50){const n=256,c=new Float32Array(n);for(let i=0;i<n;i++){const x=(i*2)/n-1;c[i]=((3+a)*x*20*(Math.PI/180))/(Math.PI+a*Math.abs(x))}return c}
+  function tone(f,d,type='square',v=.12,del=0,ff=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);if(ff>0){const fl=c.createBiquadFilter();fl.type='lowpass';fl.frequency.value=ff;fl.Q.value=2;g.connect(fl);fl.connect(out())}else g.connect(out());o.start(t);o.stop(t+d)}
+  function sweep(sf,ef,d,type='sawtooth',v=.15,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(sf,t);o.frequency.exponentialRampToValueAtTime(Math.max(ef,1),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(out());o.start(t);o.stop(t+d)}
+  function noiseBurst(d,v=.12,del=0,hi=3000,lo=200){if(muted)return;const c=getCtx(),t=c.currentTime+del,len=Math.floor(c.sampleRate*d),buf=c.createBuffer(1,len,c.sampleRate),da=buf.getChannelData(0);for(let i=0;i<len;i++)da[i]=Math.random()*2-1;const s=c.createBufferSource();s.buffer=buf;const g=c.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hi;const eq=c.createBiquadFilter();eq.type='peaking';eq.frequency.value=lo;eq.gain.value=12;eq.Q.value=.7;s.connect(g);g.connect(lp);lp.connect(eq);eq.connect(out());s.start(t)}
+  function crunch(f,d,v=.1,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain(),ws=c.createWaveShaper();ws.curve=makeDistCurve(80);ws.oversample='4x';o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(Math.max(f*.3,20),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(ws);ws.connect(g);g.connect(out());o.start(t);o.stop(t+d)}
+  function subBass(f,d,v=.2,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(20,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=150;o.connect(g);g.connect(lp);lp.connect(out());o.start(t);o.stop(t+d)}
+  function startBGM(){if(bgmPlaying||muted)return;const c=getCtx();bgmPlaying=true;const bm=c.createGain();bm.gain.value=.06;bm.connect(out());const bg=c.createGain();bg.gain.value=.6;bg.connect(bm);const bo=c.createOscillator();bo.type='sawtooth';const bf=c.createBiquadFilter();bf.type='lowpass';bf.frequency.value=350;bf.Q.value=4;bo.connect(bf);bf.connect(bg);const notes=[55,55,65.41,73.42,55,55,82.41,73.42],st=.25,ll=notes.length*st;function sched(base){notes.forEach((f,i)=>bo.frequency.setValueAtTime(f,base+i*st))}const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=.3;const lg=c.createGain();lg.gain.value=120;lfo.connect(lg);lg.connect(bf.frequency);lfo.start();const pg=c.createGain();pg.gain.value=.25;pg.connect(bm);const pf=c.createBiquadFilter();pf.type='lowpass';pf.frequency.value=700;const po=[220,261.63,329.63].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*10;o.connect(pf);return o});pf.connect(pg);const pl=c.createOscillator();pl.type='sine';pl.frequency.value=.08;const plg=c.createGain();plg.gain.value=350;pl.connect(plg);plg.connect(pf.frequency);pl.start();const hg=c.createGain();hg.gain.value=0;hg.connect(bm);const hl=Math.floor(c.sampleRate*2),hb=c.createBuffer(1,hl,c.sampleRate),hd=hb.getChannelData(0);for(let i=0;i<hl;i++)hd[i]=Math.random()*2-1;const hs=c.createBufferSource();hs.buffer=hb;hs.loop=true;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;hs.connect(hp);hp.connect(hg);const now=c.currentTime;bo.start(now);po.forEach(o=>o.start(now));hs.start(now);let lc=0;function loop(){if(!bgmPlaying)return;const b=now+lc*ll;sched(b);for(let i=0;i<notes.length;i++){if(i%2===0){const ht=b+i*st;hg.gain.setValueAtTime(.4,ht);hg.gain.exponentialRampToValueAtTime(.01,ht+.05)}}lc++;if(lc<600)setTimeout(loop,ll*1000*.8)}loop();bgmNodes={bm,bo,po,hs,lfo,pl}}
+  function stopBGM(){if(!bgmNodes)return;bgmPlaying=false;try{bgmNodes.bm.gain.setValueAtTime(bgmNodes.bm.gain.value,ctx.currentTime);bgmNodes.bm.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.5);setTimeout(()=>{try{bgmNodes.bo.stop();bgmNodes.po.forEach(o=>o.stop());bgmNodes.hs.stop();bgmNodes.lfo.stop();bgmNodes.pl.stop()}catch(e){}bgmNodes=null},600)}catch(e){bgmNodes=null}}
+  return{
+    toggleMute(){muted=!muted;if(muted)stopBGM();return muted},isMuted(){return muted},startBGM,stopBGM,
+    prefix(){tone(1100,.04,'square',.08);tone(1650,.06,'square',.06,.03)},
+    hit(intensity=1){const v=.1+intensity*.08;subBass(80,.4,v);noiseBurst(.25,.1+intensity*.06,0,2000,120);crunch(300,.15,.06+intensity*.04,.02);sweep(800,100,.2,'sawtooth',.05+intensity*.03,.01);for(let i=0;i<2+Math.floor(intensity*3);i++)tone(1200+Math.random()*1200,.04+Math.random()*.04,'square',.03,.06+i*.04)},
+    miss(){crunch(120,.3,.12);sweep(300,60,.25,'sawtooth',.1,.02);noiseBurst(.1,.06,.05,800,80)},
+    breach(){subBass(60,.6,.25);noiseBurst(.5,.2,0,1500,80);crunch(200,.35,.15,.05);sweep(500,30,.5,'sawtooth',.12);tone(600,.12,'square',.06,.1);tone(400,.15,'square',.06,.2)},
+    waveClear(){subBass(55,.3,.1);[523,659,784,1047,1318].forEach((f,i)=>{tone(f,.18,'square',.08,i*.07);tone(f*1.005,.18,'sawtooth',.03,i*.07)});sweep(200,2000,.4,'sawtooth',.04,.1)},
+    victory(){subBass(55,.5,.12);[523,659,784,1047,1318,1568,2093].forEach((f,i)=>{tone(f,.25,'square',.07,i*.09);tone(f*.995,.25,'triangle',.04,i*.09)});sweep(300,3000,.6,'sawtooth',.04,.2)},
+    gameOver(){stopBGM();subBass(50,.8,.2);[400,320,250,160,100].forEach((f,i)=>{crunch(f,.35,.08,i*.14);tone(f,.3,'sawtooth',.06,i*.14)});noiseBurst(1,.08,.6,1000,50)},
+    spawn(){tone(165,.1,'triangle',.04);sweep(400,165,.08,'square',.02)},
+    select(){tone(1400,.03,'square',.06);noiseBurst(.02,.03,0,8000,2000)},
+    click(){tone(1000,.04,'square',.06);tone(1500,.03,'square',.04,.02)},
+    combo(){sweep(600,1600,.15,'square',.06);tone(1600,.1,'triangle',.04,.08)}
+  }
+})();
+
+// ═══════════════════════════════════════════════
+//  MODIFIER GUARD
+// ═══════════════════════════════════════════════
+const MODKEYS=new Set(['Shift','Control','Alt','Meta','CapsLock','NumLock','ScrollLock']);
+
+// ═══════════════════════════════════════════════
+//  CARTRIDGE DEFINITIONS
+// ═══════════════════════════════════════════════
+
+// --- tmux cartridge (static, prefix-key) ---
+const tmuxCartridge={
+  id:'tmux',
+  name:'tmux Shortcuts',
+  description:'28 essential tmux key bindings',
+  icon:'\u2328',
+  inputMode:'prefix-key',
+  prefixLabel:'C-b',
+  title:'TMUX',
+  subtitle:'TOWER DEFENSE',
+  startButton:'[ DEPLOY ]',
+  instructions:'Enemies march toward your server.<br>Type tmux shortcuts to destroy them.<br><span style="color:#ffaa22">Ctrl+b</span> then the command key.',
+  instructionsSub:'Shifted keys work naturally \u2014 Shift+5 \u2192 %<br>Tab = cycle targets \u00b7 Alt+H = hint \u00b7 12 waves',
+  commands:[
+    {id:'detach',action:'Detach from session',key:'d',tier:'core',dom:'sessions',hint:'Leave without killing'},
+    {id:'new-win',action:'Create new window',key:'c',tier:'core',dom:'windows',hint:'c for create'},
+    {id:'next-win',action:'Next window',key:'n',tier:'core',dom:'windows',hint:'n for next'},
+    {id:'prev-win',action:'Previous window',key:'p',tier:'core',dom:'windows',hint:'p for previous'},
+    {id:'split-h',action:'Split pane horizontally',key:'"',tier:'core',dom:'panes',hint:'" as a horizontal line'},
+    {id:'split-v',action:'Split pane vertically',key:'%',tier:'core',dom:'panes',hint:'% has a vertical line'},
+    {id:'kill-pane',action:'Kill current pane',key:'x',tier:'core',dom:'panes',hint:'x marks it for death'},
+    {id:'kill-win',action:'Kill current window',key:'&',tier:'core',dom:'windows',hint:'& is bigger than x'},
+    {id:'rename-win',action:'Rename window',key:',',tier:'core',dom:'windows',hint:'comma = rename'},
+    {id:'rename-sess',action:'Rename session',key:'$',tier:'core',dom:'sessions',hint:'$ for session rename'},
+    {id:'cmd-prompt',action:'Open command prompt',key:':',tier:'core',dom:'general',hint:"Like vim's command mode"},
+    {id:'help',action:'Show key bindings',key:'?',tier:'core',dom:'general',hint:'? for help'},
+    {id:'choose-sess',action:'Choose session',key:'s',tier:'regular',dom:'sessions',hint:'s for session chooser'},
+    {id:'choose-win',action:'Choose window',key:'w',tier:'regular',dom:'windows',hint:'w for window chooser'},
+    {id:'zoom',action:'Zoom/unzoom pane',key:'z',tier:'regular',dom:'panes',hint:'z for zoom'},
+    {id:'copy-mode',action:'Enter copy mode',key:'[',tier:'regular',dom:'copy',hint:'[ enters copy mode'},
+    {id:'paste',action:'Paste from buffer',key:']',tier:'regular',dom:'copy',hint:'] pastes the buffer'},
+    {id:'find-win',action:'Find window',key:'f',tier:'regular',dom:'windows',hint:'f for find'},
+    {id:'last-pane',action:'Toggle last pane',key:';',tier:'regular',dom:'panes',hint:'; for last pane'},
+    {id:'last-win',action:'Toggle last window',key:'l',tier:'regular',dom:'windows',hint:'l for last window'},
+    {id:'next-layout',action:'Cycle layout',key:' ',tier:'regular',dom:'panes',hint:'Space cycles layouts'},
+    {id:'list-buf',action:'List paste buffers',key:'#',tier:'regular',dom:'copy',hint:'# lists buffers'},
+    {id:'swap-prev',action:'Swap pane previous',key:'{',tier:'power',dom:'panes',hint:'{ swaps backward'},
+    {id:'swap-next',action:'Swap pane next',key:'}',tier:'power',dom:'panes',hint:'} swaps forward'},
+    {id:'break',action:'Break pane to window',key:'!',tier:'power',dom:'panes',hint:'! breaks it out'},
+    {id:'win0',action:'Switch to window 0',key:'0',tier:'power',dom:'windows',hint:'0-9 for window index'},
+    {id:'clock',action:'Show clock',key:'t',tier:'power',dom:'general',hint:'t for time'},
+    {id:'disp-panes',action:'Show pane numbers',key:'q',tier:'power',dom:'panes',hint:'q queries pane numbers'},
+  ],
+  formatPrompt(cmd){return cmd.action},
+  formatAnswer(cmd){return cmd.key===' '?'Space':cmd.key},
+  validate(input,key){return{correct:input===key}},
+};
+
+// --- Multiplication cartridge (generated, typed) ---
+function mulTier(a,b){
+  if(a===b)return'core';
+  if([1,2,5,10].includes(a)||[1,2,5,10].includes(b))return'core';
+  if(a>=10||b>=10)return'power';
+  return'regular';
+}
+function mulHint(a,b){
+  if(a===b)return a+' squared';
+  if(b===9)return a+'\u00d710 = '+(a*10)+', minus '+a;
+  if(b===11)return a+'\u00d710 = '+(a*10)+', plus '+a;
+  return a+'\u00d7'+(b-1)+' = '+(a*(b-1))+', plus '+a;
+}
+function genMultiplicationPool(){
+  const items=[];
+  for(let a=1;a<=12;a++){
+    for(let b=a;b<=12;b++){
+      items.push({
+        id:'mul-'+a+'x'+b,
+        action:a+' \u00d7 '+b,
+        key:String(a*b),
+        tier:mulTier(a,b),
+        dom:a+'s',
+        hint:mulHint(a,b),
+      });
+    }
+  }
+  return items;
+}
+
+const multiplicationCartridge={
+  id:'multiplication',
+  name:'Times Tables',
+  description:'1\u00d71 through 12\u00d712 (78 facts)',
+  icon:'\u00d7',
+  inputMode:'typed',
+  prefixLabel:null,
+  title:'TIMES TABLES',
+  subtitle:'TOWER DEFENSE',
+  startButton:'[ DEPLOY ]',
+  instructions:'Enemies carry math problems.<br>Type the answer and press Enter to destroy them.',
+  instructionsSub:'Tab = cycle targets \u00b7 Alt+H = hint \u00b7 12 waves',
+  commands:genMultiplicationPool(),
+  formatPrompt(cmd){return cmd.action},
+  formatAnswer(cmd){return cmd.key},
+  validate(input,key){
+    const parsed=parseInt(input.trim(),10);
+    const expected=parseInt(key,10);
+    return{correct:parsed===expected};
+  },
+};
+
+// --- US State Capitals cartridge (static, typed) ---
+const stateCapitalsCartridge={
+  id:'us-states-capitals',
+  name:'US Capitals',
+  description:'50 state capitals',
+  icon:'\ud83c\uddfa\ud83c\uddf8',
+  inputMode:'typed',
+  prefixLabel:null,
+  title:'US CAPITALS',
+  subtitle:'TOWER DEFENSE',
+  startButton:'[ DEPLOY ]',
+  instructions:'Enemies carry state names.<br>Type the capital city and press Enter.',
+  instructionsSub:'Tab = cycle targets \u00b7 Alt+H = hint \u00b7 12 waves',
+  commands:[
+    {id:'AL',action:'Alabama',key:'Montgomery',tier:'regular',dom:'south',hint:'Named after Richard Montgomery'},
+    {id:'AK',action:'Alaska',key:'Juneau',tier:'power',dom:'west',hint:'Named after gold prospector Joe Juneau'},
+    {id:'AZ',action:'Arizona',key:'Phoenix',tier:'regular',dom:'west',hint:'Rose from the ashes like the mythical bird'},
+    {id:'AR',action:'Arkansas',key:'Little Rock',tier:'regular',dom:'south',hint:'Named for a small rock formation on the river'},
+    {id:'CA',action:'California',key:'Sacramento',tier:'core',dom:'west',hint:'Valley of the Sacramento River'},
+    {id:'CO',action:'Colorado',key:'Denver',tier:'core',dom:'west',hint:'Mile High City'},
+    {id:'CT',action:'Connecticut',key:'Hartford',tier:'regular',dom:'northeast',hint:'Insurance capital of the world'},
+    {id:'DE',action:'Delaware',key:'Dover',tier:'regular',dom:'northeast',hint:'Shares name with the white cliffs'},
+    {id:'FL',action:'Florida',key:'Tallahassee',tier:'core',dom:'south',hint:'Starts with T, not Miami'},
+    {id:'GA',action:'Georgia',key:'Atlanta',tier:'core',dom:'south',hint:'Home of Coca-Cola'},
+    {id:'HI',action:'Hawaii',key:'Honolulu',tier:'core',dom:'west',hint:'Means sheltered harbor'},
+    {id:'ID',action:'Idaho',key:'Boise',tier:'regular',dom:'west',hint:'French for wooded'},
+    {id:'IL',action:'Illinois',key:'Springfield',tier:'core',dom:'midwest',hint:'Lincoln\'s hometown, not Chicago'},
+    {id:'IN',action:'Indiana',key:'Indianapolis',tier:'core',dom:'midwest',hint:'Indiana + polis (city)'},
+    {id:'IA',action:'Iowa',key:'Des Moines',tier:'regular',dom:'midwest',hint:'French for the monks'},
+    {id:'KS',action:'Kansas',key:'Topeka',tier:'regular',dom:'midwest',hint:'A good place to dig potatoes'},
+    {id:'KY',action:'Kentucky',key:'Frankfort',tier:'regular',dom:'south',hint:'Like Frankfurt, Germany but with an O'},
+    {id:'LA',action:'Louisiana',key:'Baton Rouge',tier:'regular',dom:'south',hint:'French for red stick'},
+    {id:'ME',action:'Maine',key:'Augusta',tier:'regular',dom:'northeast',hint:'Named after Princess Augusta'},
+    {id:'MD',action:'Maryland',key:'Annapolis',tier:'regular',dom:'northeast',hint:'Home of the Naval Academy'},
+    {id:'MA',action:'Massachusetts',key:'Boston',tier:'core',dom:'northeast',hint:'Baked beans and tea parties'},
+    {id:'MI',action:'Michigan',key:'Lansing',tier:'regular',dom:'midwest',hint:'Not Detroit'},
+    {id:'MN',action:'Minnesota',key:'Saint Paul',tier:'regular',dom:'midwest',hint:'Twin city with Minneapolis'},
+    {id:'MS',action:'Mississippi',key:'Jackson',tier:'regular',dom:'south',hint:'Named after Andrew Jackson'},
+    {id:'MO',action:'Missouri',key:'Jefferson City',tier:'regular',dom:'midwest',hint:'Named after Thomas Jefferson'},
+    {id:'MT',action:'Montana',key:'Helena',tier:'power',dom:'west',hint:'Named after Helena, Minnesota'},
+    {id:'NE',action:'Nebraska',key:'Lincoln',tier:'regular',dom:'midwest',hint:'Named after President Lincoln'},
+    {id:'NV',action:'Nevada',key:'Carson City',tier:'power',dom:'west',hint:'Named after Kit Carson'},
+    {id:'NH',action:'New Hampshire',key:'Concord',tier:'power',dom:'northeast',hint:'Means harmony or agreement'},
+    {id:'NJ',action:'New Jersey',key:'Trenton',tier:'regular',dom:'northeast',hint:'Washington crossed the Delaware here'},
+    {id:'NM',action:'New Mexico',key:'Santa Fe',tier:'regular',dom:'west',hint:'Spanish for holy faith'},
+    {id:'NY',action:'New York',key:'Albany',tier:'core',dom:'northeast',hint:'Not NYC \u2014 upstate on the Hudson'},
+    {id:'NC',action:'North Carolina',key:'Raleigh',tier:'regular',dom:'south',hint:'Named after Sir Walter Raleigh'},
+    {id:'ND',action:'North Dakota',key:'Bismarck',tier:'power',dom:'midwest',hint:'Named after the German chancellor'},
+    {id:'OH',action:'Ohio',key:'Columbus',tier:'core',dom:'midwest',hint:'Named after Christopher Columbus'},
+    {id:'OK',action:'Oklahoma',key:'Oklahoma City',tier:'core',dom:'south',hint:'State name + City'},
+    {id:'OR',action:'Oregon',key:'Salem',tier:'regular',dom:'west',hint:'Means peace in Hebrew'},
+    {id:'PA',action:'Pennsylvania',key:'Harrisburg',tier:'regular',dom:'northeast',hint:'Named after John Harris'},
+    {id:'RI',action:'Rhode Island',key:'Providence',tier:'regular',dom:'northeast',hint:'Divine guidance'},
+    {id:'SC',action:'South Carolina',key:'Columbia',tier:'regular',dom:'south',hint:'Named after Christopher Columbus'},
+    {id:'SD',action:'South Dakota',key:'Pierre',tier:'power',dom:'midwest',hint:'French name, only state capital starting with P-i'},
+    {id:'TN',action:'Tennessee',key:'Nashville',tier:'core',dom:'south',hint:'Music City'},
+    {id:'TX',action:'Texas',key:'Austin',tier:'core',dom:'south',hint:'Named after Stephen F. Austin'},
+    {id:'UT',action:'Utah',key:'Salt Lake City',tier:'core',dom:'west',hint:'By the Great Salt Lake'},
+    {id:'VT',action:'Vermont',key:'Montpelier',tier:'power',dom:'northeast',hint:'Smallest state capital by population'},
+    {id:'VA',action:'Virginia',key:'Richmond',tier:'regular',dom:'south',hint:'Former Confederate capital'},
+    {id:'WA',action:'Washington',key:'Olympia',tier:'regular',dom:'west',hint:'Not Seattle \u2014 named after the Olympic Mountains'},
+    {id:'WV',action:'West Virginia',key:'Charleston',tier:'power',dom:'south',hint:'Not South Carolina\'s Charleston'},
+    {id:'WI',action:'Wisconsin',key:'Madison',tier:'regular',dom:'midwest',hint:'Named after President Madison'},
+    {id:'WY',action:'Wyoming',key:'Cheyenne',tier:'power',dom:'west',hint:'Named after the Cheyenne people'},
+  ],
+  formatPrompt(cmd){return 'Capital of '+cmd.action+'?'},
+  formatAnswer(cmd){return cmd.key},
+  validate(input,key){
+    function norm(s){
+      return s.trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')  // strip accents
+        .replace(/\bst\.?\s*/g,'saint ')                     // St. / St / St.X → Saint
+        .replace(/[^a-z ]/g,'')
+        .replace(/\s+/g,' ')                                // collapse whitespace
+        .trim();
+    }
+    return{correct:norm(input)===norm(key)};
+  },
+};
+
+// --- All cartridges ---
+const CARTRIDGES=[tmuxCartridge, multiplicationCartridge, stateCapitalsCartridge];
+let activeCartridge=null;
+let COMMANDS=[];
+
+// ═══════════════════════════════════════════════
+//  SRS — Enhanced with time + attempts
+// ═══════════════════════════════════════════════
+function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0}});return s}
+function srsHit(card,wave,timeMs,usedHint,attempts){
+  const c={...card};c.correct++;c.streak++;c.lastSeen=wave;
+  c.avgTimeMs=c.totalAttempts>0?(c.avgTimeMs*c.totalAttempts+timeMs)/(c.totalAttempts+1):timeMs;
+  c.totalAttempts++;
+  let q=5;
+  if(timeMs>6000)q-=2;else if(timeMs>4000)q-=1.5;else if(timeMs>2500)q-=0.5;
+  if(timeMs<1500)q=Math.min(5,q+0.5);
+  if(usedHint)q-=2;
+  if(attempts>1)q-=Math.min(2,attempts-1);
+  q=Math.max(0,Math.min(5,q));
+  c.ease=Math.max(1.3,card.ease+(0.1-(5-q)*(0.08+(5-q)*0.02)));
+  if(card.interval===0)c.interval=1;
+  else if(card.interval===1)c.interval=3;
+  else c.interval=Math.round(card.interval*c.ease);
+  c.interval=Math.min(c.interval,20);
+  const fastEnough=c.avgTimeMs<3000;
+  const veryFast=c.avgTimeMs<1800;
+  if(c.streak>=8&&c.ease>=2.2&&veryFast)c.mastery=5;
+  else if(c.streak>=5&&c.ease>=2.0&&fastEnough)c.mastery=4;
+  else if(c.streak>=3&&c.ease>=1.8)c.mastery=3;
+  else if(c.streak>=2)c.mastery=2;
+  else if(c.streak>=1)c.mastery=Math.max(c.mastery,1);
+  return c;
+}
+function srsMiss(card,wave){
+  const c={...card};c.wrong++;c.streak=0;c.lastSeen=wave;c.interval=0;
+  c.ease=Math.max(1.3,card.ease-.2);c.mastery=Math.max(0,card.mastery-1);
+  c.totalAttempts++;return c;
+}
+function pickCommands(pool,srs,count,wave){
+  const due=[],overdue=[],fresh=[],notDue=[];
+  pool.forEach(cmd=>{const s=srs[cmd.id],ws=wave-s.lastSeen;
+    if(s.lastSeen===0&&s.correct===0)fresh.push(cmd);
+    else if(ws>=s.interval+2)overdue.push(cmd);
+    else if(ws>=s.interval)due.push(cmd);
+    else notDue.push(cmd)});
+  const picked=[],used=new Set();
+  function add(c){if(used.has(c.id))return false;picked.push(c);used.add(c.id);return true}
+  overdue.sort((a,b)=>srs[a.id].mastery-srs[b.id].mastery);overdue.forEach(c=>{if(picked.length<count)add(c)});
+  due.sort((a,b)=>srs[a.id].mastery-srs[b.id].mastery);due.forEach(c=>{if(picked.length<count)add(c)});
+  const maxNew=Math.min(3,Math.max(1,Math.floor(count*.3)));let na=0;
+  for(const c of fresh){if(picked.length>=count||na>=maxNew)break;if(add(c))na++}
+  notDue.sort((a,b)=>srs[a.id].mastery-srs[b.id].mastery);notDue.forEach(c=>{if(picked.length<count)add(c)});
+  pool.forEach(c=>{if(picked.length<count)add(c)});
+  for(let i=picked.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[picked[i],picked[j]]=[picked[j],picked[i]]}
+  return picked.slice(0,count);
+}
+
+// ═══════════════════════════════════════════════
+//  PERSISTENCE — localStorage
+// ═══════════════════════════════════════════════
+function saveSRS(){
+  if(!activeCartridge)return;
+  try{localStorage.setItem('td-srs-'+activeCartridge.id,JSON.stringify(G.srs))}catch(e){}
+}
+function loadSRS(cartridge){
+  const saved=localStorage.getItem('td-srs-'+cartridge.id);
+  const fresh=initSRS(cartridge.commands);
+  if(!saved)return fresh;
+  try{
+    const parsed=JSON.parse(saved);
+    for(const id of Object.keys(fresh)){
+      if(parsed[id])fresh[id]={...fresh[id],...parsed[id]};
+    }
+    return fresh;
+  }catch(e){return fresh}
+}
+function getCartridgeProgress(cartridgeId){
+  const saved=localStorage.getItem('td-srs-'+cartridgeId);
+  if(!saved)return{total:0,seen:0,mastered:0};
+  try{
+    const srs=JSON.parse(saved);
+    const entries=Object.values(srs);
+    return{
+      total:entries.length,
+      seen:entries.filter(s=>s.totalAttempts>0).length,
+      mastered:entries.filter(s=>s.mastery>=4).length,
+    };
+  }catch(e){return{total:0,seen:0,mastered:0}}
+}
+
+// ═══════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════
+const G={
+  screen:'select',wave:1,score:0,lives:5,streak:0,maxStreak:0,
+  srs:{},enemies:[],selectedId:null,inputState:'idle',
+  hintUsed:false,showHint:false,waveCommands:[],spawnIdx:0,
+  waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
+  unlockedTiers:['core'],nextEnemyId:0,
+  attemptsOnCurrent:0,commandStartTime:0,
+  typedBuffer:'',
+};
+const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0018,SPAWN_DELAY_BASE=4500;
+
+// ═══════════════════════════════════════════════
+//  THREE.JS SCENE
+// ═══════════════════════════════════════════════
+const canvas=document.getElementById('game-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setClearColor(AMB.black);
+renderer.shadowMap.enabled=false;
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(AMB.black,.035);
+
+const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,.1,100);
+camera.position.set(0,18,14);
+camera.lookAt(0,0,-1);
+
+const ambLight=new THREE.AmbientLight(AMB.dark,.4);scene.add(ambLight);
+const dirLight=new THREE.DirectionalLight(AMB.bright,.6);dirLight.position.set(5,12,8);scene.add(dirLight);
+const serverLight=new THREE.PointLight(AMB.hot,1.5,15);serverLight.position.set(-7,2,5);scene.add(serverLight);
+
+// Terrain
+const terrGeo=new THREE.PlaneGeometry(24,24,24,24);
+terrGeo.rotateX(-Math.PI/2);
+const verts=terrGeo.attributes.position;
+for(let i=0;i<verts.count;i++){
+  const x=verts.getX(i),z=verts.getZ(i);
+  const h=Math.sin(x*.3)*Math.cos(z*.4)*.4+Math.sin(x*.7+z*.5)*.2;
+  verts.setY(i,h);
+}
+terrGeo.computeVertexNormals();
+const terrMat=new THREE.MeshPhongMaterial({color:AMB.darkest,flatShading:true,shininess:0});
+const terrain=new THREE.Mesh(terrGeo,terrMat);scene.add(terrain);
+const wireGeo=terrGeo.clone();
+const wireMat=new THREE.MeshBasicMaterial({color:AMB.dark,wireframe:true,transparent:true,opacity:.25});
+const wireframe=new THREE.Mesh(wireGeo,wireMat);wireframe.position.y=.02;scene.add(wireframe);
+
+// Path
+const pathPts=[
+  new THREE.Vector3(10,.4,-7),new THREE.Vector3(6,.4,-4),
+  new THREE.Vector3(2,.4,-6),new THREE.Vector3(-2,.4,-2),
+  new THREE.Vector3(1,.4,1),new THREE.Vector3(4,.4,3),
+  new THREE.Vector3(0,.4,5),new THREE.Vector3(-7,.4,4.5),
+];
+const pathCurve=new THREE.CatmullRomCurve3(pathPts,false,'catmullrom',.5);
+const pathLine=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints(pathCurve.getPoints(80)),
+  new THREE.LineBasicMaterial({color:AMB.mid,transparent:true,opacity:.5})
+);scene.add(pathLine);
+for(let i=0;i<=20;i++){
+  const p=pathCurve.getPointAt(i/20);
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(.06,4,4),new THREE.MeshBasicMaterial({color:AMB.mid}));
+  dot.position.copy(p);dot.position.y=.25;scene.add(dot);
+}
+
+// Server Tower
+const serverGrp=new THREE.Group();
+const smat=new THREE.MeshPhongMaterial({color:AMB.hot,emissive:AMB.bright,emissiveIntensity:.3,flatShading:true});
+const sBase=new THREE.Mesh(new THREE.BoxGeometry(1.2,1,1.2),smat);sBase.position.y=.5;serverGrp.add(sBase);
+const sMid=new THREE.Mesh(new THREE.BoxGeometry(.8,.8,.8),smat);sMid.position.y=1.4;serverGrp.add(sMid);
+const sTop=new THREE.Mesh(new THREE.BoxGeometry(.5,1.2,.5),smat);sTop.position.y=2.4;serverGrp.add(sTop);
+const ant=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.8,4),new THREE.MeshBasicMaterial({color:AMB.glow}));
+ant.position.y=3.4;serverGrp.add(ant);
+serverGrp.position.copy(pathPts[pathPts.length-1]);serverGrp.position.y=0;
+scene.add(serverGrp);
+
+// Spawn marker
+const spawnMark=new THREE.Mesh(new THREE.BoxGeometry(.3,.3,.3),new THREE.MeshBasicMaterial({color:0xff220033,transparent:true,opacity:.4}));
+spawnMark.position.copy(pathPts[0]);spawnMark.position.y=.5;scene.add(spawnMark);
+
+// Particles
+const particles=[];
+const particleGeo=new THREE.BoxGeometry(.08,.08,.08);
+function spawnExplosion(pos,count=12,color=AMB.glow){
+  for(let i=0;i<count;i++){
+    const m=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color,transparent:true}));
+    m.position.copy(pos);
+    const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2+1,(Math.random()-.5)*2).multiplyScalar(.15);
+    particles.push({mesh:m,vel:v,life:1,decay:.02+Math.random()*.02});
+    scene.add(m);
+  }
+}
+
+// Beams
+const beams=[];
+function spawnBeam(from,to){
+  const geo=new THREE.BufferGeometry().setFromPoints([from,to]);
+  const mat=new THREE.LineBasicMaterial({color:AMB.white,transparent:true,opacity:1});
+  const line=new THREE.Line(geo,mat);scene.add(line);
+  beams.push({line,life:1,decay:.05});
+}
+
+// ═══════════════════════════════════════════════
+//  ENEMY 3D MANAGEMENT
+// ═══════════════════════════════════════════════
+const enemyMeshes={};
+const eMat=new THREE.MeshPhongMaterial({color:AMB.hot,emissive:AMB.bright,emissiveIntensity:.2,flatShading:true});
+const eGeo=new THREE.BoxGeometry(.45,.45,.45);
+
+function addEnemyMesh(enemy){
+  const m=new THREE.Mesh(eGeo,eMat.clone());
+  const p=pathCurve.getPointAt(0);
+  m.position.copy(p);m.position.y=.6;
+  scene.add(m);
+  enemyMeshes[enemy.id]=m;
+}
+function removeEnemyMesh(id){
+  const m=enemyMeshes[id];if(!m)return;
+  scene.remove(m);m.geometry.dispose();m.material.dispose();
+  delete enemyMeshes[id];
+}
+function updateEnemyMeshes(){
+  G.enemies.forEach(e=>{
+    const m=enemyMeshes[e.id];if(!m)return;
+    const t=Math.min(e.t,1);
+    const p=pathCurve.getPointAt(t);
+    m.position.set(p.x,p.y+.3+Math.sin(Date.now()*.003+e.id)*.1,p.z);
+    m.rotation.y+=.02;
+    if(e.id===G.selectedId){
+      m.material.color.setHex(AMB.white);m.material.emissive.setHex(AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
+    }else{
+      m.material.color.setHex(AMB.hot);m.material.emissive.setHex(AMB.bright);m.material.emissiveIntensity=.2;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  LABEL PROJECTION
+// ═══════════════════════════════════════════════
+const labelsDiv=document.getElementById('labels');
+function updateLabels(){
+  labelsDiv.innerHTML='';
+  G.enemies.forEach(e=>{
+    const m=enemyMeshes[e.id];if(!m)return;
+    const v=m.position.clone();v.y+=.6;
+    v.project(camera);
+    const x=(v.x*.5+.5)*window.innerWidth;
+    const y=(-(v.y*.5)+.5)*window.innerHeight;
+    if(v.z>1)return;
+    const isSel=e.id===G.selectedId;
+    const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
+    const div=document.createElement('div');div.className='enemy-label';
+    div.style.left=x+'px';div.style.top=y+'px';
+    const promptText=activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action;
+    div.innerHTML='<div class="enemy-label-inner" style="border-color:'+(isSel?AMB.css.white:AMB.css.hot)+';color:'+AMB.css.hot+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    div.onclick=()=>{
+      G.selectedId=e.id;
+      G.inputState=activeCartridge&&activeCartridge.inputMode==='prefix-key'?'await_prefix':'typing';
+      G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+      SFX.select();
+      focusTypedInput();
+    };
+    labelsDiv.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  HUD & INPUT UPDATE
+// ═══════════════════════════════════════════════
+function updateHUD(){
+  document.getElementById('h-wave').textContent=G.wave+'/12';
+  document.getElementById('h-score').textContent=G.score.toLocaleString();
+  const hearts='\u2665'.repeat(G.lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-G.lives));
+  const hEl=document.getElementById('h-lives');hEl.textContent=hearts;hEl.style.color=G.lives<=2?'#ff4422':AMB.css.hot;
+  const sEl=document.getElementById('h-streak');
+  sEl.textContent=G.streak+(G.combo>1?' (\u00d7'+G.combo.toFixed(1)+')':'');
+  sEl.style.color=G.streak>=5?AMB.css.white:AMB.css.hot;
+}
+
+let lastInputState='';
+function updateInput(){
+  const panel=document.getElementById('input-panel');
+  if(G.waveComplete){
+    if(lastInputState==='wave-clear')return;
+    lastInputState='wave-clear';
+    panel.innerHTML='<div class="wave-clear">WAVE '+G.wave+' CLEARED</div><button class="btn" onclick="nextWave()" style="margin-top:10px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button>';
+    return;
+  }
+  const sel=G.enemies.find(e=>e.id===G.selectedId);
+  const mode=activeCartridge?activeCartridge.inputMode:'prefix-key';
+
+  if(mode==='typed'){
+    const stateKey='typed-'+(sel?sel.id:'none')+'-'+G.showHint;
+    if(stateKey===lastInputState){
+      // Only sync input value — don't rebuild DOM
+      const inp=document.getElementById('typed-input');
+      if(inp&&inp!==document.activeElement)inp.value=G.typedBuffer;
+      return;
+    }
+    lastInputState=stateKey;
+    if(!sel){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    const cmd=sel.cmd;
+    const promptText=activeCartridge.formatPrompt(cmd);
+    let html='<div class="prompt-label">TARGET:</div><div class="prompt-text">'+promptText+'</div>';
+    html+='<div style="margin-top:8px"><input type="text" class="typed-input" id="typed-input" placeholder="Type answer..." value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
+    if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+activeCartridge.formatAnswer(cmd)+'</span></div>';
+    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Enter = submit \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
+    panel.innerHTML=html;
+    focusTypedInput();
+  }else{
+    // prefix-key mode
+    const stateKey=G.inputState+'-'+(sel?sel.id:'none')+'-'+G.showHint;
+    if(stateKey===lastInputState)return;
+    lastInputState=stateKey;
+    if(!sel){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    const cmd=sel.cmd;
+    const isPre=G.inputState==='await_prefix',isCmd=G.inputState==='await_command';
+    const prefix=activeCartridge?activeCartridge.prefixLabel:'C-b';
+    let html='<div class="prompt-label">TARGET COMMAND:</div><div class="prompt-text">'+cmd.action+'</div>';
+    html+='<div class="input-boxes"><div class="input-box '+(isPre?'active':isCmd?'done':'')+'">'+(isCmd?prefix+' \u2713':prefix)+'</div><span style="color:'+AMB.css.mid+';font-size:16px">\u2192</span><div class="input-box '+(isCmd?'active':'')+'\">'+(isCmd?'?':'\u00b7\u00b7\u00b7')+'</div></div>';
+    if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+prefix+' '+activeCartridge.formatAnswer(cmd)+'</span></div>';
+    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Tab = switch \u00b7 Alt+H = hint</div>';
+    panel.innerHTML=html;
+  }
+}
+
+function focusTypedInput(){
+  const inp=document.getElementById('typed-input');
+  if(inp)inp.focus();
+}
+
+function updateQueue(){
+  const bar=document.getElementById('queue-bar');
+  if(G.waveComplete||G.waveCommands.length===0){bar.style.display='none';return}
+  bar.style.display='block';
+  let html='INCOMING: ';
+  G.waveCommands.slice(G.spawnIdx).forEach(c=>{html+='<span class="q-dot" style="background:'+AMB.css.hot+'" title="'+c.action+'"></span>'});
+  if(G.spawnIdx>=G.waveCommands.length)html+='<span style="opacity:.4">all spawned</span>';
+  bar.innerHTML=html;
+}
+function updateTierBar(){
+  const tiers=['core','regular','power'];
+  const bar=document.getElementById('tier-bar');
+  bar.innerHTML=tiers.map(t=>'<span style="color:'+(G.unlockedTiers.includes(t)?AMB.css.hot:AMB.css.dark)+';margin:0 6px">\u25a0 '+t.toUpperCase()+(G.unlockedTiers.includes(t)?'':' \ud83d\udd12')+'</span>').join('');
+}
+
+// ═══════════════════════════════════════════════
+//  SCREENS
+// ═══════════════════════════════════════════════
+function showSelectScreen(){
+  G.screen='select';
+  // Clean up any lingering enemy meshes
+  G.enemies.forEach(e=>removeEnemyMesh(e.id));
+  G.enemies=[];G.selectedId=null;
+  SFX.stopBGM();
+  document.getElementById('hud').style.display='none';
+  document.getElementById('tier-bar').style.display='none';
+  document.getElementById('input-panel').style.display='none';
+  document.getElementById('queue-bar').style.display='none';
+  labelsDiv.innerHTML='';
+  const ov=document.getElementById('overlay');ov.classList.remove('hidden');
+  let html='<h1 style="font-size:36px;letter-spacing:8px">TOWER DEFENSE</h1><h2 style="letter-spacing:6px">TRAINER</h2>';
+  html+='<div class="cart-grid">';
+  CARTRIDGES.forEach(c=>{
+    const prog=getCartridgeProgress(c.id);
+    const totalItems=c.commands.length;
+    const dots=5;
+    const filledDots=totalItems>0?Math.round((prog.mastered/totalItems)*dots):0;
+    html+='<div class="cart-card" onclick="selectCartridge(\''+c.id+'\')">';
+    html+='<div class="cart-icon">'+c.icon+'</div>';
+    html+='<div class="cart-name">'+c.name+'</div>';
+    html+='<div class="cart-desc">'+c.description+'</div>';
+    html+='<div class="cart-progress">';
+    for(let i=0;i<dots;i++){
+      html+='<div class="cart-dot'+(i<filledDots?' filled':'')+'"></div>';
+    }
+    html+='</div>';
+    if(prog.seen>0)html+='<div style="font-size:8px;color:#5a3800;margin-top:4px">'+prog.seen+'/'+totalItems+' seen</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  ov.innerHTML=html;
+}
+
+function selectCartridge(id){
+  SFX.click();
+  activeCartridge=CARTRIDGES.find(c=>c.id===id);
+  COMMANDS=activeCartridge.commands;
+  showTitleScreen();
+}
+
+function showTitleScreen(){
+  G.screen='title';
+  const ov=document.getElementById('overlay');ov.classList.remove('hidden');
+  let html='<h1>'+activeCartridge.title+'</h1>';
+  html+='<h2>'+activeCartridge.subtitle+'</h2>';
+  html+='<p class="desc">'+activeCartridge.instructions+'</p>';
+  if(activeCartridge.instructionsSub)html+='<p class="desc" style="font-size:10px;color:#5a3800">'+activeCartridge.instructionsSub+'</p>';
+  html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
+  html+='<div class="sub" style="margin-top:16px"><a href="#" onclick="event.preventDefault();showSelectScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  // Reset progress link
+  const prog=getCartridgeProgress(activeCartridge.id);
+  if(prog.seen>0){
+    html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
+  }
+  ov.innerHTML=html;
+  document.getElementById('btn-start').onclick=startGame;
+}
+
+function resetProgress(){
+  if(!activeCartridge)return;
+  if(confirm('Reset all progress for '+activeCartridge.name+'? This cannot be undone.')){
+    localStorage.removeItem('td-srs-'+activeCartridge.id);
+    SFX.click();
+    showTitleScreen();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════
+function genWave(n){
+  const tiers=n>=7?['core','regular','power']:n>=4?['core','regular']:['core'];
+  G.unlockedTiers=tiers;
+  const pool=COMMANDS.filter(c=>tiers.includes(c.tier));
+  return pickCommands(pool,G.srs,Math.min(4+n,16),n);
+}
+function startGame(){
+  SFX.stopBGM();SFX.click();setTimeout(()=>SFX.startBGM(),300);
+  G.enemies.forEach(e=>removeEnemyMesh(e.id));
+  Object.assign(G,{screen:'game',wave:1,score:0,lives:BASE_LIVES,streak:0,maxStreak:0,
+    srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',hintUsed:false,showHint:false,
+    spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
+    unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:''});
+  G.waveCommands=genWave(1);
+  lastSpawnTime=0;
+  lastInputState='';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('tier-bar').style.display='block';
+  document.getElementById('input-panel').style.display='block';
+  document.getElementById('queue-bar').style.display='block';
+  updateTierBar();
+}
+function nextWave(){
+  SFX.click();
+  saveSRS();
+  const nw=G.wave+1;
+  if(nw>12){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
+  G.enemies.forEach(e=>removeEnemyMesh(e.id));
+  Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
+    waveComplete:false,hintUsed:false,showHint:false,attemptsOnCurrent:0,typedBuffer:''});
+  G.waveCommands=genWave(nw);
+  lastSpawnTime=0;
+  lastInputState='';
+  updateTierBar();
+}
+function showEndScreen(victory){
+  G.screen=victory?'victory':'gameover';
+  saveSRS();
+  // Clean up surviving enemies
+  G.enemies.forEach(e=>removeEnemyMesh(e.id));
+  G.enemies=[];G.selectedId=null;
+  document.getElementById('hud').style.display='none';
+  document.getElementById('tier-bar').style.display='none';
+  document.getElementById('input-panel').style.display='none';
+  document.getElementById('queue-bar').style.display='none';
+  labelsDiv.innerHTML='';
+  const ov=document.getElementById('overlay');ov.classList.remove('hidden');
+  const acc=G.totalCorrect+G.totalWrong>0?Math.round(G.totalCorrect/(G.totalCorrect+G.totalWrong)*100):0;
+  const seen=Object.entries(G.srs).filter(([,v])=>v.correct+v.wrong>0);
+  const mc=[0,0,0,0,0,0];seen.forEach(([,v])=>mc[v.mastery]++);
+  const weak=seen.sort(([,a],[,b])=>(a.mastery-b.mastery)||(b.wrong-a.wrong)).slice(0,4).filter(([,v])=>v.mastery<4).map(([id])=>COMMANDS.find(c=>c.id===id));
+  const isPrefix=activeCartridge&&activeCartridge.inputMode==='prefix-key';
+  let html='<h1 style="font-size:32px;color:'+(victory?AMB.css.hot:'#ff4422')+'">'+(victory?'SERVER SECURED':'SERVER BREACHED')+'</h1>';
+  html+='<div class="stats-grid">'+[['SCORE',G.score.toLocaleString()],['WAVE',G.wave+'/12'],['ACCURACY',acc+'%'],['STREAK',G.maxStreak]].map(([l,v])=>'<div class="stat-box"><div class="sl">'+l+'</div><div class="sv">'+v+'</div></div>').join('')+'</div>';
+  if(seen.length>0){
+    html+='<div style="width:100%;max-width:360px"><div class="sl" style="text-align:center;margin-bottom:4px">MASTERY</div><div class="mastery-bar">'+mc.map((n,i)=>n>0?'<div style="flex:'+n+';background:'+MASTERY_COLORS[i]+';opacity:'+(0.5+i*0.1)+'"></div>':'').join('')+'</div><div class="mastery-legend">'+MASTERY_LABELS.map((l,i)=>mc[i]>0?'<span style="color:'+MASTERY_COLORS[i]+'">'+'\u25a0 '+l+' ('+mc[i]+')</span>':'').join('')+'</div></div>';
+  }
+  if(weak.length>0){
+    html+='<div style="width:100%;max-width:360px;margin-bottom:12px"><div class="sl" style="text-align:center;color:#ff6b35;margin-bottom:4px">FOCUS NEXT SESSION</div>'+weak.map(c=>{
+      if(!c)return'';
+      const answerDisplay=isPrefix?(activeCartridge.prefixLabel+' '+activeCartridge.formatAnswer(c)):activeCartridge.formatAnswer(c);
+      const promptDisplay=activeCartridge.formatPrompt(c);
+      return'<div class="weak-item"><span><span style="color:#ff6b35;font-weight:700">'+answerDisplay+'</span> \u2192 '+promptDisplay+'</span><span style="font-size:9px;color:'+MASTERY_COLORS[G.srs[c.id].mastery]+'">'+MASTERY_LABELS[G.srs[c.id].mastery]+(G.srs[c.id].avgTimeMs>0?' \u00b7 '+Math.round(G.srs[c.id].avgTimeMs/1000*10)/10+'s':'')+'</span></div>';
+    }).join('')+'</div>';
+  }
+  html+='<button class="btn" onclick="startGame()">[ REDEPLOY ]</button>';
+  html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showSelectScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  ov.innerHTML=html;
+}
+
+// ── Spawning ──
+let lastSpawnTime=0;
+function trySpawn(now){
+  if(G.screen!=='game'||G.waveComplete||G.spawnIdx>=G.waveCommands.length)return;
+  const delay=G.spawnIdx===0?1500:Math.max(SPAWN_DELAY_BASE-G.wave*150,2500);
+  if(now-lastSpawnTime<delay)return;
+  const cmd=G.waveCommands[G.spawnIdx];
+  const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now()};
+  G.enemies.push(enemy);
+  addEnemyMesh(enemy);
+  G.spawnIdx++;lastSpawnTime=now;
+  SFX.spawn();
+}
+
+// ── Movement ──
+function moveEnemies(){
+  const speed=MOVE_SPEED_BASE+G.wave*.00015;
+  G.enemies.forEach(e=>{e.t+=speed});
+}
+
+// ── Breach ──
+function checkBreach(){
+  const reached=G.enemies.filter(e=>e.t>=1);
+  if(reached.length===0)return;
+  SFX.breach();
+  reached.forEach(e=>{
+    spawnExplosion(enemyMeshes[e.id]?.position||pathPts[pathPts.length-1],20,0xff2200);
+    removeEnemyMesh(e.id);
+    G.srs[e.cmd.id]=srsMiss(G.srs[e.cmd.id],G.wave);
+  });
+  G.enemies=G.enemies.filter(e=>e.t<1);
+  G.lives-=reached.length;G.streak=0;G.combo=1;
+  if(G.lives<=0){G.lives=0;SFX.gameOver();showEndScreen(false)}
+}
+
+// ── Wave complete ──
+function checkWaveComplete(){
+  if(G.spawnIdx>=G.waveCommands.length&&G.enemies.length===0&&!G.waveComplete&&G.waveCommands.length>0){
+    G.waveComplete=true;SFX.waveClear();
+  }
+}
+
+// ── Auto-select ──
+function autoSelect(){
+  if(G.enemies.length>0&&(!G.selectedId||!G.enemies.find(e=>e.id===G.selectedId))){
+    const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
+    G.selectedId=sorted[0].id;
+    G.inputState=activeCartridge&&activeCartridge.inputMode==='prefix-key'?'await_prefix':'typing';
+    G.showHint=false;G.hintUsed=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+    focusTypedInput();
+  }else if(G.enemies.length===0){G.selectedId=null;G.inputState='idle'}
+}
+
+// ── Flash ──
+function flash(msg,color){
+  const d=document.createElement('div');d.className='flash-msg';d.style.color=color||AMB.css.white;
+  d.textContent=msg;document.body.appendChild(d);
+  setTimeout(()=>d.remove(),900);
+}
+
+// ═══════════════════════════════════════════════
+//  HIT / MISS — shared logic
+// ═══════════════════════════════════════════════
+function handleHit(enemy){
+  const responseTime=Date.now()-G.commandStartTime;
+  const attempts=G.attemptsOnCurrent+1;
+  let speedMult=1;
+  if(responseTime<1500)speedMult=2;else if(responseTime<3000)speedMult=1.5;else if(responseTime<5000)speedMult=1.2;
+  const totalMult=G.combo*speedMult;
+  const pts=Math.floor((100+Math.max(0,50-Math.floor(responseTime/200))-(G.hintUsed?30:0))*totalMult);
+  const intensity=Math.min(1,speedMult/2);
+  SFX.hit(intensity);
+  const ePos=enemyMeshes[enemy.id]?.position.clone()||new THREE.Vector3();
+  spawnExplosion(ePos,8+Math.floor(intensity*20),AMB.glow);
+  spawnBeam(serverGrp.position.clone().add(new THREE.Vector3(0,3,0)),ePos);
+  G.score+=pts;G.streak++;G.maxStreak=Math.max(G.maxStreak,G.streak);
+  if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
+  G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
+  G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,G.hintUsed,attempts);
+  removeEnemyMesh(enemy.id);
+  G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
+  G.selectedId=null;G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
+  flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
+}
+
+function handleMiss(enemy){
+  SFX.miss();
+  G.streak=0;G.combo=1;G.totalWrong++;
+  G.attemptsOnCurrent++;
+  G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave);
+  G.typedBuffer='';
+  if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
+  flash('MISS!','#ff4422');
+  // Re-focus typed input after miss
+  setTimeout(focusTypedInput,50);
+}
+
+// ═══════════════════════════════════════════════
+//  INPUT HANDLER
+// ═══════════════════════════════════════════════
+window.addEventListener('keydown',e=>{
+  // Spacebar universal advance on non-game screens + wave-clear
+  if(e.key===' '&&(G.screen!=='game'||G.waveComplete)){
+    const btn=document.querySelector('#overlay .btn')||document.querySelector('#input-panel .btn');
+    if(btn){e.preventDefault();btn.click();return}
+  }
+
+  if(MODKEYS.has(e.key))return;
+  if(G.screen!=='game')return;
+
+  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+
+  // Tab to cycle — works in all modes
+  if(e.key==='Tab'&&enemy){
+    e.preventDefault();
+    const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
+    const idx=sorted.findIndex(en=>en.id===G.selectedId);
+    G.selectedId=sorted[(idx+1)%sorted.length].id;
+    G.inputState=activeCartridge&&activeCartridge.inputMode==='prefix-key'?'await_prefix':'typing';
+    G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+    SFX.select();
+    setTimeout(focusTypedInput,50);
+    return;
+  }
+  // Alt+H hint — works in all modes
+  if(e.key==='h'&&e.altKey){e.preventDefault();G.showHint=true;G.hintUsed=true;return}
+
+  if(!enemy)return;
+
+  const mode=activeCartridge?activeCartridge.inputMode:'prefix-key';
+
+  if(mode==='prefix-key'){
+    e.preventDefault();
+    if(G.inputState==='await_prefix'){
+      if(e.ctrlKey&&e.key==='b'){G.inputState='await_command';SFX.prefix()}
+      return;
+    }
+    if(G.inputState==='await_command'){
+      if(e.key===enemy.cmd.key){
+        handleHit(enemy);
+      }else{
+        handleMiss(enemy);
+      }
+    }
+  }else if(mode==='typed'){
+    // If input exists but isn't focused, redirect focus and replay the keystroke
+    const inp=document.getElementById('typed-input');
+    if(inp&&document.activeElement!==inp){
+      inp.focus();
+      // Replay printable character into the input
+      if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+        e.preventDefault();
+        inp.value+=e.key;
+        G.typedBuffer=inp.value;
+      }
+    }
+  }
+});
+
+// Typed input handler — delegated to the input element
+document.addEventListener('keydown',function(e){
+  if(G.screen!=='game')return;
+  const mode=activeCartridge?activeCartridge.inputMode:'prefix-key';
+  if(mode!=='typed')return;
+
+  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!enemy)return;
+
+  const inp=document.getElementById('typed-input');
+
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const val=inp?inp.value:G.typedBuffer;
+    if(val.trim()==='')return;
+    const result=activeCartridge.validate(val,enemy.cmd.key);
+    if(result.correct){
+      handleHit(enemy);
+    }else{
+      handleMiss(enemy);
+      if(inp)inp.value='';
+    }
+    return;
+  }
+
+  // Sync buffer from input element
+  if(inp&&e.target===inp){
+    // Let the input handle its own character entry naturally
+    // We just sync the buffer on next frame
+    requestAnimationFrame(()=>{
+      if(document.getElementById('typed-input')){
+        G.typedBuffer=document.getElementById('typed-input').value;
+      }
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  MUTE BUTTON
+// ═══════════════════════════════════════════════
+document.getElementById('mute-btn').onclick=()=>{
+  const m=SFX.toggleMute();
+  document.getElementById('mute-btn').textContent=m?'\ud83d\udd07':'\ud83d\udd0a';
+  document.getElementById('mute-btn').style.color=m?'#ff4422':AMB.css.hot;
+};
+
+// ═══════════════════════════════════════════════
+//  SAVE ON UNLOAD
+// ═══════════════════════════════════════════════
+window.addEventListener('beforeunload',()=>{
+  if(G.screen==='game')saveSRS();
+});
+
+// ═══════════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════════
+let lastTime=0;
+function animate(time){
+  requestAnimationFrame(animate);
+  const dt=time-lastTime;lastTime=time;
+
+  camera.position.x=Math.sin(time*.0002)*.3;
+  camera.position.y=18+Math.sin(time*.0003)*.2;
+  camera.lookAt(0,0,-1);
+
+  serverLight.intensity=1.5+Math.sin(time*.003)*.3;
+  sTop.rotation.y=time*.001;
+  ant.material.color.setHex(Math.sin(time*.005)>.3?AMB.glow:AMB.mid);
+
+  spawnMark.material.opacity=.2+Math.sin(time*.004)*.2;
+  spawnMark.rotation.y=time*.002;
+
+  if(G.screen==='game'){
+    trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
+    updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
+  }
+
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.mesh.position.add(p.vel);
+    p.vel.y-=.005;
+    p.life-=p.decay;
+    p.mesh.material.opacity=p.life;
+    p.mesh.scale.setScalar(p.life);
+    if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();particles.splice(i,1)}
+  }
+  for(let i=beams.length-1;i>=0;i--){
+    const b=beams[i];b.life-=b.decay;b.line.material.opacity=b.life;
+    if(b.life<=0){scene.remove(b.line);b.line.material.dispose();b.line.geometry.dispose();beams.splice(i,1)}
+  }
+
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+
+// ═══════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+// ═══════════════════════════════════════════════
+//  INIT — show cartridge select
+// ═══════════════════════════════════════════════
+showSelectScreen();
+</script>
+</body>
+</html>
