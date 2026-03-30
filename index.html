@@ -92,6 +92,7 @@ canvas{position:fixed;top:0;left:0;z-index:0}
   <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="h-score">0</div></div>
   <div class="hud-item"><div class="hud-label">LIVES</div><div class="hud-val" id="h-lives"></div></div>
   <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="h-streak">0</div></div>
+  <div class="hud-item"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
 <div id="labels"></div>
@@ -608,7 +609,7 @@ const G={
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',
 };
-const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0008,SPAWN_DELAY_BASE=5500;
+const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0004,SPAWN_DELAY_BASE=7000;
 
 // ═══════════════════════════════════════════════
 //  THREE.JS SCENE
@@ -781,6 +782,16 @@ function updateHUD(){
   const sEl=document.getElementById('h-streak');
   sEl.textContent=G.streak+(G.combo>1?' (\u00d7'+G.combo.toFixed(1)+')':'');
   sEl.style.color=G.streak>=5?AMB.css.white:AMB.css.hot;
+  // Mastery progress: seen / proficient / total
+  const mEl=document.getElementById('h-mastery');
+  if(mEl&&COMMANDS.length>0){
+    const entries=Object.values(G.srs);
+    const seen=entries.filter(s=>s.totalAttempts>0).length;
+    const prof=entries.filter(s=>s.mastery>=4).length;
+    const total=COMMANDS.length;
+    mEl.textContent=prof+'\u2605 '+seen+'/'+total;
+    mEl.style.color=prof>=total*0.8?'#44ff88':prof>=total*0.4?AMB.css.white:AMB.css.hot;
+  }
 }
 
 let lastInputState='';
