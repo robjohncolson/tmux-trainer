@@ -21,6 +21,12 @@ Fixed the input panel blocking the 3D game view:
   - Miss penalty (1.5x per miss) still stacks on top
   - Domain-to-unit mapping based on official AP Stats 2026 curriculum (Units 1-9)
 
+### Phase 4: Fill-Blank Always MC + 50/50 Hint System
+- **Fill-blank is now pure MC (A/B/C)**: Removed broken text input (cursor bug). All answers are multiple choice.
+- **KaTeX rendering fix**: Fill-blank choices now always render LaTeX (was gated behind showHint).
+- **50/50 hint (Alt+H)**: Eliminates one wrong answer (grayed out, disabled). Shows conceptual `explain` text instead of mechanical hint. Half-point penalty applies.
+- **39 explain fields**: Each formula has a curriculum-aligned conceptual explanation (e.g. "Larger samples reduce variability — sample size is in the denominator").
+
 ### New Question Types
 
 1. **Identify (Multiple Choice A-D)**: Formula is rendered in LaTeX. Student picks what the formula calculates from 4 choices. Distractors are auto-generated from other formulas, preferring same domain for difficulty.

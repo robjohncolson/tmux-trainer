@@ -220,180 +220,219 @@ const apStatsCartridge={
     // ══ I. DESCRIPTIVE STATISTICS ══
     {id:'mean',action:'Sample Mean (\u0304x)',tier:'core',dom:'descriptive',
       hint:'Add all values, divide by count',
+      explain:'This measures the center — total divided by how many',
       latex:'\\bar{x} = \\frac{\\sum x_i}{n}',
       blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','N']}]},
     {id:'std-dev',action:'Sample Std Dev (s)',tier:'core',dom:'descriptive',
       hint:'Square root of variance; denominator is n\u22121',
+      explain:'Measures spread; uses degrees of freedom to correct for sample bias',
       latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{n-1}}',
       blanks:[{latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n+1']}]},
     {id:'linreg',action:'Regression Line (\u0177)',tier:'core',dom:'descriptive',
       hint:'\u0177 = a + bx (intercept + slope\u00b7x)',
+      explain:'Predicted y from x — intercept plus slope times x',
       latex:'\\hat{y} = a + bx',
       blanks:[{latex:'\\hat{y} = a + \\boxed{\\,?\\,}\\cdot x',answer:'b',choices:['b','r','a']}]},
     {id:'linreg-mean',action:'Regression thru means',tier:'core',dom:'descriptive',
       hint:'The regression line passes through the point of means',
+      explain:'The line must pass through the centroid of the data',
       latex:'\\bar{y} = a + b\\bar{x}',
       blanks:[{latex:'\\bar{y} = a + b\\cdot\\boxed{\\,?\\,}',answer:'xbar',choices:['\\bar{x}','x','n']}]},
     {id:'corr-r',action:'Correlation Coefficient (r)',tier:'regular',dom:'descriptive',
       hint:'Sum of products of z-scores, divided by n\u22121',
+      explain:'Standardizes both variables to z-scores first, then averages their products',
       latex:'r = \\frac{1}{n-1}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',
       blanks:[{latex:'r = \\frac{1}{\\boxed{\\,?\\,}}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',answer:'n-1',choices:['n-1','n','n+1']}]},
     {id:'slope-b',action:'Regression Slope (b)',tier:'core',dom:'descriptive',
       hint:'r times the ratio of standard deviations',
+      explain:'Strength of relationship scaled by the ratio of variabilities',
       latex:'b = r\\,\\frac{s_y}{s_x}',
       blanks:[{latex:'b = \\boxed{\\,?\\,}\\,\\frac{s_y}{s_x}',answer:'r',choices:['r','b','s']}]},
 
     // ══ II. PROBABILITY ══
     {id:'add-rule',action:'Addition Rule P(A\u222aB)',tier:'core',dom:'probability',
       hint:'Add individual, subtract the overlap',
+      explain:'Events can overlap — subtract what you double-counted',
       latex:'P(A \\cup B) = P(A) + P(B) - P(A \\cap B)',
       blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A∩B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}]},
     {id:'cond-prob',action:'Conditional Prob P(A|B)',tier:'core',dom:'probability',
       hint:'Joint probability divided by the condition',
+      explain:'Restrict the sample space to only where the condition is true',
       latex:'P(A|B) = \\frac{P(A \\cap B)}{P(B)}',
       blanks:[{latex:'P(A|B) = \\frac{P(A \\cap B)}{\\boxed{\\,?\\,}}',answer:'P(B)',choices:['P(B)','P(A)','P(A\\cup B)']}]},
 
     // ══ II. DISCRETE RANDOM VARIABLES ══
     {id:'rv-mean',action:'Mean of Discrete R.V. (\u03bc)',tier:'core',dom:'distributions',
       hint:'Each value times its probability, summed',
+      explain:'Expected value — each outcome weighted by how likely it is',
       latex:'\\mu_X = \\sum x_i \\cdot P(x_i)',
       blanks:[{latex:'\\mu_X = \\sum x_i \\cdot \\boxed{\\,?\\,}',answer:'P(xi)',choices:['P(x_i)','x_i','n']}]},
     {id:'rv-sd',action:'SD of Discrete R.V. (\u03c3)',tier:'regular',dom:'distributions',
       hint:'Square root of variance: weighted squared deviations',
+      explain:'How far outcomes typically fall from the expected value, probability-weighted',
       latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}',
       blanks:[{latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\boxed{\\,?\\,})^2 \\cdot P(x_i)}',answer:'mu',choices:['\\mu','\\bar{x}','0']}]},
 
     // ══ II. BINOMIAL ══
     {id:'binom-pmf',action:'Binomial P(X=x)',tier:'regular',dom:'distributions',
       hint:'n choose x \u00b7 p^x \u00b7 (1\u2212p)^(n\u2212x)',
+      explain:'Exactly x successes: choose which trials succeed, then multiply probabilities',
       latex:'P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}',
       blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'1-p',choices:['(1-p)','p','q^2']}]},
     {id:'binom-mean',action:'Binomial Mean (\u03bc)',tier:'core',dom:'distributions',
       hint:'n times p \u2014 expected successes',
+      explain:'Expected successes = trials times success probability',
       latex:'\\mu_X = np',
       blanks:[{latex:'\\mu_X = n \\cdot \\boxed{\\,?\\,}',answer:'p',choices:['p','q','\\mu']}]},
     {id:'binom-sd',action:'Binomial SD (\u03c3)',tier:'core',dom:'distributions',
       hint:'Square root of n\u00b7p\u00b7(1\u2212p)',
+      explain:'Variability is maximized when p = 0.5 (maximum uncertainty)',
       latex:'\\sigma_X = \\sqrt{np(1-p)}',
       blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'1-p',choices:['(1-p)','p','n']}]},
 
     // ══ II. GEOMETRIC ══
     {id:'geom-pmf',action:'Geometric P(X=x)',tier:'regular',dom:'distributions',
       hint:'Fail (x\u22121) times, then succeed once',
+      explain:'All failures first, then one success — order matters',
       latex:'P(X=x) = (1-p)^{x-1} \\cdot p',
       blanks:[{latex:'P(X=x) = (1-p)^{\\boxed{\\,?\\,}} \\cdot p',answer:'x-1',choices:['x-1','x','x+1']}]},
     {id:'geom-mean',action:'Geometric Mean (\u03bc)',tier:'core',dom:'distributions',
       hint:'Expected trials until first success',
+      explain:'Lower success probability means more trials needed on average',
       latex:'\\mu_X = \\frac{1}{p}',
       blanks:[{latex:'\\mu_X = \\frac{1}{\\boxed{\\,?\\,}}',answer:'p',choices:['p','1-p','n']}]},
     {id:'geom-sd',action:'Geometric SD (\u03c3)',tier:'regular',dom:'distributions',
       hint:'sqrt of (1\u2212p) over p\u00b2',
+      explain:'Spread depends on how rare successes are',
       latex:'\\sigma_X = \\sqrt{\\frac{1-p}{p^2}}',
       blanks:[{latex:'\\sigma_X = \\sqrt{\\frac{1-p}{\\boxed{\\,?\\,}}}',answer:'p^2',choices:['p^2','p','2p']}]},
 
     // ══ III. INFERENTIAL — General ══
     {id:'z-test-stat',action:'Standardized Test Statistic',tier:'core',dom:'inference',
       hint:'How many standard errors from the parameter?',
+      explain:'Distance from the hypothesized value, measured in standard errors',
       latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{SE}',
       blanks:[{latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{\\boxed{\\,?\\,}}',answer:'SE',choices:['SE','\\sigma','s']}]},
     {id:'ci-formula',action:'Confidence Interval (general)',tier:'core',dom:'inference',
       hint:'Point estimate \u00b1 margin of error',
+      explain:'Center your estimate, then extend by the margin of error',
       latex:'\\text{statistic} \\pm \\text{critical value} \\times SE',
       blanks:[{latex:'\\text{statistic} \\pm \\text{critical value} \\times \\boxed{\\,?\\,}',answer:'SE',choices:['SE','\\sigma','s']}]},
     {id:'chi-sq',action:'Chi-Square Statistic (\u03c7\u00b2)',tier:'core',dom:'chi-square',
       hint:'Sum of (observed \u2212 expected)\u00b2 / expected',
+      explain:'Compares what you observed to what you expected under H0',
       latex:'\\chi^2 = \\sum\\frac{(O-E)^2}{E}',
       blanks:[{latex:'\\chi^2 = \\sum\\frac{(O-\\boxed{\\,?\\,})^2}{E}',answer:'E',choices:['E','O','n']}]},
 
     // ══ III. ONE PROPORTION ══
     {id:'phat-mean',action:'Mean of \u0302p sampling dist.',tier:'core',dom:'inf-proportions',
       hint:'Mean of sampling dist. equals true proportion',
+      explain:'An unbiased estimator — the center of all possible sample proportions',
       latex:'\\mu_{\\hat{p}} = p',
       blanks:[{latex:'\\mu_{\\hat{p}} = \\boxed{\\,?\\,}',answer:'p',choices:['p','\\hat{p}','\\mu']}]},
     {id:'phat-sd',action:'SD of \u0302p sampling dist.',tier:'core',dom:'inf-proportions',
       hint:'sqrt of p(1\u2212p) over n',
+      explain:'Larger samples reduce variability — sample size is in the denominator',
       latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}',
       blanks:[{latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{\\boxed{\\,?\\,}}}',answer:'n',choices:['n','n-1','n+1']}]},
     {id:'phat-se',action:'SE of \u0302p (standard error)',tier:'regular',dom:'inf-proportions',
       hint:'Replace p with \u0302p in the SD formula',
+      explain:'Same structure as SD but uses the sample statistic since p is unknown',
       latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}',
       blanks:[{latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p})}{n}}',answer:'phat',choices:['\\hat{p}','p','p_0']}]},
 
     // ══ III. TWO PROPORTIONS ══
     {id:'diff-p-sd',action:'SD of \u03021\u2212\u03022',tier:'regular',dom:'inf-proportions',
       hint:'Add the variances of each proportion, then sqrt',
+      explain:'Independent samples — add the variances, then take the square root',
       latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{n_2}}',
       blanks:[{latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{\\boxed{\\,?\\,}}}',answer:'n2',choices:['n_2','n_1','p_2']}]},
     {id:'diff-p-se',action:'SE of \u03021\u2212\u03022',tier:'power',dom:'inf-proportions',
       hint:'Plug in sample proportions for each group',
+      explain:'For inference, plug in sample proportions instead of parameters',
       latex:'SE = \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',
       blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'phat1',choices:['\\hat{p}_1','p_1','\\hat{p}_c']}]},
     {id:'pooled-se',action:'Pooled SE (H\u2080: p\u2081=p\u2082)',tier:'power',dom:'inf-proportions',
       hint:'p\u0302c = (X1+X2)/(n1+n2), then factor out',
+      explain:'Under H0 both groups share the same p, so pool the data',
       latex:'SE = \\sqrt{\\hat{p}_c(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',
       blanks:[{latex:'SE = \\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}]},
 
     // ══ III. ONE MEAN ══
     {id:'xbar-mean',action:'Mean of \u0304x sampling dist.',tier:'core',dom:'inf-means',
       hint:'Mean of \u0304x equals the population mean',
+      explain:'Sample means center on the true population mean',
       latex:'\\mu_{\\bar{x}} = \\mu',
       blanks:[{latex:'\\mu_{\\bar{x}} = \\boxed{\\,?\\,}',answer:'mu',choices:['\\mu','\\bar{x}','\\sigma']}]},
     {id:'xbar-sd',action:'SD of \u0304x sampling dist.',tier:'core',dom:'inf-means',
       hint:'\u03c3 divided by square root of n',
+      explain:'More data points average out variation — divided by root n',
       latex:'\\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}',
       blanks:[{latex:'\\sigma_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'sigma',choices:['\\sigma','s','\\mu']}]},
     {id:'xbar-se',action:'SE of \u0304x (standard error)',tier:'regular',dom:'inf-means',
       hint:'Use s (sample SD) when \u03c3 is unknown',
+      explain:'Uses s because population sigma is almost never known in practice',
       latex:'SE_{\\bar{x}} = \\frac{s}{\\sqrt{n}}',
       blanks:[{latex:'SE_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'s',choices:['s','\\sigma','\\mu']}]},
 
     // ══ III. TWO MEANS ══
     {id:'diff-x-sd',action:'SD of \u03041\u2212\u03042',tier:'regular',dom:'inf-means',
       hint:'Add the variances, then square root',
+      explain:'Independent samples — variances add, then take the square root',
       latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\sigma_1^2}{n_1}+\\frac{\\sigma_2^2}{n_2}}',
       blanks:[{latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{\\sigma_2^2}{n_2}}',answer:'sigma1^2',choices:['\\sigma_1^2','s_1^2','\\sigma_1']}]},
     {id:'diff-x-se',action:'SE of \u03041\u2212\u03042',tier:'power',dom:'inf-means',
       hint:'Use sample variances s\u00b2 for each group',
+      explain:'Sample variances replace population variances for real-world inference',
       latex:'SE = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}',
       blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}]},
 
     // ══ III. REGRESSION SLOPE ══
     {id:'slope-mean',action:'Mean of b sampling dist.',tier:'regular',dom:'regression',
       hint:'Mean of slope sampling dist. = true slope \u03b2',
+      explain:'The sampling distribution of slopes centers on the true population slope',
       latex:'\\mu_b = \\beta',
       blanks:[{latex:'\\mu_b = \\boxed{\\,?\\,}',answer:'beta',choices:['\\beta','b','\\mu']}]},
     {id:'slope-sd',action:'SD of b (regression slope)',tier:'power',dom:'regression',
       hint:'\u03c3 over (s\u2093 \u00b7 \u221an)',
+      explain:'Less residual noise and more x-spread both give more precise slopes',
       latex:'\\sigma_b = \\frac{\\sigma}{s_x\\sqrt{n}}',
       blanks:[{latex:'\\sigma_b = \\frac{\\sigma}{\\boxed{\\,?\\,}\\sqrt{n}}',answer:'sx',choices:['s_x','s_y','\\sigma']}]},
     {id:'slope-se',action:'SE of b (regression slope)',tier:'power',dom:'regression',
       hint:'s over (s\u2093 \u00b7 \u221a(n\u22121)), s = residual SD',
+      explain:'Residual SD replaces sigma; df adjusted for estimating the line',
       latex:'SE_b = \\frac{s}{s_x\\sqrt{n-1}}',
       blanks:[{latex:'SE_b = \\frac{s}{s_x\\sqrt{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n-2']}]},
     {id:'resid-s',action:'Residual Std Dev (s)',tier:'power',dom:'regression',
       hint:'Like regular SD but df = n\u22122 for regression',
+      explain:'Measures typical prediction error; loses 2 df for estimating a and b',
       latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{n-2}}',
       blanks:[{latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{\\boxed{\\,?\\,}}}',answer:'n-2',choices:['n-2','n-1','n']}]},
 
     // ══ COMBINATION / APPLICATION ══
     {id:'one-prop-z',action:'One-proportion z statistic',tier:'regular',dom:'inf-proportions',
       hint:'Plug p\u2080 (null value) into SE, not \u0302p',
+      explain:'Compare observed proportion to null value using null SE',
       latex:'z = \\frac{\\hat{p} - p_0}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',
       blanks:[{latex:'z = \\frac{\\hat{p} - \\boxed{\\,?\\,}}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',answer:'p0',choices:['p_0','\\hat{p}','p']}]},
     {id:'one-mean-t',action:'One-sample t statistic',tier:'regular',dom:'inf-means',
       hint:'\u0304x minus hypothesized mean, over SE',
+      explain:'How far is the sample mean from the hypothesized value, in SE units?',
       latex:'t = \\frac{\\bar{x} - \\mu_0}{s/\\sqrt{n}}',
       blanks:[{latex:'t = \\frac{\\bar{x} - \\boxed{\\,?\\,}}{s/\\sqrt{n}}',answer:'mu0',choices:['\\mu_0','\\bar{x}','\\mu']}]},
     {id:'two-prop-z',action:'Two-proportion z statistic',tier:'power',dom:'inf-proportions',
       hint:'Difference in \u0302p over pooled SE',
+      explain:'Difference in sample proportions, standardized by pooled variability',
       latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\hat{p}_c(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',
       blanks:[{latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}]},
     {id:'two-mean-t',action:'Two-sample t statistic',tier:'power',dom:'inf-means',
       hint:'Difference in means over SE of the difference',
+      explain:'Difference in sample means, standardized by combined SE',
       latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}}',
       blanks:[{latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}]},
     {id:'slope-t',action:'Regression slope t statistic',tier:'power',dom:'regression',
       hint:'b minus hypothesized slope over SE of b',
+      explain:'Is the observed slope far enough from the hypothesized slope to reject H0?',
       latex:'t = \\frac{b - \\beta_0}{SE_b}',
       blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{SE_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}]},
   ],
@@ -765,6 +804,21 @@ function updateInput(){
     const q=sel.question;
     const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">\u26a1'+sel.speedMult.toFixed(1)+'x speed</span>':'';
     let html='';
+    // 50/50 hint: when hint is shown, eliminate one wrong answer
+    if(G.showHint&&q.eliminatedIdx==null){
+      if(q.type==='identify'){
+        // Pick a random wrong option to eliminate
+        const wrongIdxs=q.options.map((_,i)=>i).filter(i=>i!==q.correctIdx);
+        q.eliminatedIdx=wrongIdxs[Math.floor(Math.random()*wrongIdxs.length)];
+      }else{
+        // Fill-blank: find wrong choices and eliminate one
+        const correctAnswer=q.answer;
+        const wrongIdxs=q.choices.map((_,i)=>i).filter(i=>!activeCartridge.validateBlank(q.choices[i],correctAnswer));
+        if(wrongIdxs.length>0)q.eliminatedIdx=wrongIdxs[Math.floor(Math.random()*wrongIdxs.length)];
+      }
+    }
+    const eliminated=q.eliminatedIdx;
+
     if(q.type==='identify'){
       html+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
       html+='<div class="latex-display" id="quiz-latex"></div>';
@@ -772,10 +826,11 @@ function updateInput(){
       html+='<div class="mc-grid">';
       const keys=['A','B','C','D'];
       q.options.forEach((opt,i)=>{
-        html+='<button class="mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+        const isElim=G.showHint&&eliminated===i;
+        html+='<button class="mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
       });
       html+='</div>';
-      if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.hint+'</div>';
+      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
       html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }else{
       // fill-blank — always show A/B/C choices
@@ -785,24 +840,24 @@ function updateInput(){
       html+='<div class="hint-mc-grid">';
       const keys=['A','B','C'];
       q.choices.forEach((ch,i)=>{
-        html+='<button class="hint-mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleHintChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
+        const isElim=G.showHint&&eliminated===i;
+        html+='<button class="hint-mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleHintChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
       });
       html+='</div>';
-      if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.hint+'</div>';
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
+      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }
     panel.innerHTML=html;
     // Render LaTeX into the display element
     const latexEl=document.getElementById('quiz-latex');
     if(latexEl)renderLatex(q.latex,latexEl);
-    // Render hint choice LaTeX
-    if(G.showHint&&q.type==='fillblank'){
+    // Render fill-blank choice LaTeX (always, not just on hint)
+    if(q.type==='fillblank'){
       q.choices.forEach((ch,i)=>{
         const el=document.getElementById('hint-ch-'+i);
         if(el)renderLatex(ch,el);
       });
     }
-    if(!G.showHint&&q.type==='fillblank')focusBlankInput();
   }else if(mode==='typed'){
     const stateKey='typed-'+(sel?sel.id:'none')+'-'+G.showHint;
     if(stateKey===lastInputState){
@@ -1185,16 +1240,19 @@ window.addEventListener('keydown',e=>{
     if(!q)return;
 
     if(q.type==='identify'){
-      // A/B/C/D for multiple choice
       const k=e.key.toLowerCase();
       if(['a','b','c','d'].includes(k)){
+        // Block eliminated choice
+        const idx=['a','b','c','d'].indexOf(k);
+        if(G.showHint&&q.eliminatedIdx===idx)return;
         e.preventDefault();
         handleQuizChoice(k);
       }
     }else if(q.type==='fillblank'){
-      // Always A/B/C multiple choice for fill-blank
       const k=e.key.toLowerCase();
       if(['a','b','c'].includes(k)){
+        const idx=['a','b','c'].indexOf(k);
+        if(G.showHint&&q.eliminatedIdx===idx)return;
         e.preventDefault();
         handleHintChoice(k);
       }
