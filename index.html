@@ -48,6 +48,22 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 #queue-bar{position:fixed;bottom:130px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
 .q-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin:0 2px;opacity:.7}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.latex-display{margin:6px 0;min-height:36px;display:flex;align-items:center;justify-content:center}
+.latex-display .katex{font-size:1.4em;color:#ffcc66}
+.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:420px;margin:10px auto 0}
+.mc-btn{font-family:inherit;font-size:13px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:6px;padding:10px 12px;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:8px}
+.mc-btn:hover{border-color:#ff8c00;background:#2d1200;box-shadow:0 0 8px #ff8c0033}
+.mc-btn .mc-key{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:#ff8c00;color:#0d0500;font-weight:900;font-size:12px;flex-shrink:0}
+.mc-btn.correct{border-color:#44ff88;background:#44ff8822;color:#44ff88}
+.mc-btn.wrong{border-color:#ff4422;background:#ff442222;color:#ff4422}
+.mc-btn .mc-text{line-height:1.3}
+.blank-input{font-family:inherit;font-size:18px;font-weight:700;color:#ff8c00;background:#0d0500;border:2px solid #ff8c00;border-radius:6px;padding:8px 16px;text-align:center;min-width:100px;max-width:200px;outline:none}
+.blank-input:focus{box-shadow:0 0 12px #ff8c0044}
+.hint-mc-grid{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.hint-mc-btn{font-family:inherit;font-size:14px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:6px;padding:8px 16px;cursor:pointer;transition:all .15s}
+.hint-mc-btn:hover{border-color:#ff8c00;background:#2d1200}
+.hint-mc-btn .mc-key{display:inline;font-weight:900;color:#ffcc66;margin-right:4px}
+.q-type-badge{font-size:8px;letter-spacing:2px;color:#996622;background:#ff8c0011;border:1px solid #ff8c0022;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:4px}
 @keyframes float-up{0%{transform:translateY(0) translateX(-50%);opacity:1}100%{transform:translateY(-50px) translateX(-50%);opacity:0}}
 .flash-msg{position:fixed;top:35%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;z-index:15;pointer-events:none;animation:float-up .8s ease-out forwards;text-shadow:0 0 20px currentColor}
 /* Cartridge selector */
@@ -65,6 +81,8 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .typed-input::placeholder{color:#3d1f00}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
@@ -181,199 +199,249 @@ const tmuxCartridge={
   validate(input,key){return{correct:input===key}},
 };
 
-// --- AP Statistics Formula Reference cartridge (static, typed) ---
-// Formulas from the 2026 AP Statistics Exam Reference Sheet
-// Input: students type a simplified text version of each formula
-// Validation normalizes whitespace, case, and common equivalent notations
+// --- AP Statistics Formula Reference cartridge (quiz mode) ---
+// Two question types: IDENTIFY (what does this formula calculate? A-D)
+//                     FILL-BLANK (type the missing piece)
+// Wrong answers speed up the enemy. Hint → multiple choice at half points.
 const apStatsCartridge={
   id:'ap-stats-formulas',
   name:'AP Stats Formulas',
   description:'2026 AP Exam Reference Sheet (39 formulas)',
-  icon:'\u03c3',  // sigma
-  inputMode:'typed',
+  icon:'\u03c3',
+  inputMode:'quiz',
   prefixLabel:null,
   title:'AP STATISTICS',
   subtitle:'FORMULA DEFENSE',
   startButton:'[ DEPLOY ]',
-  instructions:'Enemies carry formula names.<br>Type the formula and press Enter.<br><span style="color:#ffaa22">Use ^ for exponents, sqrt() for roots</span>',
-  instructionsSub:'Examples: sum(xi)/n \u00b7 sqrt(p(1-p)/n) \u00b7 a+bx<br>Tab = cycle \u00b7 Alt+H = hint \u00b7 12 waves',
+  instructions:'Enemies carry formulas rendered in LaTeX.<br><b>Identify</b>: pick what the formula calculates (A\u2013D)<br><b>Fill-blank</b>: type the missing piece and press Enter',
+  instructionsSub:'Wrong answer = enemy speeds up! \u00b7 Alt+H = hint (half pts)<br>Tab = cycle \u00b7 12 waves',
   commands:[
     // ══ I. DESCRIPTIVE STATISTICS ══
-    // Core — the bread and butter
-    {id:'mean',action:'Sample Mean (x\u0304)',key:'sum(xi)/n',tier:'core',dom:'descriptive',
+    {id:'mean',action:'Sample Mean (\u0304x)',tier:'core',dom:'descriptive',
       hint:'Add all values, divide by count',
-      accept:['sum(xi)/n','(1/n)sum(xi)','sigma(xi)/n']},
-    {id:'std-dev',action:'Sample Standard Deviation (s\u2093)',key:'sqrt(sum(xi-xbar)^2/(n-1))',tier:'core',dom:'descriptive',
+      latex:'\\bar{x} = \\frac{\\sum x_i}{n}',
+      blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','N']}]},
+    {id:'std-dev',action:'Sample Std Dev (s)',tier:'core',dom:'descriptive',
       hint:'Square root of variance; denominator is n\u22121',
-      accept:['sqrt(sum(xi-xbar)^2/(n-1))','sqrt(sum(x-xbar)^2/(n-1))']},
-    {id:'linreg',action:'Linear Regression Line (\u0177)',key:'a+bx',tier:'core',dom:'descriptive',
+      latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{n-1}}',
+      blanks:[{latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n+1']}]},
+    {id:'linreg',action:'Regression Line (\u0177)',tier:'core',dom:'descriptive',
       hint:'\u0177 = a + bx (intercept + slope\u00b7x)',
-      accept:['a+bx','yhat=a+bx']},
-    {id:'linreg-mean',action:'Regression passes through (\u0304y, \u0304x)',key:'ybar=a+b*xbar',tier:'core',dom:'descriptive',
+      latex:'\\hat{y} = a + bx',
+      blanks:[{latex:'\\hat{y} = a + \\boxed{\\,?\\,}\\cdot x',answer:'b',choices:['b','r','a']}]},
+    {id:'linreg-mean',action:'Regression thru means',tier:'core',dom:'descriptive',
       hint:'The regression line passes through the point of means',
-      accept:['ybar=a+b*xbar','ybar=a+bxbar']},
-    {id:'corr-r',action:'Correlation Coefficient (r)',key:'(1/(n-1))sum((xi-xbar)/sx)((yi-ybar)/sy)',tier:'regular',dom:'descriptive',
+      latex:'\\bar{y} = a + b\\bar{x}',
+      blanks:[{latex:'\\bar{y} = a + b\\cdot\\boxed{\\,?\\,}',answer:'xbar',choices:['\\bar{x}','x','n']}]},
+    {id:'corr-r',action:'Correlation Coefficient (r)',tier:'regular',dom:'descriptive',
       hint:'Sum of products of z-scores, divided by n\u22121',
-      accept:['(1/(n-1))sum((xi-xbar)/sx)((yi-ybar)/sy)','(1/(n-1))sum(zx*zy)']},
-    {id:'slope-b',action:'Regression Slope (b)',key:'r*sy/sx',tier:'core',dom:'descriptive',
+      latex:'r = \\frac{1}{n-1}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',
+      blanks:[{latex:'r = \\frac{1}{\\boxed{\\,?\\,}}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',answer:'n-1',choices:['n-1','n','n+1']}]},
+    {id:'slope-b',action:'Regression Slope (b)',tier:'core',dom:'descriptive',
       hint:'r times the ratio of standard deviations',
-      accept:['r*sy/sx','r(sy/sx)']},
+      latex:'b = r\\,\\frac{s_y}{s_x}',
+      blanks:[{latex:'b = \\boxed{\\,?\\,}\\,\\frac{s_y}{s_x}',answer:'r',choices:['r','b','s']}]},
 
     // ══ II. PROBABILITY ══
-    {id:'add-rule',action:'Addition Rule P(A\u222aB)',key:'P(A)+P(B)-P(A\u2229B)',tier:'core',dom:'probability',
+    {id:'add-rule',action:'Addition Rule P(A\u222aB)',tier:'core',dom:'probability',
       hint:'Add individual, subtract the overlap',
-      accept:['P(A)+P(B)-P(AnB)','P(A)+P(B)-P(A and B)','P(A)+P(B)-P(AB)']},
-    {id:'cond-prob',action:'Conditional Probability P(A|B)',key:'P(A\u2229B)/P(B)',tier:'core',dom:'probability',
+      latex:'P(A \\cup B) = P(A) + P(B) - P(A \\cap B)',
+      blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A∩B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}]},
+    {id:'cond-prob',action:'Conditional Prob P(A|B)',tier:'core',dom:'probability',
       hint:'Joint probability divided by the condition',
-      accept:['P(AnB)/P(B)','P(A and B)/P(B)','P(AB)/P(B)']},
+      latex:'P(A|B) = \\frac{P(A \\cap B)}{P(B)}',
+      blanks:[{latex:'P(A|B) = \\frac{P(A \\cap B)}{\\boxed{\\,?\\,}}',answer:'P(B)',choices:['P(B)','P(A)','P(A\\cup B)']}]},
 
     // ══ II. DISCRETE RANDOM VARIABLES ══
-    {id:'rv-mean',action:'Mean of Discrete R.V. (\u03bc\u2093)',key:'sum(xi*P(xi))',tier:'core',dom:'distributions',
+    {id:'rv-mean',action:'Mean of Discrete R.V. (\u03bc)',tier:'core',dom:'distributions',
       hint:'Each value times its probability, summed',
-      accept:['sum(xi*P(xi))','sum(xi*pi)','E(X)=sum(xi*P(xi))']},
-    {id:'rv-sd',action:'SD of Discrete R.V. (\u03c3\u2093)',key:'sqrt(sum((xi-mu)^2*P(xi)))',tier:'regular',dom:'distributions',
+      latex:'\\mu_X = \\sum x_i \\cdot P(x_i)',
+      blanks:[{latex:'\\mu_X = \\sum x_i \\cdot \\boxed{\\,?\\,}',answer:'P(xi)',choices:['P(x_i)','x_i','n']}]},
+    {id:'rv-sd',action:'SD of Discrete R.V. (\u03c3)',tier:'regular',dom:'distributions',
       hint:'Square root of variance: weighted squared deviations',
-      accept:['sqrt(sum((xi-mu)^2*P(xi)))','sqrt(sum((xi-muX)^2*P(xi)))']},
+      latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}',
+      blanks:[{latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\boxed{\\,?\\,})^2 \\cdot P(x_i)}',answer:'mu',choices:['\\mu','\\bar{x}','0']}]},
 
     // ══ II. BINOMIAL ══
-    {id:'binom-pmf',action:'Binomial P(X=x)',key:'C(n,x)*p^x*(1-p)^(n-x)',tier:'regular',dom:'distributions',
-      hint:'n choose x times success\u02e3 times failure\u207f\u207b\u02e3',
-      accept:['C(n,x)*p^x*(1-p)^(n-x)','nCx*p^x*(1-p)^(n-x)','(n choose x)*p^x*(1-p)^(n-x)']},
-    {id:'binom-mean',action:'Binomial Mean (\u03bc\u2093)',key:'np',tier:'core',dom:'distributions',
-      hint:'n times p \u2014 expected number of successes',
-      accept:['np','n*p','mu=np']},
-    {id:'binom-sd',action:'Binomial SD (\u03c3\u2093)',key:'sqrt(np(1-p))',tier:'core',dom:'distributions',
+    {id:'binom-pmf',action:'Binomial P(X=x)',tier:'regular',dom:'distributions',
+      hint:'n choose x \u00b7 p^x \u00b7 (1\u2212p)^(n\u2212x)',
+      latex:'P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}',
+      blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'1-p',choices:['(1-p)','p','q^2']}]},
+    {id:'binom-mean',action:'Binomial Mean (\u03bc)',tier:'core',dom:'distributions',
+      hint:'n times p \u2014 expected successes',
+      latex:'\\mu_X = np',
+      blanks:[{latex:'\\mu_X = n \\cdot \\boxed{\\,?\\,}',answer:'p',choices:['p','q','\\mu']}]},
+    {id:'binom-sd',action:'Binomial SD (\u03c3)',tier:'core',dom:'distributions',
       hint:'Square root of n\u00b7p\u00b7(1\u2212p)',
-      accept:['sqrt(np(1-p))','sqrt(n*p*(1-p))','sqrt(npq)']},
+      latex:'\\sigma_X = \\sqrt{np(1-p)}',
+      blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'1-p',choices:['(1-p)','p','n']}]},
 
     // ══ II. GEOMETRIC ══
-    {id:'geom-pmf',action:'Geometric P(X=x)',key:'(1-p)^(x-1)*p',tier:'regular',dom:'distributions',
+    {id:'geom-pmf',action:'Geometric P(X=x)',tier:'regular',dom:'distributions',
       hint:'Fail (x\u22121) times, then succeed once',
-      accept:['(1-p)^(x-1)*p','q^(x-1)*p']},
-    {id:'geom-mean',action:'Geometric Mean (\u03bc\u2093)',key:'1/p',tier:'core',dom:'distributions',
-      hint:'Expected number of trials until first success',
-      accept:['1/p']},
-    {id:'geom-sd',action:'Geometric SD (\u03c3\u2093)',key:'sqrt((1-p)/p^2)',tier:'regular',dom:'distributions',
+      latex:'P(X=x) = (1-p)^{x-1} \\cdot p',
+      blanks:[{latex:'P(X=x) = (1-p)^{\\boxed{\\,?\\,}} \\cdot p',answer:'x-1',choices:['x-1','x','x+1']}]},
+    {id:'geom-mean',action:'Geometric Mean (\u03bc)',tier:'core',dom:'distributions',
+      hint:'Expected trials until first success',
+      latex:'\\mu_X = \\frac{1}{p}',
+      blanks:[{latex:'\\mu_X = \\frac{1}{\\boxed{\\,?\\,}}',answer:'p',choices:['p','1-p','n']}]},
+    {id:'geom-sd',action:'Geometric SD (\u03c3)',tier:'regular',dom:'distributions',
       hint:'sqrt of (1\u2212p) over p\u00b2',
-      accept:['sqrt((1-p)/p^2)','sqrt(q/p^2)','sqrt(1-p)/p']},
+      latex:'\\sigma_X = \\sqrt{\\frac{1-p}{p^2}}',
+      blanks:[{latex:'\\sigma_X = \\sqrt{\\frac{1-p}{\\boxed{\\,?\\,}}}',answer:'p^2',choices:['p^2','p','2p']}]},
 
-    // ══ III. INFERENTIAL STATISTICS — General ══
-    {id:'z-test-stat',action:'Standardized Test Statistic',key:'(statistic-parameter)/SE',tier:'core',dom:'inference',
+    // ══ III. INFERENTIAL — General ══
+    {id:'z-test-stat',action:'Standardized Test Statistic',tier:'core',dom:'inference',
       hint:'How many standard errors from the parameter?',
-      accept:['(statistic-parameter)/SE','(stat-param)/SE']},
-    {id:'ci-formula',action:'Confidence Interval (general)',key:'statistic+/-critical*SE',tier:'core',dom:'inference',
-      hint:'Point estimate plus or minus margin of error',
-      accept:['statistic+/-critical*SE','stat+/-z*SE','stat+/-t*SE','statistic+-critical*SE']},
-    {id:'chi-sq',action:'Chi-Square Statistic (\u03c7\u00b2)',key:'sum((O-E)^2/E)',tier:'core',dom:'chi-square',
-      hint:'Sum of (observed minus expected)\u00b2 over expected',
-      accept:['sum((O-E)^2/E)','sum((obs-exp)^2/exp)']},
+      latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{SE}',
+      blanks:[{latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{\\boxed{\\,?\\,}}',answer:'SE',choices:['SE','\\sigma','s']}]},
+    {id:'ci-formula',action:'Confidence Interval (general)',tier:'core',dom:'inference',
+      hint:'Point estimate \u00b1 margin of error',
+      latex:'\\text{statistic} \\pm \\text{critical value} \\times SE',
+      blanks:[{latex:'\\text{statistic} \\pm \\text{critical value} \\times \\boxed{\\,?\\,}',answer:'SE',choices:['SE','\\sigma','s']}]},
+    {id:'chi-sq',action:'Chi-Square Statistic (\u03c7\u00b2)',tier:'core',dom:'chi-square',
+      hint:'Sum of (observed \u2212 expected)\u00b2 / expected',
+      latex:'\\chi^2 = \\sum\\frac{(O-E)^2}{E}',
+      blanks:[{latex:'\\chi^2 = \\sum\\frac{(O-\\boxed{\\,?\\,})^2}{E}',answer:'E',choices:['E','O','n']}]},
 
-    // ══ III. SAMPLING — ONE PROPORTION ══
-    {id:'phat-mean',action:'Mean of p\u0302 sampling dist.',key:'p',tier:'core',dom:'inf-proportions',
-      hint:'The mean of the sampling distribution equals the true proportion',
-      accept:['p','mu=p']},
-    {id:'phat-sd',action:'SD of p\u0302 sampling dist.',key:'sqrt(p(1-p)/n)',tier:'core',dom:'inf-proportions',
+    // ══ III. ONE PROPORTION ══
+    {id:'phat-mean',action:'Mean of \u0302p sampling dist.',tier:'core',dom:'inf-proportions',
+      hint:'Mean of sampling dist. equals true proportion',
+      latex:'\\mu_{\\hat{p}} = p',
+      blanks:[{latex:'\\mu_{\\hat{p}} = \\boxed{\\,?\\,}',answer:'p',choices:['p','\\hat{p}','\\mu']}]},
+    {id:'phat-sd',action:'SD of \u0302p sampling dist.',tier:'core',dom:'inf-proportions',
       hint:'sqrt of p(1\u2212p) over n',
-      accept:['sqrt(p(1-p)/n)','sqrt(pq/n)']},
-    {id:'phat-se',action:'SE of p\u0302 (standard error)',key:'sqrt(phat(1-phat)/n)',tier:'regular',dom:'inf-proportions',
-      hint:'Replace p with p\u0302 in the SD formula',
-      accept:['sqrt(phat(1-phat)/n)','sqrt(p-hat(1-p-hat)/n)']},
+      latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}',
+      blanks:[{latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{\\boxed{\\,?\\,}}}',answer:'n',choices:['n','n-1','n+1']}]},
+    {id:'phat-se',action:'SE of \u0302p (standard error)',tier:'regular',dom:'inf-proportions',
+      hint:'Replace p with \u0302p in the SD formula',
+      latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}',
+      blanks:[{latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p})}{n}}',answer:'phat',choices:['\\hat{p}','p','p_0']}]},
 
-    // ══ III. SAMPLING — TWO PROPORTIONS ══
-    {id:'diff-p-sd',action:'SD of p\u03021\u2212p\u03022',key:'sqrt(p1(1-p1)/n1+p2(1-p2)/n2)',tier:'regular',dom:'inf-proportions',
+    // ══ III. TWO PROPORTIONS ══
+    {id:'diff-p-sd',action:'SD of \u03021\u2212\u03022',tier:'regular',dom:'inf-proportions',
       hint:'Add the variances of each proportion, then sqrt',
-      accept:['sqrt(p1(1-p1)/n1+p2(1-p2)/n2)','sqrt(p1q1/n1+p2q2/n2)']},
-    {id:'diff-p-se',action:'SE of p\u03021\u2212p\u03022',key:'sqrt(phat1(1-phat1)/n1+phat2(1-phat2)/n2)',tier:'power',dom:'inf-proportions',
+      latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{n_2}}',
+      blanks:[{latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{\\boxed{\\,?\\,}}}',answer:'n2',choices:['n_2','n_1','p_2']}]},
+    {id:'diff-p-se',action:'SE of \u03021\u2212\u03022',tier:'power',dom:'inf-proportions',
       hint:'Plug in sample proportions for each group',
-      accept:['sqrt(phat1(1-phat1)/n1+phat2(1-phat2)/n2)']},
-    {id:'pooled-se',action:'Pooled SE (p\u03021\u2212p\u03022, H\u2080: p\u2081=p\u2082)',key:'sqrt(pc(1-pc)(1/n1+1/n2))',tier:'power',dom:'inf-proportions',
-      hint:'pc = (X1+X2)/(n1+n2), then factor out',
-      accept:['sqrt(pc(1-pc)(1/n1+1/n2))','sqrt(phat_c(1-phat_c)(1/n1+1/n2))']},
+      latex:'SE = \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',
+      blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'phat1',choices:['\\hat{p}_1','p_1','\\hat{p}_c']}]},
+    {id:'pooled-se',action:'Pooled SE (H\u2080: p\u2081=p\u2082)',tier:'power',dom:'inf-proportions',
+      hint:'p\u0302c = (X1+X2)/(n1+n2), then factor out',
+      latex:'SE = \\sqrt{\\hat{p}_c(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',
+      blanks:[{latex:'SE = \\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}]},
 
-    // ══ III. SAMPLING — ONE MEAN ══
-    {id:'xbar-mean',action:'Mean of x\u0304 sampling dist.',key:'mu',tier:'core',dom:'inf-means',
-      hint:'The mean of x\u0304 equals the population mean',
-      accept:['mu','\u03bc']},
-    {id:'xbar-sd',action:'SD of x\u0304 sampling dist.',key:'sigma/sqrt(n)',tier:'core',dom:'inf-means',
+    // ══ III. ONE MEAN ══
+    {id:'xbar-mean',action:'Mean of \u0304x sampling dist.',tier:'core',dom:'inf-means',
+      hint:'Mean of \u0304x equals the population mean',
+      latex:'\\mu_{\\bar{x}} = \\mu',
+      blanks:[{latex:'\\mu_{\\bar{x}} = \\boxed{\\,?\\,}',answer:'mu',choices:['\\mu','\\bar{x}','\\sigma']}]},
+    {id:'xbar-sd',action:'SD of \u0304x sampling dist.',tier:'core',dom:'inf-means',
       hint:'\u03c3 divided by square root of n',
-      accept:['sigma/sqrt(n)','s/sqrt(n)']},
-    {id:'xbar-se',action:'SE of x\u0304 (standard error)',key:'s/sqrt(n)',tier:'regular',dom:'inf-means',
+      latex:'\\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}',
+      blanks:[{latex:'\\sigma_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'sigma',choices:['\\sigma','s','\\mu']}]},
+    {id:'xbar-se',action:'SE of \u0304x (standard error)',tier:'regular',dom:'inf-means',
       hint:'Use s (sample SD) when \u03c3 is unknown',
-      accept:['s/sqrt(n)']},
+      latex:'SE_{\\bar{x}} = \\frac{s}{\\sqrt{n}}',
+      blanks:[{latex:'SE_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'s',choices:['s','\\sigma','\\mu']}]},
 
-    // ══ III. SAMPLING — TWO MEANS ══
-    {id:'diff-x-sd',action:'SD of x\u03041\u2212x\u03042',key:'sqrt(sigma1^2/n1+sigma2^2/n2)',tier:'regular',dom:'inf-means',
+    // ══ III. TWO MEANS ══
+    {id:'diff-x-sd',action:'SD of \u03041\u2212\u03042',tier:'regular',dom:'inf-means',
       hint:'Add the variances, then square root',
-      accept:['sqrt(sigma1^2/n1+sigma2^2/n2)','sqrt(s1^2/n1+s2^2/n2)']},
-    {id:'diff-x-se',action:'SE of x\u03041\u2212x\u03042',key:'sqrt(s1^2/n1+s2^2/n2)',tier:'power',dom:'inf-means',
+      latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\sigma_1^2}{n_1}+\\frac{\\sigma_2^2}{n_2}}',
+      blanks:[{latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{\\sigma_2^2}{n_2}}',answer:'sigma1^2',choices:['\\sigma_1^2','s_1^2','\\sigma_1']}]},
+    {id:'diff-x-se',action:'SE of \u03041\u2212\u03042',tier:'power',dom:'inf-means',
       hint:'Use sample variances s\u00b2 for each group',
-      accept:['sqrt(s1^2/n1+s2^2/n2)']},
+      latex:'SE = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}',
+      blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}]},
 
     // ══ III. REGRESSION SLOPE ══
-    {id:'slope-mean',action:'Mean of b sampling dist.',key:'beta',tier:'regular',dom:'regression',
-      hint:'The mean of the slope sampling dist. is the true slope \u03b2',
-      accept:['beta','\u03b2','B']},
-    {id:'slope-sd',action:'SD of b (regression slope)',key:'sigma/(sx*sqrt(n))',tier:'power',dom:'regression',
-      hint:'\u03c3 over (s\u2093 times \u221an)',
-      accept:['sigma/(sx*sqrt(n))','sigma/(sx*sqrt(n))']},
-    {id:'slope-se',action:'SE of b (regression slope)',key:'s/(sx*sqrt(n-1))',tier:'power',dom:'regression',
-      hint:'s over (s\u2093 times \u221a(n\u22121)), where s = residual SD',
-      accept:['s/(sx*sqrt(n-1))']},
-    {id:'resid-s',action:'Residual standard deviation (s)',key:'sqrt(sum(yi-yhat)^2/(n-2))',tier:'power',dom:'regression',
+    {id:'slope-mean',action:'Mean of b sampling dist.',tier:'regular',dom:'regression',
+      hint:'Mean of slope sampling dist. = true slope \u03b2',
+      latex:'\\mu_b = \\beta',
+      blanks:[{latex:'\\mu_b = \\boxed{\\,?\\,}',answer:'beta',choices:['\\beta','b','\\mu']}]},
+    {id:'slope-sd',action:'SD of b (regression slope)',tier:'power',dom:'regression',
+      hint:'\u03c3 over (s\u2093 \u00b7 \u221an)',
+      latex:'\\sigma_b = \\frac{\\sigma}{s_x\\sqrt{n}}',
+      blanks:[{latex:'\\sigma_b = \\frac{\\sigma}{\\boxed{\\,?\\,}\\sqrt{n}}',answer:'sx',choices:['s_x','s_y','\\sigma']}]},
+    {id:'slope-se',action:'SE of b (regression slope)',tier:'power',dom:'regression',
+      hint:'s over (s\u2093 \u00b7 \u221a(n\u22121)), s = residual SD',
+      latex:'SE_b = \\frac{s}{s_x\\sqrt{n-1}}',
+      blanks:[{latex:'SE_b = \\frac{s}{s_x\\sqrt{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n-2']}]},
+    {id:'resid-s',action:'Residual Std Dev (s)',tier:'power',dom:'regression',
       hint:'Like regular SD but df = n\u22122 for regression',
-      accept:['sqrt(sum(yi-yhat)^2/(n-2))','sqrt(SSE/(n-2))']},
+      latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{n-2}}',
+      blanks:[{latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{\\boxed{\\,?\\,}}}',answer:'n-2',choices:['n-2','n-1','n']}]},
 
-    // ══ COMBINATION/APPLICATION FORMULAS ══
-    {id:'one-prop-z',action:'One-proportion z test statistic',key:'(phat-p0)/sqrt(p0(1-p0)/n)',tier:'regular',dom:'inf-proportions',
-      hint:'Plug p\u2080 (null value) into the SE, not p\u0302',
-      accept:['(phat-p0)/sqrt(p0(1-p0)/n)','(p-hat-p0)/sqrt(p0(1-p0)/n)']},
-    {id:'one-mean-t',action:'One-sample t test statistic',key:'(xbar-mu0)/(s/sqrt(n))',tier:'regular',dom:'inf-means',
-      hint:'x\u0304 minus hypothesized mean, over SE',
-      accept:['(xbar-mu0)/(s/sqrt(n))','(xbar-mu)/(s/sqrt(n))']},
-    {id:'two-prop-z',action:'Two-proportion z test statistic',key:'(phat1-phat2)/sqrt(pc(1-pc)(1/n1+1/n2))',tier:'power',dom:'inf-proportions',
-      hint:'Difference in p\u0302 over pooled SE',
-      accept:['(phat1-phat2)/sqrt(pc(1-pc)(1/n1+1/n2))']},
-    {id:'two-mean-t',action:'Two-sample t test statistic',key:'(xbar1-xbar2)/sqrt(s1^2/n1+s2^2/n2)',tier:'power',dom:'inf-means',
+    // ══ COMBINATION / APPLICATION ══
+    {id:'one-prop-z',action:'One-proportion z statistic',tier:'regular',dom:'inf-proportions',
+      hint:'Plug p\u2080 (null value) into SE, not \u0302p',
+      latex:'z = \\frac{\\hat{p} - p_0}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',
+      blanks:[{latex:'z = \\frac{\\hat{p} - \\boxed{\\,?\\,}}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',answer:'p0',choices:['p_0','\\hat{p}','p']}]},
+    {id:'one-mean-t',action:'One-sample t statistic',tier:'regular',dom:'inf-means',
+      hint:'\u0304x minus hypothesized mean, over SE',
+      latex:'t = \\frac{\\bar{x} - \\mu_0}{s/\\sqrt{n}}',
+      blanks:[{latex:'t = \\frac{\\bar{x} - \\boxed{\\,?\\,}}{s/\\sqrt{n}}',answer:'mu0',choices:['\\mu_0','\\bar{x}','\\mu']}]},
+    {id:'two-prop-z',action:'Two-proportion z statistic',tier:'power',dom:'inf-proportions',
+      hint:'Difference in \u0302p over pooled SE',
+      latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\hat{p}_c(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',
+      blanks:[{latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}]},
+    {id:'two-mean-t',action:'Two-sample t statistic',tier:'power',dom:'inf-means',
       hint:'Difference in means over SE of the difference',
-      accept:['(xbar1-xbar2)/sqrt(s1^2/n1+s2^2/n2)']},
-    {id:'slope-t',action:'Regression slope t statistic',key:'(b-beta0)/SEb',tier:'power',dom:'regression',
+      latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}}',
+      blanks:[{latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}]},
+    {id:'slope-t',action:'Regression slope t statistic',tier:'power',dom:'regression',
       hint:'b minus hypothesized slope over SE of b',
-      accept:['(b-beta0)/SEb','(b-0)/SEb','b/SEb','(b-beta)/SE(b)']},
+      latex:'t = \\frac{b - \\beta_0}{SE_b}',
+      blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{SE_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}]},
   ],
+
+  // Generate a question for an enemy at spawn time
+  generateQuestion(cmd, allCommands){
+    const type=Math.random()<0.5?'identify':'fillblank';
+    if(type==='identify'){
+      // Pick 3 distractors from other commands, prefer same domain
+      const sameDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom===cmd.dom);
+      const diffDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom!==cmd.dom);
+      const pool=[...sameDom,...shuffleArr(diffDom)];
+      const picks=shuffleArr(pool).slice(0,3).map(c=>c.action);
+      // Ensure exactly 3 distractors (pad if needed)
+      while(picks.length<3){picks.push(allCommands[Math.floor(Math.random()*allCommands.length)].action)}
+      const options=shuffleArr([cmd.action,...picks]);
+      const correctIdx=options.indexOf(cmd.action);
+      return{type:'identify',latex:cmd.latex,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    }else{
+      const blank=cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
+      const shuffledChoices=shuffleArr([...blank.choices]);
+      return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffledChoices,fullLatex:cmd.latex};
+    }
+  },
+
   formatPrompt(cmd){return cmd.action},
-  formatAnswer(cmd){return cmd.key},
-  validate(input,key,cmd){
-    // Normalize a formula string for comparison
-    function norm(s){
-      return s.trim().toLowerCase()
-        .replace(/\s+/g,'')           // strip all whitespace
-        .replace(/\u00b7/g,'*')       // middle dot → *
-        .replace(/\u00d7/g,'*')       // × → *
-        .replace(/\u2212/g,'-')       // minus sign → hyphen
-        .replace(/\u03c3/g,'sigma')   // σ → sigma
-        .replace(/\u03bc/g,'mu')      // μ → mu
-        .replace(/\u03b2/g,'beta')    // β → beta
-        .replace(/\u03c7/g,'chi')     // χ → chi
-        .replace(/x\u0304/g,'xbar')   // x̄ → xbar
-        .replace(/y\u0302/g,'yhat')   // ŷ → yhat
-        .replace(/p\u0302/g,'phat')   // p̂ → phat
-        .replace(/\+-/g,'+/-')
-        .replace(/\u00b1/g,'+/-')     // ± → +/-
-        .replace(/[()]/g,m=>m)        // keep parens
-        .replace(/\*/g,'*');
-    }
-    const ni=norm(input);
-    // Check primary key
-    if(ni===norm(key))return{correct:true};
-    // Check accepted alternatives
-    if(cmd&&cmd.accept){
-      for(const alt of cmd.accept){
-        if(ni===norm(alt))return{correct:true};
-      }
-    }
-    return{correct:false};
+  formatAnswer(cmd){return cmd.latex?'(formula)':cmd.action},
+
+  // Validate fill-blank answers
+  validateBlank(input,answer){
+    function norm(s){return s.trim().toLowerCase().replace(/\s+/g,'').replace(/\u03c3/g,'sigma').replace(/\u03bc/g,'mu').replace(/\u03b2/g,'beta').replace(/\u03c7/g,'chi').replace(/\\hat\{p\}/g,'phat').replace(/\\bar\{x\}/g,'xbar').replace(/p\u0302/g,'phat').replace(/x\u0304/g,'xbar')}
+    const ni=norm(input),na=norm(answer);
+    if(ni===na)return true;
+    // Common aliases
+    const aliases={'p0':'p0','p_0':'p0','phat':'phat','p-hat':'phat','phat1':'phat1','p-hat1':'phat1',
+      'pc':'pc','p_c':'pc','phatc':'pc','mu0':'mu0','mu_0':'mu0','beta0':'beta0','beta_0':'beta0',
+      'sx':'sx','s_x':'sx','sy':'sy','s_y':'sy','s1^2':'s1^2','s1²':'s1^2','sigma1^2':'sigma1^2',
+      'σ1^2':'sigma1^2','σ1²':'sigma1^2','n2':'n2','n_2':'n2','p(xi)':'p(xi)','p(x_i)':'p(xi)',
+      'p(a∩b)':'p(a∩b)','p(anb)':'p(a∩b)','p(a and b)':'p(a∩b)','p(b)':'p(b)'};
+    const ai=aliases[ni]||ni, aa=aliases[na]||na;
+    return ai===aa;
   },
 };
+
+// Utility: shuffle an array (returns new array)
+function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+// Render LaTeX safely into an element
+function renderLatex(latex,el){try{katex.render(latex,el,{throwOnError:false,displayMode:true})}catch(e){el.textContent=latex}}
 
 // --- All cartridges ---
 const CARTRIDGES=[tmuxCartridge, apStatsCartridge];
@@ -623,13 +691,16 @@ function updateLabels(){
     const div=document.createElement('div');div.className='enemy-label';
     div.style.left=x+'px';div.style.top=y+'px';
     const promptText=activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action;
-    div.innerHTML='<div class="enemy-label-inner" style="border-color:'+(isSel?AMB.css.white:AMB.css.hot)+';color:'+AMB.css.hot+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
+    div.innerHTML='<div class="enemy-label-inner" style="border-color:'+(isSel?AMB.css.white:AMB.css.hot)+';color:'+AMB.css.hot+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
       G.selectedId=e.id;
-      G.inputState=activeCartridge&&activeCartridge.inputMode==='prefix-key'?'await_prefix':'typing';
+      const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+      G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
       G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
       SFX.select();
-      focusTypedInput();
+      if(im==='quiz')setTimeout(focusBlankInput,50);
+      else if(im==='typed')focusTypedInput();
     };
     labelsDiv.appendChild(div);
   });
@@ -660,10 +731,65 @@ function updateInput(){
   const sel=G.enemies.find(e=>e.id===G.selectedId);
   const mode=activeCartridge?activeCartridge.inputMode:'prefix-key';
 
-  if(mode==='typed'){
+  if(mode==='quiz'){
+    // ── Quiz mode: identify (MC) or fill-blank ──
+    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+G.typedBuffer;
+    if(stateKey===lastInputState){
+      const inp=document.getElementById('blank-input');
+      if(inp&&inp!==document.activeElement)inp.value=G.typedBuffer;
+      return;
+    }
+    lastInputState=stateKey;
+    if(!sel||!sel.question){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    const q=sel.question;
+    const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">\u26a1'+sel.speedMult.toFixed(1)+'x speed</span>':'';
+    let html='';
+    if(q.type==='identify'){
+      html+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
+      html+='<div class="latex-display" id="quiz-latex"></div>';
+      html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:4px">What does this formula calculate?</div>';
+      html+='<div class="mc-grid">';
+      const keys=['A','B','C','D'];
+      q.options.forEach((opt,i)=>{
+        html+='<button class="mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+      });
+      html+='</div>';
+      if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.hint+'</div>';
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+    }else{
+      // fill-blank
+      html+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
+      html+='<div class="latex-display" id="quiz-latex"></div>';
+      if(G.showHint){
+        // Hint mode: show multiple choice instead of typing
+        html+='<div style="font-size:11px;color:#996622;margin:4px 0">\ud83d\udca1 Hint active \u2014 half points</div>';
+        html+='<div class="hint-mc-grid">';
+        const keys=['A','B','C'];
+        q.choices.forEach((ch,i)=>{
+          html+='<button class="hint-mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleHintChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
+        });
+        html+='</div>';
+      }else{
+        html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:4px">Type the missing piece:</div>';
+        html+='<div><input type="text" class="blank-input" id="blank-input" placeholder="?" value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
+      }
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(G.showHint?'A/B/C = pick answer':'Enter = submit')+' \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+    }
+    panel.innerHTML=html;
+    // Render LaTeX into the display element
+    const latexEl=document.getElementById('quiz-latex');
+    if(latexEl)renderLatex(q.latex,latexEl);
+    // Render hint choice LaTeX
+    if(G.showHint&&q.type==='fillblank'){
+      q.choices.forEach((ch,i)=>{
+        const el=document.getElementById('hint-ch-'+i);
+        if(el)renderLatex(ch,el);
+      });
+    }
+    if(!G.showHint&&q.type==='fillblank')focusBlankInput();
+  }else if(mode==='typed'){
     const stateKey='typed-'+(sel?sel.id:'none')+'-'+G.showHint;
     if(stateKey===lastInputState){
-      // Only sync input value — don't rebuild DOM
       const inp=document.getElementById('typed-input');
       if(inp&&inp!==document.activeElement)inp.value=G.typedBuffer;
       return;
@@ -698,6 +824,36 @@ function updateInput(){
 function focusTypedInput(){
   const inp=document.getElementById('typed-input');
   if(inp)inp.focus();
+}
+function focusBlankInput(){
+  const inp=document.getElementById('blank-input');
+  if(inp)inp.focus();
+}
+
+// Quiz mode handlers (called from onclick in MC buttons)
+function handleQuizChoice(key){
+  if(G.screen!=='game')return;
+  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!enemy||!enemy.question||enemy.question.type!=='identify')return;
+  if(key===enemy.question.correctKey){
+    handleHit(enemy);
+  }else{
+    handleMiss(enemy);
+  }
+}
+function handleHintChoice(key){
+  if(G.screen!=='game')return;
+  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!enemy||!enemy.question||enemy.question.type!=='fillblank')return;
+  const idx=['a','b','c'].indexOf(key);
+  if(idx===-1)return;
+  const chosen=enemy.question.choices[idx];
+  // Check if chosen matches the answer (render both to compare)
+  if(activeCartridge.validateBlank(chosen,enemy.question.answer)){
+    handleHit(enemy);
+  }else{
+    handleMiss(enemy);
+  }
 }
 
 function updateQueue(){
@@ -868,7 +1024,11 @@ function trySpawn(now){
   const delay=G.spawnIdx===0?1500:Math.max(SPAWN_DELAY_BASE-G.wave*150,2500);
   if(now-lastSpawnTime<delay)return;
   const cmd=G.waveCommands[G.spawnIdx];
-  const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now()};
+  const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now(),speedMult:1};
+  // Generate question for quiz-mode cartridges
+  if(activeCartridge&&activeCartridge.inputMode==='quiz'&&activeCartridge.generateQuestion){
+    enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
+  }
   G.enemies.push(enemy);
   addEnemyMesh(enemy);
   G.spawnIdx++;lastSpawnTime=now;
@@ -878,7 +1038,7 @@ function trySpawn(now){
 // ── Movement ──
 function moveEnemies(){
   const speed=MOVE_SPEED_BASE+G.wave*.00015;
-  G.enemies.forEach(e=>{e.t+=speed});
+  G.enemies.forEach(e=>{e.t+=speed*(e.speedMult||1)});
 }
 
 // ── Breach ──
@@ -908,9 +1068,10 @@ function autoSelect(){
   if(G.enemies.length>0&&(!G.selectedId||!G.enemies.find(e=>e.id===G.selectedId))){
     const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
     G.selectedId=sorted[0].id;
-    G.inputState=activeCartridge&&activeCartridge.inputMode==='prefix-key'?'await_prefix':'typing';
+    const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+    G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
     G.showHint=false;G.hintUsed=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
-    focusTypedInput();
+    if(im!=='quiz')focusTypedInput();else setTimeout(()=>focusBlankInput(),50);
   }else if(G.enemies.length===0){G.selectedId=null;G.inputState='idle'}
 }
 
@@ -930,7 +1091,8 @@ function handleHit(enemy){
   let speedMult=1;
   if(responseTime<1500)speedMult=2;else if(responseTime<3000)speedMult=1.5;else if(responseTime<5000)speedMult=1.2;
   const totalMult=G.combo*speedMult;
-  const pts=Math.floor((100+Math.max(0,50-Math.floor(responseTime/200))-(G.hintUsed?30:0))*totalMult);
+  const hintPenalty=G.hintUsed?(activeCartridge&&activeCartridge.inputMode==='quiz'?0.5:0.7):1;
+  const pts=Math.floor((100+Math.max(0,50-Math.floor(responseTime/200)))*totalMult*hintPenalty);
   const intensity=Math.min(1,speedMult/2);
   SFX.hit(intensity);
   const ePos=enemyMeshes[enemy.id]?.position.clone()||new THREE.Vector3();
@@ -952,8 +1114,10 @@ function handleMiss(enemy){
   G.attemptsOnCurrent++;
   G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave);
   G.typedBuffer='';
+  // Speed up enemy on wrong answer!
+  enemy.speedMult=(enemy.speedMult||1)*1.5;
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
-  flash('MISS!','#ff4422');
+  flash('MISS! \u26a1FASTER','#ff4422');
   // Re-focus typed input after miss
   setTimeout(focusTypedInput,50);
 }
@@ -979,10 +1143,11 @@ window.addEventListener('keydown',e=>{
     const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
     const idx=sorted.findIndex(en=>en.id===G.selectedId);
     G.selectedId=sorted[(idx+1)%sorted.length].id;
-    G.inputState=activeCartridge&&activeCartridge.inputMode==='prefix-key'?'await_prefix':'typing';
+    const im2=activeCartridge?activeCartridge.inputMode:'prefix-key';
+    G.inputState=im2==='prefix-key'?'await_prefix':im2==='quiz'?'quiz':'typing';
     G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
     SFX.select();
-    setTimeout(focusTypedInput,50);
+    setTimeout(()=>{if(im2==='quiz')focusBlankInput();else focusTypedInput()},50);
     return;
   }
   // Alt+H hint — works in all modes
@@ -992,7 +1157,60 @@ window.addEventListener('keydown',e=>{
 
   const mode=activeCartridge?activeCartridge.inputMode:'prefix-key';
 
-  if(mode==='prefix-key'){
+  if(mode==='quiz'){
+    // Quiz mode keyboard handling
+    const q=enemy.question;
+    if(!q)return;
+
+    if(q.type==='identify'){
+      // A/B/C/D for multiple choice
+      const k=e.key.toLowerCase();
+      if(['a','b','c','d'].includes(k)){
+        e.preventDefault();
+        handleQuizChoice(k);
+      }
+    }else if(q.type==='fillblank'){
+      if(G.showHint){
+        // Hint mode: A/B/C to pick from choices
+        const k=e.key.toLowerCase();
+        if(['a','b','c'].includes(k)){
+          e.preventDefault();
+          handleHintChoice(k);
+        }
+      }else{
+        // Typing mode for blank
+        const inp=document.getElementById('blank-input');
+        if(e.key==='Enter'){
+          e.preventDefault();
+          const val=inp?inp.value:G.typedBuffer;
+          if(val.trim()==='')return;
+          if(activeCartridge.validateBlank(val,q.answer)){
+            handleHit(enemy);
+          }else{
+            handleMiss(enemy);
+            if(inp)inp.value='';
+          }
+          return;
+        }
+        // Focus blank input if not focused
+        if(inp&&document.activeElement!==inp){
+          inp.focus();
+          if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+            e.preventDefault();
+            inp.value+=e.key;
+            G.typedBuffer=inp.value;
+          }
+        }
+        // Sync buffer
+        if(inp&&e.target===inp){
+          requestAnimationFrame(()=>{
+            const el=document.getElementById('blank-input');
+            if(el)G.typedBuffer=el.value;
+          });
+        }
+      }
+    }
+  }else if(mode==='prefix-key'){
     e.preventDefault();
     if(G.inputState==='await_prefix'){
       if(e.ctrlKey&&e.key==='b'){G.inputState='await_command';SFX.prefix()}
@@ -1010,50 +1228,29 @@ window.addEventListener('keydown',e=>{
     const inp=document.getElementById('typed-input');
     if(inp&&document.activeElement!==inp){
       inp.focus();
-      // Replay printable character into the input
       if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
         e.preventDefault();
         inp.value+=e.key;
         G.typedBuffer=inp.value;
       }
     }
-  }
-});
-
-// Typed input handler — delegated to the input element
-document.addEventListener('keydown',function(e){
-  if(G.screen!=='game')return;
-  const mode=activeCartridge?activeCartridge.inputMode:'prefix-key';
-  if(mode!=='typed')return;
-
-  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
-  if(!enemy)return;
-
-  const inp=document.getElementById('typed-input');
-
-  if(e.key==='Enter'){
-    e.preventDefault();
-    const val=inp?inp.value:G.typedBuffer;
-    if(val.trim()==='')return;
-    const result=activeCartridge.validate(val,enemy.cmd.key,enemy.cmd);
-    if(result.correct){
-      handleHit(enemy);
-    }else{
-      handleMiss(enemy);
-      if(inp)inp.value='';
-    }
-    return;
-  }
-
-  // Sync buffer from input element
-  if(inp&&e.target===inp){
-    // Let the input handle its own character entry naturally
-    // We just sync the buffer on next frame
-    requestAnimationFrame(()=>{
-      if(document.getElementById('typed-input')){
-        G.typedBuffer=document.getElementById('typed-input').value;
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const val=inp?inp.value:G.typedBuffer;
+      if(val.trim()==='')return;
+      if(activeCartridge.validate(val,enemy.cmd.key,enemy.cmd).correct){
+        handleHit(enemy);
+      }else{
+        handleMiss(enemy);
+        if(inp)inp.value='';
       }
-    });
+      return;
+    }
+    if(inp&&e.target===inp){
+      requestAnimationFrame(()=>{
+        if(document.getElementById('typed-input'))G.typedBuffer=document.getElementById('typed-input').value;
+      });
+    }
   }
 });
 
