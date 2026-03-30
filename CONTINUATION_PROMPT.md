@@ -7,12 +7,19 @@ Redesigned the AP Stats cartridge in `index.html` from a "type the full formula"
 
 ### Phase 2: Compact UI (De-occlusion)
 Fixed the input panel blocking the 3D game view:
-- **Glass-morphism panel**: Semi-transparent background (`rgba(13,5,0,0.75)`) with `backdrop-filter:blur(6px)` — game shows through
+- **Transparent panel**: 35% opacity background, no blur — game fully visible through panel
 - **Flexbox MC buttons**: Changed from 2x2 grid to single-row flex layout, reduced padding/font ~40%
 - **Smaller LaTeX**: 1.15em (from 1.4em), reduced min-height 24px (from 36px)
 - **Hidden help text**: Only visible on panel hover (opacity transition)
 - **Queue bar repositioned**: `bottom:80px` (from 130px) to match slimmer panel
-- **Overall**: Panel height reduced from ~170px to ~90px, ~50% less occlusion
+
+### Phase 3: Anti-Spoiler Labels + Adaptive Speed
+- **Unit-based enemy labels**: Enemy labels now show chapter/unit references (e.g. "U4 · Distributions", "U6 · Proportions") instead of formula names, which were giving away the answer in identify mode. Labels cached at spawn time.
+- **Adaptive speed system**: Replaced fixed speed formula with mastery-aware scaling:
+  - Wave 1 = 40% of base speed, increases 8% per wave
+  - Higher average mastery = faster enemies (1.0x at mastery 0, 1.5x at mastery 5)
+  - Miss penalty (1.5x per miss) still stacks on top
+  - Domain-to-unit mapping based on official AP Stats 2026 curriculum (Units 1-9)
 
 ### New Question Types
 

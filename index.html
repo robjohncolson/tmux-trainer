@@ -444,6 +444,29 @@ function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=
 // Render LaTeX safely into an element
 function renderLatex(latex,el){try{katex.render(latex,el,{throwOnError:false,displayMode:true})}catch(e){el.textContent=latex}}
 
+// Domain → Unit/Topic label mapping (AP Stats 2026 curriculum)
+const DOM_LABELS={
+  'descriptive':['U1 · Describing Data','U2 · Two-Variable Data','U1 · Summary Stats','U2 · Regression'],
+  'probability':['U4 · Probability Rules','U4 · Events & Prob'],
+  'distributions':['U4 · Random Variables','U4 · Distributions','U4 · Binomial/Geometric'],
+  'inference':['U5–6 · Inference','U6 · Hypothesis Tests'],
+  'chi-square':['U8 · Chi-Square','U8 · Categorical Inference'],
+  'inf-proportions':['U5 · Sampling Dist.','U6 · Proportions','U6 · Two Proportions'],
+  'inf-means':['U5 · Sampling Dist.','U7 · Means','U7 · Two Means'],
+  'regression':['U9 · Slope Inference','U9 · Regression Slope'],
+};
+function getEnemyLabel(cmd){
+  const labels=DOM_LABELS[cmd.dom]||['Formula'];
+  return labels[Math.floor(Math.random()*labels.length)];
+}
+
+// Calculate player's average mastery for adaptive speed
+function getAverageMastery(srs){
+  const entries=Object.values(srs).filter(s=>s.totalAttempts>0);
+  if(entries.length===0)return 0;
+  return entries.reduce((sum,s)=>sum+s.mastery,0)/entries.length;
+}
+
 // --- All cartridges ---
 const CARTRIDGES=[tmuxCartridge, apStatsCartridge];
 let activeCartridge=null;
@@ -691,7 +714,8 @@ function updateLabels(){
     const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
     const div=document.createElement('div');div.className='enemy-label';
     div.style.left=x+'px';div.style.top=y+'px';
-    const promptText=activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action;
+    // For quiz mode, show cached unit label instead of formula name (which gives away the answer!)
+    const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
     const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
     div.innerHTML='<div class="enemy-label-inner" style="border-color:'+(isSel?AMB.css.white:AMB.css.hot)+';color:'+AMB.css.hot+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
@@ -1026,9 +1050,10 @@ function trySpawn(now){
   if(now-lastSpawnTime<delay)return;
   const cmd=G.waveCommands[G.spawnIdx];
   const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now(),speedMult:1};
-  // Generate question for quiz-mode cartridges
-  if(activeCartridge&&activeCartridge.inputMode==='quiz'&&activeCartridge.generateQuestion){
-    enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
+  // Generate question + cache label for quiz-mode cartridges
+  if(activeCartridge&&activeCartridge.inputMode==='quiz'){
+    if(activeCartridge.generateQuestion)enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
+    enemy.label=getEnemyLabel(cmd);
   }
   G.enemies.push(enemy);
   addEnemyMesh(enemy);
@@ -1036,9 +1061,14 @@ function trySpawn(now){
   SFX.spawn();
 }
 
-// ── Movement ──
+// ── Movement — adaptive speed ──
 function moveEnemies(){
-  const speed=MOVE_SPEED_BASE+G.wave*.00015;
+  const avgMastery=getAverageMastery(G.srs);
+  // Wave 1 = 40% speed, scales up 8% per wave
+  const waveMult=0.4+(G.wave-1)*0.08;
+  // Higher mastery = faster enemies (1.0x at mastery 0, up to 1.5x at mastery 5)
+  const masteryMult=1.0+(avgMastery/5)*0.5;
+  const speed=MOVE_SPEED_BASE*waveMult*masteryMult;
   G.enemies.forEach(e=>{e.t+=speed*(e.speedMult||1)});
 }
 
