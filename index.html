@@ -13,7 +13,7 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .hud-label{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600}
 .hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 #tier-bar{position:fixed;top:52px;left:0;right:0;z-index:10;text-align:center;pointer-events:none;font-size:10px}
-#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;background:rgba(13,5,0,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;background:rgba(13,5,0,0.35);pointer-events:none}
 #input-panel *{pointer-events:auto}
 .prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
 .prompt-text{font-size:18px;font-weight:700;color:#ffcc66;margin:4px 0;text-shadow:0 0 10px #ff8c0044}
@@ -546,7 +546,7 @@ const G={
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',
 };
-const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0018,SPAWN_DELAY_BASE=4500;
+const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0008,SPAWN_DELAY_BASE=5500;
 
 // ═══════════════════════════════════════════════
 //  THREE.JS SCENE
