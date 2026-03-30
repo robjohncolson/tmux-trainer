@@ -758,12 +758,8 @@ function updateInput(){
 
   if(mode==='quiz'){
     // ── Quiz mode: identify (MC) or fill-blank ──
-    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+G.typedBuffer;
-    if(stateKey===lastInputState){
-      const inp=document.getElementById('blank-input');
-      if(inp&&inp!==document.activeElement)inp.value=G.typedBuffer;
-      return;
-    }
+    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+G.showHint;
+    if(stateKey===lastInputState)return;
     lastInputState=stateKey;
     if(!sel||!sel.question){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
     const q=sel.question;
@@ -782,23 +778,18 @@ function updateInput(){
       if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.hint+'</div>';
       html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }else{
-      // fill-blank
+      // fill-blank — always show A/B/C choices
       html+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
       html+='<div class="latex-display" id="quiz-latex"></div>';
-      if(G.showHint){
-        // Hint mode: show multiple choice instead of typing
-        html+='<div style="font-size:11px;color:#996622;margin:2px 0">\ud83d\udca1 Hint active \u2014 half points</div>';
-        html+='<div class="hint-mc-grid">';
-        const keys=['A','B','C'];
-        q.choices.forEach((ch,i)=>{
-          html+='<button class="hint-mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleHintChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
-        });
-        html+='</div>';
-      }else{
-        html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">Type the missing piece:</div>';
-        html+='<div><input type="text" class="blank-input" id="blank-input" placeholder="?" value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
-      }
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(G.showHint?'A/B/C = pick answer':'Enter = submit')+' \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+      html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What goes in the blank?</div>';
+      html+='<div class="hint-mc-grid">';
+      const keys=['A','B','C'];
+      q.choices.forEach((ch,i)=>{
+        html+='<button class="hint-mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleHintChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
+      });
+      html+='</div>';
+      if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.hint+'</div>';
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
     }
     panel.innerHTML=html;
     // Render LaTeX into the display element
@@ -1122,7 +1113,7 @@ function handleHit(enemy){
   let speedMult=1;
   if(responseTime<1500)speedMult=2;else if(responseTime<3000)speedMult=1.5;else if(responseTime<5000)speedMult=1.2;
   const totalMult=G.combo*speedMult;
-  const hintPenalty=G.hintUsed?(activeCartridge&&activeCartridge.inputMode==='quiz'?0.5:0.7):1;
+  const hintPenalty=G.hintUsed&&!(enemy.question&&enemy.question.type==='fillblank')?(activeCartridge&&activeCartridge.inputMode==='quiz'?0.5:0.7):1;
   const pts=Math.floor((100+Math.max(0,50-Math.floor(responseTime/200)))*totalMult*hintPenalty);
   const intensity=Math.min(1,speedMult/2);
   SFX.hit(intensity);
@@ -1201,44 +1192,11 @@ window.addEventListener('keydown',e=>{
         handleQuizChoice(k);
       }
     }else if(q.type==='fillblank'){
-      if(G.showHint){
-        // Hint mode: A/B/C to pick from choices
-        const k=e.key.toLowerCase();
-        if(['a','b','c'].includes(k)){
-          e.preventDefault();
-          handleHintChoice(k);
-        }
-      }else{
-        // Typing mode for blank
-        const inp=document.getElementById('blank-input');
-        if(e.key==='Enter'){
-          e.preventDefault();
-          const val=inp?inp.value:G.typedBuffer;
-          if(val.trim()==='')return;
-          if(activeCartridge.validateBlank(val,q.answer)){
-            handleHit(enemy);
-          }else{
-            handleMiss(enemy);
-            if(inp)inp.value='';
-          }
-          return;
-        }
-        // Focus blank input if not focused
-        if(inp&&document.activeElement!==inp){
-          inp.focus();
-          if(e.key.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
-            e.preventDefault();
-            inp.value+=e.key;
-            G.typedBuffer=inp.value;
-          }
-        }
-        // Sync buffer
-        if(inp&&e.target===inp){
-          requestAnimationFrame(()=>{
-            const el=document.getElementById('blank-input');
-            if(el)G.typedBuffer=el.value;
-          });
-        }
+      // Always A/B/C multiple choice for fill-blank
+      const k=e.key.toLowerCase();
+      if(['a','b','c'].includes(k)){
+        e.preventDefault();
+        handleHintChoice(k);
       }
     }
   }else if(mode==='prefix-key'){
