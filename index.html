@@ -13,7 +13,7 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .hud-label{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600}
 .hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 #tier-bar{position:fixed;top:52px;left:0;right:0;z-index:10;text-align:center;pointer-events:none;font-size:10px}
-#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:12px 16px;text-align:center;background:linear-gradient(transparent,#0d0500cc 30%,#0d0500ee);pointer-events:none}
+#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;background:rgba(13,5,0,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
 #input-panel *{pointer-events:auto}
 .prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
 .prompt-text{font-size:18px;font-weight:700;color:#ffcc66;margin:4px 0;text-shadow:0 0 10px #ff8c0044}
@@ -21,8 +21,9 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .input-box{padding:6px 16px;border:1.5px solid #3d1f00;border-radius:4px;font-size:16px;font-weight:600;color:#5a3800;background:#0d0500;min-width:64px;text-align:center;transition:all .2s}
 .input-box.active{border-color:#ff8c00;color:#ff8c00;box-shadow:0 0 10px #ff8c0044}
 .input-box.done{border-color:#ff8c0088;color:#ff8c00;background:#ff8c0011}
-.hint-text{font-size:12px;color:#996622;margin-top:6px;padding:4px 10px;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:4px}
-.input-help{font-size:10px;color:#3d1f00;margin-top:8px}
+.hint-text{font-size:12px;color:#996622;margin-top:2px;padding:2px 6px;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:4px}
+.input-help{font-size:10px;color:#3d1f00;margin-top:8px;opacity:0;transition:opacity .2s}
+#input-panel:hover .input-help{opacity:1}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
 .enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s}
@@ -45,25 +46,25 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .mastery-legend{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-size:9px;margin-bottom:10px}
 .weak-item{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#996622;margin-bottom:3px;padding:3px 8px;background:#1a0800;border-radius:3px;border:1px solid #ffffff08}
 #mute-btn{position:fixed;top:10px;right:12px;z-index:30;font-size:18px;background:transparent;border:1px solid #ff8c0033;border-radius:4px;color:#ff8c00;cursor:pointer;padding:3px 7px;opacity:.7}
-#queue-bar{position:fixed;bottom:130px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
+#queue-bar{position:fixed;bottom:80px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
 .q-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin:0 2px;opacity:.7}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
-.latex-display{margin:6px 0;min-height:36px;display:flex;align-items:center;justify-content:center}
-.latex-display .katex{font-size:1.4em;color:#ffcc66}
-.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:420px;margin:10px auto 0}
-.mc-btn{font-family:inherit;font-size:13px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:6px;padding:10px 12px;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:8px}
+.latex-display{margin:2px 0;min-height:24px;display:flex;align-items:center;justify-content:center}
+.latex-display .katex{font-size:1.15em;color:#ffcc66}
+.mc-grid{display:flex;flex-wrap:wrap;gap:4px;max-width:600px;margin:4px auto 0;justify-content:center}
+.mc-btn{font-family:inherit;font-size:11px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:4px;padding:5px 8px;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:4px}
 .mc-btn:hover{border-color:#ff8c00;background:#2d1200;box-shadow:0 0 8px #ff8c0033}
-.mc-btn .mc-key{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:#ff8c00;color:#0d0500;font-weight:900;font-size:12px;flex-shrink:0}
+.mc-btn .mc-key{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:#ff8c00;color:#0d0500;font-weight:900;font-size:10px;flex-shrink:0}
 .mc-btn.correct{border-color:#44ff88;background:#44ff8822;color:#44ff88}
 .mc-btn.wrong{border-color:#ff4422;background:#ff442222;color:#ff4422}
-.mc-btn .mc-text{line-height:1.3}
-.blank-input{font-family:inherit;font-size:18px;font-weight:700;color:#ff8c00;background:#0d0500;border:2px solid #ff8c00;border-radius:6px;padding:8px 16px;text-align:center;min-width:100px;max-width:200px;outline:none}
+.mc-btn .mc-text{line-height:1.1;font-size:11px}
+.blank-input{font-family:inherit;font-size:15px;font-weight:700;color:#ff8c00;background:#0d0500;border:2px solid #ff8c00;border-radius:6px;padding:5px 12px;text-align:center;min-width:100px;max-width:200px;outline:none}
 .blank-input:focus{box-shadow:0 0 12px #ff8c0044}
-.hint-mc-grid{display:flex;gap:8px;justify-content:center;margin-top:8px}
-.hint-mc-btn{font-family:inherit;font-size:14px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:6px;padding:8px 16px;cursor:pointer;transition:all .15s}
+.hint-mc-grid{display:flex;gap:4px;justify-content:center;margin-top:4px}
+.hint-mc-btn{font-family:inherit;font-size:12px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:6px;padding:5px 10px;cursor:pointer;transition:all .15s}
 .hint-mc-btn:hover{border-color:#ff8c00;background:#2d1200}
 .hint-mc-btn .mc-key{display:inline;font-weight:900;color:#ffcc66;margin-right:4px}
-.q-type-badge{font-size:8px;letter-spacing:2px;color:#996622;background:#ff8c0011;border:1px solid #ff8c0022;border-radius:3px;padding:2px 6px;display:inline-block;margin-bottom:4px}
+.q-type-badge{font-size:8px;letter-spacing:2px;color:#996622;background:#ff8c0011;border:1px solid #ff8c0022;border-radius:3px;padding:1px 4px;display:inline-block;margin-bottom:2px}
 @keyframes float-up{0%{transform:translateY(0) translateX(-50%);opacity:1}100%{transform:translateY(-50px) translateX(-50%);opacity:0}}
 .flash-msg{position:fixed;top:35%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;z-index:15;pointer-events:none;animation:float-up .8s ease-out forwards;text-shadow:0 0 20px currentColor}
 /* Cartridge selector */
@@ -747,7 +748,7 @@ function updateInput(){
     if(q.type==='identify'){
       html+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
       html+='<div class="latex-display" id="quiz-latex"></div>';
-      html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:4px">What does this formula calculate?</div>';
+      html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does this formula calculate?</div>';
       html+='<div class="mc-grid">';
       const keys=['A','B','C','D'];
       q.options.forEach((opt,i)=>{
@@ -762,7 +763,7 @@ function updateInput(){
       html+='<div class="latex-display" id="quiz-latex"></div>';
       if(G.showHint){
         // Hint mode: show multiple choice instead of typing
-        html+='<div style="font-size:11px;color:#996622;margin:4px 0">\ud83d\udca1 Hint active \u2014 half points</div>';
+        html+='<div style="font-size:11px;color:#996622;margin:2px 0">\ud83d\udca1 Hint active \u2014 half points</div>';
         html+='<div class="hint-mc-grid">';
         const keys=['A','B','C'];
         q.choices.forEach((ch,i)=>{
@@ -770,7 +771,7 @@ function updateInput(){
         });
         html+='</div>';
       }else{
-        html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:4px">Type the missing piece:</div>';
+        html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">Type the missing piece:</div>';
         html+='<div><input type="text" class="blank-input" id="blank-input" placeholder="?" value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
       }
       html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(G.showHint?'A/B/C = pick answer':'Enter = submit')+' \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';

@@ -2,7 +2,17 @@
 
 ## What Was Done
 
+### Phase 1: Quiz Mode Redesign
 Redesigned the AP Stats cartridge in `index.html` from a "type the full formula" mode to a two-mode quiz system:
+
+### Phase 2: Compact UI (De-occlusion)
+Fixed the input panel blocking the 3D game view:
+- **Glass-morphism panel**: Semi-transparent background (`rgba(13,5,0,0.75)`) with `backdrop-filter:blur(6px)` — game shows through
+- **Flexbox MC buttons**: Changed from 2x2 grid to single-row flex layout, reduced padding/font ~40%
+- **Smaller LaTeX**: 1.15em (from 1.4em), reduced min-height 24px (from 36px)
+- **Hidden help text**: Only visible on panel hover (opacity transition)
+- **Queue bar repositioned**: `bottom:80px` (from 130px) to match slimmer panel
+- **Overall**: Panel height reduced from ~170px to ~90px, ~50% less occlusion
 
 ### New Question Types
 
