@@ -26,7 +26,7 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
 .enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s}
-.enemy-label-inner{background:#0d0500dd;border:1px solid;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:80px;word-break:break-word;white-space:normal}
+.enemy-label-inner{background:#0d0500dd;border:1px solid;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:140px;word-break:break-word;white-space:normal}
 .enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
 .sel-arrow{text-align:center;color:#ffcc66;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s}
@@ -61,7 +61,7 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .cart-dot{width:8px;height:8px;border-radius:50%;border:1px solid #ff8c0044}
 .cart-dot.filled{background:#ff8c00}
 /* Typed input */
-.typed-input{padding:8px 16px;border:1.5px solid #ff8c00;border-radius:4px;font-size:20px;font-weight:700;color:#ff8c00;background:#0d0500;min-width:120px;text-align:center;font-family:inherit;outline:none;box-shadow:0 0 10px #ff8c0044;caret-color:#ffcc66}
+.typed-input{padding:8px 16px;border:1.5px solid #ff8c00;border-radius:4px;font-size:18px;font-weight:700;color:#ff8c00;background:#0d0500;min-width:280px;text-align:center;font-family:inherit;outline:none;box-shadow:0 0 10px #ff8c0044;caret-color:#ffcc66}
 .typed-input::placeholder{color:#3d1f00}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -181,140 +181,202 @@ const tmuxCartridge={
   validate(input,key){return{correct:input===key}},
 };
 
-// --- Multiplication cartridge (generated, typed) ---
-function mulTier(a,b){
-  if(a===b)return'core';
-  if([1,2,5,10].includes(a)||[1,2,5,10].includes(b))return'core';
-  if(a>=10||b>=10)return'power';
-  return'regular';
-}
-function mulHint(a,b){
-  if(a===b)return a+' squared';
-  if(b===9)return a+'\u00d710 = '+(a*10)+', minus '+a;
-  if(b===11)return a+'\u00d710 = '+(a*10)+', plus '+a;
-  return a+'\u00d7'+(b-1)+' = '+(a*(b-1))+', plus '+a;
-}
-function genMultiplicationPool(){
-  const items=[];
-  for(let a=1;a<=12;a++){
-    for(let b=a;b<=12;b++){
-      items.push({
-        id:'mul-'+a+'x'+b,
-        action:a+' \u00d7 '+b,
-        key:String(a*b),
-        tier:mulTier(a,b),
-        dom:a+'s',
-        hint:mulHint(a,b),
-      });
-    }
-  }
-  return items;
-}
-
-const multiplicationCartridge={
-  id:'multiplication',
-  name:'Times Tables',
-  description:'1\u00d71 through 12\u00d712 (78 facts)',
-  icon:'\u00d7',
+// --- AP Statistics Formula Reference cartridge (static, typed) ---
+// Formulas from the 2026 AP Statistics Exam Reference Sheet
+// Input: students type a simplified text version of each formula
+// Validation normalizes whitespace, case, and common equivalent notations
+const apStatsCartridge={
+  id:'ap-stats-formulas',
+  name:'AP Stats Formulas',
+  description:'2026 AP Exam Reference Sheet (39 formulas)',
+  icon:'\u03c3',  // sigma
   inputMode:'typed',
   prefixLabel:null,
-  title:'TIMES TABLES',
-  subtitle:'TOWER DEFENSE',
+  title:'AP STATISTICS',
+  subtitle:'FORMULA DEFENSE',
   startButton:'[ DEPLOY ]',
-  instructions:'Enemies carry math problems.<br>Type the answer and press Enter to destroy them.',
-  instructionsSub:'Tab = cycle targets \u00b7 Alt+H = hint \u00b7 12 waves',
-  commands:genMultiplicationPool(),
+  instructions:'Enemies carry formula names.<br>Type the formula and press Enter.<br><span style="color:#ffaa22">Use ^ for exponents, sqrt() for roots</span>',
+  instructionsSub:'Examples: sum(xi)/n \u00b7 sqrt(p(1-p)/n) \u00b7 a+bx<br>Tab = cycle \u00b7 Alt+H = hint \u00b7 12 waves',
+  commands:[
+    // ══ I. DESCRIPTIVE STATISTICS ══
+    // Core — the bread and butter
+    {id:'mean',action:'Sample Mean (x\u0304)',key:'sum(xi)/n',tier:'core',dom:'descriptive',
+      hint:'Add all values, divide by count',
+      accept:['sum(xi)/n','(1/n)sum(xi)','sigma(xi)/n']},
+    {id:'std-dev',action:'Sample Standard Deviation (s\u2093)',key:'sqrt(sum(xi-xbar)^2/(n-1))',tier:'core',dom:'descriptive',
+      hint:'Square root of variance; denominator is n\u22121',
+      accept:['sqrt(sum(xi-xbar)^2/(n-1))','sqrt(sum(x-xbar)^2/(n-1))']},
+    {id:'linreg',action:'Linear Regression Line (\u0177)',key:'a+bx',tier:'core',dom:'descriptive',
+      hint:'\u0177 = a + bx (intercept + slope\u00b7x)',
+      accept:['a+bx','yhat=a+bx']},
+    {id:'linreg-mean',action:'Regression passes through (\u0304y, \u0304x)',key:'ybar=a+b*xbar',tier:'core',dom:'descriptive',
+      hint:'The regression line passes through the point of means',
+      accept:['ybar=a+b*xbar','ybar=a+bxbar']},
+    {id:'corr-r',action:'Correlation Coefficient (r)',key:'(1/(n-1))sum((xi-xbar)/sx)((yi-ybar)/sy)',tier:'regular',dom:'descriptive',
+      hint:'Sum of products of z-scores, divided by n\u22121',
+      accept:['(1/(n-1))sum((xi-xbar)/sx)((yi-ybar)/sy)','(1/(n-1))sum(zx*zy)']},
+    {id:'slope-b',action:'Regression Slope (b)',key:'r*sy/sx',tier:'core',dom:'descriptive',
+      hint:'r times the ratio of standard deviations',
+      accept:['r*sy/sx','r(sy/sx)']},
+
+    // ══ II. PROBABILITY ══
+    {id:'add-rule',action:'Addition Rule P(A\u222aB)',key:'P(A)+P(B)-P(A\u2229B)',tier:'core',dom:'probability',
+      hint:'Add individual, subtract the overlap',
+      accept:['P(A)+P(B)-P(AnB)','P(A)+P(B)-P(A and B)','P(A)+P(B)-P(AB)']},
+    {id:'cond-prob',action:'Conditional Probability P(A|B)',key:'P(A\u2229B)/P(B)',tier:'core',dom:'probability',
+      hint:'Joint probability divided by the condition',
+      accept:['P(AnB)/P(B)','P(A and B)/P(B)','P(AB)/P(B)']},
+
+    // ══ II. DISCRETE RANDOM VARIABLES ══
+    {id:'rv-mean',action:'Mean of Discrete R.V. (\u03bc\u2093)',key:'sum(xi*P(xi))',tier:'core',dom:'distributions',
+      hint:'Each value times its probability, summed',
+      accept:['sum(xi*P(xi))','sum(xi*pi)','E(X)=sum(xi*P(xi))']},
+    {id:'rv-sd',action:'SD of Discrete R.V. (\u03c3\u2093)',key:'sqrt(sum((xi-mu)^2*P(xi)))',tier:'regular',dom:'distributions',
+      hint:'Square root of variance: weighted squared deviations',
+      accept:['sqrt(sum((xi-mu)^2*P(xi)))','sqrt(sum((xi-muX)^2*P(xi)))']},
+
+    // ══ II. BINOMIAL ══
+    {id:'binom-pmf',action:'Binomial P(X=x)',key:'C(n,x)*p^x*(1-p)^(n-x)',tier:'regular',dom:'distributions',
+      hint:'n choose x times success\u02e3 times failure\u207f\u207b\u02e3',
+      accept:['C(n,x)*p^x*(1-p)^(n-x)','nCx*p^x*(1-p)^(n-x)','(n choose x)*p^x*(1-p)^(n-x)']},
+    {id:'binom-mean',action:'Binomial Mean (\u03bc\u2093)',key:'np',tier:'core',dom:'distributions',
+      hint:'n times p \u2014 expected number of successes',
+      accept:['np','n*p','mu=np']},
+    {id:'binom-sd',action:'Binomial SD (\u03c3\u2093)',key:'sqrt(np(1-p))',tier:'core',dom:'distributions',
+      hint:'Square root of n\u00b7p\u00b7(1\u2212p)',
+      accept:['sqrt(np(1-p))','sqrt(n*p*(1-p))','sqrt(npq)']},
+
+    // ══ II. GEOMETRIC ══
+    {id:'geom-pmf',action:'Geometric P(X=x)',key:'(1-p)^(x-1)*p',tier:'regular',dom:'distributions',
+      hint:'Fail (x\u22121) times, then succeed once',
+      accept:['(1-p)^(x-1)*p','q^(x-1)*p']},
+    {id:'geom-mean',action:'Geometric Mean (\u03bc\u2093)',key:'1/p',tier:'core',dom:'distributions',
+      hint:'Expected number of trials until first success',
+      accept:['1/p']},
+    {id:'geom-sd',action:'Geometric SD (\u03c3\u2093)',key:'sqrt((1-p)/p^2)',tier:'regular',dom:'distributions',
+      hint:'sqrt of (1\u2212p) over p\u00b2',
+      accept:['sqrt((1-p)/p^2)','sqrt(q/p^2)','sqrt(1-p)/p']},
+
+    // ══ III. INFERENTIAL STATISTICS — General ══
+    {id:'z-test-stat',action:'Standardized Test Statistic',key:'(statistic-parameter)/SE',tier:'core',dom:'inference',
+      hint:'How many standard errors from the parameter?',
+      accept:['(statistic-parameter)/SE','(stat-param)/SE']},
+    {id:'ci-formula',action:'Confidence Interval (general)',key:'statistic+/-critical*SE',tier:'core',dom:'inference',
+      hint:'Point estimate plus or minus margin of error',
+      accept:['statistic+/-critical*SE','stat+/-z*SE','stat+/-t*SE','statistic+-critical*SE']},
+    {id:'chi-sq',action:'Chi-Square Statistic (\u03c7\u00b2)',key:'sum((O-E)^2/E)',tier:'core',dom:'chi-square',
+      hint:'Sum of (observed minus expected)\u00b2 over expected',
+      accept:['sum((O-E)^2/E)','sum((obs-exp)^2/exp)']},
+
+    // ══ III. SAMPLING — ONE PROPORTION ══
+    {id:'phat-mean',action:'Mean of p\u0302 sampling dist.',key:'p',tier:'core',dom:'inf-proportions',
+      hint:'The mean of the sampling distribution equals the true proportion',
+      accept:['p','mu=p']},
+    {id:'phat-sd',action:'SD of p\u0302 sampling dist.',key:'sqrt(p(1-p)/n)',tier:'core',dom:'inf-proportions',
+      hint:'sqrt of p(1\u2212p) over n',
+      accept:['sqrt(p(1-p)/n)','sqrt(pq/n)']},
+    {id:'phat-se',action:'SE of p\u0302 (standard error)',key:'sqrt(phat(1-phat)/n)',tier:'regular',dom:'inf-proportions',
+      hint:'Replace p with p\u0302 in the SD formula',
+      accept:['sqrt(phat(1-phat)/n)','sqrt(p-hat(1-p-hat)/n)']},
+
+    // ══ III. SAMPLING — TWO PROPORTIONS ══
+    {id:'diff-p-sd',action:'SD of p\u03021\u2212p\u03022',key:'sqrt(p1(1-p1)/n1+p2(1-p2)/n2)',tier:'regular',dom:'inf-proportions',
+      hint:'Add the variances of each proportion, then sqrt',
+      accept:['sqrt(p1(1-p1)/n1+p2(1-p2)/n2)','sqrt(p1q1/n1+p2q2/n2)']},
+    {id:'diff-p-se',action:'SE of p\u03021\u2212p\u03022',key:'sqrt(phat1(1-phat1)/n1+phat2(1-phat2)/n2)',tier:'power',dom:'inf-proportions',
+      hint:'Plug in sample proportions for each group',
+      accept:['sqrt(phat1(1-phat1)/n1+phat2(1-phat2)/n2)']},
+    {id:'pooled-se',action:'Pooled SE (p\u03021\u2212p\u03022, H\u2080: p\u2081=p\u2082)',key:'sqrt(pc(1-pc)(1/n1+1/n2))',tier:'power',dom:'inf-proportions',
+      hint:'pc = (X1+X2)/(n1+n2), then factor out',
+      accept:['sqrt(pc(1-pc)(1/n1+1/n2))','sqrt(phat_c(1-phat_c)(1/n1+1/n2))']},
+
+    // ══ III. SAMPLING — ONE MEAN ══
+    {id:'xbar-mean',action:'Mean of x\u0304 sampling dist.',key:'mu',tier:'core',dom:'inf-means',
+      hint:'The mean of x\u0304 equals the population mean',
+      accept:['mu','\u03bc']},
+    {id:'xbar-sd',action:'SD of x\u0304 sampling dist.',key:'sigma/sqrt(n)',tier:'core',dom:'inf-means',
+      hint:'\u03c3 divided by square root of n',
+      accept:['sigma/sqrt(n)','s/sqrt(n)']},
+    {id:'xbar-se',action:'SE of x\u0304 (standard error)',key:'s/sqrt(n)',tier:'regular',dom:'inf-means',
+      hint:'Use s (sample SD) when \u03c3 is unknown',
+      accept:['s/sqrt(n)']},
+
+    // ══ III. SAMPLING — TWO MEANS ══
+    {id:'diff-x-sd',action:'SD of x\u03041\u2212x\u03042',key:'sqrt(sigma1^2/n1+sigma2^2/n2)',tier:'regular',dom:'inf-means',
+      hint:'Add the variances, then square root',
+      accept:['sqrt(sigma1^2/n1+sigma2^2/n2)','sqrt(s1^2/n1+s2^2/n2)']},
+    {id:'diff-x-se',action:'SE of x\u03041\u2212x\u03042',key:'sqrt(s1^2/n1+s2^2/n2)',tier:'power',dom:'inf-means',
+      hint:'Use sample variances s\u00b2 for each group',
+      accept:['sqrt(s1^2/n1+s2^2/n2)']},
+
+    // ══ III. REGRESSION SLOPE ══
+    {id:'slope-mean',action:'Mean of b sampling dist.',key:'beta',tier:'regular',dom:'regression',
+      hint:'The mean of the slope sampling dist. is the true slope \u03b2',
+      accept:['beta','\u03b2','B']},
+    {id:'slope-sd',action:'SD of b (regression slope)',key:'sigma/(sx*sqrt(n))',tier:'power',dom:'regression',
+      hint:'\u03c3 over (s\u2093 times \u221an)',
+      accept:['sigma/(sx*sqrt(n))','sigma/(sx*sqrt(n))']},
+    {id:'slope-se',action:'SE of b (regression slope)',key:'s/(sx*sqrt(n-1))',tier:'power',dom:'regression',
+      hint:'s over (s\u2093 times \u221a(n\u22121)), where s = residual SD',
+      accept:['s/(sx*sqrt(n-1))']},
+    {id:'resid-s',action:'Residual standard deviation (s)',key:'sqrt(sum(yi-yhat)^2/(n-2))',tier:'power',dom:'regression',
+      hint:'Like regular SD but df = n\u22122 for regression',
+      accept:['sqrt(sum(yi-yhat)^2/(n-2))','sqrt(SSE/(n-2))']},
+
+    // ══ COMBINATION/APPLICATION FORMULAS ══
+    {id:'one-prop-z',action:'One-proportion z test statistic',key:'(phat-p0)/sqrt(p0(1-p0)/n)',tier:'regular',dom:'inf-proportions',
+      hint:'Plug p\u2080 (null value) into the SE, not p\u0302',
+      accept:['(phat-p0)/sqrt(p0(1-p0)/n)','(p-hat-p0)/sqrt(p0(1-p0)/n)']},
+    {id:'one-mean-t',action:'One-sample t test statistic',key:'(xbar-mu0)/(s/sqrt(n))',tier:'regular',dom:'inf-means',
+      hint:'x\u0304 minus hypothesized mean, over SE',
+      accept:['(xbar-mu0)/(s/sqrt(n))','(xbar-mu)/(s/sqrt(n))']},
+    {id:'two-prop-z',action:'Two-proportion z test statistic',key:'(phat1-phat2)/sqrt(pc(1-pc)(1/n1+1/n2))',tier:'power',dom:'inf-proportions',
+      hint:'Difference in p\u0302 over pooled SE',
+      accept:['(phat1-phat2)/sqrt(pc(1-pc)(1/n1+1/n2))']},
+    {id:'two-mean-t',action:'Two-sample t test statistic',key:'(xbar1-xbar2)/sqrt(s1^2/n1+s2^2/n2)',tier:'power',dom:'inf-means',
+      hint:'Difference in means over SE of the difference',
+      accept:['(xbar1-xbar2)/sqrt(s1^2/n1+s2^2/n2)']},
+    {id:'slope-t',action:'Regression slope t statistic',key:'(b-beta0)/SEb',tier:'power',dom:'regression',
+      hint:'b minus hypothesized slope over SE of b',
+      accept:['(b-beta0)/SEb','(b-0)/SEb','b/SEb','(b-beta)/SE(b)']},
+  ],
   formatPrompt(cmd){return cmd.action},
   formatAnswer(cmd){return cmd.key},
-  validate(input,key){
-    const parsed=parseInt(input.trim(),10);
-    const expected=parseInt(key,10);
-    return{correct:parsed===expected};
-  },
-};
-
-// --- US State Capitals cartridge (static, typed) ---
-const stateCapitalsCartridge={
-  id:'us-states-capitals',
-  name:'US Capitals',
-  description:'50 state capitals',
-  icon:'\ud83c\uddfa\ud83c\uddf8',
-  inputMode:'typed',
-  prefixLabel:null,
-  title:'US CAPITALS',
-  subtitle:'TOWER DEFENSE',
-  startButton:'[ DEPLOY ]',
-  instructions:'Enemies carry state names.<br>Type the capital city and press Enter.',
-  instructionsSub:'Tab = cycle targets \u00b7 Alt+H = hint \u00b7 12 waves',
-  commands:[
-    {id:'AL',action:'Alabama',key:'Montgomery',tier:'regular',dom:'south',hint:'Named after Richard Montgomery'},
-    {id:'AK',action:'Alaska',key:'Juneau',tier:'power',dom:'west',hint:'Named after gold prospector Joe Juneau'},
-    {id:'AZ',action:'Arizona',key:'Phoenix',tier:'regular',dom:'west',hint:'Rose from the ashes like the mythical bird'},
-    {id:'AR',action:'Arkansas',key:'Little Rock',tier:'regular',dom:'south',hint:'Named for a small rock formation on the river'},
-    {id:'CA',action:'California',key:'Sacramento',tier:'core',dom:'west',hint:'Valley of the Sacramento River'},
-    {id:'CO',action:'Colorado',key:'Denver',tier:'core',dom:'west',hint:'Mile High City'},
-    {id:'CT',action:'Connecticut',key:'Hartford',tier:'regular',dom:'northeast',hint:'Insurance capital of the world'},
-    {id:'DE',action:'Delaware',key:'Dover',tier:'regular',dom:'northeast',hint:'Shares name with the white cliffs'},
-    {id:'FL',action:'Florida',key:'Tallahassee',tier:'core',dom:'south',hint:'Starts with T, not Miami'},
-    {id:'GA',action:'Georgia',key:'Atlanta',tier:'core',dom:'south',hint:'Home of Coca-Cola'},
-    {id:'HI',action:'Hawaii',key:'Honolulu',tier:'core',dom:'west',hint:'Means sheltered harbor'},
-    {id:'ID',action:'Idaho',key:'Boise',tier:'regular',dom:'west',hint:'French for wooded'},
-    {id:'IL',action:'Illinois',key:'Springfield',tier:'core',dom:'midwest',hint:'Lincoln\'s hometown, not Chicago'},
-    {id:'IN',action:'Indiana',key:'Indianapolis',tier:'core',dom:'midwest',hint:'Indiana + polis (city)'},
-    {id:'IA',action:'Iowa',key:'Des Moines',tier:'regular',dom:'midwest',hint:'French for the monks'},
-    {id:'KS',action:'Kansas',key:'Topeka',tier:'regular',dom:'midwest',hint:'A good place to dig potatoes'},
-    {id:'KY',action:'Kentucky',key:'Frankfort',tier:'regular',dom:'south',hint:'Like Frankfurt, Germany but with an O'},
-    {id:'LA',action:'Louisiana',key:'Baton Rouge',tier:'regular',dom:'south',hint:'French for red stick'},
-    {id:'ME',action:'Maine',key:'Augusta',tier:'regular',dom:'northeast',hint:'Named after Princess Augusta'},
-    {id:'MD',action:'Maryland',key:'Annapolis',tier:'regular',dom:'northeast',hint:'Home of the Naval Academy'},
-    {id:'MA',action:'Massachusetts',key:'Boston',tier:'core',dom:'northeast',hint:'Baked beans and tea parties'},
-    {id:'MI',action:'Michigan',key:'Lansing',tier:'regular',dom:'midwest',hint:'Not Detroit'},
-    {id:'MN',action:'Minnesota',key:'Saint Paul',tier:'regular',dom:'midwest',hint:'Twin city with Minneapolis'},
-    {id:'MS',action:'Mississippi',key:'Jackson',tier:'regular',dom:'south',hint:'Named after Andrew Jackson'},
-    {id:'MO',action:'Missouri',key:'Jefferson City',tier:'regular',dom:'midwest',hint:'Named after Thomas Jefferson'},
-    {id:'MT',action:'Montana',key:'Helena',tier:'power',dom:'west',hint:'Named after Helena, Minnesota'},
-    {id:'NE',action:'Nebraska',key:'Lincoln',tier:'regular',dom:'midwest',hint:'Named after President Lincoln'},
-    {id:'NV',action:'Nevada',key:'Carson City',tier:'power',dom:'west',hint:'Named after Kit Carson'},
-    {id:'NH',action:'New Hampshire',key:'Concord',tier:'power',dom:'northeast',hint:'Means harmony or agreement'},
-    {id:'NJ',action:'New Jersey',key:'Trenton',tier:'regular',dom:'northeast',hint:'Washington crossed the Delaware here'},
-    {id:'NM',action:'New Mexico',key:'Santa Fe',tier:'regular',dom:'west',hint:'Spanish for holy faith'},
-    {id:'NY',action:'New York',key:'Albany',tier:'core',dom:'northeast',hint:'Not NYC \u2014 upstate on the Hudson'},
-    {id:'NC',action:'North Carolina',key:'Raleigh',tier:'regular',dom:'south',hint:'Named after Sir Walter Raleigh'},
-    {id:'ND',action:'North Dakota',key:'Bismarck',tier:'power',dom:'midwest',hint:'Named after the German chancellor'},
-    {id:'OH',action:'Ohio',key:'Columbus',tier:'core',dom:'midwest',hint:'Named after Christopher Columbus'},
-    {id:'OK',action:'Oklahoma',key:'Oklahoma City',tier:'core',dom:'south',hint:'State name + City'},
-    {id:'OR',action:'Oregon',key:'Salem',tier:'regular',dom:'west',hint:'Means peace in Hebrew'},
-    {id:'PA',action:'Pennsylvania',key:'Harrisburg',tier:'regular',dom:'northeast',hint:'Named after John Harris'},
-    {id:'RI',action:'Rhode Island',key:'Providence',tier:'regular',dom:'northeast',hint:'Divine guidance'},
-    {id:'SC',action:'South Carolina',key:'Columbia',tier:'regular',dom:'south',hint:'Named after Christopher Columbus'},
-    {id:'SD',action:'South Dakota',key:'Pierre',tier:'power',dom:'midwest',hint:'French name, only state capital starting with P-i'},
-    {id:'TN',action:'Tennessee',key:'Nashville',tier:'core',dom:'south',hint:'Music City'},
-    {id:'TX',action:'Texas',key:'Austin',tier:'core',dom:'south',hint:'Named after Stephen F. Austin'},
-    {id:'UT',action:'Utah',key:'Salt Lake City',tier:'core',dom:'west',hint:'By the Great Salt Lake'},
-    {id:'VT',action:'Vermont',key:'Montpelier',tier:'power',dom:'northeast',hint:'Smallest state capital by population'},
-    {id:'VA',action:'Virginia',key:'Richmond',tier:'regular',dom:'south',hint:'Former Confederate capital'},
-    {id:'WA',action:'Washington',key:'Olympia',tier:'regular',dom:'west',hint:'Not Seattle \u2014 named after the Olympic Mountains'},
-    {id:'WV',action:'West Virginia',key:'Charleston',tier:'power',dom:'south',hint:'Not South Carolina\'s Charleston'},
-    {id:'WI',action:'Wisconsin',key:'Madison',tier:'regular',dom:'midwest',hint:'Named after President Madison'},
-    {id:'WY',action:'Wyoming',key:'Cheyenne',tier:'power',dom:'west',hint:'Named after the Cheyenne people'},
-  ],
-  formatPrompt(cmd){return 'Capital of '+cmd.action+'?'},
-  formatAnswer(cmd){return cmd.key},
-  validate(input,key){
+  validate(input,key,cmd){
+    // Normalize a formula string for comparison
     function norm(s){
       return s.trim().toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')  // strip accents
-        .replace(/\bst\.?\s*/g,'saint ')                     // St. / St / St.X → Saint
-        .replace(/[^a-z ]/g,'')
-        .replace(/\s+/g,' ')                                // collapse whitespace
-        .trim();
+        .replace(/\s+/g,'')           // strip all whitespace
+        .replace(/\u00b7/g,'*')       // middle dot → *
+        .replace(/\u00d7/g,'*')       // × → *
+        .replace(/\u2212/g,'-')       // minus sign → hyphen
+        .replace(/\u03c3/g,'sigma')   // σ → sigma
+        .replace(/\u03bc/g,'mu')      // μ → mu
+        .replace(/\u03b2/g,'beta')    // β → beta
+        .replace(/\u03c7/g,'chi')     // χ → chi
+        .replace(/x\u0304/g,'xbar')   // x̄ → xbar
+        .replace(/y\u0302/g,'yhat')   // ŷ → yhat
+        .replace(/p\u0302/g,'phat')   // p̂ → phat
+        .replace(/\+-/g,'+/-')
+        .replace(/\u00b1/g,'+/-')     // ± → +/-
+        .replace(/[()]/g,m=>m)        // keep parens
+        .replace(/\*/g,'*');
     }
-    return{correct:norm(input)===norm(key)};
+    const ni=norm(input);
+    // Check primary key
+    if(ni===norm(key))return{correct:true};
+    // Check accepted alternatives
+    if(cmd&&cmd.accept){
+      for(const alt of cmd.accept){
+        if(ni===norm(alt))return{correct:true};
+      }
+    }
+    return{correct:false};
   },
 };
 
 // --- All cartridges ---
-const CARTRIDGES=[tmuxCartridge, multiplicationCartridge, stateCapitalsCartridge];
+const CARTRIDGES=[tmuxCartridge, apStatsCartridge];
 let activeCartridge=null;
 let COMMANDS=[];
 
@@ -973,7 +1035,7 @@ document.addEventListener('keydown',function(e){
     e.preventDefault();
     const val=inp?inp.value:G.typedBuffer;
     if(val.trim()==='')return;
-    const result=activeCartridge.validate(val,enemy.cmd.key);
+    const result=activeCartridge.validate(val,enemy.cmd.key,enemy.cmd);
     if(result.correct){
       handleHit(enemy);
     }else{
