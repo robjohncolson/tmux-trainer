@@ -272,19 +272,24 @@ const SFX=(()=>{
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},isMuted(){return muted},startBGM,stopBGM,
     prefix(){tone(1100,.04,'sine',.06);tone(1650,.06,'triangle',.04,.03)},
-    // YES — warm major chord, rising. Intensity scales richness
+    // YES — arpeggiate current wave chord (major version), rising
     hit(intensity=1){
-      const root=330+intensity*110;
-      chordFrom(root,MAJOR,.25,'triangle',.05+intensity*.03);
-      chordFrom(root*2,MAJOR,.15,'sine',.02+intensity*.02,.05);
-      subBass(65,.3,.08+intensity*.06);
-      if(intensity>1)tone(root*3,.1,'sine',.03,.08);
+      const wc=WAVE_CHORDS[Math.max(0,Math.min(11,(G.wave||1)-1))];
+      // Play the wave chord as a bright major arpeggio
+      wc.forEach((f,i)=>{
+        tone(f*2,.2,'triangle',.06+intensity*.02,i*.06);
+        tone(f*4,.12,'sine',.02+intensity*.01,i*.06+.03);
+      });
+      subBass(wc[0]/2,.3,.08+intensity*.06);
+      if(intensity>1)tone(wc[2]*4,.1,'sine',.03,.2);
     },
-    // NO — dissonant minor 2nd cluster, descending
+    // NO — dissonant detuned version of current wave chord
     miss(){
-      chord([200,212,280],.3,'sawtooth',.07);  // tight dissonant cluster
-      crunch(150,.25,.1,.02);
-      sweep(400,80,.3,'sawtooth',.06,.05);
+      const wc=WAVE_CHORDS[Math.max(0,Math.min(11,(G.wave||1)-1))];
+      // Detune the chord slightly for dissonance
+      chord(wc.map(f=>f*1.03),.25,'sawtooth',.06);
+      chord(wc.map(f=>f*.97),.25,'sawtooth',.05,.02);
+      crunch(wc[0]/2,.2,.08,.05);
     },
     // DECLINE — descending minor chord, heavy
     breach(){
@@ -294,14 +299,17 @@ const SFX=(()=>{
       sweep(500,60,.5,'sawtooth',.08,.05);
       noiseBurst(.3,.1,.15,1200,80);
     },
-    // PROGRESSION — ascending major arpeggiated chord, each wave builds
+    // PROGRESSION — play NEXT wave's chord as a preview (ascending arpeggio)
     waveClear(){
-      subBass(55,.3,.08);
-      const roots=[262,330,392,523,659];
-      roots.forEach((f,i)=>{
-        chordFrom(f,MAJOR,.2,'triangle',.06,i*.08);
-        tone(f*2,.12,'sine',.03,i*.08+.04);
+      const nextW=Math.min(12,(G.wave||1)+1);
+      const nc=WAVE_CHORDS[Math.min(11,nextW-1)];
+      subBass(nc[0]/2,.4,.1);
+      nc.forEach((f,i)=>{
+        tone(f*2,.25,'triangle',.07,i*.1);
+        tone(f*4,.15,'sine',.03,i*.1+.05);
       });
+      // Shimmer the full chord together
+      chord(nc.map(f=>f*2),.3,'sine',.04,.35);
     },
     // TRIUMPH — full major 7th chord, shimmering
     victory(){
