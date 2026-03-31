@@ -341,7 +341,22 @@ const SFX=(()=>{
   }
 
   // ── BGM ──
-  const bassPattern=[1,1,1.189,1.335,1,1,1.498,1.335]; // ratios from root
+  // Signature bass rhythms per wave — ratios from chord root, 0 = rest
+  // 8 steps per bar at 0.25s each = 2 seconds per bar
+  const BASS_PATTERNS=[
+    [1,0,1,.75,0,1,1.5,.75],         // W1  Dire Straits — laid-back groove, rests
+    [1,1,0,1.5,1,0,1.335,1],         // W2  Take On Me — synth-pop bounce
+    [1,0,0,1.189,0,0,1.335,0],       // W3  Morning Mood — sparse, gentle
+    [1,1.5,1.335,1,1.189,1,1.5,1],   // W4  Pachelbel — walking bass, steady
+    [1,0,1,0,1,0,1.189,0],           // W5  Fur Elise — delicate, staccato
+    [1,1,1,1.189,1,1,1.335,1.5],     // W6  Winter — driving, relentless
+    [1,0,0,1.5,0,0,1.335,0],         // W7  Air on G String — slow, stately
+    [1,1.335,1,1.5,1.189,1,0,1],     // W8  Corridors of Time — flowing, mystical
+    [1,0,0,0,1.5,0,0,0],             // W9  Gymnopedie — extremely sparse, breathing
+    [1,1,1.5,1,1.335,1,1.5,1.189],   // W10 Eine Kleine — bright, busy
+    [1,0,1.189,0,1,0,1.5,0],         // W11 Swan Lake — waltz-like pulse
+    [1,1.189,1.335,1.5,1.335,1.189,1,1], // W12 Ode to Joy — triumphant march
+  ];
   function startBGM(){
     if(bgmPlaying||muted)return;ensure();bgmPlaying=true;
     const t=ctx.currentTime;
@@ -350,23 +365,30 @@ const SFX=(()=>{
     bassBus.gain.setTargetAtTime(.2,t,.3);
     for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(.5,t,.3);
     voices[3].gain.gain.setTargetAtTime(.6,t,.3);
-    const st=.25,ll=bassPattern.length*st;
+    const st=.25;
     let startT=t;
     function seq(){
       if(!bgmPlaying)return;
-      // Chord only advances on correct answers (via advanceChord())
       const prog=WC_PROG[currentWaveIdx];
       const ch=prog[currentProgIdx%4];
+      const bp=BASS_PATTERNS[currentWaveIdx]||BASS_PATTERNS[0];
+      const ll=bp.length*st;
       const now=ctx.currentTime;
-      // Bass root follows current chord
       const root=ch[0]/4;
-      // Schedule one bar of bass notes
-      bassPattern.forEach((r,i)=>{
+      // Schedule bass notes — 0 = rest (silence the bass briefly)
+      bp.forEach((r,i)=>{
         const nt=startT+i*st;
-        if(nt>now-.01)voices[3].osc.frequency.setValueAtTime(root*r,Math.max(nt,now));
+        if(nt>now-.01){
+          if(r===0){
+            voices[3].gain.gain.setValueAtTime(0,Math.max(nt,now));
+          }else{
+            voices[3].gain.gain.setValueAtTime(.6,Math.max(nt,now));
+            voices[3].osc.frequency.setValueAtTime(root*r,Math.max(nt,now));
+          }
+        }
       });
-      // Soft hihat on even beats — gentle tick, not harsh
-      for(let i=0;i<bassPattern.length;i+=2){
+      // Soft hihat on even beats
+      for(let i=0;i<bp.length;i+=2){
         const ht=startT+i*st;
         if(ht>now-.01){
           noiseLP.frequency.setValueAtTime(6000,Math.max(ht,now));
