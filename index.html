@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Tower Defense Trainer</title>
+<title>AP Stats Formula Defense</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code','Consolas',monospace}
@@ -165,54 +165,6 @@ const MODKEYS=new Set(['Shift','Control','Alt','Meta','CapsLock','NumLock','Scro
 // ═══════════════════════════════════════════════
 //  CARTRIDGE DEFINITIONS
 // ═══════════════════════════════════════════════
-
-// --- tmux cartridge (static, prefix-key) ---
-const tmuxCartridge={
-  id:'tmux',
-  name:'tmux Shortcuts',
-  description:'28 essential tmux key bindings',
-  icon:'\u2328',
-  inputMode:'prefix-key',
-  prefixLabel:'C-b',
-  title:'TMUX',
-  subtitle:'TOWER DEFENSE',
-  startButton:'[ DEPLOY ]',
-  instructions:'Enemies march toward your server.<br>Type tmux shortcuts to destroy them.<br><span style="color:#ffaa22">Ctrl+b</span> then the command key.',
-  instructionsSub:'Shifted keys work naturally \u2014 Shift+5 \u2192 %<br>Tab = cycle targets \u00b7 Alt+H = hint \u00b7 12 waves',
-  commands:[
-    {id:'detach',action:'Detach from session',key:'d',tier:'core',dom:'sessions',hint:'Leave without killing'},
-    {id:'new-win',action:'Create new window',key:'c',tier:'core',dom:'windows',hint:'c for create'},
-    {id:'next-win',action:'Next window',key:'n',tier:'core',dom:'windows',hint:'n for next'},
-    {id:'prev-win',action:'Previous window',key:'p',tier:'core',dom:'windows',hint:'p for previous'},
-    {id:'split-h',action:'Split pane horizontally',key:'"',tier:'core',dom:'panes',hint:'" as a horizontal line'},
-    {id:'split-v',action:'Split pane vertically',key:'%',tier:'core',dom:'panes',hint:'% has a vertical line'},
-    {id:'kill-pane',action:'Kill current pane',key:'x',tier:'core',dom:'panes',hint:'x marks it for death'},
-    {id:'kill-win',action:'Kill current window',key:'&',tier:'core',dom:'windows',hint:'& is bigger than x'},
-    {id:'rename-win',action:'Rename window',key:',',tier:'core',dom:'windows',hint:'comma = rename'},
-    {id:'rename-sess',action:'Rename session',key:'$',tier:'core',dom:'sessions',hint:'$ for session rename'},
-    {id:'cmd-prompt',action:'Open command prompt',key:':',tier:'core',dom:'general',hint:"Like vim's command mode"},
-    {id:'help',action:'Show key bindings',key:'?',tier:'core',dom:'general',hint:'? for help'},
-    {id:'choose-sess',action:'Choose session',key:'s',tier:'regular',dom:'sessions',hint:'s for session chooser'},
-    {id:'choose-win',action:'Choose window',key:'w',tier:'regular',dom:'windows',hint:'w for window chooser'},
-    {id:'zoom',action:'Zoom/unzoom pane',key:'z',tier:'regular',dom:'panes',hint:'z for zoom'},
-    {id:'copy-mode',action:'Enter copy mode',key:'[',tier:'regular',dom:'copy',hint:'[ enters copy mode'},
-    {id:'paste',action:'Paste from buffer',key:']',tier:'regular',dom:'copy',hint:'] pastes the buffer'},
-    {id:'find-win',action:'Find window',key:'f',tier:'regular',dom:'windows',hint:'f for find'},
-    {id:'last-pane',action:'Toggle last pane',key:';',tier:'regular',dom:'panes',hint:'; for last pane'},
-    {id:'last-win',action:'Toggle last window',key:'l',tier:'regular',dom:'windows',hint:'l for last window'},
-    {id:'next-layout',action:'Cycle layout',key:' ',tier:'regular',dom:'panes',hint:'Space cycles layouts'},
-    {id:'list-buf',action:'List paste buffers',key:'#',tier:'regular',dom:'copy',hint:'# lists buffers'},
-    {id:'swap-prev',action:'Swap pane previous',key:'{',tier:'power',dom:'panes',hint:'{ swaps backward'},
-    {id:'swap-next',action:'Swap pane next',key:'}',tier:'power',dom:'panes',hint:'} swaps forward'},
-    {id:'break',action:'Break pane to window',key:'!',tier:'power',dom:'panes',hint:'! breaks it out'},
-    {id:'win0',action:'Switch to window 0',key:'0',tier:'power',dom:'windows',hint:'0-9 for window index'},
-    {id:'clock',action:'Show clock',key:'t',tier:'power',dom:'general',hint:'t for time'},
-    {id:'disp-panes',action:'Show pane numbers',key:'q',tier:'power',dom:'panes',hint:'q queries pane numbers'},
-  ],
-  formatPrompt(cmd){return cmd.action},
-  formatAnswer(cmd){return cmd.key===' '?'Space':cmd.key},
-  validate(input,key){return{correct:input===key}},
-};
 
 // --- AP Statistics Formula Reference cartridge (quiz mode) ---
 // Two question types: IDENTIFY (what does this formula calculate? A-D)
@@ -571,7 +523,7 @@ function getAverageMastery(srs){
 }
 
 // --- All cartridges ---
-const CARTRIDGES=[tmuxCartridge, apStatsCartridge];
+const CARTRIDGES=[apStatsCartridge];
 let activeCartridge=null;
 let COMMANDS=[];
 
@@ -1169,7 +1121,7 @@ function showTitleScreen(){
   html+='</div>';
 
   html+='<button class="btn" id="btn-start" style="margin-top:12px">'+activeCartridge.startButton+'</button>';
-  html+='<div class="sub" style="margin-top:16px"><a href="#" onclick="event.preventDefault();showSelectScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  html+='<div class="sub" style="margin-top:16px"><a href="#" onclick="event.preventDefault();showTitleScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   // Reset progress link
   const prog=getCartridgeProgress(activeCartridge.id);
   if(prog.seen>0){
@@ -1309,7 +1261,7 @@ function showEndScreen(victory){
     }).join('')+'</div>';
   }
   html+='<button class="btn" onclick="startGame()">[ REDEPLOY ]</button>';
-  html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showSelectScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showTitleScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   ov.innerHTML=html;
 }
 
@@ -1723,7 +1675,10 @@ window.addEventListener('resize',()=>{
 // ═══════════════════════════════════════════════
 //  INIT — show cartridge select
 // ═══════════════════════════════════════════════
-showSelectScreen();
+// Skip cartridge select — go straight to AP Stats
+activeCartridge=apStatsCartridge;
+COMMANDS=activeCartridge.commands;
+showTitleScreen();
 </script>
 </body>
 </html>
