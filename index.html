@@ -1325,7 +1325,9 @@ function moveEnemies(){
   const waveMult=diffBase+(G.wave-1)*0.08;
   // Higher mastery = faster enemies (1.0x at mastery 0, up to 1.5x at mastery 5)
   const masteryMult=1.0+(avgMastery/5)*0.5;
-  const speed=MOVE_SPEED_BASE*waveMult*masteryMult;
+  // Streak slowmo: time slows during hot streaks (reward for flow state)
+  const streakSlow=G.streak>=10?0.5:G.streak>=5?0.7:G.streak>=3?0.85:1.0;
+  const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow;
   G.enemies.forEach(e=>{e.t+=speed*(e.speedMult||1)});
 }
 
@@ -1587,9 +1589,27 @@ function animate(time){
   requestAnimationFrame(animate);
   const dt=time-lastTime;lastTime=time;
 
-  camera.position.x=Math.sin(time*.0002)*.3;
-  camera.position.y=18+Math.sin(time*.0003)*.2;
-  camera.lookAt(0,0,-1);
+  // Camera: follow selected enemy with smooth lerp
+  const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
+  if(selEnemy&&G.screen==='game'){
+    // Zoom in toward selected enemy (lerp from default to closer view)
+    const tx=selEnemy.position.x*.3+Math.sin(time*.0002)*.15;
+    const tz=selEnemy.position.z*.2+14;
+    const ty=13+Math.sin(time*.0003)*.15;
+    camera.position.x+=(tx-camera.position.x)*.03;
+    camera.position.y+=(ty-camera.position.y)*.03;
+    camera.position.z+=(tz-camera.position.z)*.03;
+    // Look slightly toward the enemy
+    const lx=selEnemy.position.x*.4;
+    const lz=selEnemy.position.z*.3-1;
+    camera.lookAt(lx,0,lz);
+  }else{
+    // Default orbit
+    camera.position.x+=(Math.sin(time*.0002)*.3-camera.position.x)*.05;
+    camera.position.y+=(18+Math.sin(time*.0003)*.2-camera.position.y)*.05;
+    camera.position.z+=(14-camera.position.z)*.05;
+    camera.lookAt(0,0,-1);
+  }
 
   serverLight.intensity=1.5+Math.sin(time*.003)*.3;
   sTop.rotation.y=time*.001;
