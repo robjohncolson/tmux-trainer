@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <title>AP Stats Formula Defense</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code','Consolas',monospace}
-canvas{position:fixed;top:0;left:0;z-index:0}
+canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
 .hud-item{text-align:center;pointer-events:none}
 .hud-label{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600}
@@ -92,10 +92,66 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 .diff-btn:hover{border-color:#ff8c00}
 .diff-btn .diff-label{font-size:11px;font-weight:700;letter-spacing:1px}
 .diff-btn .diff-desc{font-size:8px;color:#5a3800;margin-top:2px}
+@media(max-width:768px){
+#hud{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left))}
+#input-panel{padding:4px max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));max-height:45vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.hud-label{font-size:7px;letter-spacing:1px}
+.hud-val{font-size:clamp(12px,3.5vw,16px)}
+#h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
+#tier-bar{top:40px;font-size:8px}
+#mute-btn{font-size:16px;padding:6px 8px;top:6px;right:6px}
+.enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
+.sel-arrow{font-size:11px}
+.mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
+.mc-btn{min-height:44px;padding:8px 10px;font-size:clamp(12px,3vw,14px);width:100%}
+.mc-btn .mc-key{width:24px;height:24px;font-size:12px;border-radius:6px}
+.mc-btn .mc-text{font-size:clamp(12px,3vw,14px);line-height:1.3}
+.hint-mc-grid{flex-direction:column;gap:6px;padding:0 4px}
+.hint-mc-btn{min-height:44px;padding:8px 12px;font-size:14px;width:100%;text-align:left}
+.prompt-text{font-size:clamp(13px,3.5vw,18px)}
+.prompt-label{font-size:8px;letter-spacing:2px}
+.q-type-badge{font-size:7px}
+.input-help{display:none}
+.hint-text{font-size:11px;margin-top:4px}
+.latex-display .katex{font-size:clamp(0.8em,3vw,1.15em)}
+.latex-display{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#queue-bar{bottom:auto;top:55px;font-size:8px}
+#overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
+#overlay h2{font-size:clamp(11px,3vw,16px);letter-spacing:clamp(3px,1.5vw,8px)}
+#overlay .desc{font-size:clamp(10px,2.5vw,12px);max-width:90vw;padding:0 10px}
+#overlay .btn{font-size:14px;padding:14px 28px;min-height:48px}
+#overlay .sub{font-size:10px}
+.stats-grid{gap:6px;max-width:90vw}
+.stat-box{padding:8px 4px}
+.stat-box .sv{font-size:clamp(16px,4vw,20px)}
+.weak-item{font-size:10px;padding:4px 6px}
+.domain-pills{max-width:95vw;gap:4px}
+.domain-pill{font-size:9px;padding:4px 8px}
+.diff-group{gap:5px;flex-wrap:wrap;max-width:95vw}
+.diff-btn{padding:6px 10px;font-size:10px;flex:1;min-width:80px}
+.flash-msg{font-size:clamp(20px,6vw,32px)}
+.blank-input{min-width:auto;width:80%;max-width:200px;font-size:16px}
+}
+@media(max-width:400px){
+.hud-val{font-size:clamp(10px,3vw,14px)}
+.mc-btn{min-height:48px;font-size:13px}
+#overlay h1{font-size:clamp(20px,7vw,32px)}
+.diff-group{flex-direction:column;align-items:center}
+.diff-btn{width:100%;max-width:200px}
+}
+@media(max-height:500px){
+#input-panel{max-height:35vh}
+.mc-grid{flex-direction:row;flex-wrap:wrap}
+.mc-btn{width:auto;min-height:36px;flex:1 1 45%}
+#hud{padding:4px 10px}
+.hud-val{font-size:14px}
+.prompt-text{font-size:14px}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
@@ -1127,9 +1183,20 @@ function showTitleScreen(){
   if(prog.seen>0){
     html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
   }
+  // QR code for mobile — only show on non-touch (desktop) screens
+  if(!('ontouchstart' in window)&&typeof QRCode!=='undefined'){
+    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN TO PLAY ON MOBILE</div></div>';
+  }
   ov.innerHTML=html;
   document.getElementById('btn-start').onclick=startGame;
   updateDomainAllBtn();
+  // Render QR code
+  if(!('ontouchstart' in window)&&typeof QRCode!=='undefined'){
+    const qrCanvas=document.getElementById('qr-canvas');
+    if(qrCanvas){
+      QRCode.toCanvas(qrCanvas,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(err){if(err)console.log(err)});
+    }
+  }
 }
 
 function toggleDomain(dom){
@@ -1592,6 +1659,34 @@ document.getElementById('mute-btn').onclick=()=>{
 };
 
 // ═══════════════════════════════════════════════
+//  TOUCH SUPPORT
+// ═══════════════════════════════════════════════
+document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault()},{passive:false});
+let lastTouchEnd=0;
+document.addEventListener('touchend',function(e){const now=Date.now();if(now-lastTouchEnd<300)e.preventDefault();lastTouchEnd=now},{passive:false});
+// Swipe to cycle enemies
+let touchStartX=0,touchStartTime=0;
+canvas.addEventListener('touchstart',function(e){if(G.screen!=='game'||G.paused)return;touchStartX=e.touches[0].clientX;touchStartTime=Date.now()},{passive:true});
+canvas.addEventListener('touchend',function(e){
+  if(G.screen!=='game'||G.paused||G.enemies.length<2)return;
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const dt=Date.now()-touchStartTime;
+  if(Math.abs(dx)>50&&dt<400){
+    const deep=G.enemies.filter(en=>en.splitDepth>=2);
+    const subs=G.enemies.filter(en=>en.splitDepth===1);
+    const pool=deep.length>0?deep.sort((a,b)=>b.t-a.t):subs.length>0?subs.sort((a,b)=>b.t-a.t):[...G.enemies].sort((a,b)=>b.t-a.t);
+    const idx=pool.findIndex(en=>en.id===G.selectedId);
+    const dir=dx>0?1:-1;
+    G.selectedId=pool[((idx+dir)%pool.length+pool.length)%pool.length].id;
+    G.inputState='quiz';G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+    SFX.select();lastInputState='';
+  }
+},{passive:true});
+// iOS AudioContext resume
+document.addEventListener('touchstart',function resumeAudio(){try{const c=new(window.AudioContext||window.webkitAudioContext)();c.resume().then(()=>c.close())}catch(e){}document.removeEventListener('touchstart',resumeAudio)},{once:true,passive:true});
+document.body.addEventListener('touchmove',function(e){if(e.target===document.body||e.target===canvas)e.preventDefault()},{passive:false});
+
+// ═══════════════════════════════════════════════
 //  SAVE ON UNLOAD
 // ═══════════════════════════════════════════════
 window.addEventListener('beforeunload',()=>{
@@ -1610,12 +1705,13 @@ function animate(time){
   const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
   const selEnemyObj=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(selEnemy&&G.screen==='game'){
-    // Zoom level depends on split depth: deeper = closer
     const sd=selEnemyObj?.splitDepth||0;
-    const zoomY=sd>=2?7:sd>=1?9:11;
-    const zoomZ=sd>=2?8:sd>=1?10:12;
-    const trackX=sd>=2?.6:sd>=1?.5:.4;
-    const trackZ=sd>=2?.5:sd>=1?.4:.3;
+    const port=isPortrait();
+    const pY=port?1.4:1,pZ=port?1.3:1,pT=port?.6:1;
+    const zoomY=(sd>=2?7:sd>=1?9:11)*pY;
+    const zoomZ=(sd>=2?8:sd>=1?10:12)*pZ;
+    const trackX=(sd>=2?.6:sd>=1?.5:.4)*pT;
+    const trackZ=(sd>=2?.5:sd>=1?.4:.3)*pT;
     const tx=selEnemy.position.x*trackX+Math.sin(time*.0002)*.1;
     const tz=selEnemy.position.z*trackZ+zoomZ;
     const ty=zoomY+Math.sin(time*.0003)*.1;
@@ -1627,9 +1723,11 @@ function animate(time){
     camera.lookAt(lx,0,lz);
   }else{
     // Default orbit
+    const orbY=isPortrait()?22:18;
+    const orbZ=isPortrait()?18:14;
     camera.position.x+=(Math.sin(time*.0002)*.3-camera.position.x)*.05;
-    camera.position.y+=(18+Math.sin(time*.0003)*.2-camera.position.y)*.05;
-    camera.position.z+=(14-camera.position.z)*.05;
+    camera.position.y+=(orbY+Math.sin(time*.0003)*.2-camera.position.y)*.05;
+    camera.position.z+=(orbZ-camera.position.z)*.05;
     camera.lookAt(0,0,-1);
   }
 
@@ -1666,11 +1764,17 @@ requestAnimationFrame(animate);
 // ═══════════════════════════════════════════════
 //  RESIZE
 // ═══════════════════════════════════════════════
-window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
+function isPortrait(){return window.innerHeight>window.innerWidth}
+function handleResize(){
+  const w=window.innerWidth,h=window.visualViewport?window.visualViewport.height:window.innerHeight;
+  camera.aspect=w/h;
+  camera.fov=isPortrait()?65:50;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
+  renderer.setSize(w,h);
+}
+window.addEventListener('resize',handleResize);
+window.addEventListener('orientationchange',()=>setTimeout(handleResize,150));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',handleResize);
 
 // ═══════════════════════════════════════════════
 //  INIT — show cartridge select

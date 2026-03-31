@@ -40,6 +40,15 @@ When a student **misses** a formula question, the enemy explodes into 2-3 smalle
 - **Wave completion**: Naturally waits for all children killed/breached before wave ends
 - **39 explain fields**: Each formula has a curriculum-aligned conceptual explanation (e.g. "Larger samples reduce variability — sample size is in the denominator").
 
+### Phase 6: Mobile Compatibility + QR Code
+- **Responsive CSS**: 3 breakpoints (768px, 400px, 500px height) with `clamp()` font scaling, 44px min tap targets, safe-area insets for notched devices
+- **Touch support**: Swipe left/right to cycle enemies, pinch-zoom prevention, double-tap prevention, iOS AudioContext resume, body overscroll prevention
+- **Portrait camera**: FOV widens from 50 to 65 in portrait, camera pulls higher (1.4x Y) and back (1.3x Z), tracking dampened to keep action centered
+- **Resize handler**: Uses `visualViewport` API for virtual keyboard awareness, listens to `orientationchange`
+- **QR code**: Desktop-only QR code on title screen using qrcode.js CDN, links to `https://robjohncolson.github.io/tmux-trainer/`
+- **Canvas touch-action**: Set to `none` to prevent browser gesture interception
+- **Viewport**: `maximum-scale=1.0,user-scalable=no,viewport-fit=cover`
+
 ### New Question Types
 
 1. **Identify (Multiple Choice A-D)**: Formula is rendered in LaTeX. Student picks what the formula calculates from 4 choices. Distractors are auto-generated from other formulas, preferring same domain for difficulty.
