@@ -192,35 +192,50 @@ const SFX=(()=>{
   let padBus=null,bassBus=null,sfxBus=null;
   let bgmSeqTimer=null,currentWaveIdx=0;
 
-  // Famous song chord progressions — 4-chord loop per wave, building narrative arc
-  // Each wave's BGM cycles through its 4 chords. [root, 3rd, 5th] triads.
-  const WC_PROG=[
-    // W1: Dire Straits "So Far Away" — Am G F E (melancholic start)
-    [[220,262,330],[196,247,294],[175,220,262],[165,208,247]],
-    // W2: A-ha "Take On Me" — A F#m D E (bright, energetic)
-    [[220,277,330],[185,220,277],[147,185,220],[165,208,247]],
-    // W3: Grieg "Morning Mood" — E G#m A B (pastoral, ascending)
-    [[165,208,247],[208,247,311],[220,277,330],[247,311,370]],
-    // W4: Pachelbel's Canon — D A Bm F#m (timeless, building)
-    [[147,185,220],[220,277,330],[247,294,370],[185,220,277]],
-    // W5: Beethoven "Fur Elise" — Am E Am C (tension, classic)
-    [[220,262,330],[165,208,247],[220,262,330],[262,330,392]],
-    // W6: Vivaldi "Winter" — Fm Cm Db Eb (dramatic peak)
-    [[175,208,262],[131,156,196],[139,175,208],[156,196,233]],
-    // W7: Bach "Air on G String" — G Em Am D (elegant)
-    [[196,247,294],[165,196,247],[220,262,330],[147,185,220]],
-    // W8: Chrono Trigger "Corridors of Time" — Em G Am B (ethereal, timeless)
-    [[165,196,247],[196,247,294],[220,262,330],[247,311,370]],
-    // W9: Satie "Gymnopédie No.1" — Gmaj7 Dmaj7 Gmaj7 Dmaj7 (contemplative, sparse)
-    [[196,247,294],[147,185,220],[196,247,294],[147,185,220]],
-    // W10: Mozart "Eine Kleine Nachtmusik" — G D Em C (triumphant)
-    [[196,247,294],[147,185,220],[165,196,247],[262,330,392]],
-    // W11: Tchaikovsky "Swan Lake" — Bm F# Bm Em (dramatic return)
-    [[247,294,370],[185,233,277],[247,294,370],[165,196,247]],
-    // W12: Beethoven "Ode to Joy" — D G A D (triumphant resolution)
-    [[147,185,220],[196,247,294],[220,277,330],[147,185,220]],
+  // ── MUSIC CONFIG — edit these to customize each wave's sound ──
+  // Each wave: {name, chords: [[root,3rd,5th],...], bass: [ratios, 0=rest], tempo: bpm}
+  // Chords cycle on correct answers. Bass loops continuously.
+  const MUSIC_CONFIG=[
+    {name:'Dire Straits "So Far Away"',     // W1
+      chords:[[220,262,330],[196,247,294],[175,220,262],[165,208,247]],
+      bass:[1,0,1,.75,0,1,1.5,.75], tempo:90},
+    {name:'A-ha "Take On Me"',              // W2
+      chords:[[220,277,330],[185,220,277],[147,185,220],[165,208,247]],
+      bass:[1,1,0,1.5,1,0,1.335,1], tempo:110},
+    {name:'Grieg "Morning Mood"',           // W3
+      chords:[[165,208,247],[208,247,311],[220,277,330],[247,311,370]],
+      bass:[1,0,0,1.189,0,0,1.335,0], tempo:72},
+    {name:'Pachelbel\'s Canon',             // W4
+      chords:[[147,185,220],[220,277,330],[247,294,370],[185,220,277]],
+      bass:[1,1.5,1.335,1,1.189,1,1.5,1], tempo:80},
+    {name:'Beethoven "Fur Elise"',          // W5
+      chords:[[220,262,330],[165,208,247],[220,262,330],[262,330,392]],
+      bass:[1,0,1,0,1,0,1.189,0], tempo:76},
+    {name:'Vivaldi "Winter"',               // W6 — peak tension
+      chords:[[175,208,262],[131,156,196],[139,175,208],[156,196,233]],
+      bass:[1,1,1,1.189,1,1,1.335,1.5], tempo:120},
+    {name:'Bach "Air on G String"',         // W7
+      chords:[[196,247,294],[165,196,247],[220,262,330],[147,185,220]],
+      bass:[1,0,0,1.5,0,0,1.335,0], tempo:60},
+    {name:'Chrono Trigger "Corridors of Time"', // W8
+      chords:[[165,196,247],[196,247,294],[220,262,330],[247,311,370]],
+      bass:[1,1.335,1,1.5,1.189,1,0,1], tempo:95},
+    {name:'Satie "Gymnopedie No.1"',        // W9
+      chords:[[196,247,294],[147,185,220],[196,247,294],[147,185,220]],
+      bass:[1,0,0,0,1.5,0,0,0], tempo:56},
+    {name:'Mozart "Eine Kleine Nachtmusik"', // W10
+      chords:[[196,247,294],[147,185,220],[165,196,247],[262,330,392]],
+      bass:[1,1,1.5,1,1.335,1,1.5,1.189], tempo:105},
+    {name:'Tchaikovsky "Swan Lake"',        // W11
+      chords:[[247,294,370],[185,233,277],[247,294,370],[165,196,247]],
+      bass:[1,0,1.189,0,1,0,1.5,0], tempo:84},
+    {name:'Beethoven "Ode to Joy"',         // W12 — triumph
+      chords:[[147,185,220],[196,247,294],[220,277,330],[147,185,220]],
+      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], tempo:100},
   ];
-  // For SFX: current chord (first chord of current wave's progression)
+  // Derived arrays for engine use
+  const WC_PROG=MUSIC_CONFIG.map(m=>m.chords);
+  const BASS_PATTERNS=MUSIC_CONFIG.map(m=>m.bass);
   let currentProgIdx=0;
   function wc(){return WC_PROG[currentWaveIdx][currentProgIdx%4]}
 
@@ -341,22 +356,6 @@ const SFX=(()=>{
   }
 
   // ── BGM ──
-  // Signature bass rhythms per wave — ratios from chord root, 0 = rest
-  // 8 steps per bar at 0.25s each = 2 seconds per bar
-  const BASS_PATTERNS=[
-    [1,0,1,.75,0,1,1.5,.75],         // W1  Dire Straits — laid-back groove, rests
-    [1,1,0,1.5,1,0,1.335,1],         // W2  Take On Me — synth-pop bounce
-    [1,0,0,1.189,0,0,1.335,0],       // W3  Morning Mood — sparse, gentle
-    [1,1.5,1.335,1,1.189,1,1.5,1],   // W4  Pachelbel — walking bass, steady
-    [1,0,1,0,1,0,1.189,0],           // W5  Fur Elise — delicate, staccato
-    [1,1,1,1.189,1,1,1.335,1.5],     // W6  Winter — driving, relentless
-    [1,0,0,1.5,0,0,1.335,0],         // W7  Air on G String — slow, stately
-    [1,1.335,1,1.5,1.189,1,0,1],     // W8  Corridors of Time — flowing, mystical
-    [1,0,0,0,1.5,0,0,0],             // W9  Gymnopedie — extremely sparse, breathing
-    [1,1,1.5,1,1.335,1,1.5,1.189],   // W10 Eine Kleine — bright, busy
-    [1,0,1.189,0,1,0,1.5,0],         // W11 Swan Lake — waltz-like pulse
-    [1,1.189,1.335,1.5,1.335,1.189,1,1], // W12 Ode to Joy — triumphant march
-  ];
   function startBGM(){
     if(bgmPlaying||muted)return;ensure();bgmPlaying=true;
     const t=ctx.currentTime;
@@ -365,10 +364,12 @@ const SFX=(()=>{
     bassBus.gain.setTargetAtTime(.2,t,.3);
     for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(.5,t,.3);
     voices[3].gain.gain.setTargetAtTime(.6,t,.3);
-    const st=.25;
+    let st=60/(MUSIC_CONFIG[currentWaveIdx].tempo||80)/2; // step duration from tempo
     let startT=t;
     function seq(){
       if(!bgmPlaying)return;
+      // Recalculate tempo each bar (may change on wave transition)
+      st=60/(MUSIC_CONFIG[currentWaveIdx].tempo||80)/2;
       const prog=WC_PROG[currentWaveIdx];
       const ch=prog[currentProgIdx%4];
       const bp=BASS_PATTERNS[currentWaveIdx]||BASS_PATTERNS[0];
@@ -414,6 +415,7 @@ const SFX=(()=>{
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
     isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,advanceChord,
+    getMusicConfig(){return MUSIC_CONFIG[currentWaveIdx]},
     prefix(){playNote(1100,.04,'sine',.06);playNote(1650,.06,'triangle',.04,.03)},
     hit(intensity=1){
       if(muted)return;ensure();
@@ -2011,6 +2013,9 @@ window.addEventListener('keydown',e=>{
     if(G.paused){
       ov.classList.remove('hidden');
       let ph='<h1 style="font-size:36px">PAUSED</h1>';
+      // Show current wave's music info
+      const mc=SFX.getMusicConfig();
+      if(mc)ph+='<div style="font-size:11px;color:'+AMB.css.glow+';margin:8px 0">\u266b Wave '+G.wave+': '+mc.name+' ('+mc.tempo+' BPM)</div>';
       ph+='<button class="btn" style="margin-top:12px" onclick="G.paused=false;document.getElementById(\'overlay\').classList.add(\'hidden\');SFX.startBGM()">[ RESUME ]</button>';
       ph+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();G.paused=false;showTitleScreen()" style="color:#5a3800;text-decoration:none;font-size:11px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
       if(typeof QRCode!=='undefined'){
