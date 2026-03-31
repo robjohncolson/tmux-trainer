@@ -670,7 +670,7 @@ const G={
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',
 };
-const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0004,SPAWN_DELAY_BASE=7000;
+const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0002,SPAWN_DELAY_BASE=8000;
 
 // ═══════════════════════════════════════════════
 //  THREE.JS SCENE
@@ -771,7 +771,9 @@ const enemyMeshes={};
 const eMat=new THREE.MeshPhongMaterial({color:AMB.hot,emissive:AMB.bright,emissiveIntensity:.2,flatShading:true});
 const eGeo=new THREE.BoxGeometry(.45,.45,.45);
 const childGeo=new THREE.BoxGeometry(.30,.30,.30);
-const childMat=new THREE.MeshPhongMaterial({color:0xffaa22,emissive:0xcc6600,emissiveIntensity:.25,flatShading:true});
+const childMat=new THREE.MeshPhongMaterial({color:0x4488ff,emissive:0x2255aa,emissiveIntensity:.3,flatShading:true});
+const grandGeo=new THREE.BoxGeometry(.20,.20,.20);
+const grandMat=new THREE.MeshPhongMaterial({color:0xaa44ff,emissive:0x6622aa,emissiveIntensity:.35,flatShading:true});
 
 function addEnemyMesh(enemy){
   const m=new THREE.Mesh(eGeo,eMat.clone());
@@ -786,11 +788,13 @@ function removeEnemyMesh(id){
   delete enemyMeshes[id];
 }
 function addChildEnemyMesh(enemy,offsetIdx){
-  const m=new THREE.Mesh(childGeo,childMat.clone());
+  const geo=enemy.splitDepth>=2?grandGeo:childGeo;
+  const mat=enemy.splitDepth>=2?grandMat:childMat;
+  const m=new THREE.Mesh(geo,mat.clone());
   const t=Math.min(enemy.t,1);
   const p=pathCurve.getPointAt(t);
-  const offsets=[-.4,0,.4];
-  m.position.set(p.x+offsets[offsetIdx%3],p.y+.45,p.z);
+  const offsets=enemy.splitDepth>=2?[-.25,.25]:[-.4,0,.4];
+  m.position.set(p.x+offsets[offsetIdx%offsets.length],p.y+.4,p.z);
   scene.add(m);
   enemyMeshes[enemy.id]=m;
 }
@@ -799,14 +803,17 @@ function updateEnemyMeshes(){
     const m=enemyMeshes[e.id];if(!m)return;
     const t=Math.min(e.t,1);
     const p=pathCurve.getPointAt(t);
-    const bobAmp=e.isChild?.05:.1;
+    const depth=e.splitDepth||0;
+    const bobAmp=depth>=2?.03:depth>=1?.05:.1;
     m.position.set(p.x,p.y+.3+Math.sin(Date.now()*.003+e.id)*bobAmp,p.z);
-    m.rotation.y+=e.isChild?.04:.02;
+    m.rotation.y+=depth>=2?.06:depth>=1?.04:.02;
     if(e.id===G.selectedId){
-      const selC=e.isChild?0xffcc66:AMB.white;
-      m.material.color.setHex(selC);m.material.emissive.setHex(AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
+      const selC=depth>=2?0xcc88ff:depth>=1?0x88bbff:AMB.white;
+      m.material.color.setHex(selC);m.material.emissive.setHex(depth>=2?0xaa44ff:depth>=1?0x4488ff:AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
     }else{
-      m.material.color.setHex(e.isChild?0xffaa22:AMB.hot);m.material.emissive.setHex(e.isChild?0xcc6600:AMB.bright);m.material.emissiveIntensity=e.isChild?.25:.2;
+      const baseC=depth>=2?0xaa44ff:depth>=1?0x4488ff:AMB.hot;
+      const emC=depth>=2?0x6622aa:depth>=1?0x2255aa:AMB.bright;
+      m.material.color.setHex(baseC);m.material.emissive.setHex(emC);m.material.emissiveIntensity=depth>=2?.35:depth>=1?.3:.2;
     }
   });
 }
@@ -831,8 +838,9 @@ function updateLabels(){
     // For quiz mode, show cached unit label instead of formula name (which gives away the answer!)
     const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
     const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
-    const borderC=isSel?AMB.css.white:(e.isChild?'#ffaa22':AMB.css.hot);
-    const textC=e.isChild?'#ffaa22':AMB.css.hot;
+    const dp=e.splitDepth||0;
+    const borderC=isSel?AMB.css.white:(dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot);
+    const textC=dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot;
     div.innerHTML='<div class="enemy-label-inner" style="border-color:'+borderC+';color:'+textC+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
       G.selectedId=e.id;
@@ -921,18 +929,23 @@ function updateInput(){
       if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
       html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }else if(q.type==='subconcept'){
-      // Sub-concept child question (from hydra split)
-      html+='<div class="q-type-badge" style="background:#ffaa2218;border-color:#ffaa2233;color:#ffaa22">SUB-CONCEPT</div>'+speedInfo;
-      html+='<div style="font-size:14px;color:#ffcc66;margin:4px 0;font-weight:700">'+q.text+'</div>';
+      // Sub-concept / sub-sub-concept question (from hydra split)
+      const scDepth=sel.splitDepth||1;
+      const scColor=scDepth>=2?'#aa44ff':'#4488ff';
+      const scBg=scDepth>=2?'#aa44ff18':'#4488ff18';
+      const scBorder=scDepth>=2?'#aa44ff33':'#4488ff33';
+      const scLabel=scDepth>=2?'DEEP CONCEPT':'SUB-CONCEPT';
+      html+='<div class="q-type-badge" style="background:'+scBg+';border-color:'+scBorder+';color:'+scColor+'">'+scLabel+'</div>'+speedInfo;
+      html+='<div style="font-size:14px;color:'+scColor+';margin:4px 0;font-weight:700">'+q.text+'</div>';
       html+='<div class="mc-grid">';
-      const keys=['A','B','C'];
+      const scKeys=q.options.length<=2?['A','B']:['A','B','C'];
       q.options.forEach((opt,i)=>{
         const isElim=G.showHint&&eliminated===i;
-        html+='<button class="mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleSubconceptChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+        html+='<button class="mc-btn'+(isElim?' eliminated':'')+'" style="'+(isElim?'opacity:0.2;pointer-events:none;text-decoration:line-through':'border-color:'+scColor+'44')+'" data-choice="'+scKeys[i].toLowerCase()+'"'+(isElim?' disabled':' onclick="handleSubconceptChoice(\''+scKeys[i].toLowerCase()+'\')"')+'><span class="mc-key" style="background:'+scColor+'">'+scKeys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
       });
       html+='</div>';
-      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Tab = switch</div>';
+      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text" style="border-color:'+scColor+'33">\ud83d\udca1 '+sel.cmd.explain+'</div>';
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(q.options.length<=2?'A/B':'A/B/C')+' = answer \u00b7 Tab = switch</div>';
     }else{
       // fill-blank — always show A/B/C choices
       html+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
@@ -1407,12 +1420,13 @@ function handleMiss(enemy){
   G.typedBuffer='';
 
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
-  // Hydra split: quiz parent enemies split into sub-concept children
-  if(isQuizMode&&!enemy.isChild&&!enemy.splitDepth){
+  const depth=enemy.splitDepth||0;
+  // Hydra split: depth 0 → subconcepts (depth 1), depth 1 → sub-subconcepts (depth 2)
+  if(isQuizMode&&depth<2){
     const didSplit=spawnHydraChildren(enemy);
-    if(didSplit){SFX.split();flash('SPLIT! \u26a1','#ffaa22');return}
+    if(didSplit){SFX.split();flash(depth===0?'SPLIT! \u26a1':'FRACTURE! \u26a1\u26a1',depth===0?'#4488ff':'#aa44ff');return}
   }
-  // Fallback: speed up (children, non-quiz, or split failed)
+  // Fallback: speed up (depth 2 grandchildren, non-quiz, or split failed)
   enemy.speedMult=(enemy.speedMult||1)*1.5;
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
   flash('MISS! \u26a1FASTER','#ff4422');
@@ -1424,33 +1438,58 @@ function handleMiss(enemy){
 // ═══════════════════════════════════════════════
 function spawnHydraChildren(parentEnemy){
   const cmd=parentEnemy.cmd;
-  const subs=cmd.subconcepts;
-  if(!subs||subs.length===0)return false;
-  // Cap total enemies
-  const count=Math.min(3,subs.length);
-  if(G.enemies.length+count>20)return false;
+  const depth=(parentEnemy.splitDepth||0)+1;
+  if(G.enemies.length>20)return false;
 
   const parentPos=enemyMeshes[parentEnemy.id]?.position.clone();
-  spawnExplosion(parentPos||pathPts[0],15,0xffaa22);
+  const explColor=depth>=2?0xaa44ff:0x4488ff;
+  spawnExplosion(parentPos||pathPts[0],depth>=2?10:15,explColor);
   removeEnemyMesh(parentEnemy.id);
   G.enemies=G.enemies.filter(e=>e.id!==parentEnemy.id);
 
-  const picked=shuffleArr(subs).slice(0,count);
-  picked.forEach((sc,i)=>{
-    const childT=Math.max(0,parentEnemy.t-0.03*(i+1));
-    const options=shuffleArr([sc.correct,...sc.wrong]);
-    const correctIdx=options.indexOf(sc.correct);
-    const child={
-      id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-      speedMult:.75,isChild:true,splitDepth:1,
-      subconcept:sc,
-      question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
-      label:'\u26a1 Sub-concept'
-    };
-    G.enemies.push(child);
-    addChildEnemyMesh(child,i);
-  });
-  // Clear selection so autoSelect picks best target
+  if(depth===1){
+    // Depth 1: subconcept children (blue)
+    const subs=cmd.subconcepts;
+    if(!subs||subs.length===0)return false;
+    const count=Math.min(3,subs.length);
+    const picked=shuffleArr(subs).slice(0,count);
+    picked.forEach((sc,i)=>{
+      const childT=Math.max(0,parentEnemy.t-0.03*(i+1));
+      const options=shuffleArr([sc.correct,...sc.wrong]);
+      const correctIdx=options.indexOf(sc.correct);
+      const child={
+        id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
+        speedMult:.75,isChild:true,splitDepth:1,
+        subconcept:sc,
+        question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
+        label:'\u26a1 Sub-concept'
+      };
+      G.enemies.push(child);
+      addChildEnemyMesh(child,i);
+    });
+  }else if(depth===2){
+    // Depth 2: sub-subconcept grandchildren (purple) — binary A/B choice
+    // Auto-generated from the parent subconcept's correct answer
+    const sc=parentEnemy.subconcept;
+    if(!sc)return false;
+    const count=2;
+    for(let i=0;i<count;i++){
+      const childT=Math.max(0,parentEnemy.t-0.02*(i+1));
+      // Binary question: "Is this true about [topic]?"
+      const wrongPick=sc.wrong[i%sc.wrong.length];
+      const statements=shuffleArr([sc.correct,wrongPick]);
+      const correctIdx=statements.indexOf(sc.correct);
+      const child={
+        id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
+        speedMult:.5,isChild:true,splitDepth:2,
+        subconcept:sc,
+        question:{type:'subconcept',text:sc.q+' (True or false?)',options:statements,correctIdx:correctIdx,correctKey:['a','b'][correctIdx]},
+        label:'\u26a1\u26a1 Deep concept'
+      };
+      G.enemies.push(child);
+      addChildEnemyMesh(child,i);
+    }
+  }
   if(G.selectedId===parentEnemy.id){G.selectedId=null;G.inputState='idle'}
   return true;
 }
@@ -1470,12 +1509,13 @@ window.addEventListener('keydown',e=>{
 
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
 
-  // Tab to cycle — works in all modes
+  // Tab to cycle — when children/grandchildren exist, only cycle among them
   if(e.key==='Tab'&&enemy){
     e.preventDefault();
-    const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
-    const idx=sorted.findIndex(en=>en.id===G.selectedId);
-    G.selectedId=sorted[(idx+1)%sorted.length].id;
+    const children=G.enemies.filter(en=>en.isChild||en.splitDepth>0);
+    const pool=children.length>0?children.sort((a,b)=>b.t-a.t):[...G.enemies].sort((a,b)=>b.t-a.t);
+    const idx=pool.findIndex(en=>en.id===G.selectedId);
+    G.selectedId=pool[(idx+1)%pool.length].id;
     const im2=activeCartridge?activeCartridge.inputMode:'prefix-key';
     G.inputState=im2==='prefix-key'?'await_prefix':im2==='quiz'?'quiz':'typing';
     G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
@@ -1591,17 +1631,22 @@ function animate(time){
 
   // Camera: follow selected enemy with smooth lerp
   const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
+  const selEnemyObj=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(selEnemy&&G.screen==='game'){
-    // Zoom in toward selected enemy (lerp from default to closer view)
-    const tx=selEnemy.position.x*.3+Math.sin(time*.0002)*.15;
-    const tz=selEnemy.position.z*.2+14;
-    const ty=13+Math.sin(time*.0003)*.15;
-    camera.position.x+=(tx-camera.position.x)*.03;
-    camera.position.y+=(ty-camera.position.y)*.03;
-    camera.position.z+=(tz-camera.position.z)*.03;
-    // Look slightly toward the enemy
-    const lx=selEnemy.position.x*.4;
-    const lz=selEnemy.position.z*.3-1;
+    // Zoom level depends on split depth: deeper = closer
+    const sd=selEnemyObj?.splitDepth||0;
+    const zoomY=sd>=2?7:sd>=1?9:11;
+    const zoomZ=sd>=2?8:sd>=1?10:12;
+    const trackX=sd>=2?.6:sd>=1?.5:.4;
+    const trackZ=sd>=2?.5:sd>=1?.4:.3;
+    const tx=selEnemy.position.x*trackX+Math.sin(time*.0002)*.1;
+    const tz=selEnemy.position.z*trackZ+zoomZ;
+    const ty=zoomY+Math.sin(time*.0003)*.1;
+    camera.position.x+=(tx-camera.position.x)*.04;
+    camera.position.y+=(ty-camera.position.y)*.04;
+    camera.position.z+=(tz-camera.position.z)*.04;
+    const lx=selEnemy.position.x*(trackX+.1);
+    const lz=selEnemy.position.z*(trackZ+.1)-1;
     camera.lookAt(lx,0,lz);
   }else{
     // Default orbit
