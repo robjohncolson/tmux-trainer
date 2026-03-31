@@ -487,7 +487,7 @@ const apStatsCartridge={
       explain:'Is the observed slope far enough from the hypothesized slope to reject H0?',
       latex:'t = \\frac{b - \\beta_0}{s_b}',
       blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{s_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}],
-      subconcepts:[{q:'What is \u03b2\u2080 typically in AP Stats?',correct:'0 (testing if linear relationship exists)',wrong:['1 (testing if slope=1)','The sample slope b']},{q:'What does SE_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
+      subconcepts:[{q:'What is \u03b2\u2080 typically in AP Stats?',correct:'0 (testing if linear relationship exists)',wrong:['1 (testing if slope=1)','The sample slope b']},{q:'What does s_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
   ],
 
   // Generate a question for an enemy at spawn time
@@ -531,7 +531,7 @@ const apStatsCartridge={
     // Common aliases
     const aliases={'p0':'p0','p_0':'p0','phat':'phat','p-hat':'phat','phat1':'phat1','p-hat1':'phat1',
       'pc':'pc','p_c':'pc','phatc':'pc','mu0':'mu0','mu_0':'mu0','beta0':'beta0','beta_0':'beta0',
-      'sx':'sx','s_x':'sx','sy':'sy','s_y':'sy','s1^2':'s1^2','s1²':'s1^2','sigma1^2':'sigma1^2',
+      'sx':'sx','s_x':'sx','sigma_x':'sigma_x','σx':'sigma_x','σ_x':'sigma_x','sy':'sy','s_y':'sy','s1^2':'s1^2','s1²':'s1^2','sigma1^2':'sigma1^2',
       'σ1^2':'sigma1^2','σ1²':'sigma1^2','n2':'n2','n_2':'n2','p(xi)':'p(xi)','p(x_i)':'p(xi)',
       'p(a∩b)':'p(a∩b)','p(anb)':'p(a∩b)','p(a and b)':'p(a∩b)','p(b)':'p(b)'};
     const ai=aliases[ni]||ni, aa=aliases[na]||na;
