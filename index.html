@@ -88,8 +88,14 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .menu-actions .btn{margin-top:0}
 .music-editor{width:min(960px,92vw);max-height:min(86vh,820px);overflow-y:auto;padding:22px 24px 24px;border-radius:16px;border:1px solid #ff8c0033;background:linear-gradient(180deg,#1a0800f5,#100600f7);box-shadow:0 22px 70px #00000099,0 0 30px #ff8c0018}
 .music-editor-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.title-shell{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:min(92vw,560px)}
 .music-meta{display:flex;flex-direction:column;gap:6px}
 .music-status{font-size:10px;letter-spacing:2px;color:#cc6600;min-height:12px}
+.dvd-score-stage{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.dvd-score-badge{--dvd-w:280px;--dvd-h:92px;position:absolute;left:16px;top:92px;width:var(--dvd-w);min-height:var(--dvd-h);padding:12px 18px;border:1.5px solid #44ff8866;border-radius:14px;background:linear-gradient(135deg,#10210ff2,#0d0500f2 55%,#1d0b00f0);box-shadow:0 0 18px #44ff8833,0 0 34px #ff8c0022;animation:dvd-x 17s linear infinite alternate,dvd-y 11s linear infinite alternate}
+.dvd-score-kicker{font-size:9px;letter-spacing:3px;color:#44ff88;margin-bottom:6px}
+.dvd-score-value{font-size:28px;font-weight:900;letter-spacing:2px;color:#ffcc66;text-shadow:0 0 16px #ff8c0066}
+.dvd-score-note{font-size:10px;letter-spacing:2px;color:#996622;margin-top:6px}
 .wave-selector{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 18px}
 .wave-btn{font-family:inherit;font-size:11px;font-weight:700;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:999px;padding:7px 12px;cursor:pointer;transition:all .15s}
 .wave-btn.active,.wave-btn:hover{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018}
@@ -111,6 +117,8 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .editor-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .editor-actions .btn{margin-top:0;flex:1 1 180px}
 .music-editor-note{font-size:11px;line-height:1.6;color:#996622;margin-top:12px}
+@keyframes dvd-x{from{left:16px}to{left:calc(100% - var(--dvd-w) - 16px)}}
+@keyframes dvd-y{from{top:92px}to{top:calc(100% - var(--dvd-h) - 24px)}}
 @media(max-width:768px){
 #hud{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left))}
 #input-panel{padding:4px max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));max-height:45vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -144,6 +152,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .menu-actions .btn{width:100%}
 .music-editor{width:min(94vw,720px);padding:18px 14px 16px;border-radius:14px}
 .music-editor-top{flex-direction:column;align-items:stretch}
+.title-shell{width:min(94vw,560px)}
+.dvd-score-badge{--dvd-w:210px;--dvd-h:78px;top:108px;padding:10px 14px}
+.dvd-score-value{font-size:20px}
+.dvd-score-note{font-size:9px}
 .wave-selector{gap:5px}
 .wave-btn{flex:1 1 22%;min-height:42px;padding:9px 10px}
 .music-layout{grid-template-columns:1fr}
@@ -233,45 +245,45 @@ const SFX=(()=>{
   const DEFAULT_MUSIC_CONFIG=[
     {name:'Dire Straits "So Far Away"',     // W1
       chords:[[220,262,330],[196,247,294],[175,220,262],[165,208,247]],
-      bass:[1,0,1,.75,0,1,1.5,.75], tempo:90},
+      bass:[1,0,1,.75,0,1,1.5,.75], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:90},
     {name:'A-ha "Take On Me"',              // W2
       chords:[[220,277,330],[185,220,277],[147,185,220],[165,208,247]],
-      bass:[1,1,0,1.5,1,0,1.335,1], tempo:110},
+      bass:[1,1,0,1.5,1,0,1.335,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:110},
     {name:'Grieg "Morning Mood"',           // W3
       chords:[[165,208,247],[208,247,311],[220,277,330],[247,311,370]],
-      bass:[1,0,0,1.189,0,0,1.335,0], tempo:72},
+      bass:[1,0,0,1.189,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:72},
     {name:'Pachelbel\'s Canon',             // W4
       chords:[[147,185,220],[220,277,330],[247,294,370],[185,220,277]],
-      bass:[1,1.5,1.335,1,1.189,1,1.5,1], tempo:80},
+      bass:[1,1.5,1.335,1,1.189,1,1.5,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:80},
     {name:'Beethoven "Fur Elise"',          // W5
       chords:[[220,262,330],[165,208,247],[220,262,330],[262,330,392]],
-      bass:[1,0,1,0,1,0,1.189,0], tempo:76},
+      bass:[1,0,1,0,1,0,1.189,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:76},
     {name:'Vivaldi "Winter"',               // W6 — peak tension
       chords:[[175,208,262],[131,156,196],[139,175,208],[156,196,233]],
-      bass:[1,1,1,1.189,1,1,1.335,1.5], tempo:120},
+      bass:[1,1,1,1.189,1,1,1.335,1.5], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:120},
     {name:'Bach "Air on G String"',         // W7
       chords:[[196,247,294],[165,196,247],[220,262,330],[147,185,220]],
-      bass:[1,0,0,1.5,0,0,1.335,0], tempo:60},
+      bass:[1,0,0,1.5,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:60},
     {name:'Chrono Trigger "Corridors of Time"', // W8
       chords:[[165,196,247],[196,247,294],[220,262,330],[247,311,370]],
-      bass:[1,1.335,1,1.5,1.189,1,0,1], tempo:95},
+      bass:[1,1.335,1,1.5,1.189,1,0,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:95},
     {name:'Satie "Gymnopedie No.1"',        // W9
       chords:[[196,247,294],[147,185,220],[196,247,294],[147,185,220]],
-      bass:[1,0,0,0,1.5,0,0,0], tempo:56},
+      bass:[1,0,0,0,1.5,0,0,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:56},
     {name:'Mozart "Eine Kleine Nachtmusik"', // W10
       chords:[[196,247,294],[147,185,220],[165,196,247],[262,330,392]],
-      bass:[1,1,1.5,1,1.335,1,1.5,1.189], tempo:105},
+      bass:[1,1,1.5,1,1.335,1,1.5,1.189], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:105},
     {name:'Tchaikovsky "Swan Lake"',        // W11
       chords:[[247,294,370],[185,233,277],[247,294,370],[165,196,247]],
-      bass:[1,0,1.189,0,1,0,1.5,0], tempo:84},
+      bass:[1,0,1.189,0,1,0,1.5,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:84},
     {name:'Beethoven "Ode to Joy"',         // W12 — triumph
       chords:[[147,185,220],[196,247,294],[220,277,330],[147,185,220]],
-      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], tempo:100},
+      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:100},
   ];
   let MUSIC_CONFIG=loadMusicConfig();
   let currentProgIdx=0;
   function cloneWaveConfig(cfg){
-    return{name:cfg.name,chords:cfg.chords.map(ch=>ch.slice()),bass:cfg.bass.slice(),tempo:cfg.tempo};
+    return{name:cfg.name,chords:cfg.chords.map(ch=>ch.slice()),bass:cfg.bass.slice(),pad:cfg.pad.slice(),tempo:cfg.tempo};
   }
   function cloneMusicConfig(cfgs){return cfgs.map(cloneWaveConfig)}
   function clampWaveIdx(idx){return Math.max(0,Math.min(DEFAULT_MUSIC_CONFIG.length-1,idx))}
@@ -291,6 +303,12 @@ const SFX=(()=>{
       safe.bass=raw.bass.map((step,stepIdx)=>{
         const num=Number(step);
         return Number.isFinite(num)?num:fallback.bass[stepIdx];
+      });
+    }
+    if(Array.isArray(raw&&raw.pad)&&raw.pad.length===safe.pad.length){
+      safe.pad=raw.pad.map((step,stepIdx)=>{
+        const num=Number(step);
+        return Number.isFinite(num)?num:fallback.pad[stepIdx];
       });
     }
     if(Number.isFinite(Number(raw&&raw.tempo))){
@@ -373,6 +391,26 @@ const SFX=(()=>{
       startBGM();
     }
   }
+  function schedulePadStep(level,time,stepDur){
+    const t=Math.max(time,ctx.currentTime);
+    for(let i=0;i<3;i++){
+      if(level<=0){
+        voices[i].gain.gain.setTargetAtTime(0,t,.02);
+        continue;
+      }
+      const peak=level*.75;
+      const sustain=Math.max(.02,level*.2);
+      voices[i].gain.gain.cancelScheduledValues(t);
+      voices[i].gain.gain.setValueAtTime(0,t);
+      voices[i].gain.gain.linearRampToValueAtTime(peak,t+Math.min(stepDur*.18,.05));
+      voices[i].gain.gain.linearRampToValueAtTime(sustain,t+Math.max(stepDur*.72,.12));
+    }
+  }
+  function getPreviewDurationMs(cfg){
+    const stepCount=Math.max((cfg.bass||[]).length,(cfg.pad||[]).length,1);
+    const stepDur=60/(cfg.tempo||80)/2;
+    return Math.ceil(stepCount*stepDur*cfg.chords.length*1000+400);
+  }
   function stopPreview(resumeAfter){
     if(previewTimer){clearTimeout(previewTimer);previewTimer=null}
     if(!previewConfig)return;
@@ -397,7 +435,7 @@ const SFX=(()=>{
     currentProgIdx=0;
     syncCurrentVoicing(false);
     startBGM();
-    previewTimer=setTimeout(()=>stopPreview(true),8000);
+    previewTimer=setTimeout(()=>stopPreview(true),getPreviewDurationMs(draft));
     return true;
   }
   function applyMusicConfig(nextConfig,persist){
@@ -496,7 +534,7 @@ const SFX=(()=>{
     currentProgIdx=0;
     padBus.gain.setTargetAtTime(.35,t,.3);
     bassBus.gain.setTargetAtTime(.2,t,.3);
-    for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(.5,t,.3);
+    for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(0,t,.05);
     voices[3].gain.gain.setTargetAtTime(.6,t,.3);
     let st=60/(getWaveConfig(currentWaveIdx).tempo||80)/2; // step duration from tempo
     let startT=t;
@@ -508,7 +546,9 @@ const SFX=(()=>{
       const prog=cfg.chords;
       const ch=prog[currentProgIdx%prog.length];
       const bp=cfg.bass||DEFAULT_MUSIC_CONFIG[0].bass;
-      const ll=bp.length*st;
+      const padPattern=cfg.pad||DEFAULT_MUSIC_CONFIG[0].pad;
+      const stepCount=Math.max(bp.length,padPattern.length);
+      const ll=stepCount*st;
       const now=ctx.currentTime;
       const root=ch[0]/4;
       // Schedule bass notes — 0 = rest (silence the bass briefly)
@@ -523,6 +563,11 @@ const SFX=(()=>{
           }
         }
       });
+      // Step-gate the pads so they can carry rhythmic motion instead of a flat sustain
+      padPattern.forEach((level,i)=>{
+        const pt=startT+i*st;
+        if(pt>now-.01)schedulePadStep(Math.max(0,Number(level)||0),pt,st);
+      });
       // Soft hihat on even beats
       for(let i=0;i<bp.length;i+=2){
         const ht=startT+i*st;
@@ -533,6 +578,12 @@ const SFX=(()=>{
         }
       }
       startT+=ll;
+      if(previewConfig&&previewConfig.waveIdx===currentWaveIdx){
+        const nextIdx=(currentProgIdx+1)%prog.length;
+        const nextChord=prog[nextIdx];
+        for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(nextChord[i],startT,.08);
+        currentProgIdx=nextIdx;
+      }
       bgmSeqTimer=setTimeout(seq,ll*1000*.8);
     }
     seq();
@@ -1195,6 +1246,12 @@ const BASS_OPTIONS=[
   {value:1.335,label:'4TH'},
   {value:1.5,label:'5TH'}
 ];
+const PAD_OPTIONS=[
+  {value:0,label:'REST'},
+  {value:.25,label:'GHOST'},
+  {value:.55,label:'FULL'},
+  {value:.85,label:'ACCENT'}
+];
 const MUSIC_EDITOR={open:false,returnScreen:'title',selectedWave:0,draft:null,status:''};
 function matchChordOption(chord){
   let best=CHORD_OPTIONS[0],bestDist=Infinity;
@@ -1209,6 +1266,9 @@ function renderChordOptions(selectedId){
 }
 function renderBassOptions(selectedValue){
   return BASS_OPTIONS.map(opt=>'<option value="'+opt.value+'"'+(Number(opt.value)===Number(selectedValue)?' selected':'')+'>'+opt.label+'</option>').join('');
+}
+function renderPadOptions(selectedValue){
+  return PAD_OPTIONS.map(opt=>'<option value="'+opt.value+'"'+(Number(opt.value)===Number(selectedValue)?' selected':'')+'>'+opt.label+'</option>').join('');
 }
 function setMusicStatus(msg){
   MUSIC_EDITOR.status=msg||'';
@@ -1238,7 +1298,7 @@ function closeMusicEditor(){
     showPauseScreen();
     return;
   }
-  showTitleScreen();
+  showTitleScreen('title');
 }
 function selectMusicWave(idx){
   SFX.stopMusicPreview();
@@ -1260,6 +1320,12 @@ function updateMusicBass(step,value){
   setMusicStatus('Unsaved changes');
   renderMusicEditor();
 }
+function updatePadStep(step,value){
+  SFX.stopMusicPreview();
+  currentMusicDraft().pad[step]=Number(value);
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
 function updateMusicTempo(value){
   SFX.stopMusicPreview();
   const cfg=currentMusicDraft();
@@ -1270,7 +1336,7 @@ function updateMusicTempo(value){
 }
 function previewMusicWave(){
   const ok=SFX.previewMusicConfig(MUSIC_EDITOR.selectedWave,currentMusicDraft());
-  setMusicStatus(ok?'Previewing 8-second loop':'Unmute audio to preview');
+  setMusicStatus(ok?'Previewing full 4-chord pass':'Unmute audio to preview');
 }
 function saveMusicDraft(){
   const ok=SFX.saveMusicConfig(MUSIC_EDITOR.draft);
@@ -1309,12 +1375,17 @@ function renderMusicEditor(){
   });
   html+='</div></div>';
   html+='<div class="music-card"><div class="music-card-title">TEMPO</div><div class="music-card-subtitle">Preview plays the selected wave using the current draft settings.</div><div class="tempo-shell"><input type="range" min="50" max="160" step="1" value="'+wave.tempo+'" oninput="updateMusicTempo(this.value)" onchange="updateMusicTempo(this.value)"/><div class="tempo-value" id="music-tempo-value">'+wave.tempo+' BPM</div></div></div>';
+  html+='<div class="music-card"><div class="music-card-title">PAD RHYTHM</div><div class="music-card-subtitle">Pulse the chord bed on each step so the pads can move instead of hanging flat.</div><div class="bass-grid">';
+  wave.pad.forEach((step,idx)=>{
+    html+='<label class="bass-step"><span class="bass-step-num">STEP '+(idx+1)+'</span><select class="music-select" onchange="updatePadStep('+idx+',this.value)">'+renderPadOptions(step)+'</select></label>';
+  });
+  html+='</div></div>';
   html+='<div class="music-card"><div class="music-card-title">BASS GRID</div><div class="music-card-subtitle">Eight loop steps under the current chord progression.</div><div class="bass-grid">';
   wave.bass.forEach((step,idx)=>{
     html+='<label class="bass-step"><span class="bass-step-num">STEP '+(idx+1)+'</span><select class="music-select" onchange="updateMusicBass('+idx+',this.value)">'+renderBassOptions(step)+'</select></label>';
   });
   html+='</div></div>';
-  html+='<div class="music-card"><div class="music-card-title">ACTIONS</div><div class="music-card-subtitle">Save writes the full 12-wave draft to localStorage. Reset restores the draft to stock music until you save.</div><div class="editor-actions">';
+  html+='<div class="music-card"><div class="music-card-title">ACTIONS</div><div class="music-card-subtitle">Preview now runs the whole progression so you can hear chords 1 through 4 before saving. Save writes the full 12-wave draft to localStorage. Reset restores the draft to stock music until you save.</div><div class="editor-actions">';
   html+='<button class="btn" onclick="previewMusicWave()">[ PREVIEW ]</button>';
   html+='<button class="btn btn-secondary" onclick="saveMusicDraft()">[ SAVE ]</button>';
   html+='<button class="btn btn-secondary" onclick="resetMusicDraft()">[ RESET DEFAULTS ]</button>';
@@ -1876,7 +1947,7 @@ function showPauseScreen(){
   html+='<button class="btn" onclick="resumeFromPause()">[ RESUME ]</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'pause\')">[ MUSIC EDITOR ]</button>';
   html+='</div>';
-  html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();G.paused=false;showTitleScreen()" style="color:#5a3800;text-decoration:none;font-size:11px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();G.paused=false;showTitleScreen(\'game\')" style="color:#5a3800;text-decoration:none;font-size:11px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   if(typeof QRCode!=='undefined'){
     html+='<div style="margin-top:16px;text-align:center"><canvas id="pause-qr"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
   }
@@ -1885,7 +1956,7 @@ function showPauseScreen(){
   SFX.stopBGM();
 }
 
-function showTitleScreen(){
+function showTitleScreen(context){
   G.screen='title';
   G.paused=false;
   MUSIC_EDITOR.open=false;
@@ -1912,8 +1983,11 @@ function showTitleScreen(){
     'copy':'Copy','general':'General'
   };
 
+  const titleHS=parseInt(localStorage.getItem('td-highscore-'+activeCartridge.id)||'0',10);
+  const emphasizeHighScore=context==='game';
   const ov=document.getElementById('overlay');ov.classList.remove('hidden');
-  let html='<h1>'+activeCartridge.title+'</h1>';
+  let html='<div class="title-shell">';
+  html+='<h1>'+activeCartridge.title+'</h1>';
   html+='<h2>'+activeCartridge.subtitle+'</h2>';
   html+='<p class="desc">'+activeCartridge.instructions+'</p>';
   if(activeCartridge.instructionsSub)html+='<p class="desc" style="font-size:10px;color:#5a3800">'+activeCartridge.instructionsSub+'</p>';
@@ -1949,8 +2023,7 @@ function showTitleScreen(){
   html+='</div>';
 
   // High score display
-  const titleHS=parseInt(localStorage.getItem('td-highscore-'+activeCartridge.id)||'0',10);
-  if(titleHS>0)html+='<div style="margin-top:10px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
+  if(titleHS>0&&!emphasizeHighScore)html+='<div style="margin-top:10px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
   html+='<div class="menu-actions">';
   html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'title\')">[ MUSIC EDITOR ]</button>';
@@ -1963,6 +2036,10 @@ function showTitleScreen(){
   // QR code for sharing
   if(typeof QRCode!=='undefined'){
     html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
+  }
+  html+='</div>';
+  if(titleHS>0&&emphasizeHighScore){
+    html+='<div class="dvd-score-stage"><div class="dvd-score-badge"><div class="dvd-score-kicker">HIGH SCORE</div><div class="dvd-score-value">'+titleHS.toLocaleString()+'</div><div class="dvd-score-note">back on the main screen</div></div></div>';
   }
   ov.innerHTML=html;
   document.getElementById('btn-start').onclick=startGame;
@@ -2020,7 +2097,7 @@ function resetProgress(){
   if(confirm('Reset all progress for '+activeCartridge.name+'? This cannot be undone.')){
     localStorage.removeItem('td-srs-'+activeCartridge.id);
     SFX.click();
-    showTitleScreen();
+    showTitleScreen('title');
   }
 }
 
@@ -2107,7 +2184,7 @@ function showEndScreen(victory){
     }).join('')+'</div>';
   }
   html+='<button class="btn" onclick="startGame()">[ REDEPLOY ]</button>';
-  html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showTitleScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showTitleScreen(\'game\')" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   ov.innerHTML=html;
 }
 
@@ -2573,7 +2650,7 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
 // ═══════════════════════════════════════════════
 activeCartridge=apStatsCartridge;
 COMMANDS=activeCartridge.commands;
-showTitleScreen();
+showTitleScreen('boot');
 </script>
 </body>
 </html>

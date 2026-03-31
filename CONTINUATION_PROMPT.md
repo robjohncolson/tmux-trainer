@@ -39,6 +39,7 @@ Editor features:
 
 - Wave selector: `W1` through `W12`
 - Chord picker: 4 chord slots per wave
+- Pad rhythm grid: 8 step loop per wave
 - Bass grid: 8 step loop per wave
 - Tempo slider
 - Preview button
@@ -49,7 +50,9 @@ Implementation notes:
 
 - `MUSIC_CONFIG` is still the source of truth inside the `SFX` module.
 - The sound engine now loads saved music config from `td-music-config-v1`.
-- Preview uses the current editor draft for an 8-second loop without permanently mutating the live config.
+- Preview uses the current editor draft for a full 4-chord pass without permanently mutating the live config.
+- Pad voices now support an editable per-step rhythm pattern instead of a flat sustained bed.
+- Preview advances across chords 1 through 4 so all selected chords are audible before saving.
 - Save writes the whole 12-wave draft to `localStorage`.
 - Reset restores the draft to the built-in defaults until saved.
 
@@ -61,6 +64,12 @@ Implementation notes:
   - otherwise toggles pause as before
 - `Space` no longer auto-clicks editor buttons while the music editor is open.
 
+### Return-To-Menu High Score
+
+- Returning to the title screen from gameplay now calls `showTitleScreen('game')`.
+- In that path, the saved high score is rendered as a large animated badge that drifts across the title screen like a DVD screensaver bounce.
+- Normal title-screen entry still shows the smaller static high score line.
+
 ## Current UI Layout
 
 ### Title Screen
@@ -69,7 +78,8 @@ Implementation notes:
 - instructions
 - domain filters
 - difficulty buttons
-- high score
+- static high score on normal entry
+- animated “DVD-style” high score badge when returning from pause/end-of-run
 - deploy button
 - music editor button
 - reset progress link
@@ -80,6 +90,7 @@ Implementation notes:
 - Responsive overlay panel
 - Desktop: two-column layout
 - Mobile: stacked single-column layout with internal scroll
+- Pad rhythm card sits alongside the other wave controls
 - Action buttons are at the bottom of the editor panel
 
 ## Verification Completed
@@ -90,9 +101,11 @@ Desktop verification:
 
 - Music editor opens from title screen
 - Music editor opens from pause menu
+- Returning to menu from gameplay shows the animated high-score badge
 - All required controls render:
   - 12 wave buttons
   - 4 chord selects
+  - 8 pad rhythm selects
   - 8 bass selects
   - tempo slider
   - preview/save/reset actions
@@ -101,6 +114,7 @@ Mobile verification:
 
 - Music editor renders at `375px` width
 - Editor panel is scrollable and bottom actions are reachable
+- Pad rhythm controls render and remain selectable
 - `.input-help` resolves to visible mobile styles:
   - `display: block`
   - opacity > 0
@@ -113,18 +127,21 @@ Mobile verification:
   - music editor styles
 - `index.html` `SFX` module:
   - built-in music defaults
+  - pad rhythm scheduling
   - load/save/reset/preview API
 - `index.html` music editor helpers:
   - chord library
+  - pad options
   - bass options
   - editor render/update functions
 - `index.html` screens section:
-  - `showTitleScreen()`
+  - `showTitleScreen(context)`
   - `showPauseScreen()`
   - `resumeFromPause()`
 
 ## Likely Next Tasks
 
+- Expand pad rhythm presets if users want one-click groove templates instead of per-step editing
 - Expand chord library if more harmonic variety is wanted than major/minor triads
 - Add explicit “discard draft changes” behavior if the editor should preserve unsaved edits across closes
 - Consider naming editable waves separately from the original song labels if users should author custom presets
