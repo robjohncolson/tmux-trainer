@@ -49,6 +49,18 @@ When a student **misses** a formula question, the enemy explodes into 2-3 smalle
 - **Canvas touch-action**: Set to `none` to prevent browser gesture interception
 - **Viewport**: `maximum-scale=1.0,user-scalable=no,viewport-fit=cover`
 
+### Phase 7: High Score + Chord Progression Fix + Supporting Formulas
+- **High score**: Persisted in localStorage, shown on title screen and end screen with "NEW HIGH SCORE!" banner
+- **Chord evolution within waves**: `SFX.setProgress(fraction)` evolves pad filter (600-1800Hz) and pitch as enemies are killed within each wave
+- **20 supporting formulas** added from AP Stats framework files (tier:'support', available from wave 4):
+  - Descriptive (7): z-score, IQR, outlier rule, empirical rule, residual, r-squared, y-intercept
+  - Probability (3): complement rule, general multiplication rule, independent multiplication
+  - Distributions (3): linear combination mean/variance, linear transformation
+  - Chi-Square (4): expected counts (two-way/GOF), df (GOF/two-way)
+  - Inference (3): power, margin of error, CI width vs sample size
+  - Each has LaTeX, blanks, 3 subconcepts (hydra split compatible)
+  - Total: 59 formulas (39 reference + 20 supporting), 177 subconcepts, auto-generated deep concepts
+
 ### New Question Types
 
 1. **Identify (Multiple Choice A-D)**: Formula is rendered in LaTeX. Student picks what the formula calculates from 4 choices. Distractors are auto-generated from other formulas, preferring same domain for difficulty.

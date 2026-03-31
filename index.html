@@ -694,6 +694,206 @@ const apStatsCartridge={
       latex:'t = \\frac{b - \\beta_0}{s_b}',
       blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{s_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}],
       subconcepts:[{q:'What is \u03b2\u2080 typically in AP Stats?',correct:'0 (testing if linear relationship exists)',wrong:['1 (testing if slope=1)','The sample slope b']},{q:'What does s_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
+    {id:'zscore',action:'Z-Score',tier:'support',dom:'descriptive',
+      hint:'How many SDs from the mean',
+      explain:'Standardizes any value to a common scale',
+      latex:'z = \\frac{x - \\mu}{\\sigma}',
+      blanks:[{latex:'z = \\frac{x - \\mu}{\\boxed{\\,?\\,}}',answer:'sigma',choices:['\\sigma','s','\\mu']}],
+      subconcepts:[
+        {q:'What does x represent?',correct:'The individual data value',wrong:['The mean','The standard deviation']},
+        {q:'Why subtract mu?',correct:'To measure distance from the center',wrong:['To normalize the value','To find the variance']},
+        {q:'Why divide by sigma?',correct:'To express distance in standard deviation units',wrong:['To make it positive','To find the percentile']}
+      ]},
+    {id:'iqr',action:'Interquartile Range',tier:'support',dom:'descriptive',
+      hint:'Spread of the middle 50%',
+      explain:'Resistant measure of variability based on quartiles',
+      latex:'IQR = Q_3 - Q_1',
+      blanks:[{latex:'IQR = Q_3 - \\boxed{\\,?\\,}',answer:'Q1',choices:['Q_1','Q_2','\\bar{x}']}],
+      subconcepts:[
+        {q:'What does Q1 represent?',correct:'The 25th percentile',wrong:['The minimum','The median']},
+        {q:'Why is IQR called resistant?',correct:'Not affected by outliers or extreme values',wrong:['It uses all data points','It is always positive']},
+        {q:'What percentage of data falls within the IQR?',correct:'50% (the middle half)',wrong:['68%','95%']}
+      ]},
+    {id:'outlier-iqr',action:'Outlier Rule (IQR)',tier:'support',dom:'descriptive',
+      hint:'Beyond 1.5 IQR from Q1 or Q3',
+      explain:'Uses quartiles to flag unusually extreme values',
+      latex:'\\text{Outlier if } x > Q_3 + 1.5 \\cdot IQR \\text{ or } x < Q_1 - 1.5 \\cdot IQR',
+      blanks:[{latex:'x > Q_3 + \\boxed{\\,?\\,} \\cdot IQR',answer:'1.5',choices:['1.5','2','1']}],
+      subconcepts:[
+        {q:'Why 1.5 as the multiplier?',correct:'Standard convention that balances sensitivity and specificity',wrong:['It equals one standard deviation','It is derived from the normal distribution']},
+        {q:'Why use Q1 and Q3 instead of mean?',correct:'Quartiles are resistant to the outliers being detected',wrong:['They are easier to calculate','The mean is always zero']},
+        {q:'Can a dataset have no outliers?',correct:'Yes, if all values are within the fences',wrong:['No, every dataset has outliers','Only if the data is normal']}
+      ]},
+    {id:'empirical-rule',action:'Empirical Rule (68-95-99.7)',tier:'support',dom:'descriptive',
+      hint:'Normal distribution percentages by SD',
+      explain:'Quick approximation for normal distributions without a table',
+      latex:'68\\%\\text{ within }1\\sigma,\\; 95\\%\\text{ within }2\\sigma,\\; 99.7\\%\\text{ within }3\\sigma',
+      blanks:[{latex:'\\boxed{\\,?\\,}\\%\\text{ within }2\\sigma',answer:'95',choices:['95','68','99.7']}],
+      subconcepts:[
+        {q:'What shape must the distribution be?',correct:'Approximately normal (bell-shaped)',wrong:['Any shape','Skewed right']},
+        {q:'What is the mean in the context of this rule?',correct:'The center of the distribution',wrong:['Always zero','The median']},
+        {q:'If mean=100 and SD=15, about 95% fall between?',correct:'70 and 130',wrong:['85 and 115','55 and 145']}
+      ]},
+    {id:'residual',action:'Residual',tier:'support',dom:'descriptive',
+      hint:'Observed minus predicted',
+      explain:'Measures prediction error for each data point',
+      latex:'\\text{residual} = y - \\hat{y}',
+      blanks:[{latex:'\\text{residual} = y - \\boxed{\\,?\\,}',answer:'yhat',choices:['\\hat{y}','\\bar{y}','y']}],
+      subconcepts:[
+        {q:'What does a positive residual mean?',correct:'The model underpredicted (actual > predicted)',wrong:['The model overpredicted','The point is an outlier']},
+        {q:'What does a negative residual mean?',correct:'The model overpredicted (actual < predicted)',wrong:['The model underpredicted','There is an error in the data']},
+        {q:'What should a residual plot look like for a good model?',correct:'Random scatter with no pattern',wrong:['A straight line','A curved pattern']}
+      ]},
+    {id:'r-squared',action:'Coefficient of Determination',tier:'support',dom:'descriptive',
+      hint:'Proportion of variation explained by the model',
+      explain:'Tells how well x predicts y in the regression',
+      latex:'r^2 = \\text{proportion of variation in } y \\text{ explained by } x',
+      blanks:[{latex:'r^2 = (\\boxed{\\,?\\,})^2',answer:'r',choices:['r','b','s']}],
+      subconcepts:[
+        {q:'If r squared = 0.81, what does this mean?',correct:'81% of variation in y is explained by x',wrong:['The correlation is 0.81','81% of predictions are correct']},
+        {q:'What is the range of r squared?',correct:'0 to 1 (0% to 100%)',wrong:['-1 to 1','0 to infinity']},
+        {q:'If r = -0.9, what is r squared?',correct:'0.81',wrong:['-0.81','0.9']}
+      ]},
+    {id:'y-intercept',action:'Y-Intercept of LSRL',tier:'support',dom:'descriptive',
+      hint:'Derived from the point of means',
+      explain:'Ensures the line passes through (x-bar, y-bar)',
+      latex:'a = \\bar{y} - b\\bar{x}',
+      blanks:[{latex:'a = \\bar{y} - \\boxed{\\,?\\,} \\cdot \\bar{x}',answer:'b',choices:['b','r','a']}],
+      subconcepts:[
+        {q:'Why does this formula use x-bar and y-bar?',correct:'The regression line must pass through the point of means',wrong:['To center the data','To remove outliers']},
+        {q:'What does a represent in y-hat = a + bx?',correct:'The predicted y when x equals zero',wrong:['The slope','The correlation']},
+        {q:'Is the y-intercept always meaningful?',correct:'No, only if x = 0 is within the range of the data',wrong:['Yes, always','Only for positive slopes']}
+      ]},
+    {id:'complement',action:'Complement Rule',tier:'support',dom:'probability',
+      hint:'P(not E) = 1 minus P(E)',
+      explain:'Every event either happens or does not',
+      latex:'P(E^C) = 1 - P(E)',
+      blanks:[{latex:'P(E^C) = \\boxed{\\,?\\,} - P(E)',answer:'1',choices:['1','0','P(E)']}],
+      subconcepts:[
+        {q:'What does E-complement mean?',correct:'The event E does NOT occur',wrong:['E occurs twice','The opposite event']},
+        {q:'If P(rain) = 0.3, what is P(no rain)?',correct:'0.7',wrong:['0.3','1.3']},
+        {q:'When is the complement rule most useful?',correct:'When P(at least one) is hard to compute directly',wrong:['Only for independent events','Only for mutually exclusive events']}
+      ]},
+    {id:'mult-rule',action:'General Multiplication Rule',tier:'support',dom:'probability',
+      hint:'P(A and B) = P(A) times P(B given A)',
+      explain:'Accounts for how A changes the probability of B',
+      latex:'P(A \\cap B) = P(A) \\cdot P(B|A)',
+      blanks:[{latex:'P(A \\cap B) = P(A) \\cdot \\boxed{\\,?\\,}',answer:'P(B|A)',choices:['P(B|A)','P(B)','P(A|B)']}],
+      subconcepts:[
+        {q:'When does P(B|A) differ from P(B)?',correct:'When A and B are not independent',wrong:['Never','Always']},
+        {q:'How does this relate to conditional probability?',correct:'It is a rearrangement of P(A|B) = P(A and B)/P(B)',wrong:['They are unrelated','It only works for independent events']},
+        {q:'If events ARE independent, what simplifies?',correct:'P(B|A) = P(B), so P(A and B) = P(A) times P(B)',wrong:['P(A and B) = 0','P(A and B) = P(A) + P(B)']}
+      ]},
+    {id:'mult-independent',action:'Multiplication Rule (Independent)',tier:'support',dom:'probability',
+      hint:'P(A and B) = P(A) times P(B)',
+      explain:'Simplified version when events do not affect each other',
+      latex:'P(A \\cap B) = P(A) \\cdot P(B) \\quad \\text{(if independent)}',
+      blanks:[{latex:'P(A \\cap B) = P(A) \\cdot \\boxed{\\,?\\,}',answer:'P(B)',choices:['P(B)','P(B|A)','P(A \\cup B)']}],
+      subconcepts:[
+        {q:'What does independence mean here?',correct:'Knowing A occurred does not change the probability of B',wrong:['A and B cannot both happen','A causes B']},
+        {q:'How do you check if events are independent?',correct:'P(A|B) = P(A), or P(A and B) = P(A) times P(B)',wrong:['P(A) + P(B) = 1','They are mutually exclusive']},
+        {q:'Are mutually exclusive events independent?',correct:'No - if A happens, B cannot (P(B|A) = 0, not P(B))',wrong:['Yes, always','Only if P(A) = P(B)']}
+      ]},
+    {id:'lincomb-mean',action:'Mean of Linear Combination',tier:'support',dom:'distributions',
+      hint:'Mean of aX+bY = a times mean X + b times mean Y',
+      explain:'Means combine linearly regardless of independence',
+      latex:'\\mu_{aX+bY} = a\\mu_X + b\\mu_Y',
+      blanks:[{latex:'\\mu_{aX+bY} = a\\mu_X + \\boxed{\\,?\\,}\\mu_Y',answer:'b',choices:['b','a','1']}],
+      subconcepts:[
+        {q:'Does this require X and Y to be independent?',correct:'No, means always combine linearly',wrong:['Yes, independence required','Only for normal variables']},
+        {q:'For X-bar1 minus X-bar2, what are a and b?',correct:'a = 1, b = -1',wrong:['a = 1, b = 1','a = 0, b = 1']},
+        {q:'Why is this useful for sampling distributions?',correct:'It lets us find the mean of differences like p-hat1 minus p-hat2',wrong:['It replaces the CLT','It only works for sums']}
+      ]},
+    {id:'lincomb-var',action:'Variance of Linear Combination',tier:'support',dom:'distributions',
+      hint:'Variances add (with squared coefficients) for independent variables',
+      explain:'Key reason why we add variances for differences, not subtract',
+      latex:'\\text{Var}(aX+bY) = a^2\\sigma_X^2 + b^2\\sigma_Y^2 \\quad \\text{(independent)}',
+      blanks:[{latex:'\\text{Var}(aX+bY) = a^2\\sigma_X^2 + \\boxed{\\,?\\,}\\sigma_Y^2',answer:'b^2',choices:['b^2','b','-b^2']}],
+      subconcepts:[
+        {q:'Why b-squared (not just b)?',correct:'Squaring makes the coefficient positive even for subtraction',wrong:['To match the units','Because variance is always squared']},
+        {q:'Why do variances ADD for X minus Y?',correct:'Because (-1) squared = 1, so both terms are positive',wrong:['Variances always subtract for differences','This only works for sums']},
+        {q:'Does this require independence?',correct:'Yes, if X and Y are not independent there is a covariance term',wrong:['No, it always works','Only for normal distributions']}
+      ]},
+    {id:'lintransform',action:'Linear Transformation',tier:'support',dom:'distributions',
+      hint:'Adding shifts the mean; multiplying scales both mean and SD',
+      explain:'Changing units (like C to F) transforms parameters predictably',
+      latex:'Y = a+bX: \\; \\mu_Y = a+b\\mu_X, \\; \\sigma_Y = |b|\\sigma_X',
+      blanks:[{latex:'\\sigma_Y = \\boxed{\\,?\\,} \\cdot \\sigma_X',answer:'|b|',choices:['|b|','b','a+b']}],
+      subconcepts:[
+        {q:'Why does adding a constant NOT change the SD?',correct:'Adding shifts all values equally, spread stays the same',wrong:['It does change the SD','Only for normal data']},
+        {q:'Converting inches to cm (multiply by 2.54) does what to SD?',correct:'Multiplies the SD by 2.54',wrong:['Does not change SD','Divides SD by 2.54']},
+        {q:'Why absolute value of b?',correct:'SD is always non-negative',wrong:['b is always positive','To handle missing data']}
+      ]},
+    {id:'expected-twoway',action:'Expected Count (Two-Way Table)',tier:'support',dom:'chi-square',
+      hint:'Row total times column total divided by grand total',
+      explain:'What we would expect if the variables were independent',
+      latex:'E = \\frac{\\text{row total} \\times \\text{column total}}{\\text{grand total}}',
+      blanks:[{latex:'E = \\frac{\\text{row total} \\times \\text{column total}}{\\boxed{\\,?\\,}}',answer:'grand total',choices:['\\text{grand total}','n','\\text{row total}']}],
+      subconcepts:[
+        {q:'What assumption does this formula reflect?',correct:'That the row and column variables are independent',wrong:['That the counts are equal','That the data is normal']},
+        {q:'Why multiply row by column total?',correct:'Under independence, joint proportion = product of marginal proportions',wrong:['To get the largest possible count','To normalize the table']},
+        {q:'What condition must expected counts satisfy?',correct:'All expected counts must be at least 5',wrong:['All must be integers','All must equal observed counts']}
+      ]},
+    {id:'expected-gof',action:'Expected Count (Goodness of Fit)',tier:'support',dom:'chi-square',
+      hint:'Sample size times null proportion',
+      explain:'What each category count should be if H0 proportions are correct',
+      latex:'E = n \\cdot p_0',
+      blanks:[{latex:'E = n \\cdot \\boxed{\\,?\\,}',answer:'p0',choices:['p_0','\\hat{p}','1/k']}],
+      subconcepts:[
+        {q:'Where does p0 come from?',correct:'The null hypothesis specifies the expected proportions',wrong:['From the sample data','From a normal distribution']},
+        {q:'What if H0 says all categories are equally likely with k categories?',correct:'Each expected count is n/k',wrong:['Each is n times k','Each is 1/k']},
+        {q:'Why do we need expected counts?',correct:'To compare with observed counts in the chi-square formula',wrong:['To find the p-value directly','To determine the sample size']}
+      ]},
+    {id:'df-gof',action:'Degrees of Freedom (Chi-Square GOF)',tier:'support',dom:'chi-square',
+      hint:'Number of categories minus one',
+      explain:'Lose 1 df because proportions must sum to 1',
+      latex:'df = k - 1 \\quad \\text{(k = number of categories)}',
+      blanks:[{latex:'df = k - \\boxed{\\,?\\,}',answer:'1',choices:['1','2','k']}],
+      subconcepts:[
+        {q:'Why subtract 1?',correct:'Once k-1 proportions are set, the last is determined (must sum to 1)',wrong:['Because we estimated the mean','Convention']},
+        {q:'If there are 5 categories, what is df?',correct:'4',wrong:['5','3']},
+        {q:'How is df used?',correct:'To find the p-value from the chi-square distribution',wrong:['To calculate the test statistic','To determine sample size']}
+      ]},
+    {id:'df-twoway',action:'Degrees of Freedom (Two-Way Table)',tier:'support',dom:'chi-square',
+      hint:'(rows minus 1) times (columns minus 1)',
+      explain:'Reflects the number of independent cells in the table',
+      latex:'df = (r-1)(c-1)',
+      blanks:[{latex:'df = (r-1)\\cdot\\boxed{\\,?\\,}',answer:'(c-1)',choices:['(c-1)','c','(r-1)']}],
+      subconcepts:[
+        {q:'Why (r-1) instead of r?',correct:'Row totals are fixed, so last row is determined',wrong:['We subtract 1 for the mean','There is always one empty row']},
+        {q:'A 3x4 table has how many df?',correct:'6 = (3-1)(4-1) = 2 times 3',wrong:['12','11']},
+        {q:'Does this apply to GOF tests?',correct:'No, GOF uses k-1 (one-dimensional)',wrong:['Yes, same formula','Only if there are 2 rows']}
+      ]},
+    {id:'power',action:'Statistical Power',tier:'support',dom:'inference',
+      hint:'Probability of correctly rejecting a false H0',
+      explain:'Higher power means better ability to detect real effects',
+      latex:'\\text{Power} = 1 - P(\\text{Type II error}) = 1 - \\beta',
+      blanks:[{latex:'\\text{Power} = 1 - \\boxed{\\,?\\,}',answer:'beta',choices:['\\beta','\\alpha','p']}],
+      subconcepts:[
+        {q:'What is a Type II error?',correct:'Failing to reject H0 when H0 is actually false',wrong:['Rejecting H0 when H0 is true','Getting a small p-value']},
+        {q:'How can you increase power?',correct:'Increase sample size, increase alpha, or increase effect size',wrong:['Decrease sample size','Use a two-sided test instead of one-sided']},
+        {q:'What is the relationship between alpha and power?',correct:'Higher alpha gives higher power (but more Type I error risk)',wrong:['They are the same thing','Higher alpha decreases power']}
+      ]},
+    {id:'margin-error',action:'Margin of Error',tier:'support',dom:'inference',
+      hint:'Critical value times standard error',
+      explain:'Controls the precision of the confidence interval',
+      latex:'ME = z^* \\cdot SE \\quad \\text{or} \\quad ME = t^* \\cdot SE',
+      blanks:[{latex:'ME = \\boxed{\\,?\\,} \\cdot SE',answer:'z* or t*',choices:['z^* \\text{ or } t^*','\\alpha','n']}],
+      subconcepts:[
+        {q:'What determines whether to use z* or t*?',correct:'z* for proportions (sigma known), t* for means (sigma unknown)',wrong:['z* for small samples','t* only when n < 30']},
+        {q:'How does increasing confidence level affect ME?',correct:'ME increases (wider interval, more confident)',wrong:['ME decreases','ME stays the same']},
+        {q:'How does increasing n affect ME?',correct:'ME decreases (SE gets smaller, more precise)',wrong:['ME increases','No effect']}
+      ]},
+    {id:'width-ci',action:'CI Width and Sample Size',tier:'support',dom:'inference',
+      hint:'Width proportional to 1 over square root of n',
+      explain:'Quadrupling n only halves the margin of error',
+      latex:'\\text{Width} \\propto \\frac{1}{\\sqrt{n}}',
+      blanks:[{latex:'\\text{Width} \\propto \\frac{1}{\\boxed{\\,?\\,}}',answer:'sqrt(n)',choices:['\\sqrt{n}','n','n^2']}],
+      subconcepts:[
+        {q:'To halve the margin of error, you must...',correct:'Quadruple the sample size (multiply n by 4)',wrong:['Double the sample size','Halve the confidence level']},
+        {q:'Why square root (not just n)?',correct:'SE has sqrt(n) in the denominator, so ME inherits this',wrong:['Because of the normal distribution','Because we square the SD']},
+        {q:'Doubling n reduces ME by what factor?',correct:'About 1.41 (square root of 2)',wrong:['Exactly 2','Exactly 0.5']}
+      ]},
   ],
 
   // Generate a question for an enemy at spawn time
@@ -1280,7 +1480,7 @@ function updateQueue(){
   bar.innerHTML=html;
 }
 function updateTierBar(){
-  const tiers=['core','regular','power'];
+  const tiers=['core','regular','power','support'];
   const bar=document.getElementById('tier-bar');
   bar.innerHTML=tiers.map(t=>'<span style="color:'+(G.unlockedTiers.includes(t)?AMB.css.hot:AMB.css.dark)+';margin:0 6px">\u25a0 '+t.toUpperCase()+(G.unlockedTiers.includes(t)?'':' \ud83d\udd12')+'</span>').join('');
 }
@@ -1460,7 +1660,7 @@ function resetProgress(){
 //  GAME LOGIC
 // ═══════════════════════════════════════════════
 function genWave(n){
-  const tiers=n>=7?['core','regular','power']:n>=4?['core','regular']:['core'];
+  const tiers=n>=7?['core','regular','power','support']:n>=4?['core','regular','support']:['core'];
   G.unlockedTiers=tiers;
   let pool=COMMANDS.filter(c=>tiers.includes(c.tier));
   // Filter by selected domains
