@@ -717,6 +717,14 @@ function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=
 // Render LaTeX safely into an element
 function renderLatex(latex,el){try{katex.render(latex,el,{throwOnError:false,displayMode:true})}catch(e){el.textContent=latex}}
 
+// Render QR code into a canvas element by id
+function renderQR(canvasId){
+  if(typeof QRCode==='undefined')return;
+  const el=document.getElementById(canvasId);
+  if(!el)return;
+  QRCode.toCanvas(el,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(err){if(err)console.log(err)});
+}
+
 // Domain → Unit/Topic label mapping (AP Stats 2026 curriculum)
 const DOM_LABELS={
   'descriptive':['U1 · Describing Data','U2 · Two-Variable Data','U1 · Summary Stats','U2 · Regression'],
@@ -1345,20 +1353,14 @@ function showTitleScreen(){
   if(prog.seen>0){
     html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
   }
-  // QR code for mobile — only show on non-touch (desktop) screens
-  if(!('ontouchstart' in window)&&typeof QRCode!=='undefined'){
-    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN TO PLAY ON MOBILE</div></div>';
+  // QR code for sharing
+  if(typeof QRCode!=='undefined'){
+    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
   }
   ov.innerHTML=html;
   document.getElementById('btn-start').onclick=startGame;
   updateDomainAllBtn();
-  // Render QR code
-  if(!('ontouchstart' in window)&&typeof QRCode!=='undefined'){
-    const qrCanvas=document.getElementById('qr-canvas');
-    if(qrCanvas){
-      QRCode.toCanvas(qrCanvas,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(err){if(err)console.log(err)});
-    }
-  }
+  renderQR('qr-canvas');
 }
 
 function toggleDomain(dom){
@@ -1692,7 +1694,14 @@ window.addEventListener('keydown',e=>{
     const ov=document.getElementById('overlay');
     if(G.paused){
       ov.classList.remove('hidden');
-      ov.innerHTML='<h1 style="font-size:36px">PAUSED</h1><h2>Press ESC to resume</h2><button class="btn" onclick="G.paused=false;document.getElementById(\'overlay\').classList.add(\'hidden\')">[ RESUME ]</button>';
+      let ph='<h1 style="font-size:36px">PAUSED</h1>';
+      ph+='<button class="btn" style="margin-top:12px" onclick="G.paused=false;document.getElementById(\'overlay\').classList.add(\'hidden\');SFX.startBGM()">[ RESUME ]</button>';
+      ph+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();G.paused=false;showTitleScreen()" style="color:#5a3800;text-decoration:none;font-size:11px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+      if(typeof QRCode!=='undefined'){
+        ph+='<div style="margin-top:16px;text-align:center"><canvas id="pause-qr"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
+      }
+      ov.innerHTML=ph;
+      renderQR('pause-qr');
       SFX.stopBGM();
     }else{
       ov.classList.add('hidden');
