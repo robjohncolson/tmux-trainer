@@ -80,6 +80,18 @@ canvas{position:fixed;top:0;left:0;z-index:0}
 /* Typed input */
 .typed-input{padding:8px 16px;border:1.5px solid #ff8c00;border-radius:4px;font-size:18px;font-weight:700;color:#ff8c00;background:#0d0500;min-width:280px;text-align:center;font-family:inherit;outline:none;box-shadow:0 0 10px #ff8c0044;caret-color:#ffcc66}
 .typed-input::placeholder{color:#3d1f00}
+/* Domain pills */
+.domain-pills{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:420px;margin:10px auto}
+.domain-pill{font-family:inherit;font-size:10px;font-weight:600;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:12px;padding:3px 10px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.domain-pill.active{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018;box-shadow:0 0 6px #ff8c0022}
+.domain-pill:hover{border-color:#ff8c00}
+/* Difficulty radios */
+.diff-group{display:flex;gap:8px;justify-content:center;margin:10px auto}
+.diff-btn{font-family:inherit;font-size:11px;font-weight:600;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s;text-align:center}
+.diff-btn.active{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018;box-shadow:0 0 8px #ff8c0022}
+.diff-btn:hover{border-color:#ff8c00}
+.diff-btn .diff-label{font-size:11px;font-weight:700;letter-spacing:1px}
+.diff-btn .diff-desc{font-size:8px;color:#5a3800;margin-top:2px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -140,7 +152,8 @@ const SFX=(()=>{
     spawn(){tone(165,.1,'triangle',.04);sweep(400,165,.08,'square',.02)},
     select(){tone(1400,.03,'square',.06);noiseBurst(.02,.03,0,8000,2000)},
     click(){tone(1000,.04,'square',.06);tone(1500,.03,'square',.04,.02)},
-    combo(){sweep(600,1600,.15,'square',.06);tone(1600,.1,'triangle',.04,.08)}
+    combo(){sweep(600,1600,.15,'square',.06);tone(1600,.1,'triangle',.04,.08)},
+    split(){sweep(800,200,.2,'sawtooth',.1);noiseBurst(.15,.08,.05,2500,200);tone(440,.1,'triangle',.06,.1);tone(660,.08,'square',.04,.15)}
   }
 })();
 
@@ -223,224 +236,272 @@ const apStatsCartridge={
       hint:'Add all values, divide by count',
       explain:'This measures the center — total divided by how many',
       latex:'\\bar{x} = \\frac{\\sum x_i}{n}',
-      blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','N']}]},
+      blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','N']}],
+      subconcepts:[{q:'What does \u03a3 (sigma) mean here?',correct:'Sum all values',wrong:['Multiply all values','Find the median']},{q:'Why divide by n?',correct:'To find the average per observation',wrong:['To convert to percentage','To adjust for bias']},{q:'What does x\u0304 estimate?',correct:'The population mean \u03bc',wrong:['The population SD','The median']}]},
     {id:'std-dev',action:'Sample Std Dev (s)',tier:'core',dom:'descriptive',
       hint:'Square root of variance; denominator is n\u22121',
       explain:'Measures spread; uses degrees of freedom to correct for sample bias',
       latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{n-1}}',
-      blanks:[{latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n+1']}]},
+      blanks:[{latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n+1']}],
+      subconcepts:[{q:'Why subtract x\u0304 from each value?',correct:'To measure deviation from the mean',wrong:['To normalize each value','To remove outliers']},{q:'Why use n\u22121 instead of n?',correct:'Degrees of freedom correction for samples',wrong:['To make the value smaller','Because one value is always zero']},{q:'Why take the square root?',correct:'To convert variance back to original units',wrong:['To make the value smaller','To normalize the distribution']}]},
     {id:'linreg',action:'Regression Line (\u0177)',tier:'core',dom:'descriptive',
       hint:'\u0177 = a + bx (intercept + slope\u00b7x)',
       explain:'Predicted y from x — intercept plus slope times x',
       latex:'\\hat{y} = a + bx',
-      blanks:[{latex:'\\hat{y} = a + \\boxed{\\,?\\,}\\cdot x',answer:'b',choices:['b','r','a']}]},
+      blanks:[{latex:'\\hat{y} = a + \\boxed{\\,?\\,}\\cdot x',answer:'b',choices:['b','r','a']}],
+      subconcepts:[{q:'What does "a" represent?',correct:'The y-intercept (predicted y when x=0)',wrong:['The slope of the line','The correlation coefficient']},{q:'What does "b" represent?',correct:'The slope (change in \u0177 per unit x)',wrong:['The y-intercept','The residual']},{q:'Why use \u0177 instead of y?',correct:'\u0177 is predicted, not observed',wrong:['\u0177 is always larger','It removes outliers']}]},
     {id:'linreg-mean',action:'Regression thru means',tier:'core',dom:'descriptive',
       hint:'The regression line passes through the point of means',
       explain:'The line must pass through the centroid of the data',
       latex:'\\bar{y} = a + b\\bar{x}',
-      blanks:[{latex:'\\bar{y} = a + b\\cdot\\boxed{\\,?\\,}',answer:'xbar',choices:['\\bar{x}','x','n']}]},
+      blanks:[{latex:'\\bar{y} = a + b\\cdot\\boxed{\\,?\\,}',answer:'xbar',choices:['\\bar{x}','x','n']}],
+      subconcepts:[{q:'What is the point of means?',correct:'The point (x\u0304, y\u0304)',wrong:['The median of x and y','The origin (0,0)']},{q:'Why must the line pass through (x\u0304,y\u0304)?',correct:'It minimizes squared residuals',wrong:['Because a=0','Because r=1']},{q:'What does b\u00b7x\u0304 calculate?',correct:'The slope contribution at the mean of x',wrong:['The correlation at x\u0304','The residual at x\u0304']}]},
     {id:'corr-r',action:'Correlation Coefficient (r)',tier:'regular',dom:'descriptive',
       hint:'Sum of products of z-scores, divided by n\u22121',
       explain:'Standardizes both variables to z-scores first, then averages their products',
       latex:'r = \\frac{1}{n-1}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',
-      blanks:[{latex:'r = \\frac{1}{\\boxed{\\,?\\,}}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',answer:'n-1',choices:['n-1','n','n+1']}]},
+      blanks:[{latex:'r = \\frac{1}{\\boxed{\\,?\\,}}\\sum\\!\\left(\\frac{x_i-\\bar{x}}{s_x}\\right)\\!\\left(\\frac{y_i-\\bar{y}}{s_y}\\right)',answer:'n-1',choices:['n-1','n','n+1']}],
+      subconcepts:[{q:'What is a z-score?',correct:'How many SDs a value is from the mean',wrong:['The percentile rank','The raw deviation']},{q:'Why divide by n\u22121?',correct:'Degrees of freedom for sample correlation',wrong:['To make r between 0 and 1','To adjust for skewness']},{q:'What does r=0 mean?',correct:'No linear relationship',wrong:['No relationship of any kind','Variables are independent']}]},
     {id:'slope-b',action:'Regression Slope (b)',tier:'core',dom:'descriptive',
       hint:'r times the ratio of standard deviations',
       explain:'Strength of relationship scaled by the ratio of variabilities',
       latex:'b = r\\,\\frac{s_y}{s_x}',
-      blanks:[{latex:'b = \\boxed{\\,?\\,}\\,\\frac{s_y}{s_x}',answer:'r',choices:['r','b','s']}]},
+      blanks:[{latex:'b = \\boxed{\\,?\\,}\\,\\frac{s_y}{s_x}',answer:'r',choices:['r','b','s']}],
+      subconcepts:[{q:'What does r measure here?',correct:'Strength and direction of linear association',wrong:['The slope itself','Percentage of variation explained']},{q:'Why multiply r by sy/sx?',correct:'To scale correlation to units of y per x',wrong:['To normalize the slope','To remove the intercept']},{q:'If r=1 and sy=sx, what is b?',correct:'b = 1',wrong:['b = 0','b = r\u00b2']}]},
 
     // ══ II. PROBABILITY ══
     {id:'add-rule',action:'Addition Rule P(A\u222aB)',tier:'core',dom:'probability',
       hint:'Add individual, subtract the overlap',
       explain:'Events can overlap — subtract what you double-counted',
       latex:'P(A \\cup B) = P(A) + P(B) - P(A \\cap B)',
-      blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A∩B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}]},
+      blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A∩B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}],
+      subconcepts:[{q:'What does P(A\u2229B) represent?',correct:'Probability both A and B occur',wrong:['Probability either occurs','Probability A causes B']},{q:'Why subtract P(A\u2229B)?',correct:'To avoid double-counting the overlap',wrong:['Because A and B are independent','To make result less than 1']},{q:'When does P(A\u222aB) = P(A)+P(B)?',correct:'When A and B are mutually exclusive',wrong:['When A and B are independent','Always']}]},
     {id:'cond-prob',action:'Conditional Prob P(A|B)',tier:'core',dom:'probability',
       hint:'Joint probability divided by the condition',
       explain:'Restrict the sample space to only where the condition is true',
       latex:'P(A|B) = \\frac{P(A \\cap B)}{P(B)}',
-      blanks:[{latex:'P(A|B) = \\frac{P(A \\cap B)}{\\boxed{\\,?\\,}}',answer:'P(B)',choices:['P(B)','P(A)','P(A\\cup B)']}]},
+      blanks:[{latex:'P(A|B) = \\frac{P(A \\cap B)}{\\boxed{\\,?\\,}}',answer:'P(B)',choices:['P(B)','P(A)','P(A\\cup B)']}],
+      subconcepts:[{q:'What does "given B" mean?',correct:'Restrict sample space to only B outcomes',wrong:['B happens after A','B causes A']},{q:'If P(A|B)=P(A), what does that mean?',correct:'A and B are independent',wrong:['A and B are mutually exclusive','A always happens']},{q:'Why is P(B) in the denominator?',correct:'It becomes the new total probability',wrong:['To normalize A','Because B is always larger']}]},
 
     // ══ II. DISCRETE RANDOM VARIABLES ══
     {id:'rv-mean',action:'Mean of Discrete R.V. (\u03bc)',tier:'core',dom:'distributions',
       hint:'Each value times its probability, summed',
       explain:'Expected value — each outcome weighted by how likely it is',
       latex:'\\mu_X = \\sum x_i \\cdot P(x_i)',
-      blanks:[{latex:'\\mu_X = \\sum x_i \\cdot \\boxed{\\,?\\,}',answer:'P(xi)',choices:['P(x_i)','x_i','n']}]},
+      blanks:[{latex:'\\mu_X = \\sum x_i \\cdot \\boxed{\\,?\\,}',answer:'P(xi)',choices:['P(x_i)','x_i','n']}],
+      subconcepts:[{q:'What does P(xi) represent?',correct:'The probability of outcome xi',wrong:['The percentile of xi','The frequency of xi']},{q:'Why multiply each xi by P(xi)?',correct:'To weight outcomes by likelihood',wrong:['To normalize values','To find the median']},{q:'What is another name for \u03bcX?',correct:'Expected value E(X)',wrong:['Standard deviation','Mode']}]},
     {id:'rv-sd',action:'SD of Discrete R.V. (\u03c3)',tier:'regular',dom:'distributions',
       hint:'Square root of variance: weighted squared deviations',
       explain:'How far outcomes typically fall from the expected value, probability-weighted',
       latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}',
-      blanks:[{latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\boxed{\\,?\\,})^2 \\cdot P(x_i)}',answer:'mu',choices:['\\mu','\\bar{x}','0']}]},
+      blanks:[{latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\boxed{\\,?\\,})^2 \\cdot P(x_i)}',answer:'mu',choices:['\\mu','\\bar{x}','0']}],
+      subconcepts:[{q:'Why square (xi\u2212\u03bc)\u00b2?',correct:'Prevents positive/negative canceling',wrong:['To make all values integers','To amplify outliers']},{q:'What role does P(xi) play?',correct:'Weights each squared deviation by probability',wrong:['Normalizes the variance','Converts to percentage']},{q:'Why the square root at the end?',correct:'To return to original units of X',wrong:['To reduce the value','To find the mean deviation']}]},
 
     // ══ II. BINOMIAL ══
     {id:'binom-pmf',action:'Binomial P(X=x)',tier:'regular',dom:'distributions',
       hint:'n choose x \u00b7 p^x \u00b7 (1\u2212p)^(n\u2212x)',
       explain:'Exactly x successes: choose which trials succeed, then multiply probabilities',
       latex:'P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}',
-      blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'1-p',choices:['(1-p)','p','q^2']}]},
+      blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'1-p',choices:['(1-p)','p','q^2']}],
+      subconcepts:[{q:'What does C(n,x) count?',correct:'Ways to choose which x trials succeed',wrong:['Probability of x successes','The number of trials']},{q:'Why exponent (n\u2212x) on (1\u2212p)?',correct:'Remaining trials must all be failures',wrong:['To balance the equation','To calculate variance']},{q:'What are the BINS conditions?',correct:'Binary, Independent, fixed N, Same p',wrong:['Large sample, Normal, Random','Paired, Equal variance, Normal']}]},
     {id:'binom-mean',action:'Binomial Mean (\u03bc)',tier:'core',dom:'distributions',
       hint:'n times p \u2014 expected successes',
       explain:'Expected successes = trials times success probability',
       latex:'\\mu_X = np',
-      blanks:[{latex:'\\mu_X = n \\cdot \\boxed{\\,?\\,}',answer:'p',choices:['p','q','\\mu']}]},
+      blanks:[{latex:'\\mu_X = n \\cdot \\boxed{\\,?\\,}',answer:'p',choices:['p','q','\\mu']}],
+      subconcepts:[{q:'Why is \u03bc=np intuitive?',correct:'Expected successes = trials \u00d7 success rate',wrong:['Because variance=np','Because median=np']},{q:'If n=100 and p=0.3, what is \u03bc?',correct:'30',wrong:['70','0.3']},{q:'What happens to \u03bc as p increases?',correct:'\u03bc increases proportionally',wrong:['\u03bc stays the same','\u03bc decreases']}]},
     {id:'binom-sd',action:'Binomial SD (\u03c3)',tier:'core',dom:'distributions',
       hint:'Square root of n\u00b7p\u00b7(1\u2212p)',
       explain:'Variability is maximized when p = 0.5 (maximum uncertainty)',
       latex:'\\sigma_X = \\sqrt{np(1-p)}',
-      blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'1-p',choices:['(1-p)','p','n']}]},
+      blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'1-p',choices:['(1-p)','p','n']}],
+      subconcepts:[{q:'Why does p(1\u2212p) appear?',correct:'Variability is largest when p=0.5',wrong:['It calculates the mean','It measures skewness']},{q:'What does n contribute to \u03c3?',correct:'More trials increase total variability',wrong:['More trials decrease variability','n has no effect']},{q:'When is \u03c3 maximized for fixed n?',correct:'When p = 0.5',wrong:['When p = 0','When p = 1']}]},
 
     // ══ II. GEOMETRIC ══
     {id:'geom-pmf',action:'Geometric P(X=x)',tier:'regular',dom:'distributions',
       hint:'Fail (x\u22121) times, then succeed once',
       explain:'All failures first, then one success — order matters',
       latex:'P(X=x) = (1-p)^{x-1} \\cdot p',
-      blanks:[{latex:'P(X=x) = (1-p)^{\\boxed{\\,?\\,}} \\cdot p',answer:'x-1',choices:['x-1','x','x+1']}]},
+      blanks:[{latex:'P(X=x) = (1-p)^{\\boxed{\\,?\\,}} \\cdot p',answer:'x-1',choices:['x-1','x','x+1']}],
+      subconcepts:[{q:'Why exponent x\u22121 on (1\u2212p)?',correct:'Need exactly x\u22121 failures before first success',wrong:['Need x failures total','To count all outcomes']},{q:'What does geometric distribution count?',correct:'Trials until first success',wrong:['Successes in n trials','Probability of x successes']},{q:'How is this different from binomial?',correct:'No fixed number of trials',wrong:['Different probability formula','Requires p>0.5']}]},
     {id:'geom-mean',action:'Geometric Mean (\u03bc)',tier:'core',dom:'distributions',
       hint:'Expected trials until first success',
       explain:'Lower success probability means more trials needed on average',
       latex:'\\mu_X = \\frac{1}{p}',
-      blanks:[{latex:'\\mu_X = \\frac{1}{\\boxed{\\,?\\,}}',answer:'p',choices:['p','1-p','n']}]},
+      blanks:[{latex:'\\mu_X = \\frac{1}{\\boxed{\\,?\\,}}',answer:'p',choices:['p','1-p','n']}],
+      subconcepts:[{q:'Why is \u03bc = 1/p?',correct:'Lower p means more trials needed on average',wrong:['Because p is always less than 1','To match binomial mean']},{q:'If p=0.25, expected trials?',correct:'4',wrong:['0.25','25']},{q:'What happens to \u03bc as p\u21921?',correct:'\u03bc approaches 1 (success almost certain)',wrong:['\u03bc approaches infinity','\u03bc approaches 0']}]},
     {id:'geom-sd',action:'Geometric SD (\u03c3)',tier:'regular',dom:'distributions',
       hint:'sqrt of (1\u2212p) over p\u00b2',
       explain:'Spread depends on how rare successes are',
       latex:'\\sigma_X = \\sqrt{\\frac{1-p}{p^2}}',
-      blanks:[{latex:'\\sigma_X = \\sqrt{\\frac{1-p}{\\boxed{\\,?\\,}}}',answer:'p^2',choices:['p^2','p','2p']}]},
+      blanks:[{latex:'\\sigma_X = \\sqrt{\\frac{1-p}{\\boxed{\\,?\\,}}}',answer:'p^2',choices:['p^2','p','2p']}],
+      subconcepts:[{q:'Why (1\u2212p) in the numerator?',correct:'More uncertainty increases spread',wrong:['To balance the formula','To normalize variance']},{q:'Why p\u00b2 in the denominator?',correct:'SD depends on rarity of success, squared',wrong:['Because we square the mean','To convert to standard units']},{q:'How does \u03c3 change as p increases?',correct:'\u03c3 decreases (less variation in wait time)',wrong:['\u03c3 increases','\u03c3 stays constant']}]},
 
     // ══ III. INFERENTIAL — General ══
     {id:'z-test-stat',action:'Standardized Test Statistic',tier:'core',dom:'inference',
       hint:'How many standard errors from the parameter?',
       explain:'Distance from the hypothesized value, measured in standard errors',
       latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{SE}',
-      blanks:[{latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{\\boxed{\\,?\\,}}',answer:'SE',choices:['SE','\\sigma','s']}]},
+      blanks:[{latex:'z = \\frac{\\text{statistic} - \\text{parameter}}{\\boxed{\\,?\\,}}',answer:'SE',choices:['SE','\\sigma','s']}],
+      subconcepts:[{q:'What is the "statistic" in this formula?',correct:'The sample estimate (like x\u0304 or p\u0302)',wrong:['The population parameter','The critical value']},{q:'What is the "parameter"?',correct:'The hypothesized population value',wrong:['The sample statistic','The standard error']},{q:'What does z measure?',correct:'How many SEs the statistic is from the parameter',wrong:['Probability of H\u2080','The effect size']}]},
     {id:'ci-formula',action:'Confidence Interval (general)',tier:'core',dom:'inference',
       hint:'Point estimate \u00b1 margin of error',
       explain:'Center your estimate, then extend by the margin of error',
       latex:'\\text{statistic} \\pm \\text{critical value} \\times SE',
-      blanks:[{latex:'\\text{statistic} \\pm \\text{critical value} \\times \\boxed{\\,?\\,}',answer:'SE',choices:['SE','\\sigma','s']}]},
+      blanks:[{latex:'\\text{statistic} \\pm \\text{critical value} \\times \\boxed{\\,?\\,}',answer:'SE',choices:['SE','\\sigma','s']}],
+      subconcepts:[{q:'What is the critical value?',correct:'z* or t* from the reference distribution',wrong:['The sample mean','The standard error']},{q:'What does \u00b1 margin of error create?',correct:'A range of plausible parameter values',wrong:['The exact parameter','The p-value']},{q:'What determines interval width?',correct:'Confidence level and sample size',wrong:['Only the sample mean','Only the population parameter']}]},
     {id:'chi-sq',action:'Chi-Square Statistic (\u03c7\u00b2)',tier:'core',dom:'chi-square',
       hint:'Sum of (observed \u2212 expected)\u00b2 / expected',
       explain:'Compares what you observed to what you expected under H0',
       latex:'\\chi^2 = \\sum\\frac{(O-E)^2}{E}',
-      blanks:[{latex:'\\chi^2 = \\sum\\frac{(O-\\boxed{\\,?\\,})^2}{E}',answer:'E',choices:['E','O','n']}]},
+      blanks:[{latex:'\\chi^2 = \\sum\\frac{(O-\\boxed{\\,?\\,})^2}{E}',answer:'E',choices:['E','O','n']}],
+      subconcepts:[{q:'What does O represent?',correct:'Observed count from data',wrong:['The overall mean','The expected probability']},{q:'What does E represent?',correct:'Expected count under H\u2080',wrong:['The error term','The effect size']},{q:'Why square (O\u2212E)?',correct:'To make all contributions positive',wrong:['To amplify small differences','To convert to proportions']}]},
 
     // ══ III. ONE PROPORTION ══
     {id:'phat-mean',action:'Mean of \u0302p sampling dist.',tier:'core',dom:'inf-proportions',
       hint:'Mean of sampling dist. equals true proportion',
       explain:'An unbiased estimator — the center of all possible sample proportions',
       latex:'\\mu_{\\hat{p}} = p',
-      blanks:[{latex:'\\mu_{\\hat{p}} = \\boxed{\\,?\\,}',answer:'p',choices:['p','\\hat{p}','\\mu']}]},
+      blanks:[{latex:'\\mu_{\\hat{p}} = \\boxed{\\,?\\,}',answer:'p',choices:['p','\\hat{p}','\\mu']}],
+      subconcepts:[{q:'Why does \u03bc_p\u0302 = p?',correct:'p\u0302 is an unbiased estimator of p',wrong:['All samples give exactly p','p\u0302 = p always']},{q:'What is p in this context?',correct:'The true population proportion',wrong:['The sample proportion','Probability of Type I error']},{q:'What distribution does p\u0302 follow?',correct:'Approximately Normal (by CLT)',wrong:['Exactly Normal always','Binomial']}]},
     {id:'phat-sd',action:'SD of \u0302p sampling dist.',tier:'core',dom:'inf-proportions',
       hint:'sqrt of p(1\u2212p) over n',
       explain:'Larger samples reduce variability — sample size is in the denominator',
       latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}',
-      blanks:[{latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{\\boxed{\\,?\\,}}}',answer:'n',choices:['n','n-1','n+1']}]},
+      blanks:[{latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{\\boxed{\\,?\\,}}}',answer:'n',choices:['n','n-1','n+1']}],
+      subconcepts:[{q:'What does p(1\u2212p) measure?',correct:'Max variability when p=0.5',wrong:['The mean of the distribution','The sample size effect']},{q:'Why divide by n?',correct:'Larger samples reduce variability of p\u0302',wrong:['To match population size','To convert to percentage']},{q:'Why the square root?',correct:'Converting variance to SD units',wrong:['To make value smaller','To normalize distribution']}]},
     {id:'phat-se',action:'SE of \u0302p (standard error)',tier:'regular',dom:'inf-proportions',
       hint:'Replace p with \u0302p in the SD formula',
       explain:'Same structure as SD but uses the sample statistic since p is unknown',
       latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}',
-      blanks:[{latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p})}{n}}',answer:'phat',choices:['\\hat{p}','p','p_0']}]},
+      blanks:[{latex:'SE_{\\hat{p}} = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p})}{n}}',answer:'phat',choices:['\\hat{p}','p','p_0']}],
+      subconcepts:[{q:'Why use p\u0302 instead of p?',correct:'True p is unknown; estimate with p\u0302',wrong:['p\u0302 is always more accurate','To make SE larger']},{q:'When use SE vs SD?',correct:'SE with sample data; SD when p is known',wrong:['They are the same','SE for hypothesis tests only']},{q:'What is SE used for?',correct:'Confidence intervals and test statistics',wrong:['Finding population proportion','Calculating sample size']}]},
 
     // ══ III. TWO PROPORTIONS ══
     {id:'diff-p-sd',action:'SD of \u03021\u2212\u03022',tier:'regular',dom:'inf-proportions',
       hint:'Add the variances of each proportion, then sqrt',
       explain:'Independent samples — add the variances, then take the square root',
       latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{n_2}}',
-      blanks:[{latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{\\boxed{\\,?\\,}}}',answer:'n2',choices:['n_2','n_1','p_2']}]},
+      blanks:[{latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{\\boxed{\\,?\\,}}}',answer:'n2',choices:['n_2','n_1','p_2']}],
+      subconcepts:[{q:'Why add the two variance terms?',correct:'Independent samples have variances that add',wrong:['To double sample size','Proportions always add']},{q:'Why separate n\u2081 and n\u2082?',correct:'Two samples can have different sizes',wrong:['To create more df','Groups must be unequal']},{q:'What does this SD describe?',correct:'Variability of p\u03021\u2212p\u03022 across samples',wrong:['SD of each proportion','The effect size']}]},
     {id:'diff-p-se',action:'SE of \u03021\u2212\u03022',tier:'power',dom:'inf-proportions',
       hint:'Plug in sample proportions for each group',
       explain:'For inference, plug in sample proportions instead of parameters',
       latex:'SE = \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',
-      blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'phat1',choices:['\\hat{p}_1','p_1','\\hat{p}_c']}]},
+      blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'phat1',choices:['\\hat{p}_1','p_1','\\hat{p}_c']}],
+      subconcepts:[{q:'Why plug in p\u03021 and p\u03022 separately?',correct:'Each group estimates its own proportion',wrong:['They must be different','To make SE larger']},{q:'When use this SE vs pooled?',correct:'For confidence intervals (not H\u2080 tests)',wrong:['For all hypothesis tests','When samples are dependent']},{q:'What assumption is required?',correct:'Independent random samples',wrong:['Equal sample sizes','Equal proportions']}]},
     {id:'pooled-se',action:'Pooled SE (H\u2080: p\u2081=p\u2082)',tier:'power',dom:'inf-proportions',
       hint:'p\u0302c = (X1+X2)/(n1+n2), then factor out',
       explain:'Under H0 both groups share the same p, so pool the data',
       latex:'SE = \\sqrt{\\hat{p}_c(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',
-      blanks:[{latex:'SE = \\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}]},
+      blanks:[{latex:'SE = \\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}],
+      subconcepts:[{q:'What is p\u0302c?',correct:'Combined proportion: (X\u2081+X\u2082)/(n\u2081+n\u2082)',wrong:['Average of p\u03021 and p\u03022','The larger proportion']},{q:'Why pool under H\u2080?',correct:'H\u2080 assumes p\u2081=p\u2082, so use shared estimate',wrong:['To increase sample size','Pooling always reduces error']},{q:'Why factor out p\u0302c(1\u2212p\u0302c)?',correct:'Same proportion applies to both groups under H\u2080',wrong:['To simplify algebra only','Groups are dependent']}]},
 
     // ══ III. ONE MEAN ══
     {id:'xbar-mean',action:'Mean of \u0304x sampling dist.',tier:'core',dom:'inf-means',
       hint:'Mean of \u0304x equals the population mean',
       explain:'Sample means center on the true population mean',
       latex:'\\mu_{\\bar{x}} = \\mu',
-      blanks:[{latex:'\\mu_{\\bar{x}} = \\boxed{\\,?\\,}',answer:'mu',choices:['\\mu','\\bar{x}','\\sigma']}]},
+      blanks:[{latex:'\\mu_{\\bar{x}} = \\boxed{\\,?\\,}',answer:'mu',choices:['\\mu','\\bar{x}','\\sigma']}],
+      subconcepts:[{q:'Why does \u03bc_x\u0304 = \u03bc?',correct:'x\u0304 is an unbiased estimator of \u03bc',wrong:['Every sample mean equals \u03bc','Because n is always large']},{q:'What does this tell us about sampling?',correct:'Sample means center on the true population mean',wrong:['Every sample mean is close to \u03bc','Distribution is always Normal']},{q:'Does this require normality?',correct:'No \u2014 holds for any population distribution',wrong:['Yes, only for Normal populations','Only if n>30']}]},
     {id:'xbar-sd',action:'SD of \u0304x sampling dist.',tier:'core',dom:'inf-means',
       hint:'\u03c3 divided by square root of n',
       explain:'More data points average out variation — divided by root n',
       latex:'\\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}',
-      blanks:[{latex:'\\sigma_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'sigma',choices:['\\sigma','s','\\mu']}]},
+      blanks:[{latex:'\\sigma_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'sigma',choices:['\\sigma','s','\\mu']}],
+      subconcepts:[{q:'Why divide \u03c3 by \u221an?',correct:'Averaging reduces variability by factor \u221an',wrong:['To convert to standard units','Because \u03c3 is for individuals']},{q:'What happens to \u03c3_x\u0304 as n increases?',correct:'Decreases (more precise estimates)',wrong:['Increases','Stays the same']},{q:'What is \u03c3 in this formula?',correct:'The population standard deviation',wrong:['The sample SD','The standard error']}]},
     {id:'xbar-se',action:'SE of \u0304x (standard error)',tier:'regular',dom:'inf-means',
       hint:'Use s (sample SD) when \u03c3 is unknown',
       explain:'Uses s because population sigma is almost never known in practice',
       latex:'SE_{\\bar{x}} = \\frac{s}{\\sqrt{n}}',
-      blanks:[{latex:'SE_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'s',choices:['s','\\sigma','\\mu']}]},
+      blanks:[{latex:'SE_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'s',choices:['s','\\sigma','\\mu']}],
+      subconcepts:[{q:'Why use s instead of \u03c3?',correct:'Population \u03c3 is almost never known',wrong:['s is always larger','To get a t-distribution']},{q:'What distribution do we use with SE?',correct:'t-distribution (not z)',wrong:['Standard Normal z','Chi-square']},{q:'How many df does the t have?',correct:'n \u2212 1',wrong:['n','n \u2212 2']}]},
 
     // ══ III. TWO MEANS ══
     {id:'diff-x-sd',action:'SD of \u03041\u2212\u03042',tier:'regular',dom:'inf-means',
       hint:'Add the variances, then square root',
       explain:'Independent samples — variances add, then take the square root',
       latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\sigma_1^2}{n_1}+\\frac{\\sigma_2^2}{n_2}}',
-      blanks:[{latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{\\sigma_2^2}{n_2}}',answer:'sigma1^2',choices:['\\sigma_1^2','s_1^2','\\sigma_1']}]},
+      blanks:[{latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{\\sigma_2^2}{n_2}}',answer:'sigma1^2',choices:['\\sigma_1^2','s_1^2','\\sigma_1']}],
+      subconcepts:[{q:'Why add \u03c3\u2081\u00b2/n\u2081 and \u03c3\u2082\u00b2/n\u2082?',correct:'Variances of independent quantities add',wrong:['To account for difference in means','Standard deviations add']},{q:'What does this assume?',correct:'The two samples are independent',wrong:['Populations are Normal','Sample sizes are equal']},{q:'Why use \u03c3\u00b2 not \u03c3?',correct:'Variances add for independent variables; SDs do not',wrong:['To make formula easier','Variance is always preferred']}]},
     {id:'diff-x-se',action:'SE of \u03041\u2212\u03042',tier:'power',dom:'inf-means',
       hint:'Use sample variances s\u00b2 for each group',
       explain:'Sample variances replace population variances for real-world inference',
       latex:'SE = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}',
-      blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}]},
+      blanks:[{latex:'SE = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}],
+      subconcepts:[{q:'Why replace \u03c3 with s?',correct:'Population SDs are unknown in practice',wrong:['s is more accurate','To use a z-distribution']},{q:'What distribution results?',correct:'t-distribution (with complex df)',wrong:['Standard Normal','Chi-square']},{q:'Can n\u2081 and n\u2082 be different?',correct:'Yes \u2014 unequal sample sizes are fine',wrong:['No, must be equal','Only if variances are equal']}]},
 
     // ══ III. REGRESSION SLOPE ══
     {id:'slope-mean',action:'Mean of b sampling dist.',tier:'regular',dom:'regression',
       hint:'Mean of slope sampling dist. = true slope \u03b2',
       explain:'The sampling distribution of slopes centers on the true population slope',
       latex:'\\mu_b = \\beta',
-      blanks:[{latex:'\\mu_b = \\boxed{\\,?\\,}',answer:'beta',choices:['\\beta','b','\\mu']}]},
+      blanks:[{latex:'\\mu_b = \\boxed{\\,?\\,}',answer:'beta',choices:['\\beta','b','\\mu']}],
+      subconcepts:[{q:'What is \u03b2 in this context?',correct:'The true population slope',wrong:['The sample slope','The y-intercept']},{q:'Why does \u03bc_b = \u03b2?',correct:'b is an unbiased estimator of the true slope',wrong:['Regression always finds true slope','Residuals sum to zero']},{q:'What is sampling distribution of b?',correct:'Distribution of slopes from all possible samples',wrong:['The range of the data','The residual distribution']}]},
     {id:'slope-sd',action:'SD of b (regression slope)',tier:'power',dom:'regression',
       hint:'\u03c3 over (s\u2093 \u00b7 \u221an)',
       explain:'Less residual noise and more x-spread both give more precise slopes',
       latex:'\\sigma_b = \\frac{\\sigma}{s_x\\sqrt{n}}',
-      blanks:[{latex:'\\sigma_b = \\frac{\\sigma}{\\boxed{\\,?\\,}\\sqrt{n}}',answer:'sx',choices:['s_x','s_y','\\sigma']}]},
+      blanks:[{latex:'\\sigma_b = \\frac{\\sigma}{\\boxed{\\,?\\,}\\sqrt{n}}',answer:'sx',choices:['s_x','s_y','\\sigma']}],
+      subconcepts:[{q:'What does \u03c3 represent in \u03c3/(sx\u221an)?',correct:'SD of residuals (noise around the line)',wrong:['SD of x-values','SD of y-values']},{q:'Why does sx appear in denominator?',correct:'More spread in x gives more precise slopes',wrong:['To standardize the slope','x must have large variance']},{q:'Why does \u221an appear?',correct:'More observations \u2192 more precise slope',wrong:['To convert to standard units','Because df=n']}]},
     {id:'slope-se',action:'SE of b (regression slope)',tier:'power',dom:'regression',
       hint:'s over (s\u2093 \u00b7 \u221a(n\u22121)), s = residual SD',
       explain:'Residual SD replaces sigma; df adjusted for estimating the line',
       latex:'SE_b = \\frac{s}{s_x\\sqrt{n-1}}',
-      blanks:[{latex:'SE_b = \\frac{s}{s_x\\sqrt{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n-2']}]},
+      blanks:[{latex:'SE_b = \\frac{s}{s_x\\sqrt{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n-2']}],
+      subconcepts:[{q:'Why use s instead of \u03c3?',correct:'True residual SD is unknown; s estimates it',wrong:['s is always smaller','To use a z-test']},{q:'Why \u221a(n\u22121) instead of \u221an?',correct:'Degrees of freedom adjustment',wrong:['We lose 1 df for the mean','To match t-distribution exactly']},{q:'What is s in this formula?',correct:'The residual standard deviation',wrong:['Sample SD of y','Sample SD of x']}]},
     {id:'resid-s',action:'Residual Std Dev (s)',tier:'power',dom:'regression',
       hint:'Like regular SD but df = n\u22122 for regression',
       explain:'Measures typical prediction error; loses 2 df for estimating a and b',
       latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{n-2}}',
-      blanks:[{latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{\\boxed{\\,?\\,}}}',answer:'n-2',choices:['n-2','n-1','n']}]},
+      blanks:[{latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{\\boxed{\\,?\\,}}}',answer:'n-2',choices:['n-2','n-1','n']}],
+      subconcepts:[{q:'What are residuals (yi\u2212\u0177i)?',correct:'Differences between observed and predicted y',wrong:['Differences between x and y','Differences between samples']},{q:'Why n\u22122 in the denominator?',correct:'Lose 2 df for estimating both a and b',wrong:['There are 2 variables','To match chi-square df']},{q:'What does s measure?',correct:'Typical size of prediction errors',wrong:['The slope','The correlation strength']}]},
 
     // ══ COMBINATION / APPLICATION ══
     {id:'one-prop-z',action:'One-proportion z statistic',tier:'regular',dom:'inf-proportions',
       hint:'Plug p\u2080 (null value) into SE, not \u0302p',
       explain:'Compare observed proportion to null value using null SE',
       latex:'z = \\frac{\\hat{p} - p_0}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',
-      blanks:[{latex:'z = \\frac{\\hat{p} - \\boxed{\\,?\\,}}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',answer:'p0',choices:['p_0','\\hat{p}','p']}]},
+      blanks:[{latex:'z = \\frac{\\hat{p} - \\boxed{\\,?\\,}}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}',answer:'p0',choices:['p_0','\\hat{p}','p']}],
+      subconcepts:[{q:'Why use p\u2080 in SE (not p\u0302)?',correct:'Under H\u2080 we assume p=p\u2080 is true',wrong:['p\u2080 is more accurate','To make z larger']},{q:'What does p\u0302\u2212p\u2080 measure?',correct:'How far sample is from hypothesized value',wrong:['The effect size','The margin of error']},{q:'What conditions are needed?',correct:'Random sample, np\u2080\u226510, n(1\u2212p\u2080)\u226510',wrong:['n>30 only','Normal population required']}]},
     {id:'one-mean-t',action:'One-sample t statistic',tier:'regular',dom:'inf-means',
       hint:'\u0304x minus hypothesized mean, over SE',
       explain:'How far is the sample mean from the hypothesized value, in SE units?',
       latex:'t = \\frac{\\bar{x} - \\mu_0}{s/\\sqrt{n}}',
-      blanks:[{latex:'t = \\frac{\\bar{x} - \\boxed{\\,?\\,}}{s/\\sqrt{n}}',answer:'mu0',choices:['\\mu_0','\\bar{x}','\\mu']}]},
+      blanks:[{latex:'t = \\frac{\\bar{x} - \\boxed{\\,?\\,}}{s/\\sqrt{n}}',answer:'mu0',choices:['\\mu_0','\\bar{x}','\\mu']}],
+      subconcepts:[{q:'Why use t instead of z?',correct:'Because we use s instead of \u03c3',wrong:['Because sample is small','Population is not Normal']},{q:'What does \u03bc\u2080 represent?',correct:'Hypothesized population mean under H\u2080',wrong:['The sample mean','The true population mean']},{q:'What is the df?',correct:'n \u2212 1',wrong:['n','n \u2212 2']}]},
     {id:'two-prop-z',action:'Two-proportion z statistic',tier:'power',dom:'inf-proportions',
       hint:'Difference in \u0302p over pooled SE',
       explain:'Difference in sample proportions, standardized by pooled variability',
       latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\hat{p}_c(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',
-      blanks:[{latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}]},
+      blanks:[{latex:'z = \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\boxed{\\,?\\,}(1-\\hat{p}_c)(\\frac{1}{n_1}+\\frac{1}{n_2})}}',answer:'pc',choices:['\\hat{p}_c','\\hat{p}_1','p_1']}],
+      subconcepts:[{q:'Why pool the proportions?',correct:'Under H\u2080: p\u2081=p\u2082, both share one p',wrong:['To increase sample size','Separate SEs are wrong']},{q:'What does the numerator measure?',correct:'Observed difference between sample proportions',wrong:['True difference','The margin of error']},{q:'When do we use this test?',correct:'Testing H\u2080: p\u2081=p\u2082 with independent samples',wrong:['For paired proportions','When proportions are known']}]},
     {id:'two-mean-t',action:'Two-sample t statistic',tier:'power',dom:'inf-means',
       hint:'Difference in means over SE of the difference',
       explain:'Difference in sample means, standardized by combined SE',
       latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}}',
-      blanks:[{latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}]},
+      blanks:[{latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}],
+      subconcepts:[{q:'Why add s\u2081\u00b2/n\u2081 and s\u2082\u00b2/n\u2082?',correct:'Variances of independent estimates add',wrong:['Standard deviations add','To double precision']},{q:'What distribution does this follow?',correct:'t-distribution (with Welch df)',wrong:['Standard Normal','Chi-square']},{q:'What does numerator measure?',correct:'Difference between two sample means',wrong:['The pooled mean','The effect size']}]},
     {id:'slope-t',action:'Regression slope t statistic',tier:'power',dom:'regression',
       hint:'b minus hypothesized slope over SE of b',
       explain:'Is the observed slope far enough from the hypothesized slope to reject H0?',
       latex:'t = \\frac{b - \\beta_0}{SE_b}',
-      blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{SE_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}]},
+      blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{SE_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}],
+      subconcepts:[{q:'What is \u03b2\u2080 typically in AP Stats?',correct:'0 (testing if linear relationship exists)',wrong:['1 (testing if slope=1)','The sample slope b']},{q:'What does SE_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
   ],
 
   // Generate a question for an enemy at spawn time
   generateQuestion(cmd, allCommands){
-    const type=Math.random()<0.5?'identify':'fillblank';
+    let type;
+    const diff=G.difficulty||'learn';
+    if(diff==='learn'){
+      type='identify';
+    }else if(diff==='practice'){
+      type=Math.random()<0.5?'identify':'fillblank';
+    }else{
+      // challenge: equal weight
+      type=Math.random()<0.5?'identify':'fillblank';
+    }
     if(type==='identify'){
       // Pick 3 distractors from other commands, prefer same domain
       const sameDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom===cmd.dom);
@@ -607,7 +668,7 @@ const G={
   waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
   unlockedTiers:['core'],nextEnemyId:0,
   attemptsOnCurrent:0,commandStartTime:0,
-  typedBuffer:'',
+  typedBuffer:'',domainFilter:[],difficulty:'learn',
 };
 const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0004,SPAWN_DELAY_BASE=7000;
 
@@ -709,6 +770,8 @@ function spawnBeam(from,to){
 const enemyMeshes={};
 const eMat=new THREE.MeshPhongMaterial({color:AMB.hot,emissive:AMB.bright,emissiveIntensity:.2,flatShading:true});
 const eGeo=new THREE.BoxGeometry(.45,.45,.45);
+const childGeo=new THREE.BoxGeometry(.30,.30,.30);
+const childMat=new THREE.MeshPhongMaterial({color:0xffaa22,emissive:0xcc6600,emissiveIntensity:.25,flatShading:true});
 
 function addEnemyMesh(enemy){
   const m=new THREE.Mesh(eGeo,eMat.clone());
@@ -722,17 +785,28 @@ function removeEnemyMesh(id){
   scene.remove(m);m.geometry.dispose();m.material.dispose();
   delete enemyMeshes[id];
 }
+function addChildEnemyMesh(enemy,offsetIdx){
+  const m=new THREE.Mesh(childGeo,childMat.clone());
+  const t=Math.min(enemy.t,1);
+  const p=pathCurve.getPointAt(t);
+  const offsets=[-.4,0,.4];
+  m.position.set(p.x+offsets[offsetIdx%3],p.y+.45,p.z);
+  scene.add(m);
+  enemyMeshes[enemy.id]=m;
+}
 function updateEnemyMeshes(){
   G.enemies.forEach(e=>{
     const m=enemyMeshes[e.id];if(!m)return;
     const t=Math.min(e.t,1);
     const p=pathCurve.getPointAt(t);
-    m.position.set(p.x,p.y+.3+Math.sin(Date.now()*.003+e.id)*.1,p.z);
-    m.rotation.y+=.02;
+    const bobAmp=e.isChild?.05:.1;
+    m.position.set(p.x,p.y+.3+Math.sin(Date.now()*.003+e.id)*bobAmp,p.z);
+    m.rotation.y+=e.isChild?.04:.02;
     if(e.id===G.selectedId){
-      m.material.color.setHex(AMB.white);m.material.emissive.setHex(AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
+      const selC=e.isChild?0xffcc66:AMB.white;
+      m.material.color.setHex(selC);m.material.emissive.setHex(AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
     }else{
-      m.material.color.setHex(AMB.hot);m.material.emissive.setHex(AMB.bright);m.material.emissiveIntensity=.2;
+      m.material.color.setHex(e.isChild?0xffaa22:AMB.hot);m.material.emissive.setHex(e.isChild?0xcc6600:AMB.bright);m.material.emissiveIntensity=e.isChild?.25:.2;
     }
   });
 }
@@ -757,7 +831,9 @@ function updateLabels(){
     // For quiz mode, show cached unit label instead of formula name (which gives away the answer!)
     const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
     const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
-    div.innerHTML='<div class="enemy-label-inner" style="border-color:'+(isSel?AMB.css.white:AMB.css.hot)+';color:'+AMB.css.hot+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    const borderC=isSel?AMB.css.white:(e.isChild?'#ffaa22':AMB.css.hot);
+    const textC=e.isChild?'#ffaa22':AMB.css.hot;
+    div.innerHTML='<div class="enemy-label-inner" style="border-color:'+borderC+';color:'+textC+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
       G.selectedId=e.id;
       const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
@@ -818,11 +894,12 @@ function updateInput(){
     // 50/50 hint: when hint is shown, eliminate one wrong answer
     if(G.showHint&&q.eliminatedIdx==null){
       if(q.type==='identify'){
-        // Pick a random wrong option to eliminate
         const wrongIdxs=q.options.map((_,i)=>i).filter(i=>i!==q.correctIdx);
         q.eliminatedIdx=wrongIdxs[Math.floor(Math.random()*wrongIdxs.length)];
+      }else if(q.type==='subconcept'){
+        const wrongIdxs=q.options.map((_,i)=>i).filter(i=>i!==q.correctIdx);
+        if(wrongIdxs.length>0)q.eliminatedIdx=wrongIdxs[Math.floor(Math.random()*wrongIdxs.length)];
       }else{
-        // Fill-blank: find wrong choices and eliminate one
         const correctAnswer=q.answer;
         const wrongIdxs=q.choices.map((_,i)=>i).filter(i=>!activeCartridge.validateBlank(q.choices[i],correctAnswer));
         if(wrongIdxs.length>0)q.eliminatedIdx=wrongIdxs[Math.floor(Math.random()*wrongIdxs.length)];
@@ -843,16 +920,29 @@ function updateInput(){
       html+='</div>';
       if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
       html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+    }else if(q.type==='subconcept'){
+      // Sub-concept child question (from hydra split)
+      html+='<div class="q-type-badge" style="background:#ffaa2218;border-color:#ffaa2233;color:#ffaa22">SUB-CONCEPT</div>'+speedInfo;
+      html+='<div style="font-size:14px;color:#ffcc66;margin:4px 0;font-weight:700">'+q.text+'</div>';
+      html+='<div class="mc-grid">';
+      const keys=['A','B','C'];
+      q.options.forEach((opt,i)=>{
+        const isElim=G.showHint&&eliminated===i;
+        html+='<button class="mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleSubconceptChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+      });
+      html+='</div>';
+      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Tab = switch</div>';
     }else{
       // fill-blank — always show A/B/C choices
       html+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
       html+='<div class="latex-display" id="quiz-latex"></div>';
       html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What goes in the blank?</div>';
       html+='<div class="hint-mc-grid">';
-      const keys=['A','B','C'];
+      const keys2=['A','B','C'];
       q.choices.forEach((ch,i)=>{
         const isElim=G.showHint&&eliminated===i;
-        html+='<button class="hint-mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleHintChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
+        html+='<button class="hint-mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys2[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleHintChoice(\''+keys2[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys2[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
       });
       html+='</div>';
       if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
@@ -930,8 +1020,21 @@ function handleHintChoice(key){
   const idx=['a','b','c'].indexOf(key);
   if(idx===-1)return;
   const chosen=enemy.question.choices[idx];
-  // Check if chosen matches the answer (render both to compare)
   if(activeCartridge.validateBlank(chosen,enemy.question.answer)){
+    handleHit(enemy);
+  }else{
+    handleMiss(enemy);
+  }
+}
+function handleSubconceptChoice(key){
+  if(G.screen!=='game')return;
+  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!enemy||!enemy.question||enemy.question.type!=='subconcept')return;
+  const idx=['a','b','c'].indexOf(key);
+  if(idx===-1)return;
+  // Block eliminated choice
+  if(G.showHint&&enemy.question.eliminatedIdx===idx)return;
+  if(key===enemy.question.correctKey){
     handleHit(enemy);
   }else{
     handleMiss(enemy);
@@ -1000,12 +1103,57 @@ function selectCartridge(id){
 
 function showTitleScreen(){
   G.screen='title';
+  // Collect unique domains from active cartridge
+  const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
+  // Initialize domainFilter to all domains if empty or stale
+  if(!G.domainFilter||G.domainFilter.length===0)G.domainFilter=[...allDomains];
+
+  const domainLabels={
+    'descriptive':'Descriptive (U1-2)','probability':'Probability (U4)',
+    'distributions':'Distributions (U4)','inference':'Inference (U5-6)',
+    'inf-proportions':'Proportions (U5-6)','inf-means':'Means (U5-7)',
+    'chi-square':'Chi-Square (U8)','regression':'Regression (U9)',
+    'sessions':'Sessions','windows':'Windows','panes':'Panes',
+    'copy':'Copy','general':'General'
+  };
+
   const ov=document.getElementById('overlay');ov.classList.remove('hidden');
   let html='<h1>'+activeCartridge.title+'</h1>';
   html+='<h2>'+activeCartridge.subtitle+'</h2>';
   html+='<p class="desc">'+activeCartridge.instructions+'</p>';
   if(activeCartridge.instructionsSub)html+='<p class="desc" style="font-size:10px;color:#5a3800">'+activeCartridge.instructionsSub+'</p>';
-  html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
+
+  // Domain filter pills (only show if cartridge has multiple domains)
+  if(allDomains.length>1){
+    html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:8px">DOMAINS</div>';
+    html+='<div class="domain-pills" id="domain-pills">';
+    html+='<button class="domain-pill active" id="domain-all" onclick="toggleAllDomains()">ALL</button>';
+    allDomains.forEach(d=>{
+      const active=G.domainFilter.includes(d);
+      const label=domainLabels[d]||d;
+      html+='<button class="domain-pill'+(active?' active':'')+'" data-domain="'+d+'" onclick="toggleDomain(\''+d+'\')">'+label+'</button>';
+    });
+    html+='</div>';
+  }
+
+  // Difficulty tier buttons
+  html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:10px">DIFFICULTY</div>';
+  html+='<div class="diff-group">';
+  const diffs=[
+    {id:'learn',label:'LEARN',desc:'Identify only (MC)\\nSlowest speed'},
+    {id:'practice',label:'PRACTICE',desc:'Identify + Fill-blank\\nNormal speed'},
+    {id:'challenge',label:'CHALLENGE',desc:'All question types\\nFaster speed'}
+  ];
+  diffs.forEach(d=>{
+    const active=G.difficulty===d.id;
+    html+='<button class="diff-btn'+(active?' active':'')+'" data-diff="'+d.id+'" onclick="setDifficulty(\''+d.id+'\')">';
+    html+='<div class="diff-label">'+d.label+'</div>';
+    html+='<div class="diff-desc">'+d.desc.replace(/\\n/g,'<br>')+'</div>';
+    html+='</button>';
+  });
+  html+='</div>';
+
+  html+='<button class="btn" id="btn-start" style="margin-top:12px">'+activeCartridge.startButton+'</button>';
   html+='<div class="sub" style="margin-top:16px"><a href="#" onclick="event.preventDefault();showSelectScreen()" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   // Reset progress link
   const prog=getCartridgeProgress(activeCartridge.id);
@@ -1014,6 +1162,52 @@ function showTitleScreen(){
   }
   ov.innerHTML=html;
   document.getElementById('btn-start').onclick=startGame;
+  updateDomainAllBtn();
+}
+
+function toggleDomain(dom){
+  SFX.click();
+  const idx=G.domainFilter.indexOf(dom);
+  if(idx>=0){
+    // Don't allow deselecting the last domain
+    if(G.domainFilter.length<=1)return;
+    G.domainFilter.splice(idx,1);
+  }else{
+    G.domainFilter.push(dom);
+  }
+  // Update pill states
+  document.querySelectorAll('.domain-pill[data-domain]').forEach(btn=>{
+    btn.classList.toggle('active',G.domainFilter.includes(btn.dataset.domain));
+  });
+  updateDomainAllBtn();
+}
+
+function toggleAllDomains(){
+  SFX.click();
+  const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
+  const allSelected=G.domainFilter.length===allDomains.length;
+  if(allSelected){
+    // Can't deselect all — do nothing
+    return;
+  }
+  G.domainFilter=[...allDomains];
+  document.querySelectorAll('.domain-pill[data-domain]').forEach(btn=>btn.classList.add('active'));
+  updateDomainAllBtn();
+}
+
+function updateDomainAllBtn(){
+  const allBtn=document.getElementById('domain-all');
+  if(!allBtn)return;
+  const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
+  allBtn.classList.toggle('active',G.domainFilter.length===allDomains.length);
+}
+
+function setDifficulty(diff){
+  SFX.click();
+  G.difficulty=diff;
+  document.querySelectorAll('.diff-btn').forEach(btn=>{
+    btn.classList.toggle('active',btn.textContent.trim().toLowerCase().startsWith(diff));
+  });
 }
 
 function resetProgress(){
@@ -1031,7 +1225,12 @@ function resetProgress(){
 function genWave(n){
   const tiers=n>=7?['core','regular','power']:n>=4?['core','regular']:['core'];
   G.unlockedTiers=tiers;
-  const pool=COMMANDS.filter(c=>tiers.includes(c.tier));
+  let pool=COMMANDS.filter(c=>tiers.includes(c.tier));
+  // Filter by selected domains
+  if(G.domainFilter&&G.domainFilter.length>0){
+    const filtered=pool.filter(c=>G.domainFilter.includes(c.dom));
+    if(filtered.length>0)pool=filtered;
+  }
   return pickCommands(pool,G.srs,Math.min(4+n,16),n);
 }
 function startGame(){
@@ -1121,8 +1320,9 @@ function trySpawn(now){
 // ── Movement — adaptive speed ──
 function moveEnemies(){
   const avgMastery=getAverageMastery(G.srs);
-  // Wave 1 = 40% speed, scales up 8% per wave
-  const waveMult=0.4+(G.wave-1)*0.08;
+  // Base speed depends on difficulty
+  const diffBase=G.difficulty==='learn'?0.3:G.difficulty==='challenge'?0.6:0.4;
+  const waveMult=diffBase+(G.wave-1)*0.08;
   // Higher mastery = faster enemies (1.0x at mastery 0, up to 1.5x at mastery 5)
   const masteryMult=1.0+(avgMastery/5)*0.5;
   const speed=MOVE_SPEED_BASE*waveMult*masteryMult;
@@ -1180,7 +1380,8 @@ function handleHit(enemy){
   if(responseTime<1500)speedMult=2;else if(responseTime<3000)speedMult=1.5;else if(responseTime<5000)speedMult=1.2;
   const totalMult=G.combo*speedMult;
   const hintPenalty=G.hintUsed&&!(enemy.question&&enemy.question.type==='fillblank')?(activeCartridge&&activeCartridge.inputMode==='quiz'?0.5:0.7):1;
-  const pts=Math.floor((100+Math.max(0,50-Math.floor(responseTime/200)))*totalMult*hintPenalty);
+  const childPenalty=enemy.isChild?0.5:1;
+  const pts=Math.floor((100+Math.max(0,50-Math.floor(responseTime/200)))*totalMult*hintPenalty*childPenalty);
   const intensity=Math.min(1,speedMult/2);
   SFX.hit(intensity);
   const ePos=enemyMeshes[enemy.id]?.position.clone()||new THREE.Vector3();
@@ -1202,12 +1403,54 @@ function handleMiss(enemy){
   G.attemptsOnCurrent++;
   G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave);
   G.typedBuffer='';
-  // Speed up enemy on wrong answer!
+
+  const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
+  // Hydra split: quiz parent enemies split into sub-concept children
+  if(isQuizMode&&!enemy.isChild&&!enemy.splitDepth){
+    const didSplit=spawnHydraChildren(enemy);
+    if(didSplit){SFX.split();flash('SPLIT! \u26a1','#ffaa22');return}
+  }
+  // Fallback: speed up (children, non-quiz, or split failed)
   enemy.speedMult=(enemy.speedMult||1)*1.5;
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
   flash('MISS! \u26a1FASTER','#ff4422');
-  // Re-focus typed input after miss
   setTimeout(focusTypedInput,50);
+}
+
+// ═══════════════════════════════════════════════
+//  HYDRA SPLIT
+// ═══════════════════════════════════════════════
+function spawnHydraChildren(parentEnemy){
+  const cmd=parentEnemy.cmd;
+  const subs=cmd.subconcepts;
+  if(!subs||subs.length===0)return false;
+  // Cap total enemies
+  const count=Math.min(3,subs.length);
+  if(G.enemies.length+count>20)return false;
+
+  const parentPos=enemyMeshes[parentEnemy.id]?.position.clone();
+  spawnExplosion(parentPos||pathPts[0],15,0xffaa22);
+  removeEnemyMesh(parentEnemy.id);
+  G.enemies=G.enemies.filter(e=>e.id!==parentEnemy.id);
+
+  const picked=shuffleArr(subs).slice(0,count);
+  picked.forEach((sc,i)=>{
+    const childT=Math.max(0,parentEnemy.t-0.03*(i+1));
+    const options=shuffleArr([sc.correct,...sc.wrong]);
+    const correctIdx=options.indexOf(sc.correct);
+    const child={
+      id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
+      speedMult:.75,isChild:true,splitDepth:1,
+      subconcept:sc,
+      question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
+      label:'\u26a1 Sub-concept'
+    };
+    G.enemies.push(child);
+    addChildEnemyMesh(child,i);
+  });
+  // Clear selection so autoSelect picks best target
+  if(G.selectedId===parentEnemy.id){G.selectedId=null;G.inputState='idle'}
+  return true;
 }
 
 // ═══════════════════════════════════════════════
@@ -1266,6 +1509,14 @@ window.addEventListener('keydown',e=>{
         if(G.showHint&&q.eliminatedIdx===idx)return;
         e.preventDefault();
         handleHintChoice(k);
+      }
+    }else if(q.type==='subconcept'){
+      const k=e.key.toLowerCase();
+      if(['a','b','c'].includes(k)){
+        const idx=['a','b','c'].indexOf(k);
+        if(G.showHint&&q.eliminatedIdx===idx)return;
+        e.preventDefault();
+        handleSubconceptChoice(k);
       }
     }
   }else if(mode==='prefix-key'){

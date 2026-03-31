@@ -25,6 +25,19 @@ Fixed the input panel blocking the 3D game view:
 - **Fill-blank is now pure MC (A/B/C)**: Removed broken text input (cursor bug). All answers are multiple choice.
 - **KaTeX rendering fix**: Fill-blank choices now always render LaTeX (was gated behind showHint).
 - **50/50 hint (Alt+H)**: Eliminates one wrong answer (grayed out, disabled). Shows conceptual `explain` text instead of mechanical hint. Half-point penalty applies.
+
+### Phase 5: Hydra Split Mechanic
+When a student **misses** a formula question, the enemy explodes into 2-3 smaller child enemies. Each child asks a **sub-concept question** about a component of the parent formula (e.g., "Why divide by n?" → "Larger samples reduce variability").
+
+- **39 formulas × 3 sub-concepts each** = 117 sub-concept questions, all multiple choice A/B/C
+- **Child enemies**: Smaller 3D mesh (0.30 cube vs 0.45), lighter amber color (#ffaa22), faster spin, less bobbing
+- **Split mechanics**: Parent explodes with amber particles, children spawn at parent's path position (staggered), inherit parent's `cmd` for SRS tracking, move at 75% base speed
+- **Child misses**: Speed up (1.5x) but do NOT split further (max depth 1)
+- **Child hits**: Half points (50% reduction since easier questions)
+- **Guard rails**: Max 20 total enemies; if cap reached, fallback to old speed-up behavior
+- **SFX.split()**: New split sound effect (sweep + noise burst)
+- **50/50 hint works on children**: Alt+H eliminates one wrong sub-concept answer
+- **Wave completion**: Naturally waits for all children killed/breached before wave ends
 - **39 explain fields**: Each formula has a curriculum-aligned conceptual explanation (e.g. "Larger samples reduce variability — sample size is in the denominator").
 
 ### New Question Types
