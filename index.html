@@ -196,20 +196,83 @@ const SFX=(()=>{
   function subBass(f,d,v=.2,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(20,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=150;o.connect(g);g.connect(lp);lp.connect(out());o.start(t);o.stop(t+d)}
   function startBGM(){if(bgmPlaying||muted)return;const c=getCtx();bgmPlaying=true;const bm=c.createGain();bm.gain.value=.06;bm.connect(out());const bg=c.createGain();bg.gain.value=.6;bg.connect(bm);const bo=c.createOscillator();bo.type='sawtooth';const bf=c.createBiquadFilter();bf.type='lowpass';bf.frequency.value=350;bf.Q.value=4;bo.connect(bf);bf.connect(bg);const notes=[55,55,65.41,73.42,55,55,82.41,73.42],st=.25,ll=notes.length*st;function sched(base){notes.forEach((f,i)=>bo.frequency.setValueAtTime(f,base+i*st))}const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=.3;const lg=c.createGain();lg.gain.value=120;lfo.connect(lg);lg.connect(bf.frequency);lfo.start();const pg=c.createGain();pg.gain.value=.25;pg.connect(bm);const pf=c.createBiquadFilter();pf.type='lowpass';pf.frequency.value=700;const po=[220,261.63,329.63].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*10;o.connect(pf);return o});pf.connect(pg);const pl=c.createOscillator();pl.type='sine';pl.frequency.value=.08;const plg=c.createGain();plg.gain.value=350;pl.connect(plg);plg.connect(pf.frequency);pl.start();const hg=c.createGain();hg.gain.value=0;hg.connect(bm);const hl=Math.floor(c.sampleRate*2),hb=c.createBuffer(1,hl,c.sampleRate),hd=hb.getChannelData(0);for(let i=0;i<hl;i++)hd[i]=Math.random()*2-1;const hs=c.createBufferSource();hs.buffer=hb;hs.loop=true;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;hs.connect(hp);hp.connect(hg);const now=c.currentTime;bo.start(now);po.forEach(o=>o.start(now));hs.start(now);let lc=0;function loop(){if(!bgmPlaying)return;const b=now+lc*ll;sched(b);for(let i=0;i<notes.length;i++){if(i%2===0){const ht=b+i*st;hg.gain.setValueAtTime(.4,ht);hg.gain.exponentialRampToValueAtTime(.01,ht+.05)}}lc++;if(lc<600)setTimeout(loop,ll*1000*.8)}loop();bgmNodes={bm,bo,po,hs,lfo,pl}}
   function stopBGM(){if(!bgmNodes)return;bgmPlaying=false;try{bgmNodes.bm.gain.setValueAtTime(bgmNodes.bm.gain.value,ctx.currentTime);bgmNodes.bm.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.5);setTimeout(()=>{try{bgmNodes.bo.stop();bgmNodes.po.forEach(o=>o.stop());bgmNodes.hs.stop();bgmNodes.lfo.stop();bgmNodes.pl.stop()}catch(e){}bgmNodes=null},600)}catch(e){bgmNodes=null}}
+  // Polyphonic chord helper: play multiple tones simultaneously for emotional sound
+  function chord(freqs,d,type='triangle',v=.06,del=0){freqs.forEach(f=>tone(f,d,type,v,del))}
+  // Musical intervals
+  const MAJOR=[1,1.25,1.5];       // root, major 3rd, perfect 5th (happy/resolved)
+  const MINOR=[1,1.2,1.5];        // root, minor 3rd, perfect 5th (sad/tense)
+  const DIM=[1,1.2,1.414];        // root, minor 3rd, tritone (dissonant/wrong)
+  const SUS=[1,1.335,1.5];        // root, perfect 4th, perfect 5th (suspense)
+  // Build chord from root frequency and interval ratios
+  function chordFrom(root,intervals,d,type='triangle',v=.06,del=0){chord(intervals.map(r=>root*r),d,type,v,del)}
+
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},isMuted(){return muted},startBGM,stopBGM,
-    prefix(){tone(1100,.04,'square',.08);tone(1650,.06,'square',.06,.03)},
-    hit(intensity=1){const v=.1+intensity*.08;subBass(80,.4,v);noiseBurst(.25,.1+intensity*.06,0,2000,120);crunch(300,.15,.06+intensity*.04,.02);sweep(800,100,.2,'sawtooth',.05+intensity*.03,.01);for(let i=0;i<2+Math.floor(intensity*3);i++)tone(1200+Math.random()*1200,.04+Math.random()*.04,'square',.03,.06+i*.04)},
-    miss(){crunch(120,.3,.12);sweep(300,60,.25,'sawtooth',.1,.02);noiseBurst(.1,.06,.05,800,80)},
-    breach(){subBass(60,.6,.25);noiseBurst(.5,.2,0,1500,80);crunch(200,.35,.15,.05);sweep(500,30,.5,'sawtooth',.12);tone(600,.12,'square',.06,.1);tone(400,.15,'square',.06,.2)},
-    waveClear(){subBass(55,.3,.1);[523,659,784,1047,1318].forEach((f,i)=>{tone(f,.18,'square',.08,i*.07);tone(f*1.005,.18,'sawtooth',.03,i*.07)});sweep(200,2000,.4,'sawtooth',.04,.1)},
-    victory(){subBass(55,.5,.12);[523,659,784,1047,1318,1568,2093].forEach((f,i)=>{tone(f,.25,'square',.07,i*.09);tone(f*.995,.25,'triangle',.04,i*.09)});sweep(300,3000,.6,'sawtooth',.04,.2)},
-    gameOver(){stopBGM();subBass(50,.8,.2);[400,320,250,160,100].forEach((f,i)=>{crunch(f,.35,.08,i*.14);tone(f,.3,'sawtooth',.06,i*.14)});noiseBurst(1,.08,.6,1000,50)},
-    spawn(){tone(165,.1,'triangle',.04);sweep(400,165,.08,'square',.02)},
-    select(){tone(1400,.03,'square',.06);noiseBurst(.02,.03,0,8000,2000)},
-    click(){tone(1000,.04,'square',.06);tone(1500,.03,'square',.04,.02)},
-    combo(){sweep(600,1600,.15,'square',.06);tone(1600,.1,'triangle',.04,.08)},
-    split(){sweep(800,200,.2,'sawtooth',.1);noiseBurst(.15,.08,.05,2500,200);tone(440,.1,'triangle',.06,.1);tone(660,.08,'square',.04,.15)}
+    prefix(){tone(1100,.04,'sine',.06);tone(1650,.06,'triangle',.04,.03)},
+    // YES — warm major chord, rising. Intensity scales richness
+    hit(intensity=1){
+      const root=330+intensity*110;
+      chordFrom(root,MAJOR,.25,'triangle',.05+intensity*.03);
+      chordFrom(root*2,MAJOR,.15,'sine',.02+intensity*.02,.05);
+      subBass(65,.3,.08+intensity*.06);
+      if(intensity>1)tone(root*3,.1,'sine',.03,.08);
+    },
+    // NO — dissonant minor 2nd cluster, descending
+    miss(){
+      chord([200,212,280],.3,'sawtooth',.07);  // tight dissonant cluster
+      crunch(150,.25,.1,.02);
+      sweep(400,80,.3,'sawtooth',.06,.05);
+    },
+    // DECLINE — descending minor chord, heavy
+    breach(){
+      subBass(50,.6,.2);
+      chordFrom(300,DIM,.4,'sawtooth',.08);
+      chordFrom(220,MINOR,.35,'sawtooth',.06,.1);
+      sweep(500,60,.5,'sawtooth',.08,.05);
+      noiseBurst(.3,.1,.15,1200,80);
+    },
+    // PROGRESSION — ascending major arpeggiated chord, each wave builds
+    waveClear(){
+      subBass(55,.3,.08);
+      const roots=[262,330,392,523,659];
+      roots.forEach((f,i)=>{
+        chordFrom(f,MAJOR,.2,'triangle',.06,i*.08);
+        tone(f*2,.12,'sine',.03,i*.08+.04);
+      });
+    },
+    // TRIUMPH — full major 7th chord, shimmering
+    victory(){
+      subBass(55,.5,.1);
+      const roots=[262,330,392,494,523,659,784];
+      roots.forEach((f,i)=>{
+        chord([f,f*1.25,f*1.5],.3,'triangle',.05,i*.07);
+        tone(f*2,.2,'sine',.02,i*.07+.03);
+      });
+      sweep(300,2000,.6,'sine',.03,.3);
+    },
+    // DEFEAT — descending diminished chords
+    gameOver(){
+      stopBGM();subBass(40,.8,.15);
+      [400,340,280,220,160].forEach((f,i)=>{
+        chordFrom(f,DIM,.35,'sawtooth',.06,i*.15);
+      });
+      noiseBurst(.8,.06,.7,800,40);
+    },
+    spawn(){tone(165,.1,'triangle',.04);chordFrom(220,SUS,.08,'sine',.02,.02)},
+    select(){tone(880,.05,'sine',.05);tone(1320,.04,'sine',.03,.02)},
+    click(){chordFrom(660,MAJOR,.06,'sine',.04)},
+    // STREAK — ascending chord that builds with each combo hit
+    combo(){
+      chordFrom(523,MAJOR,.15,'triangle',.06);
+      chordFrom(659,MAJOR,.12,'sine',.04,.06);
+      tone(1047,.1,'sine',.03,.1);
+    },
+    // SPLIT — suspenseful shattering chord
+    split(){
+      chordFrom(330,DIM,.2,'sawtooth',.07);
+      noiseBurst(.12,.06,.03,3000,300);
+      chord([440,466,554],.15,'triangle',.04,.08);  // dissonant shimmer
+    }
   }
 })();
 
