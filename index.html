@@ -221,6 +221,22 @@ const SFX=(()=>{
     const droneG=c.createGain();droneG.gain.value=0;
     droneO.connect(droneG);droneG.connect(master);droneO.start();
     // Layer 3: Tension pad (fades in at 5+ enemies) — minor chord
+    // Circle of Fifths: 12 minor triads, one per wave. Full chromatic journey.
+    const WAVE_CHORDS=[
+      [220.00,261.63,329.63],  // W1:  Am  (A-C-E)
+      [164.81,196.00,246.94],  // W2:  Em  (E-G-B)
+      [123.47,146.83,185.00],  // W3:  Bm  (B-D-F#)
+      [185.00,220.00,277.18],  // W4:  F#m (F#-A-C#)
+      [138.59,164.81,207.65],  // W5:  C#m (C#-E-G#)
+      [103.83,123.47,155.56],  // W6:  G#m (G#-B-D#)
+      [155.56,185.00,233.08],  // W7:  Ebm (Eb-Gb-Bb)
+      [116.54,138.59,174.61],  // W8:  Bbm (Bb-Db-F)
+      [174.61,207.65,261.63],  // W9:  Fm  (F-Ab-C)
+      [130.81,155.56,196.00],  // W10: Cm  (C-Eb-G)
+      [98.00,116.54,146.83],   // W11: Gm  (G-Bb-D)
+      [146.83,174.61,220.00],  // W12: Dm  (D-F-A)
+    ];
+    let currentWaveChord=-1;
     const padOs=[165,196,247].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*8;return o});
     const padG=c.createGain();padG.gain.value=0;
     const padF=c.createBiquadFilter();padF.type='lowpass';padF.frequency.value=400;
@@ -237,14 +253,25 @@ const SFX=(()=>{
     pulseO.start();pulseLFO.start();
     bgmLayers={master,droneO,droneG,padOs,padG,padF,pulseO,pulseG,pulseLFO,
       setBPM(b){bpm=b},
-      // Update layers based on enemy count — called from game loop
-      update(enemyCount){
+      // Update layers based on enemy count + wave — called from game loop
+      update(enemyCount,wave){
         const t=c.currentTime;
-        // Metronome BPM scales with enemy count: 60 base, +8 per enemy, cap at 140
+        // Metronome BPM scales with enemy count
         bpm=Math.min(140,60+enemyCount*8);
-        // Drone: fade in at 3+
+        // Drone: fade in at 3+, root follows wave chord
         const dTarget=enemyCount>=3?Math.min(.6,(enemyCount-2)*.15):0;
         droneG.gain.setTargetAtTime(dTarget,t,.5);
+        // Pad chord: change key each wave via Circle of Fifths
+        const wIdx=Math.max(0,Math.min(11,(wave||1)-1));
+        if(wIdx!==currentWaveChord){
+          currentWaveChord=wIdx;
+          const ch=WAVE_CHORDS[wIdx];
+          padOs.forEach((o,i)=>o.frequency.setTargetAtTime(ch[i],t,.4));
+          // Drone root follows the chord root (one octave below)
+          droneO.frequency.setTargetAtTime(ch[0]/2,t,.4);
+          // Pulse root follows chord root
+          pulseO.frequency.setTargetAtTime(ch[0]/2,t,.4);
+        }
         // Pad: fade in at 5+
         const pTarget=enemyCount>=5?Math.min(.5,(enemyCount-4)*.12):0;
         padG.gain.setTargetAtTime(pTarget,t,.5);
@@ -1876,7 +1903,7 @@ function animate(time){
   if(G.screen==='game'&&!G.paused){
     trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
     updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
-    if(bgmLayers&&bgmLayers.update)bgmLayers.update(G.enemies.length);
+    if(bgmLayers&&bgmLayers.update)bgmLayers.update(G.enemies.length,G.wave);
   }
 
   for(let i=particles.length-1;i>=0;i--){
