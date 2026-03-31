@@ -199,7 +199,7 @@ const SFX=(()=>{
   function startBGM(){
     if(bgmPlaying||muted)return;const c=getCtx();bgmPlaying=true;
     // Master bus
-    const master=c.createGain();master.gain.value=.08;master.connect(out());
+    const master=c.createGain();master.gain.value=.25;master.connect(out());
     // Layer 1: Metronome tick (always on) — soft woodblock-like click
     // Tempo adapts to game pace via updateBGMLayers()
     let bpm=60,tickNext=c.currentTime;
@@ -239,7 +239,7 @@ const SFX=(()=>{
     let currentWaveChord=-1;
     const padOs=[165,196,247].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*8;return o});
     const padG=c.createGain();padG.gain.value=0;
-    const padF=c.createBiquadFilter();padF.type='lowpass';padF.frequency.value=400;
+    const padF=c.createBiquadFilter();padF.type='lowpass';padF.frequency.value=900;
     padOs.forEach(o=>{o.connect(padF)});padF.connect(padG);padG.connect(master);
     padOs.forEach(o=>o.start());
     // Layer 4: Pulse (fades in at 8+ enemies) — rhythmic LFO on filter
@@ -258,8 +258,8 @@ const SFX=(()=>{
         const t=c.currentTime;
         // Metronome BPM scales with enemy count
         bpm=Math.min(140,60+enemyCount*8);
-        // Drone: fade in at 3+, root follows wave chord
-        const dTarget=enemyCount>=3?Math.min(.6,(enemyCount-2)*.15):0;
+        // Drone: fade in at 1+ enemy
+        const dTarget=enemyCount>=1?Math.min(.7,enemyCount*.15):0;
         droneG.gain.setTargetAtTime(dTarget,t,.5);
         // Pad chord: change key each wave via Circle of Fifths
         const wIdx=Math.max(0,Math.min(11,(wave||1)-1));
@@ -272,11 +272,11 @@ const SFX=(()=>{
           // Pulse root follows chord root
           pulseO.frequency.setTargetAtTime(ch[0]/2,t,.4);
         }
-        // Pad: fade in at 5+
-        const pTarget=enemyCount>=5?Math.min(.5,(enemyCount-4)*.12):0;
+        // Pad: fade in at 2+ enemies
+        const pTarget=enemyCount>=2?Math.min(.6,(enemyCount-1)*.15):0;
         padG.gain.setTargetAtTime(pTarget,t,.5);
-        // Pulse: fade in at 8+
-        const plTarget=enemyCount>=8?Math.min(.4,(enemyCount-7)*.1):0;
+        // Pulse: fade in at 4+ enemies
+        const plTarget=enemyCount>=4?Math.min(.5,(enemyCount-3)*.12):0;
         pulseG.gain.setTargetAtTime(plTarget,t,.5);
         pulseLFO.frequency.setTargetAtTime(Math.min(4,1+enemyCount*.3),t,.3);
       }
