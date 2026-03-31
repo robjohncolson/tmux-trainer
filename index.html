@@ -37,7 +37,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
 .enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s}
+.enemy-label-shell{position:relative;display:inline-flex;align-items:center;justify-content:center}
 .enemy-label-inner{background:#0d0500dd;border:1px solid;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:140px;word-break:break-word;white-space:normal}
+.target-reticle{position:absolute;inset:-7px;border:1.5px solid #ffb347;border-radius:7px;pointer-events:none;box-shadow:0 0 12px #ff8c0044;animation:reticle-pulse 1.25s ease-out infinite}
+.target-reticle.target-reticle-outer{inset:-12px;border-color:#ff8c00aa;animation-delay:.32s}
 .enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
 .sel-arrow{text-align:center;color:#ffcc66;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s}
@@ -59,6 +62,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #queue-bar{position:fixed;bottom:80px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
 .q-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin:0 2px;opacity:.7}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes reticle-pulse{
+0%{transform:scale(.82);opacity:0}
+22%{opacity:.95}
+100%{transform:scale(1.22);opacity:0}
+}
 .latex-display{margin:2px 0;min-height:24px;display:flex;align-items:center;justify-content:center}
 .latex-display .katex{font-size:1.15em;color:#ffcc66}
 .mc-grid{display:flex;flex-wrap:wrap;gap:4px;max-width:600px;margin:4px auto 0;justify-content:center}
@@ -138,6 +146,8 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #tier-bar{top:40px;font-size:8px}
 #mute-btn{font-size:16px;padding:6px 8px;top:6px;right:6px}
 .enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
+.target-reticle{inset:-6px}
+.target-reticle.target-reticle-outer{inset:-10px}
 .sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
 .mc-btn{min-height:44px;padding:8px 10px;font-size:clamp(12px,3vw,14px);width:100%}
@@ -2043,6 +2053,19 @@ spawnMark.position.copy(pathPts[0]);spawnMark.position.y=.5;scene.add(spawnMark)
 const particles=[];
 const particleGeo=new THREE.BoxGeometry(.08,.08,.08);
 const RAINBOW=[0xff4444,0xff8844,0xffcc44,0x44ff88,0x4488ff,0xaa44ff,0xff44aa];
+function getScoreFunnelTarget(sourcePos){
+  const scoreEl=document.getElementById('h-score');
+  if(!scoreEl){
+    return camera.position.clone().add(new THREE.Vector3(0,2,-6));
+  }
+  const rect=scoreEl.getBoundingClientRect();
+  const ndcX=((rect.left+rect.width*.5)/window.innerWidth)*2-1;
+  const ndcY=-((rect.top+rect.height*.5)/window.innerHeight)*2+1;
+  const worldPoint=new THREE.Vector3(ndcX,ndcY,0.12).unproject(camera);
+  const rayDir=worldPoint.sub(camera.position).normalize();
+  const scoreDistance=Math.max(5.5,Math.min(10.5,camera.position.distanceTo(sourcePos)*.55));
+  return camera.position.clone().add(rayDir.multiplyScalar(scoreDistance));
+}
 function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false){
   for(let i=0;i<count;i++){
     const c=rainbow?RAINBOW[i%RAINBOW.length]:color;
@@ -2050,7 +2073,11 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false){
     m.position.copy(pos);
     const spread=rainbow?.2:.15;
     const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
-    particles.push({mesh:m,vel:v,life:rainbow?1.5:1,decay:.015+Math.random()*.015});
+    particles.push({
+      mesh:m,vel:v,life:rainbow?1.6:1,decay:.015+Math.random()*.015,
+      ageMs:0,burstMs:rainbow?170+Math.random()*110:0,
+      funnelToScore:rainbow
+    });
     scene.add(m);
   }
 }
@@ -2141,7 +2168,7 @@ function updateLabels(){
     const dp=e.splitDepth||0;
     const borderC=isSel?AMB.css.white:(dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot);
     const textC=dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot;
-    div.innerHTML='<div class="enemy-label-inner" style="border-color:'+borderC+';color:'+textC+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    div.innerHTML='<div class="enemy-label-shell">'+(isSel?'<div class="target-reticle"></div><div class="target-reticle target-reticle-outer"></div>':'')+'<div class="enemy-label-inner" style="border-color:'+borderC+';color:'+textC+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
       resetExplanationState();
       G.selectedId=e.id;
@@ -3121,6 +3148,7 @@ let lastTime=0;
 function animate(time){
   requestAnimationFrame(animate);
   const dt=time-lastTime;lastTime=time;
+  const frameScale=Math.min(2.25,Math.max(.75,(dt||16.67)/16.67));
 
   // Camera: follow selected enemy with smooth lerp
   const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
@@ -3174,11 +3202,30 @@ function animate(time){
 
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
-    p.mesh.position.add(p.vel);
-    p.vel.y-=.005;
-    p.life-=p.decay;
+    p.ageMs=(p.ageMs||0)+dt;
+    if(p.funnelToScore){
+      if(p.ageMs<p.burstMs){
+        p.vel.multiplyScalar(1.012);
+        p.vel.y-=.0035*frameScale;
+      }else{
+        const target=getScoreFunnelTarget(p.mesh.position);
+        const toScore=target.sub(p.mesh.position);
+        const dist=toScore.length();
+        if(dist>.001){
+          const pull=toScore.normalize().multiplyScalar(.11+Math.min(.2,dist*.02));
+          p.vel.lerp(pull,Math.min(.22*frameScale,.4));
+        }
+        p.vel.multiplyScalar(Math.pow(.93,frameScale));
+        if(dist<.65)p.life-=p.decay*frameScale*3;
+      }
+    }else{
+      p.vel.y-=.005*frameScale;
+    }
+    p.mesh.position.addScaledVector(p.vel,frameScale);
+    p.life-=p.decay*frameScale;
     p.mesh.material.opacity=p.life;
-    p.mesh.scale.setScalar(p.life);
+    const particleScale=p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.16,p.life*.82):Math.max(.18,p.life);
+    p.mesh.scale.setScalar(particleScale);
     if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();particles.splice(i,1)}
   }
   for(let i=beams.length-1;i>=0;i--){

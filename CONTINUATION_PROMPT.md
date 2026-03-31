@@ -201,6 +201,28 @@ Verification completed:
   - mobile explainer panel stays within the viewport after the auto-scroll fix
   - explainer help text renders in the tray on both viewports
 
+## Latest Update: Selection Reticle + Score Funnel Particles
+
+Added two pieces of gameplay polish to the AP Stats defense board:
+
+- Selected targets now get a stronger screen-space focus treatment:
+  - the projected enemy label renders inside an `.enemy-label-shell`
+  - selected labels add two animated amber `target-reticle` squares
+  - the reticle expands outward in pulses so focus is obvious without changing the enemy mesh or hitbox logic
+- Rainbow kill particles now have a two-phase motion:
+  - phase 1: burst outward from the hit with a brief expansion window
+  - phase 2: redirect toward the score HUD instead of just fading in place
+  - this uses a world-space score target derived from the `#h-score` DOM position and camera projection math
+
+Verification completed:
+
+- JavaScript parse check passed after the particle update
+- Desktop browser check confirmed the selected label renders both reticle layers
+- Mobile browser check confirmed the reticle still renders at `375px`
+- Particle sanity check confirmed the intended motion:
+  - average distance from source increased from `0` to about `3.19` during the initial burst
+  - average distance to the score target dropped from about `11.84` to `6.76` during the funnel phase
+
 ## Important Code Areas
 
 - `index.html` CSS top section:
@@ -208,11 +230,18 @@ Verification completed:
   - mobile breakpoints
   - music editor styles
   - explainer tray styles
+  - selected-target reticle styles
 - `index.html` `SFX` module:
   - built-in music defaults
   - pad rhythm scheduling
   - BGM automation cleanup
   - load/save/reset/preview API
+- `index.html` particle / score-funnel helpers:
+  - `getScoreFunnelTarget()`
+  - `spawnExplosion()`
+  - `animate()`
+- `index.html` label projection:
+  - `updateLabels()`
 - `index.html` explanation helpers:
   - `EXPLANATION_GLOSSARY`
   - `buildExplanationBank()`
@@ -247,6 +276,8 @@ Verification completed:
 
 ## Likely Next Tasks
 
+- Add a matching in-world reticle or subtle beam under the selected cube if the focus treatment should exist in both screen space and world space
+- If the score-funnel effect should feel more rewarding, trigger a small HUD pop or score flash when rainbow particles reach the score target
 - Expand the explanation glossary beyond AP Stats if more cartridges get the same explainer UI
 - Add richer per-term overrides where the generated command-based sentences feel too generic
 - Consider a small touch-only `?` affordance on each answer row if mobile users miss the explainer chips
