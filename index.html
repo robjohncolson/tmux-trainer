@@ -302,6 +302,22 @@ const SFX=(()=>{
     }
   }
   // Evolve the pad within a wave based on kill progress (0-1)
+  // Advance to next chord in wave progression — called on correct answer
+  function advanceChord(){
+    if(!ctx||!bgmPlaying)return;
+    const oldIdx=currentProgIdx%4;
+    currentProgIdx++;
+    const prog=WC_PROG[currentWaveIdx];
+    const ch=prog[currentProgIdx%4];
+    const t=ctx.currentTime;
+    // Glide pad to new chord
+    for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.15);
+    // Melody note: play the 5th of the new chord, one octave up (sings the transition)
+    playNote(ch[2]*2,.4,'sine',.05);
+    // Play root an octave up too, slightly delayed (two-note melodic figure)
+    playNote(ch[0]*2,.3,'triangle',.04,.12);
+  }
+
   // Opens the filter and shifts voicing as the student progresses
   let lastProgress=-1;
   function setProgress(frac){
@@ -331,21 +347,18 @@ const SFX=(()=>{
     const t=ctx.currentTime;
     currentProgIdx=0;
     padBus.gain.setTargetAtTime(.35,t,.3);
-    bassBus.gain.setTargetAtTime(.1,t,.3);
+    bassBus.gain.setTargetAtTime(.2,t,.3);
     for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(.5,t,.3);
     voices[3].gain.gain.setTargetAtTime(.6,t,.3);
     const st=.25,ll=bassPattern.length*st;
     let startT=t;
     function seq(){
       if(!bgmPlaying)return;
-      // Advance to next chord in the 4-chord progression each bar
+      // Chord only advances on correct answers (via advanceChord())
       const prog=WC_PROG[currentWaveIdx];
       const ch=prog[currentProgIdx%4];
-      currentProgIdx++;
-      // Glide pad to current chord
       const now=ctx.currentTime;
-      for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],now,.2);
-      // Bass root follows chord
+      // Bass root follows current chord
       const root=ch[0]/4;
       // Schedule one bar of bass notes
       bassPattern.forEach((r,i)=>{
@@ -357,8 +370,8 @@ const SFX=(()=>{
         const ht=startT+i*st;
         if(ht>now-.01){
           noiseLP.frequency.setValueAtTime(6000,Math.max(ht,now));
-          noiseGate.gain.setValueAtTime(.06,Math.max(ht,now));
-          noiseGate.gain.setTargetAtTime(0,Math.max(ht,now)+.025,.008);
+          noiseGate.gain.setValueAtTime(.02,Math.max(ht,now));
+          noiseGate.gain.setTargetAtTime(0,Math.max(ht,now)+.02,.005);
         }
       }
       startT+=ll;
@@ -378,7 +391,7 @@ const SFX=(()=>{
   // ── Public API ──
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
-    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,
+    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,advanceChord,
     prefix(){playNote(1100,.04,'sine',.06);playNote(1650,.06,'triangle',.04,.03)},
     hit(intensity=1){
       if(muted)return;ensure();
@@ -1873,6 +1886,7 @@ function handleHit(enemy){
   G.score+=pts;G.streak++;G.maxStreak=Math.max(G.maxStreak,G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
   G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
+  SFX.advanceChord(); // Progress the chord on each correct answer
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,G.hintUsed,attempts);
   removeEnemyMesh(enemy.id);
   G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
