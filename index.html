@@ -1369,7 +1369,11 @@ function checkWaveComplete(){
 // ── Auto-select ──
 function autoSelect(){
   if(G.enemies.length>0&&(!G.selectedId||!G.enemies.find(e=>e.id===G.selectedId))){
-    const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
+    // Prioritize deepest split level, then closest to breach
+    const deep=G.enemies.filter(en=>en.splitDepth>=2);
+    const subs=G.enemies.filter(en=>en.splitDepth===1);
+    const pool=deep.length>0?deep:subs.length>0?subs:G.enemies;
+    const sorted=[...pool].sort((a,b)=>b.t-a.t);
     G.selectedId=sorted[0].id;
     const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
     G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
@@ -1509,11 +1513,12 @@ window.addEventListener('keydown',e=>{
 
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
 
-  // Tab to cycle — when children/grandchildren exist, only cycle among them
+  // Tab: deep concepts → only deep. subconcepts → only subconcepts. else → parents only.
   if(e.key==='Tab'&&enemy){
     e.preventDefault();
-    const children=G.enemies.filter(en=>en.isChild||en.splitDepth>0);
-    const pool=children.length>0?children.sort((a,b)=>b.t-a.t):[...G.enemies].sort((a,b)=>b.t-a.t);
+    const deep=G.enemies.filter(en=>en.splitDepth>=2);
+    const subs=G.enemies.filter(en=>en.splitDepth===1);
+    const pool=deep.length>0?deep.sort((a,b)=>b.t-a.t):subs.length>0?subs.sort((a,b)=>b.t-a.t):[...G.enemies].sort((a,b)=>b.t-a.t);
     const idx=pool.findIndex(en=>en.id===G.selectedId);
     G.selectedId=pool[(idx+1)%pool.length].id;
     const im2=activeCartridge?activeCartridge.inputMode:'prefix-key';
