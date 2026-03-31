@@ -247,7 +247,7 @@ const SFX=(()=>{
       const osc=ctx.createOscillator();
       const gain=ctx.createGain();gain.gain.value=0;
       osc.connect(gain);
-      if(i<3){osc.type='triangle';osc.frequency.value=WC[0][i];gain.connect(padF)}
+      if(i<3){osc.type='triangle';osc.frequency.value=WC_PROG[0][0][i];gain.connect(padF)}
       else if(i===3){osc.type='sawtooth';osc.frequency.value=55;gain.connect(bassF)}
       else{osc.type='triangle';osc.frequency.value=440;gain.connect(sfxBus)}
       osc.start();
@@ -402,7 +402,7 @@ const SFX=(()=>{
     waveClear(){
       if(muted)return;ensure();
       const nw=Math.min(11,currentWaveIdx+1);
-      const nc=WC[nw];
+      const nc=WC_PROG[nw][0];
       nc.forEach((f,i)=>{playNote(f*2,.25,'triangle',.08,i*.1);playNote(f*4,.15,'sine',.04,i*.1+.05)});
       // Full chord shimmer
       setTimeout(()=>nc.forEach(f=>playNote(f*2,.3,'sine',.04)),350);
