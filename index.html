@@ -325,13 +325,13 @@ const SFX=(()=>{
         const nt=startT+i*st;
         if(nt>now-.01)voices[3].osc.frequency.setValueAtTime(root*r,Math.max(nt,now));
       });
-      // Hihat on even beats
+      // Soft hihat on even beats — gentle tick, not harsh
       for(let i=0;i<bassNotes.length;i+=2){
         const ht=startT+i*st;
         if(ht>now-.01){
-          noiseLP.frequency.setValueAtTime(8000,Math.max(ht,now));
-          noiseGate.gain.setValueAtTime(.25,Math.max(ht,now));
-          noiseGate.gain.setTargetAtTime(0,Math.max(ht,now)+.04,.01);
+          noiseLP.frequency.setValueAtTime(6000,Math.max(ht,now));
+          noiseGate.gain.setValueAtTime(.06,Math.max(ht,now));
+          noiseGate.gain.setTargetAtTime(0,Math.max(ht,now)+.025,.008);
         }
       }
       startT+=ll;
