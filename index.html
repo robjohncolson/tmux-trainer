@@ -507,11 +507,13 @@ const apStatsCartridge={
       const sameDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom===cmd.dom);
       const diffDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom!==cmd.dom);
       const pool=[...sameDom,...shuffleArr(diffDom)];
-      const picks=shuffleArr(pool).slice(0,3).map(c=>c.action);
-      // Ensure exactly 3 distractors (pad if needed)
-      while(picks.length<3){picks.push(allCommands[Math.floor(Math.random()*allCommands.length)].action)}
-      const options=shuffleArr([cmd.action,...picks]);
-      const correctIdx=options.indexOf(cmd.action);
+      // Strip parenthetical notation from answers so formulas don't give away the answer
+      function stripNot(s){return s.replace(/\s*\([^)]*\)\s*$/,'').trim()}
+      const picks=shuffleArr(pool).slice(0,3).map(c=>stripNot(c.action));
+      while(picks.length<3){picks.push(stripNot(allCommands[Math.floor(Math.random()*allCommands.length)].action))}
+      const correctLabel=stripNot(cmd.action);
+      const options=shuffleArr([correctLabel,...picks]);
+      const correctIdx=options.indexOf(correctLabel);
       return{type:'identify',latex:cmd.latex,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
     }else{
       const blank=cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
@@ -668,7 +670,7 @@ const G={
   waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
   unlockedTiers:['core'],nextEnemyId:0,
   attemptsOnCurrent:0,commandStartTime:0,
-  typedBuffer:'',domainFilter:[],difficulty:'learn',
+  typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
 };
 const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0002,SPAWN_DELAY_BASE=8000;
 
@@ -1502,6 +1504,24 @@ function spawnHydraChildren(parentEnemy){
 //  INPUT HANDLER
 // ═══════════════════════════════════════════════
 window.addEventListener('keydown',e=>{
+  // Escape to pause/unpause during gameplay
+  if(e.key==='Escape'&&G.screen==='game'&&!G.waveComplete){
+    e.preventDefault();
+    G.paused=!G.paused;
+    const ov=document.getElementById('overlay');
+    if(G.paused){
+      ov.classList.remove('hidden');
+      ov.innerHTML='<h1 style="font-size:36px">PAUSED</h1><h2>Press ESC to resume</h2><button class="btn" onclick="G.paused=false;document.getElementById(\'overlay\').classList.add(\'hidden\')">[ RESUME ]</button>';
+      SFX.stopBGM();
+    }else{
+      ov.classList.add('hidden');
+      SFX.startBGM();
+    }
+    return;
+  }
+  // Block all input while paused
+  if(G.paused)return;
+
   // Spacebar universal advance on non-game screens + wave-clear
   if(e.key===' '&&(G.screen!=='game'||G.waveComplete)){
     const btn=document.querySelector('#overlay .btn')||document.querySelector('#input-panel .btn');
@@ -1668,7 +1688,7 @@ function animate(time){
   spawnMark.material.opacity=.2+Math.sin(time*.004)*.2;
   spawnMark.rotation.y=time*.002;
 
-  if(G.screen==='game'){
+  if(G.screen==='game'&&!G.paused){
     trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
     updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
   }
