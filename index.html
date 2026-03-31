@@ -267,12 +267,20 @@ const SFX=(()=>{
     if(!ctx)return;
     const wIdx=Math.max(0,Math.min(11,(wave||1)-1));
     if(wIdx===currentWaveIdx&&voices[0].gain.gain.value>0)return;
+    const oldIdx=currentWaveIdx;
     currentWaveIdx=wIdx;
     const ch=WC[wIdx],t=ctx.currentTime;
-    // Smoothly transition pad voices to new chord
-    for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.6);
-    // Bass follows root (2 octaves down)
-    voices[3].osc.frequency.setTargetAtTime(ch[0]/4,t,.3);
+    // Transition pad voices to new chord (fast glide)
+    for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.15);
+    // Bass follows root
+    voices[3].osc.frequency.setTargetAtTime(ch[0]/4,t,.15);
+    // Audible chord change: briefly swell pad volume then settle
+    if(bgmPlaying&&oldIdx!==wIdx){
+      padBus.gain.setTargetAtTime(.55,t,.05);
+      padBus.gain.setTargetAtTime(.35,t+.4,.3);
+      // Play a transition tone (fifth of new chord, one octave up)
+      playNote(ch[2]*2,.3,'sine',.06);
+    }
   }
 
   // ── BGM ──
@@ -281,8 +289,8 @@ const SFX=(()=>{
     if(bgmPlaying||muted)return;ensure();bgmPlaying=true;
     const t=ctx.currentTime;
     // Fade in pad + bass buses
-    padBus.gain.setTargetAtTime(.15,t,.3);
-    bassBus.gain.setTargetAtTime(.12,t,.3);
+    padBus.gain.setTargetAtTime(.35,t,.3);
+    bassBus.gain.setTargetAtTime(.1,t,.3);
     // Enable pad voices
     for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(.5,t,.3);
     // Enable bass voice
