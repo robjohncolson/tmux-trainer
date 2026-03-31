@@ -1488,6 +1488,22 @@ function saveSRS(){
   if(!activeCartridge)return;
   try{localStorage.setItem('td-srs-'+activeCartridge.id,JSON.stringify(G.srs))}catch(e){}
 }
+function syncHighScore(){
+  if(!activeCartridge)return{prevHigh:0,highScore:0,isNewHigh:false};
+  const hsKey='td-highscore-'+activeCartridge.id;
+  const prevHigh=parseInt(localStorage.getItem(hsKey)||'0',10);
+  const currentScore=Math.max(0,Math.floor(Number(G.score)||0));
+  const highScore=Math.max(prevHigh,currentScore);
+  const isNewHigh=currentScore>prevHigh;
+  if(highScore!==prevHigh){
+    try{localStorage.setItem(hsKey,highScore.toString())}catch(e){}
+  }
+  return{prevHigh,highScore,isNewHigh};
+}
+function syncRunCheckpoint(){
+  saveSRS();
+  return syncHighScore();
+}
 function loadSRS(cartridge){
   const saved=localStorage.getItem('td-srs-'+cartridge.id);
   const fresh=initSRS(cartridge.commands);
@@ -1512,6 +1528,11 @@ function getCartridgeProgress(cartridgeId){
       mastered:entries.filter(s=>s.mastery>=4).length,
     };
   }catch(e){return{total:0,seen:0,mastered:0}}
+}
+function returnToTitleFromRun(){
+  if(G.screen!=='game'&&G.screen!=='victory'&&G.screen!=='gameover')return;
+  syncRunCheckpoint();
+  showTitleScreen('game');
 }
 
 // ═══════════════════════════════════════════════
@@ -1743,7 +1764,7 @@ function updateInput(){
   if(G.waveComplete){
     if(lastInputState==='wave-clear')return;
     lastInputState='wave-clear';
-    panel.innerHTML='<div class="wave-clear">WAVE '+G.wave+' CLEARED</div><button class="btn" onclick="nextWave()" style="margin-top:10px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button>';
+    panel.innerHTML='<div class="wave-clear">WAVE '+G.wave+' CLEARED</div><button class="btn" onclick="nextWave()" style="margin-top:10px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px">[ SAVE + EXIT ]</button><div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Progress is checkpointed here. Press Escape to return to the main screen.</div>';
     return;
   }
   const sel=G.enemies.find(e=>e.id===G.selectedId);
@@ -1943,11 +1964,12 @@ function showPauseScreen(){
   let html='<h1 style="font-size:36px">PAUSED</h1>';
   const mc=SFX.getMusicConfig();
   if(mc)html+='<div style="font-size:11px;color:'+AMB.css.glow+';margin:8px 0">\u266b Wave '+G.wave+': '+mc.name+' ('+mc.tempo+' BPM)</div>';
+  html+='<div style="font-size:10px;color:#996622;letter-spacing:2px;margin:0 0 10px">P = RESUME · ESC = SAVE + EXIT</div>';
   html+='<div class="menu-actions">';
   html+='<button class="btn" onclick="resumeFromPause()">[ RESUME ]</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'pause\')">[ MUSIC EDITOR ]</button>';
+  html+='<button class="btn btn-secondary" onclick="returnToTitleFromRun()">[ MAIN MENU ]</button>';
   html+='</div>';
-  html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();G.paused=false;showTitleScreen(\'game\')" style="color:#5a3800;text-decoration:none;font-size:11px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   if(typeof QRCode!=='undefined'){
     html+='<div style="margin-top:16px;text-align:center"><canvas id="pause-qr"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
   }
@@ -2134,7 +2156,7 @@ function startGame(){
 }
 function nextWave(){
   SFX.click();
-  saveSRS();
+  syncRunCheckpoint();
   const nw=G.wave+1;
   if(nw>12){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
@@ -2147,7 +2169,7 @@ function nextWave(){
 }
 function showEndScreen(victory){
   G.screen=victory?'victory':'gameover';
-  saveSRS();
+  const recordState=syncRunCheckpoint();
   // Clean up surviving enemies
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   G.enemies=[];G.selectedId=null;
@@ -2163,11 +2185,8 @@ function showEndScreen(victory){
   const weak=seen.sort(([,a],[,b])=>(a.mastery-b.mastery)||(b.wrong-a.wrong)).slice(0,4).filter(([,v])=>v.mastery<4).map(([id])=>COMMANDS.find(c=>c.id===id));
   const isPrefix=activeCartridge&&activeCartridge.inputMode==='prefix-key';
   // High score tracking
-  const hsKey='td-highscore-'+activeCartridge.id;
-  const prevHigh=parseInt(localStorage.getItem(hsKey)||'0',10);
-  const isNewHigh=G.score>prevHigh;
-  if(isNewHigh)try{localStorage.setItem(hsKey,G.score.toString())}catch(e){}
-  const highScore=Math.max(G.score,prevHigh);
+  const isNewHigh=recordState.isNewHigh;
+  const highScore=recordState.highScore;
 
   let html='<h1 style="font-size:32px;color:'+(victory?AMB.css.hot:'#ff4422')+'">'+(victory?'SERVER SECURED':'SERVER BREACHED')+'</h1>';
   if(isNewHigh&&G.score>0)html+='<div style="color:#44ff88;font-size:14px;font-weight:700;letter-spacing:3px;margin-bottom:8px">\u2605 NEW HIGH SCORE! \u2605</div>';
@@ -2239,7 +2258,7 @@ function checkBreach(){
 // ── Wave complete ──
 function checkWaveComplete(){
   if(G.spawnIdx>=G.waveCommands.length&&G.enemies.length===0&&!G.waveComplete&&G.waveCommands.length>0){
-    G.waveComplete=true;SFX.waveClear();
+    G.waveComplete=true;SFX.waveClear();syncRunCheckpoint();
   }
 }
 
@@ -2388,15 +2407,18 @@ window.addEventListener('keydown',e=>{
     closeMusicEditor();
     return;
   }
-  // Escape to pause/unpause during gameplay
-  if(e.key==='Escape'&&G.screen==='game'&&!G.waveComplete){
+  if(e.key==='Escape'&&G.screen==='game'){
+    e.preventDefault();
+    G.paused=false;
+    returnToTitleFromRun();
+    return;
+  }
+  // P to pause/unpause during gameplay
+  if((e.key==='p'||e.key==='P')&&G.screen==='game'&&!G.waveComplete){
     e.preventDefault();
     G.paused=!G.paused;
-    if(G.paused){
-      showPauseScreen();
-    }else{
-      resumeFromPause();
-    }
+    if(G.paused)showPauseScreen();
+    else resumeFromPause();
     return;
   }
   // Block all input while paused

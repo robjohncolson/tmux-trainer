@@ -61,14 +61,25 @@ Implementation notes:
 - Added `showPauseScreen()` and `resumeFromPause()` so pause rendering is no longer embedded directly inside the key handler.
 - `Escape` now:
   - closes the music editor if it is open
-  - otherwise toggles pause as before
+  - otherwise saves progress/high score and exits the current run back to the title screen
+- `P` now toggles pause/resume during active gameplay.
+- The pause screen now includes an explicit `[ MAIN MENU ]` button in addition to resume and music editor actions.
 - `Space` no longer auto-clicks editor buttons while the music editor is open.
 
 ### Return-To-Menu High Score
 
 - Returning to the title screen from gameplay now calls `showTitleScreen('game')`.
 - In that path, the saved high score is rendered as a large animated badge that drifts across the title screen like a DVD screensaver bounce.
+- Mid-run exits now write the latest score to `td-highscore-ap-stats-formulas` before returning, so the badge appears immediately after `Escape`.
 - Normal title-screen entry still shows the smaller static high score line.
+
+### Run Checkpointing
+
+- Added a shared checkpoint path for run exits and wave clears:
+  - `saveSRS()`
+  - high-score sync
+- Wave clear now checkpoints progress immediately instead of waiting for the next wave or end screen.
+- The wave-clear panel now includes `[ SAVE + EXIT ]` so players can bank progress and return to the main menu between waves.
 
 ## Current UI Layout
 
@@ -93,15 +104,29 @@ Implementation notes:
 - Pad rhythm card sits alongside the other wave controls
 - Action buttons are at the bottom of the editor panel
 
+### In-Run Overlays
+
+- Pause overlay:
+  - resume
+  - music editor
+  - main menu
+- Wave-clear panel:
+  - next wave
+  - save + exit
+
 ## Verification Completed
 
 Verified in a headless browser against `http://127.0.0.1:4173/index.html`.
 
 Desktop verification:
 
+- `Escape` from an active run returns to the title screen
+- `Escape` stores SRS progress and current high score before the title screen renders
+- `P` opens pause and `P` resumes from pause
 - Music editor opens from title screen
 - Music editor opens from pause menu
 - Returning to menu from gameplay shows the animated high-score badge
+- Wave clear shows a `[ SAVE + EXIT ]` control and persists checkpoint data
 - All required controls render:
   - 12 wave buttons
   - 4 chord selects
@@ -112,6 +137,7 @@ Desktop verification:
 
 Mobile verification:
 
+- `Escape` from an active run returns to the title screen with the animated high-score badge
 - Music editor renders at `375px` width
 - Editor panel is scrollable and bottom actions are reachable
 - Pad rhythm controls render and remain selectable
@@ -138,10 +164,18 @@ Mobile verification:
   - `showTitleScreen(context)`
   - `showPauseScreen()`
   - `resumeFromPause()`
+- `index.html` persistence / exit helpers:
+  - `syncHighScore()`
+  - `syncRunCheckpoint()`
+  - `returnToTitleFromRun()`
+- `index.html` wave-clear handling:
+  - `updateInput()`
+  - `checkWaveComplete()`
 
 ## Likely Next Tasks
 
 - Expand pad rhythm presets if users want one-click groove templates instead of per-step editing
+- Add a touch-visible pause/menu button if mobile players need the new pause flow without a hardware keyboard
 - Expand chord library if more harmonic variety is wanted than major/minor triads
 - Add explicit “discard draft changes” behavior if the editor should preserve unsaved edits across closes
 - Consider naming editable waves separately from the original song labels if users should author custom presets
