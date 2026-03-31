@@ -151,7 +151,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
@@ -194,77 +194,59 @@ const SFX=(()=>{
   function noiseBurst(d,v=.12,del=0,hi=3000,lo=200){if(muted)return;const c=getCtx(),t=c.currentTime+del,len=Math.floor(c.sampleRate*d),buf=c.createBuffer(1,len,c.sampleRate),da=buf.getChannelData(0);for(let i=0;i<len;i++)da[i]=Math.random()*2-1;const s=c.createBufferSource();s.buffer=buf;const g=c.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hi;const eq=c.createBiquadFilter();eq.type='peaking';eq.frequency.value=lo;eq.gain.value=12;eq.Q.value=.7;s.connect(g);g.connect(lp);lp.connect(eq);eq.connect(out());s.start(t)}
   function crunch(f,d,v=.1,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain(),ws=c.createWaveShaper();ws.curve=makeDistCurve(80);ws.oversample='4x';o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(Math.max(f*.3,20),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(ws);ws.connect(g);g.connect(out());o.start(t);o.stop(t+d)}
   function subBass(f,d,v=.2,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(20,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=150;o.connect(g);g.connect(lp);lp.connect(out());o.start(t);o.stop(t+d)}
-  // ── Adaptive BGM: metronome base + layers that build with enemy count ──
+  // ── BGM: bass line + chord pad + hihat, chord changes per wave ──
   let bgmLayers=null;
+  // Circle of Fifths: 12 minor triads, one per wave
+  const WAVE_CHORDS=[
+    [220.00,261.63,329.63],[164.81,196.00,246.94],[123.47,146.83,185.00],
+    [185.00,220.00,277.18],[138.59,164.81,207.65],[103.83,123.47,155.56],
+    [155.56,185.00,233.08],[116.54,138.59,174.61],[174.61,207.65,261.63],
+    [130.81,155.56,196.00],[98.00,116.54,146.83],[146.83,174.61,220.00],
+  ];
   function startBGM(){
     if(bgmPlaying||muted)return;const c=getCtx();bgmPlaying=true;
-    // Master bus
-    const master=c.createGain();master.gain.value=.4;master.connect(out());
-    // Layer 1: Sub drone (always present once music starts)
-    const droneO=c.createOscillator();droneO.type='sine';droneO.frequency.value=55;
-    const droneG=c.createGain();droneG.gain.value=0;
-    droneO.connect(droneG);droneG.connect(master);droneO.start();
-    // Layer 3: Tension pad (fades in at 5+ enemies) — minor chord
-    // Circle of Fifths: 12 minor triads, one per wave. Full chromatic journey.
-    const WAVE_CHORDS=[
-      [220.00,261.63,329.63],  // W1:  Am  (A-C-E)
-      [164.81,196.00,246.94],  // W2:  Em  (E-G-B)
-      [123.47,146.83,185.00],  // W3:  Bm  (B-D-F#)
-      [185.00,220.00,277.18],  // W4:  F#m (F#-A-C#)
-      [138.59,164.81,207.65],  // W5:  C#m (C#-E-G#)
-      [103.83,123.47,155.56],  // W6:  G#m (G#-B-D#)
-      [155.56,185.00,233.08],  // W7:  Ebm (Eb-Gb-Bb)
-      [116.54,138.59,174.61],  // W8:  Bbm (Bb-Db-F)
-      [174.61,207.65,261.63],  // W9:  Fm  (F-Ab-C)
-      [130.81,155.56,196.00],  // W10: Cm  (C-Eb-G)
-      [98.00,116.54,146.83],   // W11: Gm  (G-Bb-D)
-      [146.83,174.61,220.00],  // W12: Dm  (D-F-A)
-    ];
-    let currentWaveChord=-1;
-    const padOs=[165,196,247].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*8;return o});
-    const padG=c.createGain();padG.gain.value=0;
-    const padF=c.createBiquadFilter();padF.type='lowpass';padF.frequency.value=900;
-    padOs.forEach(o=>{o.connect(padF)});padF.connect(padG);padG.connect(master);
-    padOs.forEach(o=>o.start());
-    // Layer 4: Pulse (fades in at 8+ enemies) — rhythmic LFO on filter
-    const pulseO=c.createOscillator();pulseO.type='sawtooth';pulseO.frequency.value=110;
-    const pulseG=c.createGain();pulseG.gain.value=0;
-    const pulseF=c.createBiquadFilter();pulseF.type='lowpass';pulseF.frequency.value=200;pulseF.Q.value=8;
-    const pulseLFO=c.createOscillator();pulseLFO.type='sine';pulseLFO.frequency.value=2;
-    const pulseLG=c.createGain();pulseLG.gain.value=150;
-    pulseLFO.connect(pulseLG);pulseLG.connect(pulseF.frequency);
-    pulseO.connect(pulseF);pulseF.connect(pulseG);pulseG.connect(master);
-    pulseO.start();pulseLFO.start();
-    bgmLayers={master,droneO,droneG,padOs,padG,padF,pulseO,pulseG,pulseLFO,
-      // Dramatic arc: wave 1=metronome only → crescendo mid-game → metronome at end
-      // totalKills triggers the transition from pure metronome to music
-      update(enemyCount,wave,totalKills){
-        const t=c.currentTime;
-        const w=wave||1;
-        // Arc: sine curve over 12 waves, peaks at wave 6-7
-        const arc=Math.sin((w-1)/11*Math.PI); // 0→1→0
-
-        // Pad chord: change key each wave via Circle of Fifths
-        const wIdx=Math.max(0,Math.min(11,w-1));
-        if(wIdx!==currentWaveChord){
-          currentWaveChord=wIdx;
-          const ch=WAVE_CHORDS[wIdx];
-          padOs.forEach((o,i)=>o.frequency.setTargetAtTime(ch[i],t,.8));
-          droneO.frequency.setTargetAtTime(ch[0]/2,t,.8);
-          pulseO.frequency.setTargetAtTime(ch[0]/2,t,.8);
-        }
-
-        // Drone: always present, grows with arc (min .3 so it's always audible)
-        droneG.gain.setTargetAtTime(.3+arc*.5,t,.8);
-        // Pad chord: grows with arc (always at least .15 after wave 1)
-        const padLevel=w>=2?.15+arc*.6:0;
-        padG.gain.setTargetAtTime(padLevel,t,.8);
-        // Open filter with arc
-        padF.frequency.setTargetAtTime(600+arc*1200,t,.5);
-        // Pulse: mid-game only (waves 3-10), follows arc
-        const pulseArc=w>=3&&w<=10?Math.max(0,arc-.2)/.8:0;
-        pulseG.gain.setTargetAtTime(pulseArc*.5,t,.8);
-        pulseLFO.frequency.setTargetAtTime(1.5+pulseArc*3,t,.5);
+    const bm=c.createGain();bm.gain.value=.1;bm.connect(out());
+    // Bass line — sequenced sawtooth through lowpass
+    const bg=c.createGain();bg.gain.value=.6;bg.connect(bm);
+    const bo=c.createOscillator();bo.type='sawtooth';
+    const bf=c.createBiquadFilter();bf.type='lowpass';bf.frequency.value=350;bf.Q.value=4;
+    bo.connect(bf);bf.connect(bg);
+    const notes=[55,55,65.41,73.42,55,55,82.41,73.42],st=.25,ll=notes.length*st;
+    function sched(base){notes.forEach((f,i)=>bo.frequency.setValueAtTime(f,base+i*st))}
+    // Bass LFO on filter
+    const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=.3;
+    const lg=c.createGain();lg.gain.value=120;lfo.connect(lg);lg.connect(bf.frequency);lfo.start();
+    // Chord pad — changes key per wave
+    const pg=c.createGain();pg.gain.value=.3;pg.connect(bm);
+    const pf=c.createBiquadFilter();pf.type='lowpass';pf.frequency.value=800;
+    const po=WAVE_CHORDS[0].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*10;o.connect(pf);return o});
+    pf.connect(pg);
+    // Pad filter LFO for slow shimmer
+    const pl=c.createOscillator();pl.type='sine';pl.frequency.value=.08;
+    const plg=c.createGain();plg.gain.value=400;pl.connect(plg);plg.connect(pf.frequency);pl.start();
+    // Hi-hat
+    const hg=c.createGain();hg.gain.value=0;hg.connect(bm);
+    const hl=Math.floor(c.sampleRate*2),hb=c.createBuffer(1,hl,c.sampleRate),hd=hb.getChannelData(0);
+    for(let i=0;i<hl;i++)hd[i]=Math.random()*2-1;
+    const hs=c.createBufferSource();hs.buffer=hb;hs.loop=true;
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;
+    hs.connect(hp);hp.connect(hg);
+    // Start everything
+    const now=c.currentTime;bo.start(now);po.forEach(o=>o.start(now));hs.start(now);
+    let lc=0,curChord=-1;
+    function loop(){
+      if(!bgmPlaying)return;
+      const b=now+lc*ll;sched(b);
+      for(let i=0;i<notes.length;i++){if(i%2===0){const ht=b+i*st;hg.gain.setValueAtTime(.4,ht);hg.gain.exponentialRampToValueAtTime(.01,ht+.05)}}
+      lc++;if(lc<600)setTimeout(loop,ll*1000*.8);
+    }
+    loop();
+    bgmLayers={bm,bo,po,hs,lfo,pl,pf,pg,
+      setChord(wave){
+        const wIdx=Math.max(0,Math.min(11,(wave||1)-1));
+        if(wIdx===curChord)return;curChord=wIdx;
+        const ch=WAVE_CHORDS[wIdx];const t=c.currentTime;
+        po.forEach((o,i)=>o.frequency.setTargetAtTime(ch[i],t,1));
       }
     };
     bgmNodes=bgmLayers;
@@ -272,12 +254,9 @@ const SFX=(()=>{
   function stopBGM(){
     if(!bgmLayers)return;bgmPlaying=false;
     try{
-      const c=getCtx(),t=c.currentTime;
-      bgmLayers.master.gain.setTargetAtTime(0,t,.3);
-      setTimeout(()=>{
-        try{bgmLayers.droneO.stop();bgmLayers.padOs.forEach(o=>o.stop());bgmLayers.pulseO.stop();bgmLayers.pulseLFO.stop()}catch(e){}
-        bgmLayers=null;bgmNodes=null;
-      },500);
+      bgmLayers.bm.gain.setValueAtTime(bgmLayers.bm.gain.value,ctx.currentTime);
+      bgmLayers.bm.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.5);
+      setTimeout(()=>{try{bgmLayers.bo.stop();bgmLayers.po.forEach(o=>o.stop());bgmLayers.hs.stop();bgmLayers.lfo.stop();bgmLayers.pl.stop()}catch(e){}bgmLayers=null;bgmNodes=null},600);
     }catch(e){bgmLayers=null;bgmNodes=null}
   }
   // Polyphonic chord helper: play multiple tones simultaneously for emotional sound
@@ -1897,7 +1876,7 @@ function animate(time){
   if(G.screen==='game'&&!G.paused){
     trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
     updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
-    if(bgmLayers&&bgmLayers.update)bgmLayers.update(G.enemies.length,G.wave,G.totalCorrect);
+    if(bgmLayers&&bgmLayers.setChord)bgmLayers.setChord(G.wave);
   }
 
   for(let i=particles.length-1;i>=0;i--){
