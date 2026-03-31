@@ -223,6 +223,55 @@ Verification completed:
   - average distance from source increased from `0` to about `3.19` during the initial burst
   - average distance to the score target dropped from about `11.84` to `6.76` during the funnel phase
 
+## Latest Update: World-Space Reticle + Deferred Score Awards
+
+Implemented the next pass on selection readability and score feedback.
+
+What shipped:
+
+- The selected-target reticle now lives in Three.js around the actual cube instead of inside the projected label DOM.
+- The reticle is built from 3 amber square `LineLoop` layers with staggered ghost-pulse expansion.
+- The reticle uses yaw-only billboarding so it faces the camera cleanly without full `lookAt` tilt.
+- The old label-based `.target-reticle` DOM/CSS treatment was removed.
+- Correct-answer score is now deferred into a pending award queue instead of incrementing immediately on hit.
+- Rainbow hit particles carry an award id and score only lands when particles reach the score HUD target.
+- Score awards are chunked into several arrivals so the HUD steps upward as particles connect.
+- The score HUD now does a small `score-pop` flash on arrival.
+- Rainbow funnel particles were made more vivid with:
+  - additive rendering
+  - stronger homing pull
+  - slight spiral drift
+  - short pooled trail ghosts
+  - a tiny score-impact burst near the HUD target
+- Mobile reduces rainbow particle count automatically to keep the effect readable and cheaper to render.
+- Pending score awards are flushed before save/high-score sync so delayed points cannot be lost on:
+  - checkpoint save
+  - return to title
+  - end screen
+  - unload
+- Flushing also purges any in-flight tagged particles so deferred awards cannot double-collect after a save/restore boundary.
+- Once an award fully lands, any leftover particles from that kill are dropped out of award mode and fade quickly.
+
+Spec artifact:
+
+- Added `selected-reticle-score-funnel-spec.md` with the feature contract, manual blast-radius analysis, and verification plan.
+
+Verification completed:
+
+- Inline script parse check passed after the reticle/award changes.
+- Headless Chromium desktop check at `1920x1080` confirmed:
+  - selected reticle group is visible on the selected cube
+  - score remains unchanged immediately after `handleHit()`
+  - pending award count is created on hit
+  - full score lands after particle arrival
+  - score HUD receives the `score-pop` state
+  - checkpoint flush banks pending score and clears tagged particles
+- Headless Chromium mobile check at `375x812` confirmed:
+  - selected reticle remains visible
+  - mobile uses the reduced rainbow particle count
+  - full score still lands from particle arrival
+  - no console/page errors were raised during the mobile pass
+
 ## Important Code Areas
 
 - `index.html` CSS top section:
@@ -230,7 +279,7 @@ Verification completed:
   - mobile breakpoints
   - music editor styles
   - explainer tray styles
-  - selected-target reticle styles
+  - score-pop HUD styles
 - `index.html` `SFX` module:
   - built-in music defaults
   - pad rhythm scheduling
@@ -238,10 +287,18 @@ Verification completed:
   - load/save/reset/preview API
 - `index.html` particle / score-funnel helpers:
   - `getScoreFunnelTarget()`
+  - `buildScoreChunks()`
+  - `createScoreAward()`
+  - `flushPendingScoreAwards()`
+  - `collectScoreAwardChunk()`
+  - `spawnTrailGhost()`
   - `spawnExplosion()`
   - `animate()`
 - `index.html` label projection:
   - `updateLabels()`
+- `index.html` selected reticle helpers:
+  - `selectedReticle`
+  - `updateSelectedReticle()`
 - `index.html` explanation helpers:
   - `EXPLANATION_GLOSSARY`
   - `buildExplanationBank()`
