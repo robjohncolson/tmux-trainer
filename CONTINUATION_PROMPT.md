@@ -61,6 +61,14 @@ When a student **misses** a formula question, the enemy explodes into 2-3 smalle
   - Each has LaTeX, blanks, 3 subconcepts (hydra split compatible)
   - Total: 59 formulas (39 reference + 20 supporting), 177 subconcepts, auto-generated deep concepts
 
+### Phase 8: Anti-Spam + Melodic Arch + Rainbow Death + Chord Isolation
+- **Anti-spam cooldown**: 300ms debounce on both handleHit and handleMiss prevents key spamming
+- **Melodic arch**: Replaced Circle of Fifths with palindrome tension arc:
+  W1:Am→W2:Dm→W3:Gm→W4:Cm→W5:Fm→W6:Bbm (peak tension, tritone from home)
+  W7:Bbm→W8:Fm→W9:Cm→W10:Gm→W11:Dm→W12:Am (resolution back home)
+- **Rainbow sparkle death**: Correct answers now explode in 7-color rainbow particles (longer life, wider spread)
+- **Chord isolation**: setProgress only counts main formula enemies (not sub/deep children) for pad evolution
+
 ### New Question Types
 
 1. **Identify (Multiple Choice A-D)**: Formula is rendered in LaTeX. Student picks what the formula calculates from 4 choices. Distractors are auto-generated from other formulas, preferring same domain for difficulty.

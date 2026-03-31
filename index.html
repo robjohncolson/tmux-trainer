@@ -192,12 +192,23 @@ const SFX=(()=>{
   let padBus=null,bassBus=null,sfxBus=null;
   let bgmSeqTimer=null,currentWaveIdx=0;
 
-  // Circle of Fifths: 12 minor triads
+  // Melodic arch: ascending 4ths (tension builds) then descending (resolution)
+  // W1-6: Am→Dm→Gm→Cm→Fm→Bbm (rising, each a 4th higher)
+  // W7-12: Bbm→Fm→Cm→Gm→Dm→Am (falling, mirror back home)
+  // Peak tension at W6-7 (Bbm = tritone away from home key Am)
   const WC=[
-    [220.00,261.63,329.63],[164.81,196.00,246.94],[123.47,146.83,185.00],
-    [185.00,220.00,277.18],[138.59,164.81,207.65],[103.83,123.47,155.56],
-    [155.56,185.00,233.08],[116.54,138.59,174.61],[174.61,207.65,261.63],
-    [130.81,155.56,196.00],[98.00,116.54,146.83],[146.83,174.61,220.00],
+    [220.00,261.63,329.63],  // W1:  Am  — home
+    [146.83,174.61,220.00],  // W2:  Dm  — subdominant, gentle departure
+    [196.00,233.08,293.66],  // W3:  Gm  — building
+    [130.81,155.56,196.00],  // W4:  Cm  — darker, more distant
+    [174.61,207.65,261.63],  // W5:  Fm  — approaching peak tension
+    [233.08,277.18,349.23],  // W6:  Bbm — PEAK (tritone from Am, max tension)
+    [233.08,277.18,349.23],  // W7:  Bbm — sustain peak, turning point
+    [174.61,207.65,261.63],  // W8:  Fm  — descent begins
+    [130.81,155.56,196.00],  // W9:  Cm  — familiar territory
+    [196.00,233.08,293.66],  // W10: Gm  — nearing home
+    [146.83,174.61,220.00],  // W11: Dm  — almost there
+    [220.00,261.63,329.63],  // W12: Am  — HOME (resolution, triumph)
   ];
 
   function init(){
@@ -1161,12 +1172,15 @@ spawnMark.position.copy(pathPts[0]);spawnMark.position.y=.5;scene.add(spawnMark)
 // Particles
 const particles=[];
 const particleGeo=new THREE.BoxGeometry(.08,.08,.08);
-function spawnExplosion(pos,count=12,color=AMB.glow){
+const RAINBOW=[0xff4444,0xff8844,0xffcc44,0x44ff88,0x4488ff,0xaa44ff,0xff44aa];
+function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false){
   for(let i=0;i<count;i++){
-    const m=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color,transparent:true}));
+    const c=rainbow?RAINBOW[i%RAINBOW.length]:color;
+    const m=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color:c,transparent:true}));
     m.position.copy(pos);
-    const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2+1,(Math.random()-.5)*2).multiplyScalar(.15);
-    particles.push({mesh:m,vel:v,life:1,decay:.02+Math.random()*.02});
+    const spread=rainbow?.2:.15;
+    const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
+    particles.push({mesh:m,vel:v,life:rainbow?1.5:1,decay:.015+Math.random()*.015});
     scene.add(m);
   }
 }
@@ -1822,9 +1836,11 @@ function flash(msg,color){
 }
 
 // ═══════════════════════════════════════════════
-//  HIT / MISS — shared logic
+//  HIT / MISS — shared logic (with anti-spam cooldown)
 // ═══════════════════════════════════════════════
+let lastAnswerTime=0;
 function handleHit(enemy){
+  const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
   const responseTime=Date.now()-G.commandStartTime;
   const attempts=G.attemptsOnCurrent+1;
   let speedMult=1;
@@ -1836,7 +1852,7 @@ function handleHit(enemy){
   const intensity=Math.min(1,speedMult/2);
   SFX.hit(intensity);
   const ePos=enemyMeshes[enemy.id]?.position.clone()||new THREE.Vector3();
-  spawnExplosion(ePos,8+Math.floor(intensity*20),AMB.glow);
+  spawnExplosion(ePos,12+Math.floor(intensity*20),AMB.glow,true);
   spawnBeam(serverGrp.position.clone().add(new THREE.Vector3(0,3,0)),ePos);
   G.score+=pts;G.streak++;G.maxStreak=Math.max(G.maxStreak,G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
@@ -1849,6 +1865,7 @@ function handleHit(enemy){
 }
 
 function handleMiss(enemy){
+  const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
   SFX.miss();
   G.streak=0;G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
@@ -2160,10 +2177,12 @@ function animate(time){
     trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
     updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
     SFX.setKey(G.wave);
-    // Evolve pad within wave: progress = fraction of wave enemies killed
+    // Evolve pad: only count main formula enemies (not sub/deep children)
     if(G.waveCommands.length>0){
-      const killed=G.waveCommands.length-G.enemies.length-(G.waveCommands.length-G.spawnIdx);
-      SFX.setProgress(Math.max(0,killed/G.waveCommands.length));
+      const mainEnemies=G.enemies.filter(e=>!e.splitDepth||e.splitDepth===0).length;
+      const unspawned=G.waveCommands.length-G.spawnIdx;
+      const mainRemaining=mainEnemies+unspawned;
+      SFX.setProgress(Math.max(0,1-mainRemaining/G.waveCommands.length));
     }
   }
 
