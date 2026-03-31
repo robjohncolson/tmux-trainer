@@ -192,24 +192,37 @@ const SFX=(()=>{
   let padBus=null,bassBus=null,sfxBus=null;
   let bgmSeqTimer=null,currentWaveIdx=0;
 
-  // Melodic arch: ascending 4ths (tension builds) then descending (resolution)
-  // W1-6: Am→Dm→Gm→Cm→Fm→Bbm (rising, each a 4th higher)
-  // W7-12: Bbm→Fm→Cm→Gm→Dm→Am (falling, mirror back home)
-  // Peak tension at W6-7 (Bbm = tritone away from home key Am)
-  const WC=[
-    [220.00,261.63,329.63],  // W1:  Am  — home
-    [146.83,174.61,220.00],  // W2:  Dm  — subdominant, gentle departure
-    [196.00,233.08,293.66],  // W3:  Gm  — building
-    [130.81,155.56,196.00],  // W4:  Cm  — darker, more distant
-    [174.61,207.65,261.63],  // W5:  Fm  — approaching peak tension
-    [233.08,277.18,349.23],  // W6:  Bbm — PEAK (tritone from Am, max tension)
-    [233.08,277.18,349.23],  // W7:  Bbm — sustain peak, turning point
-    [174.61,207.65,261.63],  // W8:  Fm  — descent begins
-    [130.81,155.56,196.00],  // W9:  Cm  — familiar territory
-    [196.00,233.08,293.66],  // W10: Gm  — nearing home
-    [146.83,174.61,220.00],  // W11: Dm  — almost there
-    [220.00,261.63,329.63],  // W12: Am  — HOME (resolution, triumph)
+  // Famous song chord progressions — 4-chord loop per wave, building narrative arc
+  // Each wave's BGM cycles through its 4 chords. [root, 3rd, 5th] triads.
+  const WC_PROG=[
+    // W1: Dire Straits "So Far Away" — Am G F E (melancholic start)
+    [[220,262,330],[196,247,294],[175,220,262],[165,208,247]],
+    // W2: A-ha "Take On Me" — A F#m D E (bright, energetic)
+    [[220,277,330],[185,220,277],[147,185,220],[165,208,247]],
+    // W3: Grieg "Morning Mood" — E G#m A B (pastoral, ascending)
+    [[165,208,247],[208,247,311],[220,277,330],[247,311,370]],
+    // W4: Pachelbel's Canon — D A Bm F#m (timeless, building)
+    [[147,185,220],[220,277,330],[247,294,370],[185,220,277]],
+    // W5: Beethoven "Fur Elise" — Am E Am C (tension, classic)
+    [[220,262,330],[165,208,247],[220,262,330],[262,330,392]],
+    // W6: Vivaldi "Winter" — Fm Cm Db Eb (dramatic peak)
+    [[175,208,262],[131,156,196],[139,175,208],[156,196,233]],
+    // W7: Bach "Air on G String" — G Em Am D (elegant)
+    [[196,247,294],[165,196,247],[220,262,330],[147,185,220]],
+    // W8: Chrono Trigger "Corridors of Time" — Em G Am B (ethereal, timeless)
+    [[165,196,247],[196,247,294],[220,262,330],[247,311,370]],
+    // W9: Satie "Gymnopédie No.1" — Gmaj7 Dmaj7 Gmaj7 Dmaj7 (contemplative, sparse)
+    [[196,247,294],[147,185,220],[196,247,294],[147,185,220]],
+    // W10: Mozart "Eine Kleine Nachtmusik" — G D Em C (triumphant)
+    [[196,247,294],[147,185,220],[165,196,247],[262,330,392]],
+    // W11: Tchaikovsky "Swan Lake" — Bm F# Bm Em (dramatic return)
+    [[247,294,370],[185,233,277],[247,294,370],[165,196,247]],
+    // W12: Beethoven "Ode to Joy" — D G A D (triumphant resolution)
+    [[147,185,220],[196,247,294],[220,277,330],[147,185,220]],
   ];
+  // For SFX: current chord (first chord of current wave's progression)
+  let currentProgIdx=0;
+  function wc(){return WC_PROG[currentWaveIdx][currentProgIdx%4]}
 
   function init(){
     if(ctx)return;
@@ -271,8 +284,6 @@ const SFX=(()=>{
     noiseGate.gain.setTargetAtTime(vol||.1,t,.003);
     noiseGate.gain.setTargetAtTime(0,t+dur,.02);
   }
-  function wc(){return WC[currentWaveIdx]}
-
   // ── Key / chord control ──
   function setKey(wave){
     if(!ctx)return;
@@ -280,7 +291,8 @@ const SFX=(()=>{
     if(wIdx===currentWaveIdx&&voices[0].gain.gain.value>0)return;
     const oldIdx=currentWaveIdx;
     currentWaveIdx=wIdx;
-    const ch=WC[wIdx],t=ctx.currentTime;
+    currentProgIdx=0; // reset to first chord of new progression
+    const ch=WC_PROG[wIdx][0],t=ctx.currentTime;
     for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.15);
     voices[3].osc.frequency.setTargetAtTime(ch[0]/4,t,.15);
     if(bgmPlaying&&oldIdx!==wIdx){
@@ -299,7 +311,7 @@ const SFX=(()=>{
     if(Math.abs(p-lastProgress)<.05)return;
     lastProgress=p;
     const t=ctx.currentTime;
-    const ch=WC[currentWaveIdx];
+    const ch=WC_PROG[currentWaveIdx][currentProgIdx%4];
     // Pad filter opens as progress increases (darker → brighter)
     const padF=600+p*1200; // 600Hz at start → 1800Hz when wave nearly clear
     // Pad voices shift up in octave blend as progress grows
@@ -313,31 +325,35 @@ const SFX=(()=>{
   }
 
   // ── BGM ──
-  const bassNotes=[1,1,1.189,1.335,1,1,1.498,1.335]; // ratios from root
+  const bassPattern=[1,1,1.189,1.335,1,1,1.498,1.335]; // ratios from root
   function startBGM(){
     if(bgmPlaying||muted)return;ensure();bgmPlaying=true;
     const t=ctx.currentTime;
-    // Fade in pad + bass buses
+    currentProgIdx=0;
     padBus.gain.setTargetAtTime(.35,t,.3);
     bassBus.gain.setTargetAtTime(.1,t,.3);
-    // Enable pad voices
     for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(.5,t,.3);
-    // Enable bass voice
     voices[3].gain.gain.setTargetAtTime(.6,t,.3);
-    // Start bass sequencer + hihat
-    const st=.25,ll=bassNotes.length*st;
+    const st=.25,ll=bassPattern.length*st;
     let startT=t;
     function seq(){
       if(!bgmPlaying)return;
-      const root=WC[currentWaveIdx][0]/4;
+      // Advance to next chord in the 4-chord progression each bar
+      const prog=WC_PROG[currentWaveIdx];
+      const ch=prog[currentProgIdx%4];
+      currentProgIdx++;
+      // Glide pad to current chord
       const now=ctx.currentTime;
+      for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],now,.2);
+      // Bass root follows chord
+      const root=ch[0]/4;
       // Schedule one bar of bass notes
-      bassNotes.forEach((r,i)=>{
+      bassPattern.forEach((r,i)=>{
         const nt=startT+i*st;
         if(nt>now-.01)voices[3].osc.frequency.setValueAtTime(root*r,Math.max(nt,now));
       });
       // Soft hihat on even beats — gentle tick, not harsh
-      for(let i=0;i<bassNotes.length;i+=2){
+      for(let i=0;i<bassPattern.length;i+=2){
         const ht=startT+i*st;
         if(ht>now-.01){
           noiseLP.frequency.setValueAtTime(6000,Math.max(ht,now));

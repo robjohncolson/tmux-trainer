@@ -69,6 +69,23 @@ When a student **misses** a formula question, the enemy explodes into 2-3 smalle
 - **Rainbow sparkle death**: Correct answers now explode in 7-color rainbow particles (longer life, wider spread)
 - **Chord isolation**: setProgress only counts main formula enemies (not sub/deep children) for pad evolution
 
+### Phase 9: Famous Song Chord Progressions
+- **12 waves = 12 iconic songs**: Each wave's BGM cycles through a 4-chord progression from a famous piece:
+  - W1: Dire Straits "So Far Away" (Am-G-F-E)
+  - W2: A-ha "Take On Me" (A-F#m-D-E)
+  - W3: Grieg "Morning Mood" (E-G#m-A-B)
+  - W4: Pachelbel's Canon (D-A-Bm-F#m)
+  - W5: Beethoven "Fur Elise" (Am-E-Am-C)
+  - W6: Vivaldi "Winter" (Fm-Cm-Db-Eb) — peak tension
+  - W7: Bach "Air on G String" (G-Em-Am-D)
+  - W8: Chrono Trigger "Corridors of Time" (Em-G-Am-B)
+  - W9: Satie "Gymnopedie No.1" (Gmaj7-Dmaj7-Gmaj7-Dmaj7)
+  - W10: Mozart "Eine Kleine Nachtmusik" (G-D-Em-C)
+  - W11: Tchaikovsky "Swan Lake" (Bm-F#-Bm-Em)
+  - W12: Beethoven "Ode to Joy" (D-G-A-D) — triumphant resolution
+- Pad + bass cycle through 4 chords per bar, gliding smoothly between them
+- All SFX still derive from the current active chord
+
 ### New Question Types
 
 1. **Identify (Multiple Choice A-D)**: Formula is rendered in LaTeX. Student picks what the formula calculates from 4 choices. Distractors are auto-generated from other formulas, preferring same domain for difficulty.
