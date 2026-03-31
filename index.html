@@ -194,8 +194,80 @@ const SFX=(()=>{
   function noiseBurst(d,v=.12,del=0,hi=3000,lo=200){if(muted)return;const c=getCtx(),t=c.currentTime+del,len=Math.floor(c.sampleRate*d),buf=c.createBuffer(1,len,c.sampleRate),da=buf.getChannelData(0);for(let i=0;i<len;i++)da[i]=Math.random()*2-1;const s=c.createBufferSource();s.buffer=buf;const g=c.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=hi;const eq=c.createBiquadFilter();eq.type='peaking';eq.frequency.value=lo;eq.gain.value=12;eq.Q.value=.7;s.connect(g);g.connect(lp);lp.connect(eq);eq.connect(out());s.start(t)}
   function crunch(f,d,v=.1,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain(),ws=c.createWaveShaper();ws.curve=makeDistCurve(80);ws.oversample='4x';o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(Math.max(f*.3,20),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(ws);ws.connect(g);g.connect(out());o.start(t);o.stop(t+d)}
   function subBass(f,d,v=.2,del=0){if(muted)return;const c=getCtx(),t=c.currentTime+del,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(20,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=150;o.connect(g);g.connect(lp);lp.connect(out());o.start(t);o.stop(t+d)}
-  function startBGM(){if(bgmPlaying||muted)return;const c=getCtx();bgmPlaying=true;const bm=c.createGain();bm.gain.value=.06;bm.connect(out());const bg=c.createGain();bg.gain.value=.6;bg.connect(bm);const bo=c.createOscillator();bo.type='sawtooth';const bf=c.createBiquadFilter();bf.type='lowpass';bf.frequency.value=350;bf.Q.value=4;bo.connect(bf);bf.connect(bg);const notes=[55,55,65.41,73.42,55,55,82.41,73.42],st=.25,ll=notes.length*st;function sched(base){notes.forEach((f,i)=>bo.frequency.setValueAtTime(f,base+i*st))}const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=.3;const lg=c.createGain();lg.gain.value=120;lfo.connect(lg);lg.connect(bf.frequency);lfo.start();const pg=c.createGain();pg.gain.value=.25;pg.connect(bm);const pf=c.createBiquadFilter();pf.type='lowpass';pf.frequency.value=700;const po=[220,261.63,329.63].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*10;o.connect(pf);return o});pf.connect(pg);const pl=c.createOscillator();pl.type='sine';pl.frequency.value=.08;const plg=c.createGain();plg.gain.value=350;pl.connect(plg);plg.connect(pf.frequency);pl.start();const hg=c.createGain();hg.gain.value=0;hg.connect(bm);const hl=Math.floor(c.sampleRate*2),hb=c.createBuffer(1,hl,c.sampleRate),hd=hb.getChannelData(0);for(let i=0;i<hl;i++)hd[i]=Math.random()*2-1;const hs=c.createBufferSource();hs.buffer=hb;hs.loop=true;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;hs.connect(hp);hp.connect(hg);const now=c.currentTime;bo.start(now);po.forEach(o=>o.start(now));hs.start(now);let lc=0;function loop(){if(!bgmPlaying)return;const b=now+lc*ll;sched(b);for(let i=0;i<notes.length;i++){if(i%2===0){const ht=b+i*st;hg.gain.setValueAtTime(.4,ht);hg.gain.exponentialRampToValueAtTime(.01,ht+.05)}}lc++;if(lc<600)setTimeout(loop,ll*1000*.8)}loop();bgmNodes={bm,bo,po,hs,lfo,pl}}
-  function stopBGM(){if(!bgmNodes)return;bgmPlaying=false;try{bgmNodes.bm.gain.setValueAtTime(bgmNodes.bm.gain.value,ctx.currentTime);bgmNodes.bm.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.5);setTimeout(()=>{try{bgmNodes.bo.stop();bgmNodes.po.forEach(o=>o.stop());bgmNodes.hs.stop();bgmNodes.lfo.stop();bgmNodes.pl.stop()}catch(e){}bgmNodes=null},600)}catch(e){bgmNodes=null}}
+  // ── Adaptive BGM: metronome base + layers that build with enemy count ──
+  let metronomeTimer=null,bgmLayers=null;
+  function startBGM(){
+    if(bgmPlaying||muted)return;const c=getCtx();bgmPlaying=true;
+    // Master bus
+    const master=c.createGain();master.gain.value=.08;master.connect(out());
+    // Layer 1: Metronome tick (always on) — soft woodblock-like click
+    // Tempo adapts to game pace via updateBGMLayers()
+    let bpm=60,tickNext=c.currentTime;
+    function tick(){
+      if(!bgmPlaying)return;
+      const now=c.currentTime;
+      if(now>=tickNext){
+        // Soft tick: short filtered noise + sine ping
+        const tg=c.createGain();tg.gain.setValueAtTime(.4,now);tg.gain.exponentialRampToValueAtTime(.001,now+.06);
+        const to=c.createOscillator();to.type='sine';to.frequency.value=800;to.connect(tg);tg.connect(master);to.start(now);to.stop(now+.06);
+        // Quieter accent on beat 1 of 4
+        tickNext=now+60/bpm;
+      }
+      metronomeTimer=setTimeout(tick,30);
+    }
+    tick();
+    // Layer 2: Sub drone (fades in at 3+ enemies)
+    const droneO=c.createOscillator();droneO.type='sine';droneO.frequency.value=55;
+    const droneG=c.createGain();droneG.gain.value=0;
+    droneO.connect(droneG);droneG.connect(master);droneO.start();
+    // Layer 3: Tension pad (fades in at 5+ enemies) — minor chord
+    const padOs=[165,196,247].map(f=>{const o=c.createOscillator();o.type='triangle';o.frequency.value=f;o.detune.value=(Math.random()-.5)*8;return o});
+    const padG=c.createGain();padG.gain.value=0;
+    const padF=c.createBiquadFilter();padF.type='lowpass';padF.frequency.value=400;
+    padOs.forEach(o=>{o.connect(padF)});padF.connect(padG);padG.connect(master);
+    padOs.forEach(o=>o.start());
+    // Layer 4: Pulse (fades in at 8+ enemies) — rhythmic LFO on filter
+    const pulseO=c.createOscillator();pulseO.type='sawtooth';pulseO.frequency.value=110;
+    const pulseG=c.createGain();pulseG.gain.value=0;
+    const pulseF=c.createBiquadFilter();pulseF.type='lowpass';pulseF.frequency.value=200;pulseF.Q.value=8;
+    const pulseLFO=c.createOscillator();pulseLFO.type='sine';pulseLFO.frequency.value=2;
+    const pulseLG=c.createGain();pulseLG.gain.value=150;
+    pulseLFO.connect(pulseLG);pulseLG.connect(pulseF.frequency);
+    pulseO.connect(pulseF);pulseF.connect(pulseG);pulseG.connect(master);
+    pulseO.start();pulseLFO.start();
+    bgmLayers={master,droneO,droneG,padOs,padG,padF,pulseO,pulseG,pulseLFO,
+      setBPM(b){bpm=b},
+      // Update layers based on enemy count — called from game loop
+      update(enemyCount){
+        const t=c.currentTime;
+        // Metronome BPM scales with enemy count: 60 base, +8 per enemy, cap at 140
+        bpm=Math.min(140,60+enemyCount*8);
+        // Drone: fade in at 3+
+        const dTarget=enemyCount>=3?Math.min(.6,(enemyCount-2)*.15):0;
+        droneG.gain.setTargetAtTime(dTarget,t,.5);
+        // Pad: fade in at 5+
+        const pTarget=enemyCount>=5?Math.min(.5,(enemyCount-4)*.12):0;
+        padG.gain.setTargetAtTime(pTarget,t,.5);
+        // Pulse: fade in at 8+
+        const plTarget=enemyCount>=8?Math.min(.4,(enemyCount-7)*.1):0;
+        pulseG.gain.setTargetAtTime(plTarget,t,.5);
+        pulseLFO.frequency.setTargetAtTime(Math.min(4,1+enemyCount*.3),t,.3);
+      }
+    };
+    bgmNodes=bgmLayers;
+  }
+  function stopBGM(){
+    if(!bgmLayers)return;bgmPlaying=false;
+    if(metronomeTimer){clearTimeout(metronomeTimer);metronomeTimer=null}
+    try{
+      const c=getCtx(),t=c.currentTime;
+      bgmLayers.master.gain.setTargetAtTime(0,t,.3);
+      setTimeout(()=>{
+        try{bgmLayers.droneO.stop();bgmLayers.padOs.forEach(o=>o.stop());bgmLayers.pulseO.stop();bgmLayers.pulseLFO.stop()}catch(e){}
+        bgmLayers=null;bgmNodes=null;
+      },500);
+    }catch(e){bgmLayers=null;bgmNodes=null}
+  }
   // Polyphonic chord helper: play multiple tones simultaneously for emotional sound
   function chord(freqs,d,type='triangle',v=.06,del=0){freqs.forEach(f=>tone(f,d,type,v,del))}
   // Musical intervals
@@ -1804,6 +1876,7 @@ function animate(time){
   if(G.screen==='game'&&!G.paused){
     trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
     updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
+    if(bgmLayers&&bgmLayers.update)bgmLayers.update(G.enemies.length);
   }
 
   for(let i=particles.length-1;i>=0;i--){
