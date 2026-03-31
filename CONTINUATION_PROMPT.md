@@ -161,17 +161,65 @@ Mobile verification:
   - `display: block`
   - opacity > 0
 
+## Latest Update: Local Explanation Bank
+
+Implemented a fully local explainer system for the AP Stats cartridge. This does not call any AI/API service and is built from shipped deck metadata plus a handwritten glossary for notation answers used in fill-blank prompts.
+
+What shipped:
+
+- `EXPLANATION_BANK` is built in `index.html` from:
+  - command-level formula/concept entries keyed by command id and stripped action label
+  - `EXPLANATION_GLOSSARY` entries for notation answers like `n`, `p-hat`, `p0`, `mu`, `sigma`, `SE`, `Q1`, `P(A ∩ B)`, `z* or t*`, etc.
+- The input tray now renders explainer controls directly under the active prompt:
+  - identify questions: `TARGET` plus `A/B/C/D`
+  - fill-blank questions: `TARGET` plus `A/B/C`
+  - typed/prefix/subconcept prompts: `TARGET`
+- Clicking an explainer chip opens a compact 3-sentence panel:
+  - sentence 1: what it is
+  - sentence 2: when to use it
+  - sentence 3: a recognition clue
+- `Alt+E` toggles the target explainer from keyboard.
+- Explainer state is reset when:
+  - selection changes
+  - auto-select picks a new enemy
+  - a target is killed
+  - hydra splits replace the current target
+  - screen transitions move out of gameplay
+- Mobile behavior:
+  - `#input-panel` already had internal scrolling; explainer open/close now also drives tray scroll position
+  - opening an explanation auto-scrolls the tray so the definition panel is visible
+  - closing or resetting the explainer returns the tray to the top
+
+Verification completed:
+
+- JavaScript parse check passed on the inline `<script>` block
+- Browser-verified in headless Chromium at `1920x1080` and `375x812`
+- Confirmed:
+  - identify-mode answer explainers open and show 3 lines
+  - fill-blank answer explainers open and show 3 lines
+  - `Alt+E` opens the target explainer from a closed state
+  - mobile explainer panel stays within the viewport after the auto-scroll fix
+  - explainer help text renders in the tray on both viewports
+
 ## Important Code Areas
 
 - `index.html` CSS top section:
   - overlay styles
   - mobile breakpoints
   - music editor styles
+  - explainer tray styles
 - `index.html` `SFX` module:
   - built-in music defaults
   - pad rhythm scheduling
   - BGM automation cleanup
   - load/save/reset/preview API
+- `index.html` explanation helpers:
+  - `EXPLANATION_GLOSSARY`
+  - `buildExplanationBank()`
+  - `normalizeExplanationLookup()`
+  - `openExplanationForActiveAnswer()`
+  - `openExplanationForSelectedCommand()`
+  - `renderExplanationControls()`
 - `index.html` music editor helpers:
   - chord library
   - pad options
@@ -199,6 +247,9 @@ Mobile verification:
 
 ## Likely Next Tasks
 
+- Expand the explanation glossary beyond AP Stats if more cartridges get the same explainer UI
+- Add richer per-term overrides where the generated command-based sentences feel too generic
+- Consider a small touch-only `?` affordance on each answer row if mobile users miss the explainer chips
 - Expand pad rhythm presets if users want one-click groove templates instead of per-step editing
 - Add a touch-visible pause/menu button if mobile players need the new pause flow without a hardware keyboard
 - Decide whether `Continue` should restore an exact mid-wave moment forever or periodically collapse back to “start of current wave” checkpoints for simpler state

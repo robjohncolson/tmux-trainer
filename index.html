@@ -24,6 +24,16 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hint-text{font-size:12px;color:#996622;margin-top:2px;padding:2px 6px;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:4px}
 .input-help{font-size:10px;color:#3d1f00;margin-top:8px;opacity:0;transition:opacity .2s;line-height:1.4}
 #input-panel:hover .input-help,#input-panel:focus-within .input-help{opacity:1}
+.explain-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
+.explain-label{font-size:9px;letter-spacing:2px;color:#996622;font-weight:700}
+.explain-chip{font-family:inherit;font-size:10px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .15s}
+.explain-chip:hover{border-color:#ff8c00;color:#ff8c00;background:#2d1200}
+.explain-panel{margin-top:10px;padding:10px 12px;border:1px solid #ff8c0033;border-radius:10px;background:#ff8c000f;text-align:left}
+.explain-panel-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.explain-title{font-size:11px;letter-spacing:2px;color:#ffcc66;font-weight:700}
+.explain-close{font-family:inherit;font-size:10px;font-weight:700;color:#996622;background:transparent;border:1px solid #5a2800;border-radius:999px;padding:4px 9px;cursor:pointer}
+.explain-close:hover{border-color:#ff8c00;color:#ff8c00}
+.explain-line{font-size:11px;line-height:1.55;color:#d8943d;margin-top:4px}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
 .enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s}
@@ -135,6 +145,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .mc-btn .mc-text{font-size:clamp(12px,3vw,14px);line-height:1.3}
 .hint-mc-grid{flex-direction:column;gap:6px;padding:0 4px}
 .hint-mc-btn{min-height:44px;padding:8px 12px;font-size:14px;width:100%;text-align:left}
+.explain-row{gap:5px}
+.explain-chip{min-height:38px;padding:8px 12px}
+.explain-panel{padding:10px}
+.explain-line{font-size:10px}
 .prompt-text{font-size:clamp(13px,3.5vw,18px)}
 .prompt-label{font-size:8px;letter-spacing:2px}
 .q-type-badge{font-size:7px}
@@ -1236,6 +1250,324 @@ const apStatsCartridge={
   },
 };
 
+function stripAnswerLabel(label){
+  return String(label||'').replace(/\s*\([^)]*\)\s*$/,'').trim();
+}
+function ensureSentence(text){
+  const trimmed=String(text||'').trim();
+  if(!trimmed)return'';
+  return /[.!?]$/.test(trimmed)?trimmed:trimmed+'.';
+}
+function formatExplanationLabel(label){
+  return String(label||'')
+    .replace(/\\text\{([^}]*)\}/g,'$1')
+    .replace(/\\sqrt\{([^}]*)\}/g,'sqrt($1)')
+    .replace(/\\hat\{p_1\}/g,'p-hat1')
+    .replace(/\\hat\{p\}/g,'p-hat')
+    .replace(/\\bar\{x\}/g,'x-bar')
+    .replace(/\\beta/g,'beta')
+    .replace(/\\mu/g,'mu')
+    .replace(/\\sigma/g,'sigma')
+    .replace(/\\chi/g,'chi')
+    .replace(/\\cdot/g,' ')
+    .replace(/\^\*/g,'*')
+    .replace(/[{}]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function normalizeExplanationLookup(label){
+  const raw=formatExplanationLabel(label).toLowerCase();
+  const aliases={
+    'phat':'p-hat','p-hat':'p-hat','phat1':'p-hat1','p-hat1':'p-hat1',
+    'xbar':'x-bar','x-bar':'x-bar','mu0':'mu0','beta0':'beta0','p0':'p0',
+    'pc':'pc','sigma_x':'sigma_x','sx':'s','s_x':'s','sy':'s','s_y':'s',
+    'sigma1^2':'sigma1^2','s1^2':'s1^2','z* or t*':'z* or t*'
+  };
+  return aliases[raw]||raw;
+}
+const EXPLANATION_GLOSSARY=[
+  {keys:['1'],title:'1',lines:[
+    'The number 1 usually marks a full probability or the single parameter lost to a constraint.',
+    'Use it when a rule says probabilities must add to 1 or a formula subtracts one degree of freedom.',
+    'Spot it in AP Stats whenever you see a leftover category or a sum-to-one condition.'
+  ]},
+  {keys:['1-p'],title:'1 - p',lines:[
+    '1 - p is the complement of a proportion p, so it is the chance of not seeing the event.',
+    'Use it in Bernoulli and sampling formulas when you need both successes and failures.',
+    'Spot it in standard deviation formulas for proportions because spread depends on p times 1 - p.'
+  ]},
+  {keys:['1.5'],title:'1.5 × IQR',lines:[
+    '1.5 times the IQR is the standard boxplot cutoff for flagging possible outliers.',
+    'Use it when building the lower and upper fences around Q1 and Q3.',
+    'Spot it whenever a prompt asks whether a value is an outlier by the boxplot rule.'
+  ]},
+  {keys:['95'],title:'95%',lines:[
+    '95 percent is the Empirical Rule benchmark for values within about two standard deviations in a Normal model.',
+    'Use it when the question references the middle bulk of a Normal distribution.',
+    'Spot it alongside 68 percent and 99.7 percent in quick Normal-distribution reasoning.'
+  ]},
+  {keys:['e'],title:'Expected count',lines:[
+    'An expected count is the count predicted by the null model before you compare it to the data.',
+    'Use it in chi-square work to measure how far observed counts are from what independence or a stated distribution would predict.',
+    'Spot it in formulas that divide by expected count or ask whether expected counts are large enough.'
+  ]},
+  {keys:['p(a∩b)'],title:'P(A ∩ B)',lines:[
+    'P(A ∩ B) is the probability that events A and B both happen together.',
+    'Use it for joint probability questions and for multiplying conditional and base probabilities.',
+    'Spot the intersection symbol whenever the prompt says both, and, or simultaneously.'
+  ]},
+  {keys:['p(b)'],title:'P(B)',lines:[
+    'P(B) is the overall probability that event B happens.',
+    'Use it as the denominator in conditional probability when you are restricting attention to outcomes in B.',
+    'Spot it when the problem asks for the chance of B with no extra conditions attached.'
+  ]},
+  {keys:['p(b|a)'],title:'P(B | A)',lines:[
+    'P(B | A) is the conditional probability that B happens given that A has already happened.',
+    'Use it when the sample space has been narrowed to cases where A is true.',
+    'Spot the vertical bar as a given or assuming signal.'
+  ]},
+  {keys:['p(xi)'],title:'P(x_i)',lines:[
+    'P(x_i) is the probability attached to a single outcome x_i of a discrete random variable.',
+    'Use it in expected value and variance formulas for discrete distributions.',
+    'Spot it when a table lists possible x values and a probability next to each one.'
+  ]},
+  {keys:['q1'],title:'Q1',lines:[
+    'Q1 is the first quartile, so it marks the 25th percentile of the distribution.',
+    'Use it when describing spread with the IQR or building boxplot fences.',
+    'Spot it as the lower quartile in summaries written as Q1, median, and Q3.'
+  ]},
+  {keys:['se'],title:'SE',lines:[
+    'SE stands for standard error, the estimated standard deviation of a sample statistic.',
+    'Use it to measure sampling variability in confidence intervals and hypothesis tests.',
+    'Spot it in inference formulas that attach a critical value to the variability of a statistic.'
+  ]},
+  {keys:['b'],title:'b',lines:[
+    'b usually represents the slope of the least-squares regression line in AP Stats.',
+    'Use it when the question asks how much predicted y changes for a one-unit increase in x.',
+    'Spot it in y-hat = a + bx or in slope standard deviation rules.'
+  ]},
+  {keys:['b^2'],title:'b squared',lines:[
+    'b squared means the slope is multiplied by itself.',
+    'Use it in variance transformations because variances scale by the square of the multiplier.',
+    'Spot it when spread is being transformed after multiplying the original variable by a constant b.'
+  ]},
+  {keys:['beta'],title:'beta',lines:[
+    'Beta is the probability of a Type II error.',
+    'Use it when the question asks about failing to reject a false null hypothesis.',
+    'Spot it next to power because power equals 1 minus beta.'
+  ]},
+  {keys:['beta0'],title:'beta zero',lines:[
+    'Beta zero is the population regression intercept parameter in a linear model.',
+    'Use it when a regression inference formula is referring to the true intercept, not the sample estimate.',
+    'Spot it by the subscript zero, which marks the intercept term.'
+  ]},
+  {keys:['grand total'],title:'Grand total',lines:[
+    'The grand total is the overall sample size across every cell in a two-way table.',
+    'Use it when computing expected counts from row totals and column totals.',
+    'Spot it as the single total that sits at the corner of the table.'
+  ]},
+  {keys:['mu'],title:'mu',lines:[
+    'Mu is the population mean.',
+    'Use it when the question is talking about the true average for the full population rather than a sample statistic.',
+    'Spot the Greek letter mu whenever a formula names the parameter for center.'
+  ]},
+  {keys:['mu0'],title:'mu zero',lines:[
+    'Mu zero is the hypothesized population mean under the null hypothesis.',
+    'Use it in one-sample t procedures when the test compares x-bar to a claimed mean.',
+    'Spot the zero subscript whenever the formula is centering around the null value.'
+  ]},
+  {keys:['n'],title:'n',lines:[
+    'n is the sample size.',
+    'Use it whenever a formula needs to know how many observations or trials are in the sample.',
+    'Spot it most often under a square root because larger samples reduce sampling variability.'
+  ]},
+  {keys:['n-1'],title:'n - 1',lines:[
+    'n minus 1 is the sample-size adjustment used when a statistic loses one degree of freedom.',
+    'Use it in sample variance and standard deviation formulas after estimating the sample mean.',
+    'Spot it whenever the data are centered around x-bar instead of the true population mean.'
+  ]},
+  {keys:['n-2'],title:'n - 2',lines:[
+    'n minus 2 is the degrees of freedom for simple linear regression slope inference.',
+    'Use it when a t model is testing or estimating the slope from paired x and y data.',
+    'Spot it because regression estimates two parameters, the intercept and the slope.'
+  ]},
+  {keys:['n2'],title:'n2',lines:[
+    'n2 is the sample size from the second group in a two-sample setting.',
+    'Use it when comparing two means or two proportions and each group has its own sample size.',
+    'Spot the subscript 2 as the marker for the second sample.'
+  ]},
+  {keys:['p'],title:'p',lines:[
+    'p is the population proportion parameter.',
+    'Use it when the question is talking about the true long-run proportion in the population.',
+    'Spot it in proportion formulas that later replace p with p-hat when the parameter is estimated.'
+  ]},
+  {keys:['p0'],title:'p zero',lines:[
+    'p zero is the hypothesized population proportion under the null hypothesis.',
+    'Use it in one-proportion tests and expected-count calculations under H0.',
+    'Spot the zero subscript whenever the formula is using the null model rather than the sample estimate.'
+  ]},
+  {keys:['pc'],title:'pooled proportion',lines:[
+    'p-sub-c is the pooled sample proportion formed by combining successes across both groups.',
+    'Use it in a two-proportion z test when the null says the population proportions are equal.',
+    'Spot it in the standard error for two-proportion hypothesis tests, not confidence intervals.'
+  ]},
+  {keys:['p-hat'],title:'p-hat',lines:[
+    'p-hat is the sample proportion.',
+    'Use it when the data give a sample-based estimate of the population proportion p.',
+    'Spot the hat as the visual cue that this is a statistic, not a population parameter.'
+  ]},
+  {keys:['p-hat1'],title:'p-hat1',lines:[
+    'p-hat1 is the sample proportion from the first group.',
+    'Use it in two-sample proportion problems when you need the estimate from group 1 by itself.',
+    'Spot the 1 subscript as the label for the first sample or treatment group.'
+  ]},
+  {keys:['r'],title:'r',lines:[
+    'r is the correlation coefficient.',
+    'Use it when the question is measuring the direction and strength of a linear relationship between two quantitative variables.',
+    'Spot it as a number between -1 and 1 that talks about linear association, not slope.'
+  ]},
+  {keys:['s','sy'],title:'s',lines:[
+    's is the sample standard deviation.',
+    'Use it when the spread is being estimated from sample data and the population standard deviation is unknown.',
+    'Spot it in t procedures, where sample spread replaces the unknown sigma.'
+  ]},
+  {keys:['s1^2'],title:'s1 squared',lines:[
+    's1 squared is the sample variance from group 1.',
+    'Use it in two-sample mean procedures when each sample contributes its own variance estimate.',
+    'Spot the square to remember this is variance, not standard deviation.'
+  ]},
+  {keys:['sigma'],title:'sigma',lines:[
+    'Sigma is the population standard deviation.',
+    'Use it when the formula is describing true spread in the population or a model with known variability.',
+    'Spot the Greek sigma whenever a prompt refers to the parameter for spread.'
+  ]},
+  {keys:['sigma1^2'],title:'sigma1 squared',lines:[
+    'Sigma1 squared is the population variance for group 1.',
+    'Use it in theoretical variance formulas for two-sample settings before sample estimates are substituted in.',
+    'Spot the square as the cue that the quantity measures variance.'
+  ]},
+  {keys:['sigma_x'],title:'sigma_x',lines:[
+    'Sigma sub x is the standard deviation of the explanatory variable x.',
+    'Use it in regression and linear-transformation formulas that talk about spread in x.',
+    'Spot the x subscript to distinguish it from the spread of y.'
+  ]},
+  {keys:['sqrt(n)'],title:'square root of n',lines:[
+    'Square root of n captures how sampling variability shrinks as sample size grows.',
+    'Use it in standard error formulas and sample-size tradeoff rules.',
+    'Spot it in denominators because larger samples reduce variability, but with diminishing returns.'
+  ]},
+  {keys:['x-1'],title:'x - 1',lines:[
+    'x minus 1 is the centered distance from a value x to the number 1.',
+    'Use it in geometric settings where the count starts at 1 and probabilities decay after that first success.',
+    'Spot it when a distribution formula needs the number of failures before the first success.'
+  ]},
+  {keys:['x-bar'],title:'x-bar',lines:[
+    'x-bar is the sample mean.',
+    'Use it as the sample-based estimate of the population mean mu.',
+    'Spot the bar as the notation for an average computed from sample data.'
+  ]},
+  {keys:['yhat'],title:'y-hat',lines:[
+    'y-hat is the predicted response value from the regression line.',
+    'Use it when the problem asks for the model’s predicted y at a given x.',
+    'Spot the hat as the sign that this is a fitted value from the line, not an observed value.'
+  ]},
+  {keys:['z* or t*'],title:'critical value',lines:[
+    'z-star or t-star is the critical value that sets the confidence level.',
+    'Use it when building a margin of error for an interval estimate.',
+    'Spot the star notation as the multiplier sitting in front of the standard error.'
+  ]},
+  {keys:['|b|'],title:'absolute value of b',lines:[
+    'Absolute value of b means the positive size of the multiplier b without its sign.',
+    'Use it in standard deviation transformations because spread cannot be negative.',
+    'Spot the vertical bars whenever the formula cares about magnitude but not direction.'
+  ]}
+];
+function buildGlossaryEntry(spec){
+  return{title:spec.title,lines:spec.lines.map(ensureSentence)};
+}
+function buildExplanationBank(commands){
+  const byId={},byLabel={};
+  commands.forEach(cmd=>{
+    const label=stripAnswerLabel(cmd.action);
+    const entry={
+      id:cmd.id,
+      title:label,
+      lines:[
+        ensureSentence(cmd.explain||(`${label} is an AP Statistics idea from this deck`)),
+        ensureSentence('Use it when the question is asking for the '+label.toLowerCase()),
+        ensureSentence('Spot it by remembering: '+cmd.hint)
+      ]
+    };
+    byId[cmd.id]=entry;
+    byLabel[normalizeExplanationLookup(label)]=entry;
+  });
+  EXPLANATION_GLOSSARY.forEach(spec=>{
+    const entry=buildGlossaryEntry(spec);
+    spec.keys.forEach(key=>{byLabel[normalizeExplanationLookup(key)]=entry});
+  });
+  return{byId,byLabel};
+}
+const EXPLANATION_BANK=buildExplanationBank(apStatsCartridge.commands);
+const EXPLAINER_STATE={open:false,key:'',title:'',lines:[]};
+function syncInputPanelScroll(position){
+  const panel=document.getElementById('input-panel');
+  if(!panel)return;
+  requestAnimationFrame(()=>{
+    panel.scrollTop=position==='bottom'?panel.scrollHeight:0;
+  });
+}
+function resetExplanationState(){
+  EXPLAINER_STATE.open=false;
+  EXPLAINER_STATE.key='';
+  EXPLAINER_STATE.title='';
+  EXPLAINER_STATE.lines=[];
+  syncInputPanelScroll('top');
+}
+function closeExplanation(){
+  resetExplanationState();
+  lastInputState='';
+  updateInput();
+}
+function openExplanationEntry(entry,key){
+  if(!entry)return;
+  EXPLAINER_STATE.open=true;
+  EXPLAINER_STATE.key=key;
+  EXPLAINER_STATE.title=entry.title;
+  EXPLAINER_STATE.lines=entry.lines.slice(0,3);
+  lastInputState='';
+  updateInput();
+  syncInputPanelScroll('bottom');
+}
+function openExplanationForOptionLabel(label){
+  const entry=EXPLANATION_BANK.byLabel[normalizeExplanationLookup(label)];
+  if(entry)openExplanationEntry(entry,'opt-'+entry.id);
+}
+function openExplanationForActiveAnswer(idx){
+  const sel=G.selectedId?G.enemies.find(e=>e.id===G.selectedId):null;
+  if(!sel||!sel.question)return;
+  const answers=sel.question.type==='identify'?sel.question.options:sel.question.type==='fillblank'?sel.question.choices:null;
+  if(!Array.isArray(answers))return;
+  const label=answers[idx];
+  if(label)openExplanationForOptionLabel(label);
+}
+function openExplanationForSelectedCommand(){
+  const sel=G.selectedId?G.enemies.find(e=>e.id===G.selectedId):null;
+  if(!sel||!sel.cmd)return;
+  const entry=EXPLANATION_BANK.byId[sel.cmd.id];
+  if(entry)openExplanationEntry(entry,'cmd-'+entry.id);
+}
+function renderExplanationControls(answerLabels){
+  const answers=Array.isArray(answerLabels)?answerLabels:[];
+  let html='<div class="explain-row"><span class="explain-label">DEFINITIONS</span><button class="explain-chip" onclick="openExplanationForSelectedCommand()">TARGET</button>';
+  for(let i=0;i<answers.length;i++)html+='<button class="explain-chip" onclick="openExplanationForActiveAnswer('+i+')">'+String.fromCharCode(65+i)+'</button>';
+  html+='</div>';
+  if(!EXPLAINER_STATE.open)return html;
+  html+='<div class="explain-panel"><div class="explain-panel-top"><div class="explain-title">'+EXPLAINER_STATE.title+'</div><button class="explain-close" onclick="closeExplanation()">CLOSE</button></div>';
+  EXPLAINER_STATE.lines.forEach(line=>{html+='<div class="explain-line">'+line+'</div>'});
+  html+='</div>';
+  return html;
+}
+
 // Utility: shuffle an array (returns new array)
 function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
@@ -1811,6 +2143,7 @@ function updateLabels(){
     const textC=dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot;
     div.innerHTML='<div class="enemy-label-inner" style="border-color:'+borderC+';color:'+textC+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
+      resetExplanationState();
       G.selectedId=e.id;
       const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
       G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
@@ -1850,6 +2183,7 @@ let lastInputState='';
 function updateInput(){
   const panel=document.getElementById('input-panel');
   if(G.waveComplete){
+    resetExplanationState();
     if(lastInputState==='wave-clear')return;
     lastInputState='wave-clear';
     panel.innerHTML='<div class="wave-clear">WAVE '+G.wave+' CLEARED</div><button class="btn" onclick="nextWave()" style="margin-top:10px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px">[ SAVE + EXIT ]</button><div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Progress is checkpointed here. Press Escape to return to the main screen.</div>';
@@ -1860,10 +2194,10 @@ function updateInput(){
 
   if(mode==='quiz'){
     // ── Quiz mode: identify (MC) or fill-blank ──
-    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+G.showHint;
+    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
     if(stateKey===lastInputState)return;
     lastInputState=stateKey;
-    if(!sel||!sel.question){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    if(!sel||!sel.question){resetExplanationState();panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
     const q=sel.question;
     const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">\u26a1'+sel.speedMult.toFixed(1)+'x speed</span>':'';
     let html='';
@@ -1895,7 +2229,8 @@ function updateInput(){
       });
       html+='</div>';
       if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+      html+=renderExplanationControls(q.options);
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }else if(q.type==='subconcept'){
       // Sub-concept / sub-sub-concept question (from hydra split)
       const scDepth=sel.splitDepth||1;
@@ -1913,7 +2248,8 @@ function updateInput(){
       });
       html+='</div>';
       if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text" style="border-color:'+scColor+'33">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(q.options.length<=2?'A/B':'A/B/C')+' = answer \u00b7 Tab = switch</div>';
+      html+=renderExplanationControls();
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(q.options.length<=2?'A/B':'A/B/C')+' = answer \u00b7 Alt+E = explain target \u00b7 Tab = switch</div>';
     }else{
       // fill-blank — always show A/B/C choices
       html+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
@@ -1927,7 +2263,8 @@ function updateInput(){
       });
       html+='</div>';
       if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+      html+=renderExplanationControls(q.choices);
+      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }
     panel.innerHTML=html;
     // Render LaTeX into the display element
@@ -1941,35 +2278,37 @@ function updateInput(){
       });
     }
   }else if(mode==='typed'){
-    const stateKey='typed-'+(sel?sel.id:'none')+'-'+G.showHint;
+    const stateKey='typed-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
     if(stateKey===lastInputState){
       const inp=document.getElementById('typed-input');
       if(inp&&inp!==document.activeElement)inp.value=G.typedBuffer;
       return;
     }
     lastInputState=stateKey;
-    if(!sel){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    if(!sel){resetExplanationState();panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
     const cmd=sel.cmd;
     const promptText=activeCartridge.formatPrompt(cmd);
     let html='<div class="prompt-label">TARGET:</div><div class="prompt-text">'+promptText+'</div>';
     html+='<div style="margin-top:8px"><input type="text" class="typed-input" id="typed-input" placeholder="Type answer..." value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
     if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+activeCartridge.formatAnswer(cmd)+'</span></div>';
-    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Enter = submit \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
+    html+=renderExplanationControls();
+    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Enter = submit \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
     panel.innerHTML=html;
     focusTypedInput();
   }else{
     // prefix-key mode
-    const stateKey=G.inputState+'-'+(sel?sel.id:'none')+'-'+G.showHint;
+    const stateKey=G.inputState+'-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
     if(stateKey===lastInputState)return;
     lastInputState=stateKey;
-    if(!sel){panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    if(!sel){resetExplanationState();panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
     const cmd=sel.cmd;
     const isPre=G.inputState==='await_prefix',isCmd=G.inputState==='await_command';
     const prefix=activeCartridge?activeCartridge.prefixLabel:'C-b';
     let html='<div class="prompt-label">TARGET COMMAND:</div><div class="prompt-text">'+cmd.action+'</div>';
     html+='<div class="input-boxes"><div class="input-box '+(isPre?'active':isCmd?'done':'')+'">'+(isCmd?prefix+' \u2713':prefix)+'</div><span style="color:'+AMB.css.mid+';font-size:16px">\u2192</span><div class="input-box '+(isCmd?'active':'')+'\">'+(isCmd?'?':'\u00b7\u00b7\u00b7')+'</div></div>';
     if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+prefix+' '+activeCartridge.formatAnswer(cmd)+'</span></div>';
-    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Tab = switch \u00b7 Alt+H = hint</div>';
+    html+=renderExplanationControls();
+    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
     panel.innerHTML=html;
   }
 }
@@ -2072,6 +2411,7 @@ function showTitleScreen(context){
   G.screen='title';
   G.paused=false;
   MUSIC_EDITOR.open=false;
+  resetExplanationState();
   SFX.stopMusicPreview();
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   G.enemies=[];G.selectedId=null;
@@ -2271,6 +2611,7 @@ function showGameUI(){
 function startGame(){
   cancelQueuedBGMStart();
   clearRunState();
+  resetExplanationState();
   SFX.stopMusicPreview();
   SFX.stopBGM();
   SFX.click();
@@ -2289,6 +2630,7 @@ function continueGame(){
   const snapshot=loadRunState();
   if(!snapshot){startGame();return}
   cancelQueuedBGMStart();
+  resetExplanationState();
   SFX.stopMusicPreview();
   SFX.stopBGM();
   SFX.click();
@@ -2339,6 +2681,7 @@ function continueGame(){
 }
 function nextWave(){
   SFX.click();
+  resetExplanationState();
   const nw=G.wave+1;
   if(nw>12){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
@@ -2352,6 +2695,7 @@ function nextWave(){
 }
 function showEndScreen(victory){
   G.screen=victory?'victory':'gameover';
+  resetExplanationState();
   const recordState=syncRunCheckpoint();
   clearRunState();
   cancelQueuedBGMStart();
@@ -2455,12 +2799,13 @@ function autoSelect(){
     const subs=G.enemies.filter(en=>en.splitDepth===1);
     const pool=deep.length>0?deep:subs.length>0?subs:G.enemies;
     const sorted=[...pool].sort((a,b)=>b.t-a.t);
+    resetExplanationState();
     G.selectedId=sorted[0].id;
     const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
     G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
     G.showHint=false;G.hintUsed=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
     if(im!=='quiz')focusTypedInput();else setTimeout(()=>focusBlankInput(),50);
-  }else if(G.enemies.length===0){G.selectedId=null;G.inputState='idle'}
+  }else if(G.enemies.length===0){resetExplanationState();G.selectedId=null;G.inputState='idle'}
 }
 
 // ── Flash ──
@@ -2496,6 +2841,7 @@ function handleHit(enemy){
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,G.hintUsed,attempts);
   removeEnemyMesh(enemy.id);
   G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
+  resetExplanationState();
   G.selectedId=null;G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
   flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
 }
@@ -2579,7 +2925,7 @@ function spawnHydraChildren(parentEnemy){
       addChildEnemyMesh(child,i);
     }
   }
-  if(G.selectedId===parentEnemy.id){G.selectedId=null;G.inputState='idle'}
+  if(G.selectedId===parentEnemy.id){resetExplanationState();G.selectedId=null;G.inputState='idle'}
   return true;
 }
 
@@ -2627,12 +2973,19 @@ window.addEventListener('keydown',e=>{
     const subs=G.enemies.filter(en=>en.splitDepth===1);
     const pool=deep.length>0?deep.sort((a,b)=>b.t-a.t):subs.length>0?subs.sort((a,b)=>b.t-a.t):[...G.enemies].sort((a,b)=>b.t-a.t);
     const idx=pool.findIndex(en=>en.id===G.selectedId);
+    resetExplanationState();
     G.selectedId=pool[(idx+1)%pool.length].id;
     const im2=activeCartridge?activeCartridge.inputMode:'prefix-key';
     G.inputState=im2==='prefix-key'?'await_prefix':im2==='quiz'?'quiz':'typing';
     G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
     SFX.select();
     setTimeout(()=>{if(im2==='quiz')focusBlankInput();else focusTypedInput()},50);
+    return;
+  }
+  if(e.key==='e'&&e.altKey){
+    e.preventDefault();
+    if(EXPLAINER_STATE.open)closeExplanation();
+    else openExplanationForSelectedCommand();
     return;
   }
   // Alt+H hint — works in all modes
