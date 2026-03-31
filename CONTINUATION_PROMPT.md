@@ -9,6 +9,7 @@
 - Persistence keys:
   - `td-srs-ap-stats-formulas`
   - `td-highscore-ap-stats-formulas`
+  - `td-run-state-ap-stats-formulas`
   - `td-music-config-v1`
 
 ## Latest Completed Work
@@ -78,8 +79,18 @@ Implementation notes:
 - Added a shared checkpoint path for run exits and wave clears:
   - `saveSRS()`
   - high-score sync
+- Added resumable run snapshots in `td-run-state-ap-stats-formulas`.
+- `Escape` and `[ SAVE + EXIT ]` now preserve the live run state instead of only banking long-term SRS progress.
+- The title screen now shows `[ CONTINUE ]` with a compact wave / score / lives summary when a saved run exists.
+- `continueGame()` restores score, lives, wave, remaining queue, active enemies, and wave-clear state.
 - Wave clear now checkpoints progress immediately instead of waiting for the next wave or end screen.
 - The wave-clear panel now includes `[ SAVE + EXIT ]` so players can bank progress and return to the main menu between waves.
+- Fresh deploys, reset progress, and completed runs clear the saved run snapshot.
+
+### Audio Startup Cleanup
+
+- BGM start/stop now clears queued Web Audio automation before relaunching the loop.
+- Title/pause/end transitions also cancel delayed BGM start timers so a previous preview or rapid exit cannot leak an extra opening bar into the next run.
 
 ## Current UI Layout
 
@@ -91,6 +102,7 @@ Implementation notes:
 - difficulty buttons
 - static high score on normal entry
 - animated “DVD-style” high score badge when returning from pause/end-of-run
+- continue summary + continue button when a run snapshot exists
 - deploy button
 - music editor button
 - reset progress link
@@ -121,12 +133,15 @@ Verified in a headless browser against `http://127.0.0.1:4173/index.html`.
 Desktop verification:
 
 - `Escape` from an active run returns to the title screen
-- `Escape` stores SRS progress and current high score before the title screen renders
+- `Escape` stores SRS progress, current high score, and a resumable run checkpoint before the title screen renders
+- `[ CONTINUE ]` restores wave, score, lives, selected enemy, and queued state from the saved checkpoint
 - `P` opens pause and `P` resumes from pause
 - Music editor opens from title screen
 - Music editor opens from pause menu
 - Returning to menu from gameplay shows the animated high-score badge
 - Wave clear shows a `[ SAVE + EXIT ]` control and persists checkpoint data
+- Continuing from a saved wave-clear checkpoint reopens the wave-clear panel instead of restarting the run
+- Delayed BGM launch is canceled if the player exits before startup finishes
 - All required controls render:
   - 12 wave buttons
   - 4 chord selects
@@ -138,6 +153,7 @@ Desktop verification:
 Mobile verification:
 
 - `Escape` from an active run returns to the title screen with the animated high-score badge
+- Saved runs still surface `[ CONTINUE ]` after returning to the title screen
 - Music editor renders at `375px` width
 - Editor panel is scrollable and bottom actions are reachable
 - Pad rhythm controls render and remain selectable
@@ -154,6 +170,7 @@ Mobile verification:
 - `index.html` `SFX` module:
   - built-in music defaults
   - pad rhythm scheduling
+  - BGM automation cleanup
   - load/save/reset/preview API
 - `index.html` music editor helpers:
   - chord library
@@ -167,7 +184,15 @@ Mobile verification:
 - `index.html` persistence / exit helpers:
   - `syncHighScore()`
   - `syncRunCheckpoint()`
+  - `saveRunState()`
+  - `loadRunState()`
+  - `clearRunState()`
   - `returnToTitleFromRun()`
+- `index.html` run-entry helpers:
+  - `startGame()`
+  - `continueGame()`
+  - `queueBGMStart()`
+  - `cancelQueuedBGMStart()`
 - `index.html` wave-clear handling:
   - `updateInput()`
   - `checkWaveComplete()`
@@ -176,6 +201,7 @@ Mobile verification:
 
 - Expand pad rhythm presets if users want one-click groove templates instead of per-step editing
 - Add a touch-visible pause/menu button if mobile players need the new pause flow without a hardware keyboard
+- Decide whether `Continue` should restore an exact mid-wave moment forever or periodically collapse back to “start of current wave” checkpoints for simpler state
 - Expand chord library if more harmonic variety is wanted than major/minor triads
 - Add explicit “discard draft changes” behavior if the editor should preserve unsaved edits across closes
 - Consider naming editable waves separately from the original song labels if users should author custom presets

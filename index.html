@@ -378,6 +378,32 @@ const SFX=(()=>{
     nSrc.connect(noiseLP);noiseLP.connect(noiseGate);noiseGate.connect(sfxBus);nSrc.start();
   }
   function ensure(){if(!ctx)init();if(ctx.state==='suspended')ctx.resume()}
+  function clearBgmAutomation(time){
+    if(!ctx)return;
+    const t=Math.max(time||ctx.currentTime,ctx.currentTime);
+    if(noiseGate){
+      noiseGate.gain.cancelScheduledValues(t);
+      noiseGate.gain.setValueAtTime(0,t);
+    }
+    if(noiseLP){
+      noiseLP.frequency.cancelScheduledValues(t);
+      noiseLP.frequency.setValueAtTime(3000,t);
+    }
+    if(padBus){
+      padBus.gain.cancelScheduledValues(t);
+      padBus.gain.setValueAtTime(0,t);
+    }
+    if(bassBus){
+      bassBus.gain.cancelScheduledValues(t);
+      bassBus.gain.setValueAtTime(0,t);
+    }
+    for(let i=0;i<4;i++){
+      if(!voices[i])continue;
+      voices[i].gain.gain.cancelScheduledValues(t);
+      voices[i].gain.gain.setValueAtTime(0,t);
+      voices[i].osc.frequency.cancelScheduledValues(t);
+    }
+  }
   function syncCurrentVoicing(restartBgm){
     if(!ctx)return;
     const cfg=getWaveConfig(currentWaveIdx);
@@ -529,8 +555,11 @@ const SFX=(()=>{
 
   // ── BGM ──
   function startBGM(){
-    if(bgmPlaying||muted)return;ensure();bgmPlaying=true;
+    if(bgmPlaying||muted)return;ensure();
+    if(bgmSeqTimer){clearTimeout(bgmSeqTimer);bgmSeqTimer=null}
     const t=ctx.currentTime;
+    clearBgmAutomation(t);
+    bgmPlaying=true;
     currentProgIdx=0;
     padBus.gain.setTargetAtTime(.35,t,.3);
     bassBus.gain.setTargetAtTime(.2,t,.3);
@@ -592,9 +621,7 @@ const SFX=(()=>{
     if(!ctx)return;bgmPlaying=false;
     if(bgmSeqTimer){clearTimeout(bgmSeqTimer);bgmSeqTimer=null}
     const t=ctx.currentTime;
-    padBus.gain.setTargetAtTime(0,t,.4);
-    bassBus.gain.setTargetAtTime(0,t,.4);
-    for(let i=0;i<4;i++)voices[i].gain.gain.setTargetAtTime(0,t,.4);
+    clearBgmAutomation(t);
   }
 
   // ── Public API ──
@@ -1488,6 +1515,65 @@ function saveSRS(){
   if(!activeCartridge)return;
   try{localStorage.setItem('td-srs-'+activeCartridge.id,JSON.stringify(G.srs))}catch(e){}
 }
+function getRunStateKey(){
+  return activeCartridge?'td-run-state-'+activeCartridge.id:'';
+}
+function clearRunState(){
+  const key=getRunStateKey();
+  if(!key)return;
+  try{localStorage.removeItem(key)}catch(e){}
+}
+function buildRunStateSnapshot(){
+  if(!activeCartridge||G.screen!=='game')return null;
+  return{
+    version:1,
+    cartridgeId:activeCartridge.id,
+    savedAt:Date.now(),
+    wave:G.wave,
+    score:G.score,
+    lives:G.lives,
+    streak:G.streak,
+    maxStreak:G.maxStreak,
+    srs:G.srs,
+    enemies:G.enemies,
+    selectedId:G.selectedId,
+    inputState:G.inputState,
+    hintUsed:G.hintUsed,
+    showHint:G.showHint,
+    waveCommands:G.waveCommands,
+    spawnIdx:G.spawnIdx,
+    waveComplete:G.waveComplete,
+    totalCorrect:G.totalCorrect,
+    totalWrong:G.totalWrong,
+    combo:G.combo,
+    unlockedTiers:G.unlockedTiers,
+    nextEnemyId:G.nextEnemyId,
+    attemptsOnCurrent:G.attemptsOnCurrent,
+    typedBuffer:G.typedBuffer,
+    domainFilter:G.domainFilter,
+    difficulty:G.difficulty,
+  };
+}
+function saveRunState(){
+  const key=getRunStateKey();
+  const snapshot=buildRunStateSnapshot();
+  if(!key||!snapshot)return false;
+  try{
+    localStorage.setItem(key,JSON.stringify(snapshot));
+    return true;
+  }catch(e){return false}
+}
+function loadRunState(){
+  const key=getRunStateKey();
+  if(!key)return null;
+  try{
+    const saved=localStorage.getItem(key);
+    if(!saved)return null;
+    const parsed=JSON.parse(saved);
+    if(!parsed||parsed.cartridgeId!==activeCartridge.id)return null;
+    return parsed;
+  }catch(e){return null}
+}
 function syncHighScore(){
   if(!activeCartridge)return{prevHigh:0,highScore:0,isNewHigh:false};
   const hsKey='td-highscore-'+activeCartridge.id;
@@ -1502,7 +1588,9 @@ function syncHighScore(){
 }
 function syncRunCheckpoint(){
   saveSRS();
-  return syncHighScore();
+  const recordState=syncHighScore();
+  if(G.screen==='game')saveRunState();
+  return recordState;
 }
 function loadSRS(cartridge){
   const saved=localStorage.getItem('td-srs-'+cartridge.id);
@@ -1955,10 +2043,12 @@ function updateTierBar(){
 function resumeFromPause(){
   G.paused=false;
   SFX.stopMusicPreview();
+  cancelQueuedBGMStart();
   document.getElementById('overlay').classList.add('hidden');
   SFX.startBGM();
 }
 function showPauseScreen(){
+  cancelQueuedBGMStart();
   const ov=document.getElementById('overlay');
   ov.classList.remove('hidden');
   let html='<h1 style="font-size:36px">PAUSED</h1>';
@@ -1990,9 +2080,16 @@ function showTitleScreen(context){
   document.getElementById('input-panel').style.display='none';
   document.getElementById('queue-bar').style.display='none';
   labelsDiv.innerHTML='';
+  cancelQueuedBGMStart();
   SFX.stopBGM();
   // Collect unique domains from active cartridge
   const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
+  const savedRun=loadRunState();
+  if(savedRun){
+    const restoredDomains=(Array.isArray(savedRun.domainFilter)?savedRun.domainFilter:[]).filter(dom=>allDomains.includes(dom));
+    if(restoredDomains.length)G.domainFilter=restoredDomains;
+    if(['learn','practice','challenge'].includes(savedRun.difficulty))G.difficulty=savedRun.difficulty;
+  }
   // Initialize domainFilter to all domains if empty or stale
   if(!G.domainFilter||G.domainFilter.length===0)G.domainFilter=[...allDomains];
 
@@ -2046,7 +2143,13 @@ function showTitleScreen(context){
 
   // High score display
   if(titleHS>0&&!emphasizeHighScore)html+='<div style="margin-top:10px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
+  if(savedRun){
+    const lives=Math.max(0,Math.min(BASE_LIVES,Math.round(Number(savedRun.lives)||BASE_LIVES)));
+    const hearts='\u2665'.repeat(lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-lives));
+    html+='<div style="margin-top:10px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+'</div>';
+  }
   html+='<div class="menu-actions">';
+  if(savedRun)html+='<button class="btn" id="btn-continue">[ CONTINUE ]</button>';
   html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'title\')">[ MUSIC EDITOR ]</button>';
   html+='</div>';
@@ -2064,6 +2167,8 @@ function showTitleScreen(context){
     html+='<div class="dvd-score-stage"><div class="dvd-score-badge"><div class="dvd-score-kicker">HIGH SCORE</div><div class="dvd-score-value">'+titleHS.toLocaleString()+'</div><div class="dvd-score-note">back on the main screen</div></div></div>';
   }
   ov.innerHTML=html;
+  const continueBtn=document.getElementById('btn-continue');
+  if(continueBtn)continueBtn.onclick=continueGame;
   document.getElementById('btn-start').onclick=startGame;
   updateDomainAllBtn();
   renderQR('qr-canvas');
@@ -2118,6 +2223,7 @@ function resetProgress(){
   if(!activeCartridge)return;
   if(confirm('Reset all progress for '+activeCartridge.name+'? This cannot be undone.')){
     localStorage.removeItem('td-srs-'+activeCartridge.id);
+    clearRunState();
     SFX.click();
     showTitleScreen('title');
   }
@@ -2126,8 +2232,11 @@ function resetProgress(){
 // ═══════════════════════════════════════════════
 //  GAME LOGIC
 // ═══════════════════════════════════════════════
+function getUnlockedTiersForWave(n){
+  return n>=7?['core','regular','power','support']:n>=4?['core','regular','support']:['core'];
+}
 function genWave(n){
-  const tiers=n>=7?['core','regular','power','support']:n>=4?['core','regular','support']:['core'];
+  const tiers=getUnlockedTiersForWave(n);
   G.unlockedTiers=tiers;
   let pool=COMMANDS.filter(c=>tiers.includes(c.tier));
   // Filter by selected domains
@@ -2137,39 +2246,115 @@ function genWave(n){
   }
   return pickCommands(pool,G.srs,Math.min(4+n,16),n);
 }
-function startGame(){
-  SFX.stopBGM();SFX.click();setTimeout(()=>SFX.startBGM(),300);
-  G.enemies.forEach(e=>removeEnemyMesh(e.id));
-  Object.assign(G,{screen:'game',wave:1,score:0,lives:BASE_LIVES,streak:0,maxStreak:0,
-    srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',hintUsed:false,showHint:false,
-    spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
-    unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:''});
-  G.waveCommands=genWave(1);
-  lastSpawnTime=0;
-  lastInputState='';
+let bgmLaunchTimer=null;
+function cancelQueuedBGMStart(){
+  if(bgmLaunchTimer){clearTimeout(bgmLaunchTimer);bgmLaunchTimer=null}
+}
+function queueBGMStart(delay=180){
+  cancelQueuedBGMStart();
+  bgmLaunchTimer=setTimeout(()=>{
+    bgmLaunchTimer=null;
+    SFX.startBGM();
+  },delay);
+}
+function showGameUI(){
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('hud').style.display='flex';
   document.getElementById('tier-bar').style.display='block';
   document.getElementById('input-panel').style.display='block';
   document.getElementById('queue-bar').style.display='block';
   updateTierBar();
+  updateHUD();
+  updateInput();
+  updateQueue();
+}
+function startGame(){
+  cancelQueuedBGMStart();
+  clearRunState();
+  SFX.stopMusicPreview();
+  SFX.stopBGM();
+  SFX.click();
+  queueBGMStart();
+  G.enemies.forEach(e=>removeEnemyMesh(e.id));
+  Object.assign(G,{screen:'game',wave:1,score:0,lives:BASE_LIVES,streak:0,maxStreak:0,
+    srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',hintUsed:false,showHint:false,
+    spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
+    unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false});
+  G.waveCommands=genWave(1);
+  lastSpawnTime=performance.now();
+  lastInputState='';
+  showGameUI();
+}
+function continueGame(){
+  const snapshot=loadRunState();
+  if(!snapshot){startGame();return}
+  cancelQueuedBGMStart();
+  SFX.stopMusicPreview();
+  SFX.stopBGM();
+  SFX.click();
+  G.enemies.forEach(e=>removeEnemyMesh(e.id));
+  const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
+  const mergedSrs=loadSRS(activeCartridge);
+  if(snapshot.srs&&typeof snapshot.srs==='object'){
+    for(const id of Object.keys(mergedSrs)){
+      if(snapshot.srs[id])mergedSrs[id]={...mergedSrs[id],...snapshot.srs[id]};
+    }
+  }
+  const wave=Math.max(1,Math.min(12,Math.round(Number(snapshot.wave)||1)));
+  const restoredDomains=(Array.isArray(snapshot.domainFilter)?snapshot.domainFilter:[]).filter(dom=>allDomains.includes(dom));
+  const safeDomains=restoredDomains.length?restoredDomains:[...allDomains];
+  const safeDifficulty=['learn','practice','challenge'].includes(snapshot.difficulty)?snapshot.difficulty:'learn';
+  G.domainFilter=safeDomains.slice();
+  G.difficulty=safeDifficulty;
+  G.srs=mergedSrs;
+  const fallbackWaveCommands=genWave(wave);
+  const restoredEnemies=Array.isArray(snapshot.enemies)?snapshot.enemies:[];
+  const maxEnemyId=restoredEnemies.reduce((max,e)=>Math.max(max,Math.round(Number(e&&e.id)||0)),0);
+  const restoredWaveCommands=Array.isArray(snapshot.waveCommands)&&snapshot.waveCommands.length?snapshot.waveCommands:fallbackWaveCommands;
+  Object.assign(G,{screen:'game',wave:wave,score:Math.max(0,Math.round(Number(snapshot.score)||0)),
+    lives:Math.max(0,Math.min(BASE_LIVES,Math.round(Number(snapshot.lives)||BASE_LIVES))),
+    streak:Math.max(0,Math.round(Number(snapshot.streak)||0)),
+    maxStreak:Math.max(0,Math.round(Number(snapshot.maxStreak)||0)),
+    srs:mergedSrs,enemies:restoredEnemies,selectedId:snapshot.selectedId||null,
+    inputState:snapshot.inputState||'idle',hintUsed:!!snapshot.hintUsed,showHint:!!snapshot.showHint,
+    waveCommands:restoredWaveCommands,spawnIdx:Math.max(0,Math.min(Math.round(Number(snapshot.spawnIdx)||0),restoredWaveCommands.length)),
+    waveComplete:!!snapshot.waveComplete,totalCorrect:Math.max(0,Math.round(Number(snapshot.totalCorrect)||0)),
+    totalWrong:Math.max(0,Math.round(Number(snapshot.totalWrong)||0)),combo:Math.max(1,Number(snapshot.combo)||1),
+    unlockedTiers:Array.isArray(snapshot.unlockedTiers)&&snapshot.unlockedTiers.length?snapshot.unlockedTiers.slice():getUnlockedTiersForWave(wave),
+    nextEnemyId:Math.max(Math.round(Number(snapshot.nextEnemyId)||0),maxEnemyId),
+    attemptsOnCurrent:Math.max(0,Math.round(Number(snapshot.attemptsOnCurrent)||0)),
+    commandStartTime:Date.now(),typedBuffer:typeof snapshot.typedBuffer==='string'?snapshot.typedBuffer:'',
+    domainFilter:safeDomains.slice(),difficulty:safeDifficulty,paused:false});
+  if(!G.enemies.find(e=>e.id===G.selectedId)){G.selectedId=null}
+  G.enemies.forEach((enemy,idx)=>{
+    if((enemy.splitDepth||0)>=1)addChildEnemyMesh(enemy,idx);
+    else addEnemyMesh(enemy);
+  });
+  lastSpawnTime=performance.now();
+  lastInputState='';
+  showGameUI();
+  updateLabels();
+  SFX.setKey(G.wave);
+  queueBGMStart();
 }
 function nextWave(){
   SFX.click();
-  syncRunCheckpoint();
   const nw=G.wave+1;
   if(nw>12){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
     waveComplete:false,hintUsed:false,showHint:false,attemptsOnCurrent:0,typedBuffer:''});
   G.waveCommands=genWave(nw);
-  lastSpawnTime=0;
+  lastSpawnTime=performance.now();
   lastInputState='';
   updateTierBar();
+  syncRunCheckpoint();
 }
 function showEndScreen(victory){
   G.screen=victory?'victory':'gameover';
   const recordState=syncRunCheckpoint();
+  clearRunState();
+  cancelQueuedBGMStart();
   // Clean up surviving enemies
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   G.enemies=[];G.selectedId=null;
@@ -2573,7 +2758,7 @@ document.body.addEventListener('touchmove',function(e){if(e.target===document.bo
 //  SAVE ON UNLOAD
 // ═══════════════════════════════════════════════
 window.addEventListener('beforeunload',()=>{
-  if(G.screen==='game')saveSRS();
+  if(G.screen==='game')syncRunCheckpoint();
 });
 
 // ═══════════════════════════════════════════════
