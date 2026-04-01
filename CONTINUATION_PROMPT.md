@@ -12,6 +12,13 @@
   - `td-run-state-ap-stats-formulas`
   - `td-music-config-v1`
 
+## Repository Baseline
+
+- Current baseline branch for continuation is `master`.
+- The mobile targeting / HUD trim / anti-button-mash / expanded variable-blank drill pass is already merged into `master`.
+- The old feature branch `codex/ap-stats-mobile-quiz-polish` was merged and deleted, so future work should build from `master` rather than trying to revive that branch.
+- If local tooling files are dirty, treat `AGENTS.md`, `CLAUDE.md`, `.codex/`, and `state/` as unrelated unless the task explicitly involves repo tooling or agent setup.
+
 ## Latest Completed Work
 
 ### Dead Code Removal
