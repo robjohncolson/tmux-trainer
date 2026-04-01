@@ -177,7 +177,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hint-mc-btn{min-height:56px;padding:10px 12px;font-size:14px;width:100%;text-align:left}
 .explain-row{gap:5px}
 .explain-chip{min-height:48px;padding:8px 12px}
-.explain-panel{padding:10px}
+.explain-panel{padding:10px;max-height:min(18vh,156px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .explain-line{font-size:10px}
 .prompt-text{font-size:clamp(13px,3.5vw,18px)}
 .prompt-label{font-size:8px;letter-spacing:2px}
@@ -185,6 +185,8 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .input-help{display:block;opacity:.72}
 .hint-text{font-size:11px;margin-top:4px}
 .latex-display .katex{font-size:1em}
+.hud-item.hud-mobile-hide{display:none}
+.enemy-label{pointer-events:none}
 #queue-bar{bottom:auto;top:55px;font-size:8px}
 #overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
 #overlay h2{font-size:clamp(11px,3vw,16px);letter-spacing:clamp(3px,1.5vw,8px)}
@@ -245,11 +247,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 <body>
 <canvas id="game-canvas"></canvas>
 <div id="hud" style="display:none">
-  <div class="hud-item"><div class="hud-label">WAVE</div><div class="hud-val" id="h-wave">1/12</div></div>
+  <div class="hud-item hud-mobile-hide"><div class="hud-label">WAVE</div><div class="hud-val" id="h-wave">1/12</div></div>
   <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="h-score">0</div></div>
   <div class="hud-item"><div class="hud-label">LIVES</div><div class="hud-val" id="h-lives"></div></div>
   <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="h-streak">0</div></div>
-  <div class="hud-item"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
+  <div class="hud-item hud-mobile-hide"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
 <div id="labels"></div>
@@ -766,8 +768,8 @@ const apStatsCartridge={
   title:'AP STATISTICS',
   subtitle:'FORMULA DEFENSE',
   startButton:'[ DEPLOY ]',
-  instructions:'Enemies carry formulas rendered in LaTeX.<br><b>Identify</b>: pick what the formula calculates (A\u2013D)<br><b>Fill-blank</b>: type the missing piece and press Enter',
-  instructionsSub:'Wrong answer = enemy speeds up! \u00b7 Alt+H = hint (half pts)<br>Tab = cycle \u00b7 12 waves',
+  instructions:'Enemies carry formulas rendered in LaTeX.<br><b>Identify</b>: pick what the formula calculates (A\u2013D)<br><b>Fill-blank</b>: pick the missing symbol or term (A\u2013C)',
+  instructionsSub:'Wrong answer = enemy surges forward and fractures into harder variants \u00b7 Alt+H = hint (half pts)<br>Tab = cycle \u00b7 12 waves',
   commands:[
     // ══ I. DESCRIPTIVE STATISTICS ══
     {id:'mean',action:'Sample Mean (x-bar)',tier:'core',dom:'descriptive',
@@ -1230,16 +1232,9 @@ const apStatsCartridge={
 
   // Generate a question for an enemy at spawn time
   generateQuestion(cmd, allCommands){
-    let type;
     const diff=G.difficulty||'learn';
-    if(diff==='learn'){
-      type='identify';
-    }else if(diff==='practice'){
-      type=Math.random()<0.5?'identify':'fillblank';
-    }else{
-      // challenge: equal weight
-      type=Math.random()<0.5?'identify':'fillblank';
-    }
+    const fillChance=diff==='learn'?0.25:diff==='practice'?0.65:0.85;
+    const type=Math.random()<fillChance?'fillblank':'identify';
     if(type==='identify'){
       // Pick 3 distractors from other commands, prefer same domain
       const sameDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom===cmd.dom);
@@ -1278,6 +1273,114 @@ const apStatsCartridge={
     return ai===aa;
   },
 };
+
+const AUTO_BLANK_SPECS=[
+  {match:'\\sigma_{\\hat{p}_1-\\hat{p}_2}',choices:['\\sigma_{\\hat{p}_1-\\hat{p}_2}','s_{\\hat{p}_1-\\hat{p}_2}','\\sigma_{\\bar{x}_1-\\bar{x}_2}']},
+  {match:'s_{\\hat{p}_1-\\hat{p}_2}',choices:['s_{\\hat{p}_1-\\hat{p}_2}','\\sigma_{\\hat{p}_1-\\hat{p}_2}','s_{\\bar{x}_1-\\bar{x}_2}']},
+  {match:'\\sigma_{\\bar{x}_1-\\bar{x}_2}',choices:['\\sigma_{\\bar{x}_1-\\bar{x}_2}','s_{\\bar{x}_1-\\bar{x}_2}','\\sigma_{\\hat{p}_1-\\hat{p}_2}']},
+  {match:'s_{\\bar{x}_1-\\bar{x}_2}',choices:['s_{\\bar{x}_1-\\bar{x}_2}','\\sigma_{\\bar{x}_1-\\bar{x}_2}','s_{\\hat{p}_1-\\hat{p}_2}']},
+  {match:'\\mu_{\\hat{p}}',choices:['\\mu_{\\hat{p}}','\\sigma_{\\hat{p}}','\\hat{p}']},
+  {match:'\\sigma_{\\hat{p}}',choices:['\\sigma_{\\hat{p}}','s_{\\hat{p}}','\\mu_{\\hat{p}}']},
+  {match:'s_{\\hat{p}}',choices:['s_{\\hat{p}}','\\sigma_{\\hat{p}}','\\mu_{\\hat{p}}']},
+  {match:'\\mu_{\\bar{x}}',choices:['\\mu_{\\bar{x}}','\\sigma_{\\bar{x}}','\\bar{x}']},
+  {match:'\\sigma_{\\bar{x}}',choices:['\\sigma_{\\bar{x}}','s_{\\bar{x}}','\\mu_{\\bar{x}}']},
+  {match:'s_{\\bar{x}}',choices:['s_{\\bar{x}}','\\sigma_{\\bar{x}}','\\mu_{\\bar{x}}']},
+  {match:'\\mu_b',choices:['\\mu_b','\\sigma_b','b']},
+  {match:'\\sigma_b',choices:['\\sigma_b','s_b','\\beta']},
+  {match:'s_b',choices:['s_b','\\sigma_b','s']},
+  {match:'\\mu_X',choices:['\\mu_X','\\sigma_X','\\mu']},
+  {match:'\\sigma_X',choices:['\\sigma_X','\\mu_X','\\sigma']},
+  {match:'\\mu_Y',choices:['\\mu_Y','\\sigma_Y','\\mu_X']},
+  {match:'\\sigma_Y',choices:['\\sigma_Y','\\mu_Y','\\sigma_X']},
+  {match:'\\chi^2',choices:['\\chi^2','z','t']},
+  {match:'r^2',choices:['r^2','r','b']},
+  {match:'\\text{Power}',choices:['\\text{Power}','\\beta','\\alpha']},
+  {match:'\\text{Width}',choices:['\\text{Width}','ME','SE']},
+  {match:'\\text{residual}',choices:['\\text{residual}','\\hat{y}','y']},
+  {match:'\\text{critical value}',choices:['\\text{critical value}','SE','\\text{statistic}']},
+  {match:'\\text{statistic}',choices:['\\text{statistic}','\\text{parameter}','SE']},
+  {regex:/(?<![A-Za-z])IQR(?![A-Za-z])/u,answer:'IQR',choices:['IQR','Q_3','Q_1']},
+  {regex:/(?<![A-Za-z])df(?![A-Za-z])/u,answer:'df',choices:['df','n','k']},
+  {regex:/(?<![A-Za-z])ME(?![A-Za-z])/u,answer:'ME',choices:['ME','SE','\\alpha']},
+  {regex:/(?<![A-Za-z])SE(?![A-Za-z])/u,answer:'SE',choices:['SE','\\sigma','s']},
+  {regex:/(?<![A-Za-z])E(?![A-Za-z])/u,answer:'E',choices:['E','O','n']},
+  {match:'\\text{grand total}',choices:['\\text{grand total}','n','\\text{row total}']},
+  {match:'\\hat{p}_c',choices:['\\hat{p}_c','\\hat{p}_1','p_1']},
+  {match:'\\hat{p}_1',choices:['\\hat{p}_1','p_1','\\hat{p}_c']},
+  {match:'\\hat{p}_2',choices:['\\hat{p}_2','p_2','\\hat{p}_c']},
+  {match:'p_0',choices:['p_0','\\hat{p}','p']},
+  {match:'\\beta_0',choices:['\\beta_0','\\beta','b']},
+  {match:'\\mu_0',choices:['\\mu_0','\\mu','\\bar{x}']},
+  {match:'\\sqrt{n}',choices:['\\sqrt{n}','n','n^2']},
+  {match:'1-p',choices:['1-p','p','n']},
+  {match:'x-1',choices:['x-1','x','x+1']},
+  {match:'1.5',choices:['1.5','2','1']},
+  {match:'68',choices:['68','95','99.7']},
+  {match:'95',choices:['95','68','99.7']},
+  {match:'P(A \\cap B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']},
+  {match:'P(B|A)',choices:['P(B|A)','P(B)','P(A|B)']},
+  {match:'P(B)',choices:['P(B)','P(A)','P(A\\cup B)']},
+  {match:'Q_3',choices:['Q_3','Q_2','Q_1']},
+  {match:'Q_1',choices:['Q_1','Q_2','\\bar{x}']},
+  {match:'(c-1)',choices:['(c-1)','c','(r-1)']},
+  {match:'|b|',choices:['|b|','b','a+b']},
+  {match:'b^2',choices:['b^2','b','-b^2']},
+  {match:'s_y',choices:['s_y','s_x','\\sigma_y']},
+  {match:'s_x',choices:['s_x','s_y','\\sigma_x']},
+  {match:'n_1',choices:['n_1','n_2','n']},
+  {match:'n_2',choices:['n_2','n_1','p_2']},
+  {match:'n-2',choices:['n-2','n-1','n']},
+  {match:'n-1',choices:['n-1','n','n+1']},
+  {regex:/\\hat\{p\}(?!_)/u,answer:'\\hat{p}',choices:['\\hat{p}','p','p_0']},
+  {regex:/\\bar\{x\}(?!_)/u,answer:'\\bar{x}',choices:['\\bar{x}','x','\\mu']},
+  {regex:/\\bar\{y\}(?!_)/u,answer:'\\bar{y}',choices:['\\bar{y}','\\hat{y}','y']},
+  {regex:/\\hat\{y\}(?!_)/u,answer:'\\hat{y}',choices:['\\hat{y}','\\bar{y}','y']},
+  {regex:/(?<![_\w])z(?![_\w])/u,answer:'z',choices:['z','t','\\chi^2']},
+  {regex:/(?<![_\w])s(?![_\w])/u,answer:'s',choices:['s','\\sigma','SE']},
+  {regex:/(?<![_\w-])n(?![_\w-])/u,answer:'n',choices:['n','n-1','n+1']},
+  {regex:/(?<![_\w])\\sigma(?![_\w])/u,answer:'\\sigma',choices:['\\sigma','s','\\mu']},
+  {regex:/(?<![_\w])\\mu(?![_\w])/u,answer:'\\mu',choices:['\\mu','\\bar{x}','\\sigma']},
+];
+function replaceFirstLiteral(text,needle,replacement){
+  const idx=text.indexOf(needle);
+  if(idx===-1)return null;
+  return text.slice(0,idx)+replacement+text.slice(idx+needle.length);
+}
+function replaceFirstRegexMatch(text,regex,replacement){
+  const match=text.match(regex);
+  if(!match||match.index==null)return null;
+  return text.slice(0,match.index)+replacement+text.slice(match.index+match[0].length);
+}
+function normalizeBlankConcept(value){
+  return normalizeExplanationLookup(formatExplanationLabel(String(value||'')));
+}
+function buildAutoBlankVariants(cmd){
+  if(!cmd||!cmd.latex)return[];
+  const seenConcepts=new Set((cmd.blanks||[]).map(blank=>normalizeBlankConcept(blank.answer)));
+  const seenLatex=new Set((cmd.blanks||[]).map(blank=>blank.latex));
+  const variants=[];
+  for(const spec of AUTO_BLANK_SPECS){
+    const answer=spec.answer||spec.match;
+    const conceptKey=normalizeBlankConcept(answer);
+    if(seenConcepts.has(conceptKey))continue;
+    const blankLatex=spec.match
+      ?replaceFirstLiteral(cmd.latex,spec.match,'\\boxed{\\,?\\,}')
+      :replaceFirstRegexMatch(cmd.latex,spec.regex,'\\boxed{\\,?\\,}');
+    if(!blankLatex||blankLatex===cmd.latex||seenLatex.has(blankLatex))continue;
+    variants.push({latex:blankLatex,answer:answer,choices:spec.choices.slice(0,3)});
+    seenConcepts.add(conceptKey);
+    seenLatex.add(blankLatex);
+    if(variants.length>=3)break;
+  }
+  return variants;
+}
+function expandFormulaBlankCoverage(cartridge){
+  cartridge.commands.forEach(cmd=>{
+    if(!Array.isArray(cmd.blanks))cmd.blanks=[];
+    cmd.blanks=cmd.blanks.concat(buildAutoBlankVariants(cmd));
+  });
+}
+expandFormulaBlankCoverage(apStatsCartridge);
 
 function stripAnswerLabel(label){
   return String(label||'').replace(/\s*\([^)]*\)\s*$/,'').trim();
@@ -1549,7 +1652,10 @@ function setInputPanelContent(headerHtml,bodyHtml){
   const header=document.getElementById('ip-header');
   const body=document.getElementById('ip-body');
   if(header)header.innerHTML=headerHtml||'';
-  if(body)body.innerHTML=bodyHtml||'';
+  if(body){
+    body.innerHTML=bodyHtml||'';
+    body.scrollTop=0;
+  }
 }
 function resetExplanationState(){
   EXPLAINER_STATE.open=false;
@@ -2103,6 +2209,9 @@ const reticleSquareGeo=new THREE.BufferGeometry().setFromPoints([
 function isReducedParticleMode(){
   return window.innerWidth<768||window.devicePixelRatio>2;
 }
+function isCompactMobileViewport(){
+  return window.innerWidth<=768;
+}
 function buildScoreChunks(totalPts,desiredCount){
   const safeTotal=Math.max(0,Math.floor(Number(totalPts)||0));
   if(safeTotal<=0)return[];
@@ -2392,6 +2501,7 @@ function updateEnemyMeshes(){
 const labelsDiv=document.getElementById('labels');
 function updateLabels(){
   labelsDiv.innerHTML='';
+  const hideGhostLabels=isCompactMobileViewport();
   G.enemies.forEach(e=>{
     const m=enemyMeshes[e.id];if(!m)return;
     const v=m.position.clone();v.y+=.6;
@@ -2400,6 +2510,7 @@ function updateLabels(){
     const y=(-(v.y*.5)+.5)*window.innerHeight;
     if(v.z>1)return;
     const isSel=e.id===G.selectedId;
+    if(hideGhostLabels&&!isSel)return;
     const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
     const div=document.createElement('div');div.className='enemy-label'+(isSel?' selected':'');
     div.style.left=x+'px';div.style.top=y+'px';
@@ -2424,6 +2535,29 @@ function updateLabels(){
     };
     labelsDiv.appendChild(div);
   });
+}
+
+function pickEnemyAtScreenPoint(clientX,clientY){
+  const maxDistSq=Math.pow(isCompactMobileViewport()?72:52,2);
+  let bestEnemy=null;
+  let bestDistSq=maxDistSq;
+  G.enemies.forEach(enemy=>{
+    const mesh=enemyMeshes[enemy.id];
+    if(!mesh)return;
+    const projected=mesh.position.clone();
+    projected.project(camera);
+    if(projected.z>1||projected.z<-1)return;
+    const x=(projected.x*.5+.5)*window.innerWidth;
+    const y=(-(projected.y*.5)+.5)*window.innerHeight;
+    const dx=x-clientX;
+    const dy=y-clientY;
+    const distSq=dx*dx+dy*dy;
+    if(distSq>bestDistSq)return;
+    if(bestEnemy&&distSq===bestDistSq&&enemy.t<=bestEnemy.t)return;
+    bestEnemy=enemy;
+    bestDistSq=distSq;
+  });
+  return bestEnemy;
 }
 
 // ═══════════════════════════════════════════════
@@ -3152,15 +3286,17 @@ function handleMiss(enemy){
 
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
   const depth=enemy.splitDepth||0;
+  const surge=isQuizMode?(depth===0?0.08:depth===1?0.13:0.2):0.06;
+  enemy.t=Math.min(PATH_LENGTH_T+.02,(enemy.t||0)+surge);
   // Hydra split: depth 0 → subconcepts (depth 1), depth 1 → sub-subconcepts (depth 2)
   if(isQuizMode&&depth<2){
     const didSplit=spawnHydraChildren(enemy);
-    if(didSplit){SFX.split();flash(depth===0?'SPLIT! \u26a1':'FRACTURE! \u26a1\u26a1',depth===0?'#4488ff':'#aa44ff');return}
+    if(didSplit){SFX.split();flash(depth===0?'SPLIT! SURGING \u26a1':'FRACTURE! SURGING \u26a1\u26a1',depth===0?'#4488ff':'#aa44ff');return}
   }
   // Fallback: speed up (depth 2 grandchildren, non-quiz, or split failed)
-  enemy.speedMult=(enemy.speedMult||1)*1.5;
+  enemy.speedMult=Math.min((enemy.speedMult||1)*(isQuizMode?1.85:1.5),4.5);
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
-  flash('MISS! \u26a1FASTER','#ff4422');
+  flash(isQuizMode?'MISS! PUSHED FORWARD \u26a0':'MISS! \u26a1FASTER','#ff4422');
   setTimeout(focusTypedInput,50);
 }
 
@@ -3184,13 +3320,14 @@ function spawnHydraChildren(parentEnemy){
     if(!subs||subs.length===0)return false;
     const count=Math.min(3,subs.length);
     const picked=shuffleArr(subs).slice(0,count);
+    const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1)*1.35;
     picked.forEach((sc,i)=>{
-      const childT=Math.max(0,parentEnemy.t-0.03*(i+1));
+      const childT=Math.min(.96,Math.max(0,parentEnemy.t+0.02*(i+1)));
       const options=shuffleArr([sc.correct,...sc.wrong]);
       const correctIdx=options.indexOf(sc.correct);
       const child={
         id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-        speedMult:.75,isChild:true,splitDepth:1,
+        speedMult:inheritedSpeed,isChild:true,splitDepth:1,
         subconcept:sc,
         question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
         label:'\u26a1 Sub-concept'
@@ -3204,15 +3341,16 @@ function spawnHydraChildren(parentEnemy){
     const sc=parentEnemy.subconcept;
     if(!sc)return false;
     const count=2;
+    const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1.15)*1.6;
     for(let i=0;i<count;i++){
-      const childT=Math.max(0,parentEnemy.t-0.02*(i+1));
+      const childT=Math.min(.98,Math.max(0,parentEnemy.t+0.025*(i+1)));
       // Binary question: "Is this true about [topic]?"
       const wrongPick=sc.wrong[i%sc.wrong.length];
       const statements=shuffleArr([sc.correct,wrongPick]);
       const correctIdx=statements.indexOf(sc.correct);
       const child={
         id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-        speedMult:.5,isChild:true,splitDepth:2,
+        speedMult:inheritedSpeed,isChild:true,splitDepth:2,
         subconcept:sc,
         question:{type:'subconcept',text:sc.q+' (True or false?)',options:statements,correctIdx:correctIdx,correctKey:['a','b'][correctIdx]},
         label:'\u26a1\u26a1 Deep concept'
@@ -3383,21 +3521,46 @@ document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preven
 let lastTouchEnd=0;
 document.addEventListener('touchend',function(e){const now=Date.now();if(now-lastTouchEnd<300)e.preventDefault();lastTouchEnd=now},{passive:false});
 // Swipe to cycle enemies
-let touchStartX=0,touchStartTime=0;
-canvas.addEventListener('touchstart',function(e){if(G.screen!=='game'||G.paused)return;touchStartX=e.touches[0].clientX;touchStartTime=Date.now()},{passive:true});
+let touchStartX=0,touchStartY=0,touchStartTime=0;
+canvas.addEventListener('touchstart',function(e){
+  if(G.screen!=='game'||G.paused)return;
+  touchStartX=e.touches[0].clientX;
+  touchStartY=e.touches[0].clientY;
+  touchStartTime=Date.now();
+},{passive:true});
 canvas.addEventListener('touchend',function(e){
-  if(G.screen!=='game'||G.paused||QUIZ_ANSWER_FEEDBACK.locked||G.enemies.length<2)return;
-  const dx=e.changedTouches[0].clientX-touchStartX;
+  if(G.screen!=='game'||G.paused||QUIZ_ANSWER_FEEDBACK.locked)return;
+  const touch=e.changedTouches[0];
+  const dx=touch.clientX-touchStartX;
+  const dy=touch.clientY-touchStartY;
   const dt=Date.now()-touchStartTime;
-  if(Math.abs(dx)>50&&dt<400){
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)&&dt<400&&G.enemies.length>=2){
     const deep=G.enemies.filter(en=>en.splitDepth>=2);
     const subs=G.enemies.filter(en=>en.splitDepth===1);
     const pool=deep.length>0?deep.sort((a,b)=>b.t-a.t):subs.length>0?subs.sort((a,b)=>b.t-a.t):[...G.enemies].sort((a,b)=>b.t-a.t);
     const idx=pool.findIndex(en=>en.id===G.selectedId);
     const dir=dx>0?1:-1;
+    resetExplanationState();
     G.selectedId=pool[((idx+dir)%pool.length+pool.length)%pool.length].id;
-    G.inputState='quiz';G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+    const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+    G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
+    G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
     SFX.select();lastInputState='';
+    if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
+    else if(im==='typed')focusTypedInput();
+    return;
+  }
+  if(Math.abs(dx)<18&&Math.abs(dy)<18&&dt<280){
+    const tappedEnemy=pickEnemyAtScreenPoint(touch.clientX,touch.clientY);
+    if(!tappedEnemy||tappedEnemy.id===G.selectedId)return;
+    resetExplanationState();
+    G.selectedId=tappedEnemy.id;
+    const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+    G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
+    G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+    SFX.select();lastInputState='';
+    if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
+    else if(im==='typed')focusTypedInput();
   }
 },{passive:true});
 // iOS AudioContext resume

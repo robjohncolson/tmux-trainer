@@ -341,6 +341,79 @@ Verification completed:
   - one remaining desktop-only harness failure for `56px` button height is expected because that target applies only to mobile
   - overlap risk from the larger label shell padding and fill-rate cost from the tall backdrop gradient were noted as monitor items, not blockers
 
+## Latest Update: Mobile Canvas Targeting + HUD Trim
+
+Implemented the next mobile usability pass on top of the sticky input work.
+
+What shipped:
+
+- On compact mobile viewports, all unselected enemy labels are now hidden entirely.
+- Only the currently selected floating label remains visible on mobile.
+- Mobile targeting no longer depends on tapping projected label DOM.
+- Tap selection now uses the 3D canvas directly:
+  - tapping near an enemy retargets to that enemy
+  - swipe cycling still remains available
+- The input tray now resets its scroll position when the selected target changes so a new question never opens halfway down the panel.
+- The explainer panel now has its own height cap on mobile so answer controls remain at least partially visible on short screens.
+- Mobile HUD density was reduced:
+  - `MASTERY` is hidden during active gameplay
+  - `WAVE` is hidden during active gameplay
+  - `SCORE`, `LIVES`, and `STREAK` remain visible
+- Desktop keeps the existing ghost-label presentation and current selected-label styling.
+
+Verification completed:
+
+- Inline script parse check passed after the mobile targeting changes.
+- Headless Chromium mobile check at `375x812` confirmed:
+  - only the selected label remains visible
+  - canvas tap can retarget enemies
+  - `#ip-body` resets to the top on target change
+  - the explainer cap leaves answer controls visible
+  - `MASTERY` and `WAVE` are hidden from the mobile HUD
+
+## Latest Update: Anti-Mash Pressure + Expanded Blank Coverage
+
+Implemented the next gameplay polish pass to reduce button-mashing and increase variable-placement practice across the AP Stats deck.
+
+What shipped:
+
+- Wrong quiz answers now punish the run immediately instead of only wasting time:
+  - the missed enemy surges forward along the path
+  - the fallback speed multiplier increases after the miss
+  - miss feedback text now reflects the forward shove
+- Hydra split pressure was increased:
+  - child enemies now spawn ahead of the parent position
+  - child enemies inherit stronger speed multipliers
+- Question mix now shifts toward formula-part identification as difficulty rises:
+  - `learn`: lower fill-blank rate
+  - `practice`: majority fill-blank
+  - `challenge`: strongly fill-blank weighted
+- AP Stats formula coverage now auto-expands beyond hand-authored blank prompts.
+- A new auto-blank pass generates additional “what symbol belongs here?” variants for common AP Stats notation such as:
+  - `n`
+  - `p-hat`
+  - `p0`
+  - `mu`
+  - `sigma`
+  - `sigma_xbar`
+  - `SE`
+  - `b`
+  - `a`
+  - confidence-level critical values and related notation where applicable
+- The expansion runs against the full AP Stats cartridge so each formula now has multiple blank variants instead of often only one.
+- The on-screen AP Stats instruction copy was updated to match the real quiz mechanic.
+
+Verification completed:
+
+- Inline script parse check passed after the gameplay-pressure and blank-expansion changes.
+- Headless Chromium mobile page-load smoke check passed at `375x812`.
+- Cartridge verification confirmed:
+  - `59` AP Stats formula commands
+  - every formula has at least `2` fill-blank variants
+  - maximum variants per formula is `4`
+  - average fill-blank variants per formula is `2.81`
+- Manual sampling confirmed the generated blanks are testing symbol placement rather than duplicating the same omission pattern for every command.
+
 ## Important Code Areas
 
 - `index.html` CSS top section:
