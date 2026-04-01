@@ -2734,12 +2734,40 @@ function clearQuizAnswerFeedback(){
   document.querySelectorAll('.mc-grid.answer-pending,.hint-mc-grid.answer-pending').forEach(el=>el.classList.remove('answer-pending'));
   document.querySelectorAll('.mc-btn.correct,.mc-btn.wrong,.hint-mc-btn.correct,.hint-mc-btn.wrong').forEach(btn=>btn.classList.remove('correct','wrong'));
 }
+function reshuffleQuestionOptions(enemy){
+  const q=enemy.question;
+  if(!q)return;
+  if(q.type==='identify'){
+    const correct=q.options[q.correctIdx];
+    q.options=shuffleArr(q.options);
+    q.correctIdx=q.options.indexOf(correct);
+    q.correctKey=['a','b','c','d'][q.correctIdx];
+  }else if(q.type==='fillblank'){
+    q.choices=shuffleArr(q.choices);
+    // No correctIdx/correctKey needed — validateBlank compares against q.answer
+  }else if(q.type==='subconcept'){
+    const correct=q.options[q.correctIdx];
+    q.options=shuffleArr(q.options);
+    q.correctIdx=q.options.indexOf(correct);
+    q.correctKey=(q.options.length<=2?['a','b']:['a','b','c'])[q.correctIdx];
+  }
+  // Clear hint elimination state (keep G.hintUsed for scoring)
+  G.showHint=false;
+  delete q.eliminatedIdx;
+  // Bust the render cache so updateInput() repaints with new option order
+  lastInputState='';
+  updateInput();
+}
 function queueQuizChoiceResolution(enemy,key,isCorrect){
   if(QUIZ_ANSWER_FEEDBACK.locked||!enemy||G.screen!=='game')return;
   const btn=document.querySelector('[data-choice="'+key+'"]');
   const group=btn&&btn.parentElement;
   QUIZ_ANSWER_FEEDBACK.locked=true;
   if(isCorrect)enemy.pendingCorrectHit=true;
+  // Increment missCount BEFORE scheduling so delay uses updated value
+  if(!isCorrect)enemy.missCount=(enemy.missCount||0)+1;
+  const MISS_DELAYS=[800,1800,3000];
+  const delay=isCorrect?220:MISS_DELAYS[Math.min((enemy.missCount||1)-1,2)];
   if(group)group.classList.add('answer-pending');
   if(btn)btn.classList.add(isCorrect?'correct':'wrong');
   QUIZ_ANSWER_FEEDBACK.timer=setTimeout(()=>{
@@ -2753,9 +2781,14 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
     }
     clearQuizAnswerFeedback();
     delete liveEnemy.pendingCorrectHit;
-    if(isCorrect)handleHit(liveEnemy);
-    else handleMiss(liveEnemy);
-  },220);
+    if(isCorrect){handleHit(liveEnemy)}
+    else{
+      handleMiss(liveEnemy);
+      // Reshuffle options after miss so player can't systematically try a→b→c→d
+      const stillAlive=G.enemies.find(en=>en.id===enemy.id);
+      if(stillAlive&&stillAlive.question)reshuffleQuestionOptions(stillAlive);
+    }
+  },delay);
 }
 
 // Quiz mode handlers (called from onclick in MC buttons)
@@ -3168,7 +3201,7 @@ function trySpawn(now){
   const delay=G.spawnIdx===0?1500:Math.max(SPAWN_DELAY_BASE-G.wave*150,2500);
   if(now-lastSpawnTime<delay)return;
   const cmd=G.waveCommands[G.spawnIdx];
-  const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now(),speedMult:1};
+  const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now(),speedMult:1,missCount:0};
   // Generate question + cache label for quiz-mode cartridges
   if(activeCartridge&&activeCartridge.inputMode==='quiz'){
     if(activeCartridge.generateQuestion)enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
@@ -3286,7 +3319,7 @@ function handleMiss(enemy){
 
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
   const depth=enemy.splitDepth||0;
-  const surge=isQuizMode?(depth===0?0.08:depth===1?0.13:0.2):0.06;
+  const surge=isQuizMode?(depth===0?0.15:depth===1?0.22:0.30):0.06;
   enemy.t=Math.min(PATH_LENGTH_T+.02,(enemy.t||0)+surge);
   // Hydra split: depth 0 → subconcepts (depth 1), depth 1 → sub-subconcepts (depth 2)
   if(isQuizMode&&depth<2){
@@ -3295,8 +3328,16 @@ function handleMiss(enemy){
   }
   // Fallback: speed up (depth 2 grandchildren, non-quiz, or split failed)
   enemy.speedMult=Math.min((enemy.speedMult||1)*(isQuizMode?1.85:1.5),4.5);
+  // Attempt cap: after 3 misses on the same enemy, auto-surge near breach
+  if(isQuizMode&&(enemy.missCount||0)>=3){
+    enemy.t=Math.max(enemy.t,0.85);
+    enemy.speedMult=Math.max(enemy.speedMult,3.0);
+    flash('MAX MISS! BREACHING \u26a0','#ff0000');
+    SFX.miss();
+  }else{
+    flash(isQuizMode?'MISS! PUSHED FORWARD \u26a0':'MISS! \u26a1FASTER','#ff4422');
+  }
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
-  flash(isQuizMode?'MISS! PUSHED FORWARD \u26a0':'MISS! \u26a1FASTER','#ff4422');
   setTimeout(focusTypedInput,50);
 }
 
@@ -3327,7 +3368,7 @@ function spawnHydraChildren(parentEnemy){
       const correctIdx=options.indexOf(sc.correct);
       const child={
         id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-        speedMult:inheritedSpeed,isChild:true,splitDepth:1,
+        speedMult:inheritedSpeed,isChild:true,splitDepth:1,missCount:0,
         subconcept:sc,
         question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
         label:'\u26a1 Sub-concept'
@@ -3350,7 +3391,7 @@ function spawnHydraChildren(parentEnemy){
       const correctIdx=statements.indexOf(sc.correct);
       const child={
         id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-        speedMult:inheritedSpeed,isChild:true,splitDepth:2,
+        speedMult:inheritedSpeed,isChild:true,splitDepth:2,missCount:0,
         subconcept:sc,
         question:{type:'subconcept',text:sc.q+' (True or false?)',options:statements,correctIdx:correctIdx,correctKey:['a','b'][correctIdx]},
         label:'\u26a1\u26a1 Deep concept'

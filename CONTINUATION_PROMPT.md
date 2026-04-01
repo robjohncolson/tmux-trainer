@@ -487,6 +487,58 @@ Verification completed:
 - `index.html` wave-clear handling:
   - `updateInput()`
   - `checkWaveComplete()`
+- `index.html` anti-button-mash helpers:
+  - `reshuffleQuestionOptions()`
+  - `enemy.missCount` (per-enemy miss counter)
+  - escalating delay in `queueQuizChoiceResolution()`
+  - attempt cap in `handleMiss()`
+
+## Latest Update: Anti-Button-Mash Mechanics
+
+Implemented 4 reinforcing fixes to prevent brute-forcing through quiz mode by button-mashing.
+
+What shipped:
+
+- Fix 1 — Escalating Lockout:
+  - Wrong-answer feedback delay now escalates per enemy: 800ms (1st miss), 1800ms (2nd miss), 3000ms (3rd+ miss)
+  - Correct answers stay at 220ms (unchanged)
+  - Miss counter stored on `enemy.missCount`, not on `G`, so tab-retargeting cannot reset it
+  - `missCount` is initialized to 0 on all enemy creation paths (trySpawn, hydra depth-1, hydra depth-2)
+  - `missCount` is persisted via the enemies array in run checkpoint save/restore
+
+- Fix 2 — Harsher Miss Surge:
+  - Quiz-mode surge values increased from 0.08/0.13/0.20 to 0.15/0.22/0.30
+  - 3 misses at depth 0 now push the enemy 0.45 along the path (nearly half the track)
+  - Non-quiz modes (prefix-key, typed) unchanged at 0.06
+
+- Fix 3 — Option Shuffle on Miss:
+  - New `reshuffleQuestionOptions(enemy)` function shuffles MC options after every wrong answer
+  - Handles all 3 question types: identify (4 options), fillblank (choices array), subconcept (3 or 2 options)
+  - Recomputes `correctIdx` and `correctKey` after shuffle
+  - Clears `G.showHint` (keeps `G.hintUsed` for scoring) and deletes `eliminatedIdx`
+  - Busts `lastInputState` render cache and calls `updateInput()` to force repaint
+  - Called after `handleMiss()` in the timeout callback, with a `stillAlive` check to skip if hydra split removed the enemy
+
+- Fix 4 — Attempt Cap with Auto-Surge:
+  - After 3 misses on the same enemy, auto-surge to `t = max(current_t, 0.85)` and `speedMult = max(current, 3.0)`
+  - Flashes `MAX MISS! BREACHING` warning in red
+  - Placed after hydra split check so depth-0/1 enemies that split never reach the cap
+  - The cap primarily affects depth-2 grandchildren and split-failure cases
+
+Combined anti-mash effect:
+- Escalating delays slow down mashing (220ms → 800ms → 1800ms → 3000ms)
+- Shuffled options prevent systematic a→b→c→d elimination
+- Heavy surge (0.15 per miss × 3 = 0.45) pushes enemies near breach
+- Auto-surge at 3 misses virtually guarantees breach
+- A knowledgeable player answering correctly sees zero difference
+
+Spec artifact:
+- `anti-button-mash-spec.md` (v3) with the full feature contract, Codex review findings, and testing plan
+
+Verification completed:
+- JavaScript parse check passed after all 4 fixes
+- Agent-based code review confirmed all spec requirements met
+- One code-smell fix applied (subconcept correctKey computation clarified for depth-2 binary questions)
 
 ## Likely Next Tasks
 
