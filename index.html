@@ -14,8 +14,14 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 .hud-val.score-pop{animation:score-pop .28s ease-out}
 #tier-bar{position:fixed;top:52px;left:0;right:0;z-index:10;text-align:center;pointer-events:none;font-size:10px}
-#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;background:rgba(13,5,0,0.35);pointer-events:none}
+#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate}
+#input-panel::before{content:'';position:absolute;left:0;right:0;bottom:0;top:-18vh;z-index:-1;pointer-events:none;background:linear-gradient(to bottom,rgba(13,5,0,0.15) 0%,rgba(13,5,0,0.65) 30%,rgba(13,5,0,0.82) 100%)}
 #input-panel *{pointer-events:auto}
+#ip-header,#ip-body{width:min(760px,100%);margin:0 auto;background:rgba(13,5,0,0.8);border:1px solid #ff8c0018;box-shadow:0 10px 24px #00000033}
+#ip-header{flex:0 0 auto;max-height:40%;overflow:hidden;border-bottom:none;border-radius:12px 12px 0 0;padding:8px 10px 8px}
+#ip-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border-top:none;border-radius:0 0 12px 12px;padding:6px 10px 8px}
+#ip-header:empty,#ip-body:empty{display:none}
+#ip-header:empty+#ip-body{border-top:1px solid #ff8c0018;border-radius:12px;padding-top:10px}
 .prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
 .prompt-text{font-size:18px;font-weight:700;color:#ffcc66;margin:4px 0;text-shadow:0 0 10px #ff8c0044}
 .input-boxes{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
@@ -37,11 +43,18 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-line{font-size:11px;line-height:1.55;color:#d8943d;margin-top:4px}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
-.enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s}
-.enemy-label-shell{position:relative;display:inline-flex;align-items:center;justify-content:center}
-.enemy-label-inner{background:#0d0500dd;border:1px solid;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:140px;word-break:break-word;white-space:normal}
+.enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);opacity:.55;filter:saturate(.82);transition:opacity .18s,filter .18s}
+.enemy-label.selected{opacity:1;filter:none}
+.enemy-label-shell{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
+.enemy-label-inner{background:#0d0500d6;border:1px solid transparent;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:140px;word-break:break-word;white-space:normal;transition:border-color .18s,background .18s,box-shadow .18s}
+.enemy-label.selected .enemy-label-inner{background:#120800f1;border-color:currentColor;box-shadow:0 0 18px #00000066,0 0 10px currentColor}
+.target-bracket{position:absolute;width:12px;height:12px;border-color:currentColor;opacity:.96;pointer-events:none}
+.target-bracket.tl{left:0;top:0;border-left:2px solid;border-top:2px solid;border-top-left-radius:4px}
+.target-bracket.tr{right:0;top:0;border-right:2px solid;border-top:2px solid;border-top-right-radius:4px}
+.target-bracket.bl{left:0;bottom:0;border-left:2px solid;border-bottom:2px solid;border-bottom-left-radius:4px}
+.target-bracket.br{right:0;bottom:0;border-right:2px solid;border-bottom:2px solid;border-bottom-right-radius:4px}
 .enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
-.sel-arrow{text-align:center;color:#ffcc66;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite}
+.sel-arrow{text-align:center;color:inherit;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite;text-shadow:0 0 10px currentColor}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s}
 #overlay.hidden{opacity:0;pointer-events:none}
 #overlay h1{font-size:56px;font-weight:900;letter-spacing:14px;color:#ff8c00;text-shadow:0 0 20px #ff8c00,0 0 40px #ff8c0044;margin-bottom:4px}
@@ -66,8 +79,13 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 35%{transform:scale(1.16);color:#fff1bf;text-shadow:0 0 18px #ffcc66aa}
 100%{transform:scale(1);color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 }
-.latex-display{margin:2px 0;min-height:24px;display:flex;align-items:center;justify-content:center}
+.latex-shell{position:relative;max-width:100%}
+.latex-scroll{max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.latex-shell.scrollable::after{content:'';position:absolute;top:0;right:0;bottom:0;width:18px;background:linear-gradient(90deg,rgba(13,5,0,0),rgba(13,5,0,0.92));pointer-events:none}
+.latex-display{margin:2px auto;min-height:24px;display:flex;align-items:center;justify-content:center;width:max-content;min-width:100%}
 .latex-display .katex{font-size:1.15em;color:#ffcc66}
+.latex-display .katex-display{margin:0}
+.latex-display .katex,.latex-display .katex-display{white-space:nowrap}
 .mc-grid{display:flex;flex-wrap:wrap;gap:4px;max-width:600px;margin:4px auto 0;justify-content:center}
 .mc-btn{font-family:inherit;font-size:11px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:4px;padding:5px 8px;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:4px}
 .mc-btn:hover{border-color:#ff8c00;background:#2d1200;box-shadow:0 0 8px #ff8c0033}
@@ -80,7 +98,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hint-mc-grid{display:flex;gap:4px;justify-content:center;margin-top:4px}
 .hint-mc-btn{font-family:inherit;font-size:12px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:6px;padding:5px 10px;cursor:pointer;transition:all .15s}
 .hint-mc-btn:hover{border-color:#ff8c00;background:#2d1200}
+.hint-mc-btn.correct{border-color:#44ff88;background:#44ff8822;color:#44ff88}
+.hint-mc-btn.wrong{border-color:#ff4422;background:#ff442222;color:#ff4422}
 .hint-mc-btn .mc-key{display:inline;font-weight:900;color:#ffcc66;margin-right:4px}
+.mc-grid.answer-pending,.hint-mc-grid.answer-pending{pointer-events:none}
 .q-type-badge{font-size:8px;letter-spacing:2px;color:#996622;background:#ff8c0011;border:1px solid #ff8c0022;border-radius:3px;padding:1px 4px;display:inline-block;margin-bottom:2px}
 @keyframes float-up{0%{transform:translateY(0) translateX(-50%);opacity:1}100%{transform:translateY(-50px) translateX(-50%);opacity:0}}
 .flash-msg{position:fixed;top:35%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;z-index:15;pointer-events:none;animation:float-up .8s ease-out forwards;text-shadow:0 0 20px currentColor}
@@ -138,7 +159,9 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 @keyframes dvd-y{from{top:92px}to{top:calc(100% - var(--dvd-h) - 24px)}}
 @media(max-width:768px){
 #hud{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left))}
-#input-panel{padding:4px max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));max-height:45vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#input-panel{padding:4px max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));max-height:45vh;overflow:hidden}
+#ip-header{padding:8px 8px 6px}
+#ip-body{padding:6px 8px 8px}
 .hud-label{font-size:7px;letter-spacing:1px}
 .hud-val{font-size:clamp(12px,3.5vw,16px)}
 #h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
@@ -147,13 +170,13 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
 .sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
-.mc-btn{min-height:44px;padding:8px 10px;font-size:clamp(12px,3vw,14px);width:100%}
+.mc-btn{min-height:56px;padding:12px 10px;font-size:clamp(12px,3vw,14px);width:100%}
 .mc-btn .mc-key{width:24px;height:24px;font-size:12px;border-radius:6px}
 .mc-btn .mc-text{font-size:clamp(12px,3vw,14px);line-height:1.3}
 .hint-mc-grid{flex-direction:column;gap:6px;padding:0 4px}
-.hint-mc-btn{min-height:44px;padding:8px 12px;font-size:14px;width:100%;text-align:left}
+.hint-mc-btn{min-height:56px;padding:10px 12px;font-size:14px;width:100%;text-align:left}
 .explain-row{gap:5px}
-.explain-chip{min-height:38px;padding:8px 12px}
+.explain-chip{min-height:48px;padding:8px 12px}
 .explain-panel{padding:10px}
 .explain-line{font-size:10px}
 .prompt-text{font-size:clamp(13px,3.5vw,18px)}
@@ -161,8 +184,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .q-type-badge{font-size:7px}
 .input-help{display:block;opacity:.72}
 .hint-text{font-size:11px;margin-top:4px}
-.latex-display .katex{font-size:clamp(0.8em,3vw,1.15em)}
-.latex-display{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.latex-display .katex{font-size:1em}
 #queue-bar{bottom:auto;top:55px;font-size:8px}
 #overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
 #overlay h2{font-size:clamp(11px,3vw,16px);letter-spacing:clamp(3px,1.5vw,8px)}
@@ -199,7 +221,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 }
 @media(max-width:400px){
 .hud-val{font-size:clamp(10px,3vw,14px)}
-.mc-btn{min-height:48px;font-size:13px}
+.mc-btn{min-height:56px;font-size:13px}
 #overlay h1{font-size:clamp(20px,7vw,32px)}
 .diff-group{flex-direction:column;align-items:center}
 .diff-btn{width:100%;max-width:200px}
@@ -231,7 +253,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 </div>
 <div id="tier-bar" style="display:none"></div>
 <div id="labels"></div>
-<div id="input-panel" style="display:none"></div>
+<div id="input-panel" style="display:none"><div id="ip-header"></div><div id="ip-body"></div></div>
 <div id="queue-bar" style="display:none"></div>
 <div id="overlay"></div>
 <button id="mute-btn" title="Mute">🔊</button>
@@ -1517,11 +1539,17 @@ function buildExplanationBank(commands){
 const EXPLANATION_BANK=buildExplanationBank(apStatsCartridge.commands);
 const EXPLAINER_STATE={open:false,key:'',title:'',lines:[]};
 function syncInputPanelScroll(position){
-  const panel=document.getElementById('input-panel');
-  if(!panel)return;
+  const body=document.getElementById('ip-body');
+  if(!body)return;
   requestAnimationFrame(()=>{
-    panel.scrollTop=position==='bottom'?panel.scrollHeight:0;
+    body.scrollTop=position==='bottom'?body.scrollHeight:0;
   });
+}
+function setInputPanelContent(headerHtml,bodyHtml){
+  const header=document.getElementById('ip-header');
+  const body=document.getElementById('ip-body');
+  if(header)header.innerHTML=headerHtml||'';
+  if(body)body.innerHTML=bodyHtml||'';
 }
 function resetExplanationState(){
   EXPLAINER_STATE.open=false;
@@ -1579,7 +1607,14 @@ function renderExplanationControls(answerLabels){
 function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
 // Render LaTeX safely into an element
-function renderLatex(latex,el){try{katex.render(latex,el,{throwOnError:false,displayMode:true})}catch(e){el.textContent=latex}}
+function renderLatex(latex,el){
+  try{katex.render(latex,el,{throwOnError:false,displayMode:true})}catch(e){el.textContent=latex}
+  requestAnimationFrame(()=>{
+    const wrap=el.closest('.latex-shell');
+    if(!wrap)return;
+    wrap.classList.toggle('scrollable',el.scrollWidth>wrap.clientWidth+8);
+  });
+}
 function noteFreq(offset){return Number((220*Math.pow(2,offset/12)).toFixed(3))}
 function triad(offset,quality){
   return[
@@ -2366,16 +2401,18 @@ function updateLabels(){
     if(v.z>1)return;
     const isSel=e.id===G.selectedId;
     const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
-    const div=document.createElement('div');div.className='enemy-label';
+    const div=document.createElement('div');div.className='enemy-label'+(isSel?' selected':'');
     div.style.left=x+'px';div.style.top=y+'px';
     // For quiz mode, show cached unit label instead of formula name (which gives away the answer!)
     const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
     const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
     const dp=e.splitDepth||0;
-    const borderC=isSel?AMB.css.white:(dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot);
-    const textC=dp>=2?'#aa44ff':dp>=1?'#4488ff':AMB.css.hot;
-    div.innerHTML='<div class="enemy-label-shell"><div class="enemy-label-inner" style="border-color:'+borderC+';color:'+textC+'"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    const textC=isSel?(dp>=2?'#c892ff':dp>=1?'#7eb9ff':'#d0d0d0'):(dp>=2?'#b67adf':dp>=1?'#78a7ea':'#c78234');
+    const brackets=isSel?'<span class="target-bracket tl"></span><span class="target-bracket tr"></span><span class="target-bracket bl"></span><span class="target-bracket br"></span>':'';
+    div.style.color=textC;
+    div.innerHTML='<div class="enemy-label-shell">'+brackets+'<div class="enemy-label-inner"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
+      if(QUIZ_ANSWER_FEEDBACK.locked)return;
       resetExplanationState();
       G.selectedId=e.id;
       const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
@@ -2414,12 +2451,11 @@ function updateHUD(){
 
 let lastInputState='';
 function updateInput(){
-  const panel=document.getElementById('input-panel');
   if(G.waveComplete){
     resetExplanationState();
     if(lastInputState==='wave-clear')return;
     lastInputState='wave-clear';
-    panel.innerHTML='<div class="wave-clear">WAVE '+G.wave+' CLEARED</div><button class="btn" onclick="nextWave()" style="margin-top:10px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px">[ SAVE + EXIT ]</button><div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Progress is checkpointed here. Press Escape to return to the main screen.</div>';
+    setInputPanelContent('<div class="wave-clear">WAVE '+G.wave+' CLEARED</div>','<button class="btn" onclick="nextWave()" style="margin-top:4px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px">[ SAVE + EXIT ]</button><div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Progress is checkpointed here. Press Escape to return to the main screen.</div>');
     return;
   }
   const sel=G.enemies.find(e=>e.id===G.selectedId);
@@ -2430,10 +2466,10 @@ function updateInput(){
     const stateKey='quiz-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
     if(stateKey===lastInputState)return;
     lastInputState=stateKey;
-    if(!sel||!sel.question){resetExplanationState();panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    if(!sel||!sel.question){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
     const q=sel.question;
     const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">\u26a1'+sel.speedMult.toFixed(1)+'x speed</span>':'';
-    let html='';
+    let headerHtml='',bodyHtml='';
     // 50/50 hint: when hint is shown, eliminate one wrong answer
     if(G.showHint&&q.eliminatedIdx==null){
       if(q.type==='identify'){
@@ -2451,19 +2487,19 @@ function updateInput(){
     const eliminated=q.eliminatedIdx;
 
     if(q.type==='identify'){
-      html+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
-      html+='<div class="latex-display" id="quiz-latex"></div>';
-      html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does this formula calculate?</div>';
-      html+='<div class="mc-grid">';
+      headerHtml+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
+      headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
+      headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does this formula calculate?</div>';
+      bodyHtml+='<div class="mc-grid">';
       const keys=['A','B','C','D'];
       q.options.forEach((opt,i)=>{
         const isElim=G.showHint&&eliminated===i;
-        html+='<button class="mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+        bodyHtml+='<button class="mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
       });
-      html+='</div>';
-      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+=renderExplanationControls(q.options);
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+      bodyHtml+='</div>';
+      if(G.showHint&&sel.cmd.explain)bodyHtml+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
+      bodyHtml+=renderExplanationControls(q.options);
+      bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }else if(q.type==='subconcept'){
       // Sub-concept / sub-sub-concept question (from hydra split)
       const scDepth=sel.splitDepth||1;
@@ -2471,35 +2507,35 @@ function updateInput(){
       const scBg=scDepth>=2?'#aa44ff18':'#4488ff18';
       const scBorder=scDepth>=2?'#aa44ff33':'#4488ff33';
       const scLabel=scDepth>=2?'DEEP CONCEPT':'SUB-CONCEPT';
-      html+='<div class="q-type-badge" style="background:'+scBg+';border-color:'+scBorder+';color:'+scColor+'">'+scLabel+'</div>'+speedInfo;
-      html+='<div style="font-size:14px;color:'+scColor+';margin:4px 0;font-weight:700">'+q.text+'</div>';
-      html+='<div class="mc-grid">';
+      headerHtml+='<div class="q-type-badge" style="background:'+scBg+';border-color:'+scBorder+';color:'+scColor+'">'+scLabel+'</div>'+speedInfo;
+      headerHtml+='<div style="font-size:14px;color:'+scColor+';margin:4px 0;font-weight:700">'+q.text+'</div>';
+      bodyHtml+='<div class="mc-grid">';
       const scKeys=q.options.length<=2?['A','B']:['A','B','C'];
       q.options.forEach((opt,i)=>{
         const isElim=G.showHint&&eliminated===i;
-        html+='<button class="mc-btn'+(isElim?' eliminated':'')+'" style="'+(isElim?'opacity:0.2;pointer-events:none;text-decoration:line-through':'border-color:'+scColor+'44')+'" data-choice="'+scKeys[i].toLowerCase()+'"'+(isElim?' disabled':' onclick="handleSubconceptChoice(\''+scKeys[i].toLowerCase()+'\')"')+'><span class="mc-key" style="background:'+scColor+'">'+scKeys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+        bodyHtml+='<button class="mc-btn'+(isElim?' eliminated':'')+'" style="'+(isElim?'opacity:0.2;pointer-events:none;text-decoration:line-through':'border-color:'+scColor+'44')+'" data-choice="'+scKeys[i].toLowerCase()+'"'+(isElim?' disabled':' onclick="handleSubconceptChoice(\''+scKeys[i].toLowerCase()+'\')"')+'><span class="mc-key" style="background:'+scColor+'">'+scKeys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
       });
-      html+='</div>';
-      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text" style="border-color:'+scColor+'33">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+=renderExplanationControls();
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(q.options.length<=2?'A/B':'A/B/C')+' = answer \u00b7 Alt+E = explain target \u00b7 Tab = switch</div>';
+      bodyHtml+='</div>';
+      if(G.showHint&&sel.cmd.explain)bodyHtml+='<div class="hint-text" style="border-color:'+scColor+'33">\ud83d\udca1 '+sel.cmd.explain+'</div>';
+      bodyHtml+=renderExplanationControls();
+      bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(q.options.length<=2?'A/B':'A/B/C')+' = answer \u00b7 Alt+E = explain target \u00b7 Tab = switch</div>';
     }else{
       // fill-blank — always show A/B/C choices
-      html+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
-      html+='<div class="latex-display" id="quiz-latex"></div>';
-      html+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What goes in the blank?</div>';
-      html+='<div class="hint-mc-grid">';
+      headerHtml+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
+      headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
+      headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What goes in the blank?</div>';
+      bodyHtml+='<div class="hint-mc-grid">';
       const keys2=['A','B','C'];
       q.choices.forEach((ch,i)=>{
         const isElim=G.showHint&&eliminated===i;
-        html+='<button class="hint-mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys2[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleHintChoice(\''+keys2[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys2[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
+        bodyHtml+='<button class="hint-mc-btn'+(isElim?' eliminated':'')+'" data-choice="'+keys2[i].toLowerCase()+'"'+(isElim?' disabled style="opacity:0.2;pointer-events:none;text-decoration:line-through"':' onclick="handleHintChoice(\''+keys2[i].toLowerCase()+'\')"')+'><span class="mc-key">'+keys2[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
       });
-      html+='</div>';
-      if(G.showHint&&sel.cmd.explain)html+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
-      html+=renderExplanationControls(q.choices);
-      html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
+      bodyHtml+='</div>';
+      if(G.showHint&&sel.cmd.explain)bodyHtml+='<div class="hint-text">\ud83d\udca1 '+sel.cmd.explain+'</div>';
+      bodyHtml+=renderExplanationControls(q.choices);
+      bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint (half pts)</div>';
     }
-    panel.innerHTML=html;
+    setInputPanelContent(headerHtml,bodyHtml);
     // Render LaTeX into the display element
     const latexEl=document.getElementById('quiz-latex');
     if(latexEl)renderLatex(q.latex,latexEl);
@@ -2518,31 +2554,31 @@ function updateInput(){
       return;
     }
     lastInputState=stateKey;
-    if(!sel){resetExplanationState();panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    if(!sel){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
     const cmd=sel.cmd;
     const promptText=activeCartridge.formatPrompt(cmd);
-    let html='<div class="prompt-label">TARGET:</div><div class="prompt-text">'+promptText+'</div>';
-    html+='<div style="margin-top:8px"><input type="text" class="typed-input" id="typed-input" placeholder="Type answer..." value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
-    if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+activeCartridge.formatAnswer(cmd)+'</span></div>';
-    html+=renderExplanationControls();
-    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Enter = submit \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
-    panel.innerHTML=html;
+    let headerHtml='<div class="prompt-label">TARGET:</div><div class="prompt-text">'+promptText+'</div>';
+    let bodyHtml='<div style="margin-top:8px"><input type="text" class="typed-input" id="typed-input" placeholder="Type answer..." value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
+    if(G.showHint)bodyHtml+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+activeCartridge.formatAnswer(cmd)+'</span></div>';
+    bodyHtml+=renderExplanationControls();
+    bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Enter = submit \u00b7 Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
+    setInputPanelContent(headerHtml,bodyHtml);
     focusTypedInput();
   }else{
     // prefix-key mode
     const stateKey=G.inputState+'-'+(sel?sel.id:'none')+'-'+G.showHint+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
     if(stateKey===lastInputState)return;
     lastInputState=stateKey;
-    if(!sel){resetExplanationState();panel.innerHTML='<div class="prompt-text">Waiting for enemies...</div>';return}
+    if(!sel){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
     const cmd=sel.cmd;
     const isPre=G.inputState==='await_prefix',isCmd=G.inputState==='await_command';
     const prefix=activeCartridge?activeCartridge.prefixLabel:'C-b';
-    let html='<div class="prompt-label">TARGET COMMAND:</div><div class="prompt-text">'+cmd.action+'</div>';
-    html+='<div class="input-boxes"><div class="input-box '+(isPre?'active':isCmd?'done':'')+'">'+(isCmd?prefix+' \u2713':prefix)+'</div><span style="color:'+AMB.css.mid+';font-size:16px">\u2192</span><div class="input-box '+(isCmd?'active':'')+'\">'+(isCmd?'?':'\u00b7\u00b7\u00b7')+'</div></div>';
-    if(G.showHint)html+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+prefix+' '+activeCartridge.formatAnswer(cmd)+'</span></div>';
-    html+=renderExplanationControls();
-    html+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
-    panel.innerHTML=html;
+    let headerHtml='<div class="prompt-label">TARGET COMMAND:</div><div class="prompt-text">'+cmd.action+'</div>';
+    let bodyHtml='<div class="input-boxes"><div class="input-box '+(isPre?'active':isCmd?'done':'')+'">'+(isCmd?prefix+' \u2713':prefix)+'</div><span style="color:'+AMB.css.mid+';font-size:16px">\u2192</span><div class="input-box '+(isCmd?'active':'')+'\">'+(isCmd?'?':'\u00b7\u00b7\u00b7')+'</div></div>';
+    if(G.showHint)bodyHtml+='<div class="hint-text">\ud83d\udca1 '+cmd.hint+' \u2014 Answer: <span style="color:'+AMB.css.white+'">'+prefix+' '+activeCartridge.formatAnswer(cmd)+'</span></div>';
+    bodyHtml+=renderExplanationControls();
+    bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Alt+E = explain \u00b7 Tab = switch \u00b7 Alt+H = hint</div>';
+    setInputPanelContent(headerHtml,bodyHtml);
   }
 }
 
@@ -2554,44 +2590,65 @@ function focusBlankInput(){
   const inp=document.getElementById('blank-input');
   if(inp)inp.focus();
 }
+const QUIZ_ANSWER_FEEDBACK={locked:false,timer:null};
+function clearQuizAnswerFeedback(){
+  if(QUIZ_ANSWER_FEEDBACK.timer){
+    clearTimeout(QUIZ_ANSWER_FEEDBACK.timer);
+    QUIZ_ANSWER_FEEDBACK.timer=null;
+  }
+  QUIZ_ANSWER_FEEDBACK.locked=false;
+  document.querySelectorAll('.mc-grid.answer-pending,.hint-mc-grid.answer-pending').forEach(el=>el.classList.remove('answer-pending'));
+  document.querySelectorAll('.mc-btn.correct,.mc-btn.wrong,.hint-mc-btn.correct,.hint-mc-btn.wrong').forEach(btn=>btn.classList.remove('correct','wrong'));
+}
+function queueQuizChoiceResolution(enemy,key,isCorrect){
+  if(QUIZ_ANSWER_FEEDBACK.locked||!enemy||G.screen!=='game')return;
+  const btn=document.querySelector('[data-choice="'+key+'"]');
+  const group=btn&&btn.parentElement;
+  QUIZ_ANSWER_FEEDBACK.locked=true;
+  if(isCorrect)enemy.pendingCorrectHit=true;
+  if(group)group.classList.add('answer-pending');
+  if(btn)btn.classList.add(isCorrect?'correct':'wrong');
+  QUIZ_ANSWER_FEEDBACK.timer=setTimeout(()=>{
+    QUIZ_ANSWER_FEEDBACK.timer=null;
+    QUIZ_ANSWER_FEEDBACK.locked=false;
+    const liveEnemy=G.enemies.find(en=>en.id===enemy.id);
+    if(!liveEnemy||G.screen!=='game'){
+      if(liveEnemy)delete liveEnemy.pendingCorrectHit;
+      clearQuizAnswerFeedback();
+      return;
+    }
+    clearQuizAnswerFeedback();
+    delete liveEnemy.pendingCorrectHit;
+    if(isCorrect)handleHit(liveEnemy);
+    else handleMiss(liveEnemy);
+  },220);
+}
 
 // Quiz mode handlers (called from onclick in MC buttons)
 function handleQuizChoice(key){
-  if(G.screen!=='game')return;
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='identify')return;
-  if(key===enemy.question.correctKey){
-    handleHit(enemy);
-  }else{
-    handleMiss(enemy);
-  }
+  queueQuizChoiceResolution(enemy,key,key===enemy.question.correctKey);
 }
 function handleHintChoice(key){
-  if(G.screen!=='game')return;
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='fillblank')return;
   const idx=['a','b','c'].indexOf(key);
   if(idx===-1)return;
   const chosen=enemy.question.choices[idx];
-  if(activeCartridge.validateBlank(chosen,enemy.question.answer)){
-    handleHit(enemy);
-  }else{
-    handleMiss(enemy);
-  }
+  queueQuizChoiceResolution(enemy,key,activeCartridge.validateBlank(chosen,enemy.question.answer));
 }
 function handleSubconceptChoice(key){
-  if(G.screen!=='game')return;
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='subconcept')return;
   const idx=['a','b','c'].indexOf(key);
   if(idx===-1)return;
   // Block eliminated choice
   if(G.showHint&&enemy.question.eliminatedIdx===idx)return;
-  if(key===enemy.question.correctKey){
-    handleHit(enemy);
-  }else{
-    handleMiss(enemy);
-  }
+  queueQuizChoiceResolution(enemy,key,key===enemy.question.correctKey);
 }
 
 function updateQueue(){
@@ -2834,7 +2891,8 @@ function showGameUI(){
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('hud').style.display='flex';
   document.getElementById('tier-bar').style.display='block';
-  document.getElementById('input-panel').style.display='block';
+  clearQuizAnswerFeedback();
+  document.getElementById('input-panel').style.display='flex';
   document.getElementById('queue-bar').style.display='block';
   updateTierBar();
   updateHUD();
@@ -2999,12 +3057,15 @@ function moveEnemies(){
   // Streak slowmo: time slows during hot streaks (reward for flow state)
   const streakSlow=G.streak>=10?0.5:G.streak>=5?0.7:G.streak>=3?0.85:1.0;
   const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow;
-  G.enemies.forEach(e=>{e.t+=speed*(e.speedMult||1)});
+  G.enemies.forEach(e=>{
+    if(e.pendingCorrectHit)return;
+    e.t+=speed*(e.speedMult||1);
+  });
 }
 
 // ── Breach ──
 function checkBreach(){
-  const reached=G.enemies.filter(e=>e.t>=1);
+  const reached=G.enemies.filter(e=>e.t>=1&&!e.pendingCorrectHit);
   if(reached.length===0)return;
   SFX.breach();
   reached.forEach(e=>{
@@ -3198,6 +3259,7 @@ window.addEventListener('keydown',e=>{
 
   if(MODKEYS.has(e.key))return;
   if(G.screen!=='game')return;
+  if(QUIZ_ANSWER_FEEDBACK.locked)return;
 
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
 
@@ -3324,7 +3386,7 @@ document.addEventListener('touchend',function(e){const now=Date.now();if(now-las
 let touchStartX=0,touchStartTime=0;
 canvas.addEventListener('touchstart',function(e){if(G.screen!=='game'||G.paused)return;touchStartX=e.touches[0].clientX;touchStartTime=Date.now()},{passive:true});
 canvas.addEventListener('touchend',function(e){
-  if(G.screen!=='game'||G.paused||G.enemies.length<2)return;
+  if(G.screen!=='game'||G.paused||QUIZ_ANSWER_FEEDBACK.locked||G.enemies.length<2)return;
   const dx=e.changedTouches[0].clientX-touchStartX;
   const dt=Date.now()-touchStartTime;
   if(Math.abs(dx)>50&&dt<400){

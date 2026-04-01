@@ -272,6 +272,75 @@ Verification completed:
   - full score still lands from particle arrival
   - no console/page errors were raised during the mobile pass
 
+## Latest Update: Focused Labels + Sticky Input Panel
+
+Implemented the next UI/UX pass for gameplay readability, with the work driven by a shared spec plus an external Claude review.
+
+What shipped:
+
+- Enemy labels now have two clear states:
+  - unselected enemies render as ghost labels at about `0.55` opacity with no visible border
+  - selected enemies render at full opacity with 4 light lock-on bracket corners around the label shell
+- The selected arrow was kept as a secondary cue, but it now inherits the selected label color instead of the old amber treatment.
+- Depth coloring is preserved for hydra children:
+  - depth 0 selected labels use light grey
+  - depth 1 stays blue
+  - depth 2 stays purple
+- The in-world Three.js selected reticle remains in place around the cube as the scene-level cue.
+- `#input-panel` is no longer one scrolling block.
+- The panel now renders through persistent `#ip-header` and `#ip-body` regions:
+  - header stays fixed inside the panel
+  - body handles vertical scrolling
+- Quiz prompts now place the badge, formula, and question text in the header while answers, hints, explainers, and help live in the scrollable body.
+- Typed and prefix-key modes were updated to use the same header/body split.
+- Formula rendering now uses a `latex-shell` / `latex-scroll` wrapper:
+  - wide formulas can scroll horizontally instead of shrinking too far
+  - the right-edge fade indicator now stays pinned on the outer shell instead of scrolling away with the content
+- Mobile answer buttons were increased to a minimum height of `56px`.
+- Fill-blank answer buttons were increased to the same mobile height.
+- Explanation chips were made slightly taller on mobile as secondary controls.
+- A darker bottom-stage gradient was added behind the input panel using `#input-panel::before`.
+- Quiz answers now flash green/red briefly before resolution:
+  - click/touch and keyboard multiple-choice submissions both use the same delay path
+  - typed and prefix-key answers remain immediate
+- Correct answers are protected during the flash window:
+  - the selected enemy is marked with `pendingCorrectHit`
+  - movement and breach checks ignore that enemy until the delayed hit resolves
+  - this fixes the regression where a correct answer near the end of the path could still breach during the `220ms` flash delay
+- During the flash window, target switching and extra quiz inputs are locked so the visual confirmation cannot be interrupted.
+
+Spec artifact:
+
+- Added `ui-focus-sticky-input-spec.md` with the agreed UX contract, manual blast-radius analysis, dependency-aware implementation plan, and tmux-bridge upgrade notes.
+
+GitNexus note:
+
+- `npx gitnexus status` still reports the repo as indexed and current.
+- Inline `index.html` JavaScript functions still do not resolve as named symbols for `impact/context`, so blast-radius work for this pass remained manual.
+
+Verification completed:
+
+- Inline script parse check passed after the UI update.
+- Headless Chromium harness checks at `375x812` confirmed:
+  - selected labels render with 4 brackets
+  - ghost labels render at `0.55` opacity
+  - the input header remains pinned while the body scrolls
+  - answer buttons are `56px` tall
+  - formula scroll wrappers are present
+  - the gradient backdrop is active
+  - tap feedback flash lands before answer resolution
+- Headless Chromium harness checks at `1440x900` confirmed:
+  - selected/ghost label states render correctly
+  - the sticky header behavior still holds
+  - the gradient backdrop is active
+  - tap feedback flash still triggers correctly
+- External Claude review findings from tmux were incorporated:
+  - fixed the pending-correct-answer breach bug
+  - moved the formula fade from the scrolling element to a stable outer shell
+  - a narrower follow-up review was requested after those fixes, but BrowserMCP live verification was unavailable in that session
+  - one remaining desktop-only harness failure for `56px` button height is expected because that target applies only to mobile
+  - overlap risk from the larger label shell padding and fill-rate cost from the tall backdrop gradient were noted as monitor items, not blockers
+
 ## Important Code Areas
 
 - `index.html` CSS top section:
@@ -280,6 +349,9 @@ Verification completed:
   - music editor styles
   - explainer tray styles
   - score-pop HUD styles
+  - label ghosting / bracket styles
+  - sticky input panel layout
+  - `latex-shell` / `latex-scroll`
 - `index.html` `SFX` module:
   - built-in music defaults
   - pad rhythm scheduling
@@ -299,6 +371,11 @@ Verification completed:
 - `index.html` selected reticle helpers:
   - `selectedReticle`
   - `updateSelectedReticle()`
+- `index.html` input layout / feedback helpers:
+  - `setInputPanelContent()`
+  - `syncInputPanelScroll()`
+  - `queueQuizChoiceResolution()`
+  - `clearQuizAnswerFeedback()`
 - `index.html` explanation helpers:
   - `EXPLANATION_GLOSSARY`
   - `buildExplanationBank()`
