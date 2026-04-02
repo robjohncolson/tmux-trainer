@@ -3129,13 +3129,15 @@ function focusBlankInput(){
   const inp=document.getElementById('blank-input');
   if(inp)inp.focus();
 }
-const QUIZ_ANSWER_FEEDBACK={locked:false,timer:null};
+const QUIZ_ANSWER_FEEDBACK={locked:false,timer:null,heldCallback:null};
 function clearQuizAnswerFeedback(){
   if(QUIZ_ANSWER_FEEDBACK.timer){
     clearTimeout(QUIZ_ANSWER_FEEDBACK.timer);
     QUIZ_ANSWER_FEEDBACK.timer=null;
   }
   QUIZ_ANSWER_FEEDBACK.locked=false;
+  QUIZ_ANSWER_FEEDBACK.heldCallback=null;
+  QUIZ_ANSWER_FEEDBACK.held=false;
   document.querySelectorAll('.mc-grid.answer-pending,.hint-mc-grid.answer-pending').forEach(el=>el.classList.remove('answer-pending'));
   document.querySelectorAll('.mc-btn.correct,.mc-btn.wrong,.hint-mc-btn.correct,.hint-mc-btn.wrong').forEach(btn=>btn.classList.remove('correct','wrong'));
   const fb=document.getElementById('wrong-fb');if(fb)fb.remove();
@@ -3188,9 +3190,10 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
     const body=document.getElementById('ip-body');
     if(body){body.appendChild(fb);body.scrollTop=body.scrollHeight}
   }
-  QUIZ_ANSWER_FEEDBACK.timer=setTimeout(()=>{
+  const resolveFn=()=>{
     QUIZ_ANSWER_FEEDBACK.timer=null;
     QUIZ_ANSWER_FEEDBACK.locked=false;
+    QUIZ_ANSWER_FEEDBACK.heldCallback=null;
     const liveEnemy=G.enemies.find(en=>en.id===enemy.id);
     if(!liveEnemy||G.screen!=='game'){
       if(liveEnemy)delete liveEnemy.pendingCorrectHit;
@@ -3206,7 +3209,9 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
       const stillAlive=G.enemies.find(en=>en.id===enemy.id);
       if(stillAlive&&stillAlive.question)reshuffleQuestionOptions(stillAlive);
     }
-  },delay);
+  };
+  QUIZ_ANSWER_FEEDBACK.heldCallback=resolveFn; // store so spacebar hold can re-invoke
+  QUIZ_ANSWER_FEEDBACK.timer=setTimeout(resolveFn,delay);
 }
 
 // Quiz mode handlers (called from onclick in MC buttons)
@@ -3367,6 +3372,22 @@ function showTitleScreen(context){
   if(savedRun)html+='<button class="btn" id="btn-continue">[ CONTINUE ]</button>';
   html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'title\')">[ MUSIC EDITOR ]</button>';
+  html+='</div>';
+  // Keyboard shortcuts + rules reference
+  html+='<div style="margin-top:14px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:10px 14px;max-width:420px;text-align:left">';
+  html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:6px;text-align:center">HOW TO PLAY</div>';
+  html+='<div style="font-size:10px;color:#996622;line-height:1.7">';
+  html+='<b style="color:#ff8c00">A B C D</b> \u2014 answer multiple choice<br>';
+  html+='<b style="color:#ff8c00">Tab</b> \u2014 cycle between enemies<br>';
+  html+='<b style="color:#ff8c00">P</b> \u2014 pause / resume<br>';
+  html+='<b style="color:#ff8c00">Esc</b> \u2014 save + exit to menu<br>';
+  html+='<b style="color:#ff8c00">Space</b> \u2014 hold to read feedback longer<br>';
+  html+='<b style="color:#ff8c00">Alt+H</b> \u2014 hint (half points)<br>';
+  html+='<b style="color:#ff8c00">Alt+E</b> \u2014 explain current formula<br>';
+  html+='</div>';
+  html+='<div style="font-size:9px;color:#5a3800;margin-top:6px;line-height:1.6">';
+  html+='Wrong answers push enemies forward and fracture them into harder sub-questions. Survive 12 waves to secure the server. SRS tracks your mastery across sessions.';
+  html+='</div>';
   html+='</div>';
   // Reset progress link
   const prog=getCartridgeProgress(activeCartridge.id);
@@ -3883,6 +3904,15 @@ window.addEventListener('keydown',e=>{
     const tag=document.activeElement&&document.activeElement.tagName;
     if(tag!=='INPUT'&&tag!=='TEXTAREA'&&!(document.activeElement&&document.activeElement.isContentEditable)){
       e.preventDefault();
+      // Hold wrong-answer feedback on screen while space is pressed
+      if(QUIZ_ANSWER_FEEDBACK.locked&&QUIZ_ANSWER_FEEDBACK.timer&&QUIZ_ANSWER_FEEDBACK.heldCallback&&!QUIZ_ANSWER_FEEDBACK.held){
+        QUIZ_ANSWER_FEEDBACK.held=true;
+        clearTimeout(QUIZ_ANSWER_FEEDBACK.timer);
+        QUIZ_ANSWER_FEEDBACK.timer=null;
+        const fb=document.getElementById('wrong-fb');
+        if(fb)fb.insertAdjacentHTML('beforeend','<div class="wf-hold" id="wf-hold" style="color:#aaa;font-size:9px;margin-top:4px;letter-spacing:1px">HOLDING \u2014 release space to continue</div>');
+        return;
+      }
       if(!MUSIC_EDITOR.open&&!G.paused&&G.screen==='game'&&G.waveComplete){
         const btn=document.querySelector('#input-panel .btn');
         if(btn){btn.click();return}
@@ -4018,6 +4048,14 @@ document.getElementById('mute-btn').onclick=()=>{
 // ═══════════════════════════════════════════════
 document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault()},{passive:false});
 let lastTouchEnd=0;
+// Release held feedback on space keyup
+window.addEventListener('keyup',e=>{
+  if(e.key===' '&&QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.heldCallback){
+    const holdEl=document.getElementById('wf-hold');if(holdEl)holdEl.remove();
+    QUIZ_ANSWER_FEEDBACK.held=false;
+    QUIZ_ANSWER_FEEDBACK.heldCallback(); // re-fire resolution
+  }
+});
 document.addEventListener('touchend',function(e){const now=Date.now();if(now-lastTouchEnd<300)e.preventDefault();lastTouchEnd=now},{passive:false});
 // Swipe to cycle enemies
 let touchStartX=0,touchStartY=0,touchStartTime=0;
