@@ -89,6 +89,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .mc-btn .mc-key{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:#ff8c00;color:#0d0500;font-weight:900;font-size:10px;flex-shrink:0}
 .mc-btn.correct{border-color:#44ff88;background:#44ff8822;color:#44ff88}
 .mc-btn.wrong{border-color:#ff4422;background:#ff442222;color:#ff4422}
+.wrong-feedback{background:#ff442218;border:1px solid #ff442244;border-radius:8px;padding:8px 12px;margin-top:8px;animation:fade-in .2s ease-out}
+.wrong-feedback .wf-wrong{color:#ff6644;font-size:11px;line-height:1.4}
+.wrong-feedback .wf-correct{color:#44ff88;font-size:12px;font-weight:700;line-height:1.4;margin-top:4px}
+.wrong-feedback .wf-explain{color:#d8943d;font-size:11px;line-height:1.4;margin-top:4px;font-style:italic}
+@keyframes fade-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 .mc-btn .mc-text{line-height:1.1;font-size:11px}
 .blank-input{font-family:inherit;font-size:15px;font-weight:700;color:#ff8c00;background:#0d0500;border:2px solid #ff8c00;border-radius:6px;padding:5px 12px;text-align:center;min-width:100px;max-width:200px;outline:none}
 .blank-input:focus{box-shadow:0 0 12px #ff8c0044}
@@ -3133,6 +3138,7 @@ function clearQuizAnswerFeedback(){
   QUIZ_ANSWER_FEEDBACK.locked=false;
   document.querySelectorAll('.mc-grid.answer-pending,.hint-mc-grid.answer-pending').forEach(el=>el.classList.remove('answer-pending'));
   document.querySelectorAll('.mc-btn.correct,.mc-btn.wrong,.hint-mc-btn.correct,.hint-mc-btn.wrong').forEach(btn=>btn.classList.remove('correct','wrong'));
+  const fb=document.getElementById('wrong-fb');if(fb)fb.remove();
 }
 function reshuffleQuestionOptions(enemy){
   const q=enemy.question;
@@ -3170,6 +3176,18 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
   const delay=isCorrect?220:MISS_DELAYS[Math.min((enemy.missCount||1)-1,2)];
   if(group)group.classList.add('answer-pending');
   if(btn)btn.classList.add(isCorrect?'correct':'wrong');
+  // Show correction feedback on wrong answer
+  if(!isCorrect&&enemy.question){
+    const q=enemy.question;
+    const chosenIdx=['a','b','c','d'].indexOf(key);
+    const chosenText=(q.options||q.choices||[])[chosenIdx]||key.toUpperCase();
+    const correctText=(q.options||q.choices||[])[q.correctIdx]||'';
+    const explain=enemy.cmd&&enemy.cmd.explain?enemy.cmd.explain:'';
+    const fb=document.createElement('div');fb.className='wrong-feedback';fb.id='wrong-fb';
+    fb.innerHTML='<div class="wf-wrong">\u2717 '+chosenText+'</div><div class="wf-correct">\u2713 '+correctText+'</div>'+(explain?'<div class="wf-explain">'+explain+'</div>':'');
+    const body=document.getElementById('ip-body');
+    if(body){body.appendChild(fb);body.scrollTop=body.scrollHeight}
+  }
   QUIZ_ANSWER_FEEDBACK.timer=setTimeout(()=>{
     QUIZ_ANSWER_FEEDBACK.timer=null;
     QUIZ_ANSWER_FEEDBACK.locked=false;
