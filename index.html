@@ -851,13 +851,13 @@ const apStatsCartridge={
       explain:'Expected successes = trials times success probability',
       latex:'\\mu_X = np',
       blanks:[{latex:'\\mu_X = n \\cdot \\boxed{\\,?\\,}',answer:'p',choices:['p','q','\\mu']}],
-      subconcepts:[{q:'Why is \u03bc=np intuitive?',correct:'Expected successes = trials \u00d7 success rate',wrong:['Because variance=np','Because median=np']},{q:'If n=100 and p=0.3, what is \u03bc?',correct:'30',wrong:['70','3']},{q:'What happens to \u03bc as p increases?',correct:'\u03bc increases proportionally',wrong:['\u03bc stays the same','\u03bc decreases']}]},
+      subconcepts:[{q:'Why is \u03bc=np intuitive?',correct:'Expected successes = trials \u00d7 success rate',wrong:['Because variance=np','Because median=np']},{q:'If n=100 and p=0.3, what is \u03bc?',correct:'30, because μ = np = 100 × 0.3',wrong:['70','3']},{q:'What happens to \u03bc as p increases?',correct:'\u03bc increases proportionally',wrong:['\u03bc stays the same','\u03bc decreases']}]},
     {id:'binom-sd',action:'Binomial SD (\u03c3)',tier:'core',dom:'distributions',
       hint:'Square root of n\u00b7p\u00b7(1-p)',
       explain:'Variability is maximized when p = 0.5 (maximum uncertainty)',
       latex:'\\sigma_X = \\sqrt{np(1-p)}',
       blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'1-p',choices:['(1-p)','p','n']}],
-      subconcepts:[{q:'Why does p(1-p) appear?',correct:'Variability is largest when p=0.5',wrong:['It calculates the mean','It measures skewness']},{q:'What does n contribute to \u03c3?',correct:'More trials increase total variability',wrong:['More trials decrease variability','n has no effect']},{q:'When is \u03c3 maximized for fixed n?',correct:'When p = 0.5',wrong:['When p = 0','When p = 1']}]},
+      subconcepts:[{q:'Why does p(1-p) appear?',correct:'Variability is largest when p=0.5',wrong:['It calculates the mean','It measures skewness']},{q:'What does n contribute to \u03c3?',correct:'More trials increase total variability',wrong:['More trials decrease variability','n has no effect']},{q:'What does the square root do?',correct:'Converts variance back to original units',wrong:['Squares the units','Makes the distribution symmetric']}]},
 
     // ══ II. GEOMETRIC ══
     {id:'geom-pmf',action:'Geometric P(X=x)',tier:'regular',dom:'distributions',
@@ -871,7 +871,7 @@ const apStatsCartridge={
       explain:'Lower success probability means more trials needed on average',
       latex:'\\mu_X = \\frac{1}{p}',
       blanks:[{latex:'\\mu_X = \\frac{1}{\\boxed{\\,?\\,}}',answer:'p',choices:['p','1-p','n']}],
-      subconcepts:[{q:'Why is \u03bc = 1/p?',correct:'Lower p means more trials needed on average',wrong:['Because p is always less than 1','To match binomial mean']},{q:'If p=0.25, expected trials?',correct:'4',wrong:['0.25','25']},{q:'What happens to \u03bc as p\u21921?',correct:'\u03bc approaches 1 (success almost certain)',wrong:['\u03bc approaches infinity','\u03bc approaches 0']}]},
+      subconcepts:[{q:'Why is \u03bc = 1/p?',correct:'Lower p means more trials needed on average',wrong:['Because p is always less than 1','To match binomial mean']},{q:'If p=0.25, expected trials?',correct:'4 trials, because μ = 1/p = 1/0.25',wrong:['0.25','25']},{q:'What happens to \u03bc as p\u21921?',correct:'\u03bc approaches 1 (success almost certain)',wrong:['\u03bc approaches infinity','\u03bc approaches 0']}]},
     {id:'geom-sd',action:'Geometric SD (\u03c3)',tier:'regular',dom:'distributions',
       hint:'\u221a(1-p) divided by p',
       explain:'Spread depends on how rare successes are',
@@ -1068,7 +1068,7 @@ const apStatsCartridge={
       subconcepts:[
         {q:'What shape must the distribution be?',correct:'Approximately normal (bell-shaped)',wrong:['Any shape','Skewed right']},
         {q:'What is the mean in the context of this rule?',correct:'The center of the distribution',wrong:['Always zero','The median']},
-        {q:'If mean=100 and SD=15, about 95% fall between?',correct:'70 and 130',wrong:['85 and 115','55 and 145']}
+        {q:'If mean=100 and SD=15, about 95% fall between?',correct:'70 and 130, which is mean ± 2 SD',wrong:['85 and 115','55 and 145']}
       ]},
     {id:'residual',action:'Residual',tier:'support',dom:'descriptive',
       hint:'Observed minus predicted',
@@ -1077,7 +1077,7 @@ const apStatsCartridge={
       blanks:[{latex:'\\text{residual} = y - \\boxed{\\,?\\,}',answer:'yhat',choices:['\\hat{y}','\\bar{y}','y']}],
       subconcepts:[
         {q:'What does a positive residual mean?',correct:'The model underpredicted (actual > predicted)',wrong:['The model overpredicted','The point is an outlier']},
-        {q:'What does a negative residual mean?',correct:'The model overpredicted (actual < predicted)',wrong:['The model underpredicted','There is an error in the data']},
+        {q:'What should the sum of all residuals equal for LSRL?',correct:'Zero (residuals balance out by least squares)',wrong:['The mean of y','One']},
         {q:'What should a residual plot look like for a good model?',correct:'Random scatter with no pattern',wrong:['A straight line','A curved pattern']}
       ]},
     {id:'r-squared',action:'Coefficient of Determination',tier:'support',dom:'descriptive',
@@ -1088,7 +1088,7 @@ const apStatsCartridge={
       subconcepts:[
         {q:'If r squared = 0.81, what does this mean?',correct:'81% of variation in y is explained by x',wrong:['The correlation is 0.81','81% of predictions are correct']},
         {q:'What is the range of r squared?',correct:'0 to 1 (0% to 100%)',wrong:['-1 to 1','0 to infinity']},
-        {q:'If r = -0.9, what is r squared?',correct:'0.81',wrong:['-0.81','0.9']}
+        {q:'If r = -0.9, what is r squared?',correct:'0.81, because (−0.9)² = 0.81',wrong:['-0.81','0.9']}
       ]},
     {id:'y-intercept',action:'Y-Intercept of LSRL',tier:'support',dom:'descriptive',
       hint:'Derived from the point of means',
@@ -1107,7 +1107,7 @@ const apStatsCartridge={
       blanks:[{latex:'P(E^C) = \\boxed{\\,?\\,} - P(E)',answer:'1',choices:['1','0','P(E)']}],
       subconcepts:[
         {q:'What does E-complement mean?',correct:'The event E does NOT occur',wrong:['E occurs twice','The opposite event']},
-        {q:'If P(rain) = 0.3, what is P(no rain)?',correct:'0.7',wrong:['0.3','1.3']},
+        {q:'If P(rain) = 0.3, what is P(no rain)?',correct:'0.7, because P(Aᶜ) = 1 − P(A)',wrong:['0.3','1.3']},
         {q:'When is the complement rule most useful?',correct:'When P(at least one) is hard to compute directly',wrong:['Only for independent events','Only for mutually exclusive events']}
       ]},
     {id:'mult-rule',action:'General Multiplication Rule',tier:'support',dom:'probability',
@@ -1187,7 +1187,7 @@ const apStatsCartridge={
       blanks:[{latex:'df = k - \\boxed{\\,?\\,}',answer:'1',choices:['1','2','k']}],
       subconcepts:[
         {q:'Why subtract 1?',correct:'Once k-1 proportions are set, the last is determined (must sum to 1)',wrong:['Because we estimated the mean','Convention']},
-        {q:'If there are 5 categories, what is df?',correct:'4',wrong:['5','3']},
+        {q:'If there are 5 categories, what is df?',correct:'4, because df = k − 1 = 5 − 1',wrong:['5','3']},
         {q:'How is df used?',correct:'To find the p-value from the chi-square distribution',wrong:['To calculate the test statistic','To determine sample size']}
       ]},
     {id:'df-twoway',action:'Degrees of Freedom (Two-Way Table)',tier:'support',dom:'chi-square',
@@ -1229,6 +1229,101 @@ const apStatsCartridge={
         {q:'To halve the margin of error, you must...',correct:'Quadruple the sample size (multiply n by 4)',wrong:['Double the sample size','Halve the confidence level']},
         {q:'Why square root (not just n)?',correct:'SE has sqrt(n) in the denominator, so ME inherits this',wrong:['Because of the normal distribution','Because we square the SD']},
         {q:'Doubling n reduces ME by what factor?',correct:'About 1.41 (square root of 2)',wrong:['Exactly 2','Exactly 0.5']}
+      ]},
+    // ── New curriculum-aligned commands (7) ──
+    {id:'paired-t',action:'Paired t Statistic',tier:'power',dom:'inf-means',
+      hint:'Mean difference over SE of differences',
+      explain:'Used when two measurements come from the same subjects (H0: μd = 0)',
+      latex:'t = \\frac{\\bar{d} - \\mu_{d_0}}{s_d / \\sqrt{n}}',
+      blanks:[
+        {latex:'t = \\frac{\\bar{d} - \\mu_{d_0}}{\\boxed{\\,?\\,} / \\sqrt{n}}',answer:'s_d',choices:['s_d','s','\\sigma']},
+        {latex:'t = \\frac{\\boxed{\\,?\\,} - \\mu_{d_0}}{s_d / \\sqrt{n}}',answer:'\\bar{d}',choices:['\\bar{d}','\\bar{x}','\\mu_d']},
+        {latex:'t = \\frac{\\bar{d} - \\mu_{d_0}}{s_d / \\boxed{\\,?\\,}}',answer:'\\sqrt{n}',choices:['\\sqrt{n}','n','n-1']}
+      ],
+      subconcepts:[
+        {q:'When do you use a paired t-test instead of two-sample?',correct:'When observations are naturally linked (same subjects measured twice)',wrong:['When sample sizes are equal','When populations have equal variance']},
+        {q:'What does d-bar represent?',correct:'The mean of the paired differences, in the order defined by the problem',wrong:['The difference of the two sample means','The population mean difference']},
+        {q:'What are the degrees of freedom for a paired t-test?',correct:'n minus 1, where n is the number of pairs',wrong:['n1 plus n2 minus 2','The smaller of n1-1 and n2-1']}
+      ]},
+    {id:'slope-ci',action:'CI for Regression Slope',tier:'power',dom:'regression',
+      hint:'b plus or minus t-star times SE of b',
+      explain:'Estimates the true population slope with a confidence interval',
+      latex:'b \\pm t^* \\cdot SE_b',
+      blanks:[
+        {latex:'b \\pm \\boxed{\\,?\\,} \\cdot SE_b',answer:'t^*',choices:['t^*','z^*','\\chi^2']},
+        {latex:'\\boxed{\\,?\\,} \\pm t^* \\cdot SE_b',answer:'b',choices:['b','\\beta','\\bar{x}']},
+        {latex:'b \\pm t^* \\cdot \\boxed{\\,?\\,}',answer:'SE_b',choices:['SE_b','s_b','\\sigma_b']}
+      ],
+      subconcepts:[
+        {q:'Why use t* instead of z* for slope inference?',correct:'Population standard deviation is unknown and estimated from data',wrong:['Because the slope is always t-distributed','Because sample sizes are always small']},
+        {q:'If 0 is in the confidence interval for slope, what does that suggest?',correct:'The linear relationship may not be statistically significant',wrong:['The model is perfect','The slope must be exactly zero']},
+        {q:'What conditions must be checked for slope CI?',correct:'Linearity, independence, normal residuals, equal variance (LINE)',wrong:['Only normality of x values','Only that n is large enough']}
+      ]},
+    {id:'df-t',action:'Degrees of Freedom (t)',tier:'support',dom:'inference',
+      hint:'Depends on the type of t procedure',
+      explain:'df determines the shape of the t distribution used for inference',
+      latex:'df = \\begin{cases} n-1 & \\text{one-sample / paired} \\\\ \\min(n_1{-}1,\\,n_2{-}1) & \\text{two-sample (conservative)} \\\\ n-2 & \\text{regression slope} \\end{cases}',
+      blanks:[
+        {latex:'\\text{One-sample: } df = \\boxed{\\,?\\,}',answer:'n-1',choices:['n-1','n','n-2']},
+        {latex:'\\text{Two-sample (conservative): } df = \\boxed{\\,?\\,}',answer:'\\min(n_1{-}1,n_2{-}1)',choices:['\\min(n_1{-}1,n_2{-}1)','n_1+n_2-2','n_1+n_2']},
+        {latex:'\\text{Regression slope: } df = \\boxed{\\,?\\,}',answer:'n-2',choices:['n-2','n-1','n']}
+      ],
+      subconcepts:[
+        {q:'Why does df = n-1 for one-sample t?',correct:'One parameter (the mean) is estimated from the data',wrong:['Because we lose one data point randomly','Because the first observation is fixed']},
+        {q:'Why is the conservative two-sample df the minimum?',correct:'Using the smaller df gives wider intervals, protecting against error',wrong:['Because the larger sample dominates','Because degrees of freedom must be equal']},
+        {q:'What happens to the t distribution as df increases?',correct:'It approaches the standard normal (z) distribution',wrong:['It becomes more spread out','It becomes skewed']}
+      ]},
+    {id:'large-counts',action:'Large Counts Condition',tier:'support',dom:'inf-proportions',
+      hint:'np and n(1-p) both at least 10',
+      explain:'Ensures the sampling distribution of p-hat is approximately Normal',
+      latex:'np \\geq 10 \\quad\\text{and}\\quad n(1-p) \\geq 10',
+      blanks:[
+        {latex:'\\boxed{\\,?\\,} \\geq 10 \\;\\text{ and }\\; n(1-p) \\geq 10',answer:'np',choices:['np','n','p']},
+        {latex:'np \\geq \\boxed{\\,?\\,} \\;\\text{ and }\\; n(1-p) \\geq ?',answer:'10',choices:['10','30','5']}
+      ],
+      subconcepts:[
+        {q:'Why do both np and n(1-p) need to be checked?',correct:'Both the number of successes and failures must be large enough for Normal approximation',wrong:['Only one condition matters','To check independence']},
+        {q:'What happens if large counts condition fails?',correct:'The Normal approximation is unreliable and inference procedures are invalid',wrong:['The test automatically fails','The p-value doubles']},
+        {q:'For a hypothesis test, do you use p0 or p-hat to check large counts?',correct:'Use p0 (the hypothesized value) for hypothesis tests',wrong:['Always use p-hat','Use whichever is larger']}
+      ]},
+    {id:'type-i-error',action:'Type I Error (\u03b1)',tier:'support',dom:'inference',
+      hint:'Rejecting a true null hypothesis',
+      explain:'The probability of a false positive, controlled by the significance level',
+      latex:'\\alpha = P(\\text{reject } H_0 \\mid H_0 \\text{ is true})',
+      blanks:[
+        {latex:'\\alpha = P(\\text{reject } H_0 \\mid \\boxed{\\,?\\,})',answer:'H_0 \\text{ is true}',choices:['H_0 \\text{ is true}','H_a \\text{ is true}','H_0 \\text{ is false}']},
+        {latex:'\\boxed{\\,?\\,} = P(\\text{reject } H_0 \\mid H_0 \\text{ is true})',answer:'\\alpha',choices:['\\alpha','\\beta','1-\\beta']}
+      ],
+      subconcepts:[
+        {q:'What is a Type I error in everyday terms?',correct:'A false alarm \u2014 concluding an effect exists when it does not',wrong:['Missing a real effect','Getting the wrong sample']},
+        {q:'How is the Type I error rate controlled?',correct:'By choosing the significance level \u03b1 before collecting data',wrong:['By increasing sample size','By using a two-tailed test']},
+        {q:'If \u03b1 = 0.05, what does that mean?',correct:'There is a 5% chance of rejecting H0 when H0 is actually true',wrong:['There is a 5% chance H0 is true','95% of the data supports H0']}
+      ]},
+    {id:'type-ii-error',action:'Type II Error (\u03b2)',tier:'support',dom:'inference',
+      hint:'Failing to reject a false null hypothesis',
+      explain:'The probability of a false negative; power = 1 \u2212 \u03b2',
+      latex:'\\beta = P(\\text{fail to reject } H_0 \\mid H_a \\text{ is true})',
+      blanks:[
+        {latex:'\\beta = P(\\text{fail to reject } H_0 \\mid \\boxed{\\,?\\,})',answer:'H_a \\text{ is true}',choices:['H_a \\text{ is true}','H_0 \\text{ is true}','H_a \\text{ is false}']},
+        {latex:'\\text{Power} = 1 - \\boxed{\\,?\\,}',answer:'\\beta',choices:['\\beta','\\alpha','p']}
+      ],
+      subconcepts:[
+        {q:'What is a Type II error in everyday terms?',correct:'A missed detection \u2014 failing to notice a real effect',wrong:['A false alarm','Proving the null hypothesis']},
+        {q:'What is the relationship between Type II error and power?',correct:'Power = 1 \u2212 \u03b2, so lower \u03b2 means higher power',wrong:['Power = \u03b2','Power = \u03b1 + \u03b2']},
+        {q:'How can you reduce Type II error?',correct:'Increase sample size, increase \u03b1, or study a larger effect',wrong:['Decrease the significance level','Use a one-tailed test always']}
+      ]},
+    {id:'log-transform',action:'Logarithmic Re-expression',tier:'power',dom:'regression',
+      hint:'Take log of response variable to linearize curved relationships',
+      explain:'Used when a scatterplot shows exponential or power-law curvature',
+      latex:'\\log(\\hat{y}) = a + bx \\quad\\Rightarrow\\quad \\hat{y} = 10^{a + bx}',
+      blanks:[
+        {latex:'\\boxed{\\,?\\,} = 10^{a + bx}',answer:'\\hat{y}',choices:['\\hat{y}','\\log(\\hat{y})','y']},
+        {latex:'\\log(\\hat{y}) = \\boxed{\\,?\\,} + bx',answer:'a',choices:['a','\\bar{y}','10']}
+      ],
+      subconcepts:[
+        {q:'When should you consider a log transformation?',correct:'When the scatterplot shows a curved (exponential) pattern',wrong:['When the data is already linear','When the residuals are centered at zero']},
+        {q:'After fitting log(y) = a + bx, how do you predict y?',correct:'Back-transform: y-hat = 10 raised to (a + bx)',wrong:['Just use a + bx directly','Take the log of a + bx']},
+        {q:'What should the residual plot of log(y) vs x look like if transformation worked?',correct:'Random scatter with no pattern (linearized relationship)',wrong:['A curved pattern','A positive trend']}
       ]},
   ],
 

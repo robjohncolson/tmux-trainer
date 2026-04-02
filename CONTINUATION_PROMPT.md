@@ -600,6 +600,48 @@ Verification completed:
 - Codex spec review: 3 HIGH findings incorporated (pTransit lowered, adaptive params deferred, source-separated propagation)
 - CC agent deep review: 1 MEDIUM finding fixed (hint remainingChoices), 1 LOW fixed (subPKnown deep copy)
 
+## Latest Update: Curriculum Alignment — BKT Tree Completeness
+
+Cross-referenced the game's commands against 817 curriculum questions in `school/curriculum_render/data/curriculum.js` and fixed three categories of gaps.
+
+What shipped:
+
+- Fix 1 — Overlapping subconcept replacement (2 commands):
+  - `binom-sd` Q3: replaced duplicate "when is σ maximized" with "what does the square root do"
+  - `residual` Q2: replaced mirror-image "negative residual" with "sum of residuals equals zero"
+
+- Fix 2 — 7 new curriculum-aligned formulas (59 → 66 commands):
+  - `paired-t`: t = (d-bar − μ_{d0}) / (s_d / √n) — tier:power, dom:inf-means
+  - `slope-ci`: b ± t* · SE_b — tier:power, dom:regression
+  - `df-t`: degrees of freedom for one-sample, two-sample, regression — tier:support, dom:inference
+  - `large-counts`: np ≥ 10 and n(1-p) ≥ 10 — tier:support, dom:inf-proportions
+  - `type-i-error`: α = P(reject H0 | H0 true) — tier:support, dom:inference
+  - `type-ii-error`: β = P(fail to reject H0 | Ha true) — tier:support, dom:inference
+  - `log-transform`: log(ŷ) = a + bx → ŷ = 10^(a+bx) — tier:power, dom:regression
+  - All 7 have 3 subconcepts with 2 wrong answers each, 2-3 blanks, latex, hint, explain
+  - Auto-registered in BKT tree via initSRS iteration over COMMANDS
+
+- Fix 3 — Enriched bare-number answers (6 subconcepts):
+  - Added explanatory text to numeric correct answers for better depth-2 T/F generation
+  - binom-mean, geom-mean, empirical-rule, r-squared, complement, df-gof
+
+Codex review findings incorporated:
+- Blank answer fields match LaTeX choice text (not plain-text aliases)
+- log-transform uses consistent base-10 (no ln/e mixing)
+- paired-t uses general form with μ_{d0} parameter
+- paired-t Q2 uses direction-agnostic wording
+- binom-sd Q3 wrong answers strengthened per Codex review
+
+Spec artifact:
+- `curriculum-alignment-spec.md` with full gap analysis, Codex findings, and testing plan
+
+Verification completed:
+- Parse check passed
+- 66 commands, 198 subconcepts (66×3), 198 wrong arrays (all correct)
+- No duplicate command IDs
+- All Codex findings verified as incorporated
+- CC agent full verification: all 5 check categories pass
+
 ## Likely Next Tasks
 
 - Add a matching in-world reticle or subtle beam under the selected cube if the focus treatment should exist in both screen space and world space
