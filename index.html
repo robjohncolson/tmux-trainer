@@ -50,11 +50,6 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .enemy-label.selected .enemy-label-inner{background:#120800f1;border-color:currentColor;box-shadow:0 0 18px #00000066,0 0 10px currentColor}
 @keyframes bkt-pulse{0%,100%{opacity:1}50%{opacity:.7}}
 .bkt-uncertain .enemy-label-inner{animation:bkt-pulse 2s ease-in-out infinite}
-.target-bracket{position:absolute;width:12px;height:12px;border-color:currentColor;opacity:.96;pointer-events:none}
-.target-bracket.tl{left:0;top:0;border-left:2px solid;border-top:2px solid;border-top-left-radius:4px}
-.target-bracket.tr{right:0;top:0;border-right:2px solid;border-top:2px solid;border-top-right-radius:4px}
-.target-bracket.bl{left:0;bottom:0;border-left:2px solid;border-bottom:2px solid;border-bottom-left-radius:4px}
-.target-bracket.br{right:0;bottom:0;border-right:2px solid;border-bottom:2px solid;border-bottom-right-radius:4px}
 .enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
 .sel-arrow{text-align:center;color:inherit;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite;text-shadow:0 0 10px currentColor}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s}
@@ -2347,12 +2342,18 @@ const pendingScoreAwards=new Map();
 let nextScoreAwardId=1;
 let lastScoreHudPopAt=-Infinity;
 let scoreHudPopClearTimer=0;
-const reticleSquareGeo=new THREE.BufferGeometry().setFromPoints([
-  new THREE.Vector3(-.5,-.5,0),
-  new THREE.Vector3(.5,-.5,0),
-  new THREE.Vector3(.5,.5,0),
-  new THREE.Vector3(-.5,.5,0)
-]);
+// Ground spotlight texture (radial gradient)
+const spotlightTex=(()=>{
+  const c=document.createElement('canvas');c.width=128;c.height=128;
+  const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(64,64,0,64,64,64);
+  g.addColorStop(0,'rgba(255,200,100,0.7)');
+  g.addColorStop(0.4,'rgba(255,160,50,0.35)');
+  g.addColorStop(0.75,'rgba(255,120,20,0.1)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,128,128);
+  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+})();
 function isReducedParticleMode(){
   return window.innerWidth<768||window.devicePixelRatio>2;
 }
@@ -2539,44 +2540,36 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
     scene.add(m);
   }
 }
-function makeReticleLayer(color,opacity){
-  const material=new THREE.LineBasicMaterial({color:color,transparent:true,opacity:opacity,depthTest:false,depthWrite:false});
-  const line=new THREE.LineLoop(reticleSquareGeo,material);
-  line.renderOrder=12;
-  return{line,material};
-}
-const selectedReticle=(()=>{
-  const group=new THREE.Group();
-  group.visible=false;
-  const layers=[
-    makeReticleLayer(0xffe0a3,.6),
-    makeReticleLayer(0xffc46b,.34),
-    makeReticleLayer(0xff9d2f,.2)
-  ];
-  layers.forEach(layer=>group.add(layer.line));
-  scene.add(group);
-  return{group,layers};
+// Ground spotlight beneath selected cube
+const selectedSpotlight=(()=>{
+  const geo=new THREE.CircleGeometry(1,32);
+  const mat=new THREE.MeshBasicMaterial({map:spotlightTex,transparent:true,opacity:0.8,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.rotation.x=-Math.PI/2; // lay flat on ground
+  mesh.position.y=0.05; // just above ground plane
+  mesh.visible=false;
+  mesh.renderOrder=2;
+  scene.add(mesh);
+  return mesh;
 })();
-function updateSelectedReticle(time){
+function updateSelectedSpotlight(time){
   const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
   const selEnemyObj=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!selEnemy||!selEnemyObj||G.screen!=='game'||G.paused){
-    selectedReticle.group.visible=false;
+    selectedSpotlight.visible=false;
     return;
   }
   const depth=selEnemyObj.splitDepth||0;
-  const baseSize=depth>=2?.48:depth>=1?.64:.9;
-  selectedReticle.group.visible=true;
-  selectedReticle.group.position.copy(selEnemy.position);
-  const toCamX=camera.position.x-selEnemy.position.x;
-  const toCamZ=camera.position.z-selEnemy.position.z;
-  selectedReticle.group.rotation.set(0,Math.atan2(toCamX,toCamZ),0);
-  selectedReticle.layers.forEach((layer,idx)=>{
-    const cycle=(time*.00068+idx*.23)%1;
-    const swell=1+cycle*(idx===0?.22:.34);
-    layer.line.scale.setScalar(baseSize*swell);
-    layer.material.opacity=Math.max(.05,(1-cycle)*(.42-idx*.1));
-  });
+  const baseRadius=depth>=2?0.7:depth>=1?0.9:1.2;
+  const pulse=1+Math.sin(time*0.003)*0.12;
+  selectedSpotlight.visible=true;
+  selectedSpotlight.position.x=selEnemy.position.x;
+  selectedSpotlight.position.z=selEnemy.position.z;
+  selectedSpotlight.scale.setScalar(baseRadius*pulse);
+  // Depth-based color tint
+  const hue=depth>=2?0xcc88ff:depth>=1?0x88bbff:0xffc864;
+  selectedSpotlight.material.color.setHex(hue);
+  selectedSpotlight.material.opacity=0.6+Math.sin(time*0.004)*0.15;
 }
 
 // Beams
@@ -2668,9 +2661,8 @@ function updateLabels(){
     const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
     const dp=e.splitDepth||0;
     const textC=isSel?(dp>=2?'#c892ff':dp>=1?'#7eb9ff':'#d0d0d0'):(dp>=2?'#b67adf':dp>=1?'#78a7ea':'#c78234');
-    const brackets=isSel?'<span class="target-bracket tl"></span><span class="target-bracket tr"></span><span class="target-bracket bl"></span><span class="target-bracket br"></span>':'';
     div.style.color=textC;
-    div.innerHTML='<div class="enemy-label-shell">'+brackets+'<div class="enemy-label-inner"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    div.innerHTML='<div class="enemy-label-shell"><div class="enemy-label-inner"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
     div.onclick=()=>{
       if(QUIZ_ANSWER_FEEDBACK.locked)return;
       resetExplanationState();
@@ -3593,9 +3585,9 @@ window.addEventListener('keydown',e=>{
   // Block all input while paused
   if(G.paused)return;
 
-  // Spacebar universal advance on non-game screens + wave-clear
-  if(!MUSIC_EDITOR.open&&e.key===' '&&(G.screen!=='game'||G.waveComplete)){
-    const btn=document.querySelector('#overlay .btn')||document.querySelector('#input-panel .btn');
+  // Spacebar advances only during wave-clear (not end/title screens)
+  if(!MUSIC_EDITOR.open&&e.key===' '&&G.screen==='game'&&G.waveComplete){
+    const btn=document.querySelector('#input-panel .btn');
     if(btn){e.preventDefault();btn.click();return}
   }
 
@@ -3794,16 +3786,16 @@ function animate(time){
     const sd=selEnemyObj?.splitDepth||0;
     const port=isPortrait();
     const pY=port?1.4:1,pZ=port?1.3:1,pT=port?.6:1;
-    const zoomY=(sd>=2?7:sd>=1?9:11)*pY;
-    const zoomZ=(sd>=2?8:sd>=1?10:12)*pZ;
-    const trackX=(sd>=2?.6:sd>=1?.5:.4)*pT;
-    const trackZ=(sd>=2?.5:sd>=1?.4:.3)*pT;
+    const zoomY=(sd>=2?4.5:sd>=1?6:7.5)*pY;
+    const zoomZ=(sd>=2?5.5:sd>=1?7:8.5)*pZ;
+    const trackX=(sd>=2?.7:sd>=1?.6:.5)*pT;
+    const trackZ=(sd>=2?.6:sd>=1?.5:.4)*pT;
     const tx=selEnemy.position.x*trackX+Math.sin(time*.0002)*.1;
     const tz=selEnemy.position.z*trackZ+zoomZ;
     const ty=zoomY+Math.sin(time*.0003)*.1;
-    camera.position.x+=(tx-camera.position.x)*.04;
-    camera.position.y+=(ty-camera.position.y)*.04;
-    camera.position.z+=(tz-camera.position.z)*.04;
+    camera.position.x+=(tx-camera.position.x)*.055;
+    camera.position.y+=(ty-camera.position.y)*.055;
+    camera.position.z+=(tz-camera.position.z)*.055;
     const lx=selEnemy.position.x*(trackX+.1);
     const lz=selEnemy.position.z*(trackZ+.1)-1;
     camera.lookAt(lx,0,lz);
@@ -3836,7 +3828,7 @@ function animate(time){
       SFX.setProgress(Math.max(0,1-mainRemaining/G.waveCommands.length));
     }
   }
-  updateSelectedReticle(time);
+  updateSelectedSpotlight(time);
 
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
