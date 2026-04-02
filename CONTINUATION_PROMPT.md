@@ -496,6 +496,11 @@ Verification completed:
 - `index.html` volume control helpers:
   - `updatePadVol()`, `updateBassVol()`, `updateHihatVol()`
   - Volume scaling in `startBGM()`, `setKey()`, `setProgress()`, `seq()` hi-hat
+- `index.html` SRS hardening helpers:
+  - `sanitizeSrsCard(card, defaults)` — range validation for all 16 fields
+  - `saveSRS(immediate)` — debounced per-answer save with read-modify-write merge
+  - `rev` + `lastUpdated` fields on each SRS card
+  - HUD `#h-save-warn` element + `G.srsError` / `G.runStateError` flags
 - `index.html` anti-button-mash helpers:
   - `reshuffleQuestionOptions()`
   - `enemy.missCount` (per-enemy miss counter)
@@ -724,6 +729,56 @@ Verification completed:
 - JS parse check passed
 - CC agent deep review confirmed all Codex findings addressed
 - Volume scaling applied at all 4 gain sites with safe ceilings
+
+## Latest Update: SRS/BKT Persistence Hardening
+
+Hardened the comprehension tracking system across four dimensions: data integrity, conflict resolution, failure visibility, and save frequency.
+
+What shipped:
+
+- Fix 1 — Timestamp + revision-based SRS merge:
+  - Every card now carries `lastUpdated` (wall clock) and `rev` (monotonic counter)
+  - `srsHit()` and `srsMiss()` increment `rev` and set `lastUpdated = Date.now()` on every update
+  - `continueGame()` merge compares per-card `rev` first, then `lastUpdated`; persistent wins ties
+  - `saveSRS()` does read-modify-write: loads existing localStorage, merges per-card by rev/timestamp, writes merged result
+  - Prevents stale tab or stale checkpoint from overwriting fresher mastery data
+
+- Fix 2 — `sanitizeSrsCard()` range validation:
+  - Clamps all 16 fields to valid ranges on load (ease 1.3–5.0, mastery 0–5, pKnown 0.001–0.999, etc.)
+  - Floors integer fields (interval, streak, correct, wrong, mastery, lastSeen, totalAttempts, rev)
+  - Forces BKT v1 params (pTransit=0.03, pGuess=0.25, pSlip=0.10) — prevents tampering
+  - Repairs totalAttempts to at least `correct + wrong`
+  - Sanitizes subPKnown: clamps each value, drops non-finite entries
+  - Called in `loadSRS()` for every card and in `continueGame()` for snapshot cards
+
+- Fix 3 — Save failure visibility:
+  - `G.srsError` and `G.runStateError` flags track per-system save status
+  - `saveSRS()` sets `G.srsError = true` on catch, clears on success
+  - `saveRunState()` sets `G.runStateError = true` on catch, clears on success
+  - HUD shows "SAVE FAILED" warning in red when either flag is true
+  - Warning clears automatically on next successful save
+
+- Fix 4 — Per-answer SRS save (debounced):
+  - `saveSRS()` called after every `srsHit()`, `srsMiss()`, and breach penalty
+  - Non-checkpoint saves debounced at 300ms to coalesce rapid answers
+  - Checkpoint saves (`syncRunCheckpoint`) use `saveSRS(true)` for immediate write
+  - Reduces max crash data loss from "1 wave of answers" to "at most 1 answer"
+
+Codex review findings incorporated:
+- HIGH: saveSRS now does read-modify-write per-card merge (prevents multi-tab stale overwrites)
+- HIGH: Separate error flags for SRS and run-state (prevents partial failure masking)
+- MEDIUM: Added monotonic `rev` counter alongside `Date.now()` (handles clock skew)
+- MEDIUM: BKT params forced to v1 constants on load (prevents tampered learning rates)
+- MEDIUM: Per-answer saves debounced at 300ms (prevents burst performance issues)
+- MEDIUM: buildRunStateSnapshot already includes G.srs directly (no extra work needed)
+
+Spec artifact:
+- `srs-hardening-spec.md` with full design, Codex findings, and testing plan
+
+Verification completed:
+- JS parse check passed
+- CC agent deep review: all 14 check categories pass, zero HIGH/MEDIUM findings
+- Two informational items accepted: streak/lastSeen no upper cap (defensible), tie-break policy contextually correct
 
 ## Likely Next Tasks
 

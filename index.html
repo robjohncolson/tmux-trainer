@@ -249,6 +249,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
   <div class="hud-item"><div class="hud-label">LIVES</div><div class="hud-val" id="h-lives"></div></div>
   <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="h-streak">0</div></div>
   <div class="hud-item hud-mobile-hide"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
+  <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px;text-shadow:0 0 8px #ff0000">SAVE FAILED</div></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
 <div id="labels"></div>
@@ -2111,7 +2112,35 @@ function pickScore(srsCard,wave){
 // ═══════════════════════════════════════════════
 //  SRS — Enhanced with time + attempts
 // ═══════════════════════════════════════════════
-function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{}}});return s}
+function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},lastUpdated:0,rev:0}});return s}
+function sanitizeSrsCard(card,defaults){
+  const d=defaults||{ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},lastUpdated:0,rev:0};
+  const c={...d,...card};
+  c.ease=Number.isFinite(c.ease)?Math.max(1.3,Math.min(5,c.ease)):d.ease;
+  c.interval=Number.isFinite(c.interval)?Math.max(0,Math.min(20,Math.floor(c.interval))):d.interval;
+  c.streak=Number.isFinite(c.streak)?Math.max(0,Math.floor(c.streak)):d.streak;
+  c.correct=Number.isFinite(c.correct)?Math.max(0,Math.floor(c.correct)):d.correct;
+  c.wrong=Number.isFinite(c.wrong)?Math.max(0,Math.floor(c.wrong)):d.wrong;
+  c.lastSeen=Number.isFinite(c.lastSeen)?Math.max(0,Math.floor(c.lastSeen)):d.lastSeen;
+  c.mastery=Number.isFinite(c.mastery)?Math.max(0,Math.min(5,Math.floor(c.mastery))):d.mastery;
+  c.avgTimeMs=Number.isFinite(c.avgTimeMs)?Math.max(0,Math.min(60000,c.avgTimeMs)):d.avgTimeMs;
+  c.totalAttempts=Number.isFinite(c.totalAttempts)?Math.max(c.correct+c.wrong,Math.floor(c.totalAttempts)):d.totalAttempts;
+  c.pKnownDirect=Number.isFinite(c.pKnownDirect)?Math.max(.001,Math.min(.999,c.pKnownDirect)):d.pKnownDirect;
+  c.pKnown=Number.isFinite(c.pKnown)?Math.max(.001,Math.min(.999,c.pKnown)):d.pKnown;
+  // BKT v1: force fixed params
+  c.pTransit=0.03;c.pGuess=0.25;c.pSlip=0.1;
+  // Sanitize subPKnown
+  if(c.subPKnown&&typeof c.subPKnown==='object'){
+    const clean={};for(const k of Object.keys(c.subPKnown)){
+      const v=Number(c.subPKnown[k]);
+      if(Number.isFinite(v))clean[k]=Math.max(.001,Math.min(.999,v));
+    }
+    c.subPKnown=clean;
+  }else c.subPKnown={};
+  c.lastUpdated=Number.isFinite(c.lastUpdated)?Math.max(0,c.lastUpdated):0;
+  c.rev=Number.isFinite(c.rev)?Math.max(0,Math.floor(c.rev)):0;
+  return c;
+}
 function srsHit(card,wave,timeMs,usedHint,attempts,bktOutcome){
   const c={...card,subPKnown:{...(card.subPKnown||{})}};c.correct++;c.streak++;c.lastSeen=wave;
   c.avgTimeMs=c.totalAttempts>0?(c.avgTimeMs*c.totalAttempts+timeMs)/(c.totalAttempts+1):timeMs;
@@ -2135,12 +2164,14 @@ function srsHit(card,wave,timeMs,usedHint,attempts,bktOutcome){
   else if(c.streak>=2)c.mastery=2;
   else if(c.streak>=1)c.mastery=Math.max(c.mastery,1);
   if(bktOutcome)bktUpdate(c,bktOutcome);
+  c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;
   return c;
 }
 function srsMiss(card,wave,bktOutcome){
   const c={...card,subPKnown:{...(card.subPKnown||{})}};c.wrong++;c.streak=0;c.lastSeen=wave;c.interval=0;
   c.ease=Math.max(1.3,card.ease-.2);c.mastery=Math.max(0,card.mastery-1);
-  c.totalAttempts++;if(bktOutcome)bktUpdate(c,bktOutcome);return c;
+  c.totalAttempts++;if(bktOutcome)bktUpdate(c,bktOutcome);
+  c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;return c;
 }
 function pickCommands(pool,srs,count,wave){
   const due=[],overdue=[],fresh=[],notDue=[];
@@ -2164,9 +2195,42 @@ function pickCommands(pool,srs,count,wave){
 // ═══════════════════════════════════════════════
 //  PERSISTENCE — localStorage
 // ═══════════════════════════════════════════════
-function saveSRS(){
+let _srsSaveTimer=null;
+function saveSRS(immediate){
   if(!activeCartridge)return;
-  try{localStorage.setItem('td-srs-'+activeCartridge.id,JSON.stringify(G.srs))}catch(e){}
+  if(!immediate){
+    // Debounce per-answer saves (300ms); wave-clear/unload use immediate=true
+    if(_srsSaveTimer)return;
+    _srsSaveTimer=setTimeout(()=>{_srsSaveTimer=null;saveSRS(true)},300);
+    return;
+  }
+  try{
+    const key='td-srs-'+activeCartridge.id;
+    // Read-modify-write: merge per-card by rev to avoid stale-tab overwrites
+    const existing=localStorage.getItem(key);
+    let merged=G.srs;
+    if(existing){
+      try{
+        const persisted=JSON.parse(existing);
+        merged={};
+        for(const id of Object.keys(G.srs)){
+          const mem=G.srs[id];
+          const disk=persisted[id];
+          if(!disk){merged[id]=mem;continue}
+          // Compare rev first (monotonic), then lastUpdated as tiebreak
+          const memRev=mem.rev||0,diskRev=disk.rev||0;
+          if(memRev>diskRev){merged[id]=mem}
+          else if(diskRev>memRev){merged[id]=disk}
+          else{merged[id]=(mem.lastUpdated||0)>=(disk.lastUpdated||0)?mem:disk}
+        }
+        // Preserve any extra cards on disk (e.g. from another session adding commands)
+        for(const id of Object.keys(persisted)){if(!merged[id])merged[id]=persisted[id]}
+      }catch(e){merged=G.srs}
+    }
+    localStorage.setItem(key,JSON.stringify(merged));
+    G.srs=merged; // sync in-memory with merged result
+    G.srsError=false;
+  }catch(e){G.srsError=true}
 }
 function getRunStateKey(){
   return activeCartridge?'td-run-state-'+activeCartridge.id:'';
@@ -2214,8 +2278,9 @@ function saveRunState(){
   if(!key||!snapshot)return false;
   try{
     localStorage.setItem(key,JSON.stringify(snapshot));
+    G.runStateError=false;
     return true;
-  }catch(e){return false}
+  }catch(e){G.runStateError=true;return false}
 }
 function loadRunState(){
   const key=getRunStateKey();
@@ -2242,7 +2307,7 @@ function syncHighScore(){
   return{prevHigh,highScore,isNewHigh};
 }
 function syncRunCheckpoint(){
-  saveSRS();
+  saveSRS(true); // immediate — hard checkpoint
   const recordState=syncHighScore();
   if(G.screen==='game')saveRunState();
   return recordState;
@@ -2254,12 +2319,15 @@ function loadSRS(cartridge){
   try{
     const parsed=JSON.parse(saved);
     for(const id of Object.keys(fresh)){
-      if(parsed[id])fresh[id]={...fresh[id],...parsed[id]};
-      // Bootstrap BKT from mastery for legacy saves
-      if(parsed[id]&&parsed[id].pKnownDirect==null){
-        const boot=bktBootstrapFromMastery(fresh[id].mastery||0);
-        fresh[id].pKnownDirect=boot;fresh[id].pKnown=boot;
+      if(parsed[id]){
+        fresh[id]={...fresh[id],...parsed[id]};
+        // Bootstrap BKT from mastery for legacy saves
+        if(parsed[id].pKnownDirect==null){
+          const boot=bktBootstrapFromMastery(fresh[id].mastery||0);
+          fresh[id].pKnownDirect=boot;fresh[id].pKnown=boot;
+        }
       }
+      fresh[id]=sanitizeSrsCard(fresh[id]);
     }
     return fresh;
   }catch(e){return fresh}
@@ -2294,6 +2362,7 @@ const G={
   unlockedTiers:['core'],nextEnemyId:0,
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
+  srsError:false,runStateError:false,
 };
 const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0002,SPAWN_DELAY_BASE=8000;
 
@@ -2758,6 +2827,8 @@ function updateHUD(){
     mEl.textContent=prof+'\u2605 '+seen+'/'+total;
     mEl.style.color=prof>=total*0.8?'#44ff88':prof>=total*0.4?AMB.css.white:AMB.css.hot;
   }
+  const saveWarn=document.getElementById('h-save-warn');
+  if(saveWarn)saveWarn.style.display=(G.srsError||G.runStateError)?'block':'none';
 }
 
 let lastInputState='';
@@ -3274,7 +3345,14 @@ function continueGame(){
   const mergedSrs=loadSRS(activeCartridge);
   if(snapshot.srs&&typeof snapshot.srs==='object'){
     for(const id of Object.keys(mergedSrs)){
-      if(snapshot.srs[id])mergedSrs[id]={...mergedSrs[id],...snapshot.srs[id]};
+      if(!snapshot.srs[id])continue;
+      const snap=sanitizeSrsCard(snapshot.srs[id]);
+      const pers=mergedSrs[id];
+      // Keep card with higher rev; on tie, higher lastUpdated; on tie, persistent wins
+      const snapRev=snap.rev||0,persRev=pers.rev||0;
+      if(snapRev>persRev)mergedSrs[id]=snap;
+      else if(snapRev===persRev&&(snap.lastUpdated||0)>(pers.lastUpdated||0))mergedSrs[id]=snap;
+      // else: persistent wins (default)
     }
   }
   const wave=Math.max(1,Math.min(12,Math.round(Number(snapshot.wave)||1)));
@@ -3417,6 +3495,7 @@ function checkBreach(){
     spawnExplosion(enemyMeshes[e.id]?.position||pathPts[pathPts.length-1],20,0xff2200);
     removeEnemyMesh(e.id);
     G.srs[e.cmd.id]=srsMiss(G.srs[e.cmd.id],G.wave,null); // Breach: no BKT update (no student response to observe), SRS penalty only
+    saveSRS(); // debounced per-answer save
   });
   G.enemies=G.enemies.filter(e=>e.t<1);
   G.lives-=reached.length;G.streak=0;G.combo=1;
@@ -3488,6 +3567,7 @@ function handleHit(enemy){
   const bktChoices=G.hintUsed&&enemy.question&&enemy.question.eliminatedIdx!=null?baseChoices-1:baseChoices;
   const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:bktChoices,hintUsed:G.hintUsed,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,responseTimeMs:responseTime};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,G.hintUsed,attempts,bktCtx);
+  saveSRS(); // debounced per-answer save
   removeEnemyMesh(enemy.id);
   G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
   resetExplanationState();
@@ -3504,6 +3584,7 @@ function handleMiss(enemy){
   const bktChoices=G.hintUsed&&enemy.question&&enemy.question.eliminatedIdx!=null?baseChoices-1:baseChoices;
   const bktCtx={wasCorrect:false,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:bktChoices,hintUsed:G.hintUsed,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null};
   G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave,bktCtx);
+  saveSRS(); // debounced per-answer save
   G.typedBuffer='';
 
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
