@@ -152,6 +152,25 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .editor-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .editor-actions .btn{margin-top:0;flex:1 1 180px}
 .music-editor-note{font-size:11px;line-height:1.6;color:#996622;margin-top:12px}
+.seq-grid{display:flex;flex-direction:column;gap:6px}
+.seq-row{display:flex;align-items:center;gap:0}
+.seq-label{width:56px;flex-shrink:0;font-size:9px;font-weight:700;letter-spacing:1.5px;text-align:right;padding-right:10px}
+.seq-cells{display:flex;gap:3px;flex:1}
+.seq-cell{flex:1;min-width:0;aspect-ratio:1;min-height:36px;border-radius:6px;cursor:pointer;position:relative;display:flex;align-items:flex-end;justify-content:center;border:1.5px solid #3d1f0044;background:#0d0500;transition:all .12s;user-select:none;-webkit-user-select:none;overflow:hidden}
+.seq-cell:hover{filter:brightness(1.25);border-color:#5a380066}
+.seq-cell:active{transform:scale(.92)}
+.seq-cell .seq-bar{position:absolute;bottom:0;left:0;right:0;border-radius:0 0 5px 5px;transition:height .15s,background .15s}
+.seq-cell .seq-note{font-size:8px;font-weight:700;letter-spacing:.5px;position:relative;z-index:1;padding-bottom:3px;text-shadow:0 0 6px currentColor}
+.seq-cell--off{background:#0d0500}
+.seq-cell--ghost{border-color:#ff8c0033}.seq-cell--ghost .seq-bar{height:25%;background:#ff8c0055}
+.seq-cell--full{border-color:#ff8c0055}.seq-cell--full .seq-bar{height:55%;background:#ff8c0088}
+.seq-cell--accent{border-color:#ff8c00aa}.seq-cell--accent .seq-bar{height:85%;background:#ff8c00cc}
+.seq-cell--bass{border-color:#4488ff44}.seq-cell--bass .seq-bar{height:60%;background:#4488ff66}
+.seq-cell--hat{border-color:#aaaaaa66;background:#ffffff0c}.seq-cell--hat .seq-bar{height:50%;background:#ffffffaa;border-radius:50%;width:50%;left:25%}
+.seq-cell--hat-off{background:#0d0500}
+.seq-nums{display:flex;gap:3px;margin-left:66px}
+.seq-num{flex:1;text-align:center;font-size:8px;color:#5a3800;font-weight:600}
+.seq-divider{height:1px;background:#3d1f0033;margin:2px 0 2px 66px}
 @keyframes dvd-x{from{left:16px}to{left:calc(100% - var(--dvd-w) - 16px)}}
 @keyframes dvd-y{from{top:92px}to{top:calc(100% - var(--dvd-h) - 24px)}}
 @media(max-width:768px){
@@ -203,6 +222,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .music-layout{grid-template-columns:1fr}
 .chord-grid{grid-template-columns:1fr}
 .bass-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.seq-cell{min-height:44px}
+.seq-label{width:42px;font-size:8px;padding-right:6px}
+.seq-nums{margin-left:48px}
+.seq-divider{margin-left:48px}
 .tempo-shell{flex-direction:column;align-items:stretch}
 .tempo-value{text-align:left}
 .editor-actions .btn{width:100%;flex-basis:100%}
@@ -288,45 +311,45 @@ const SFX=(()=>{
   const DEFAULT_MUSIC_CONFIG=[
     {name:'Dire Straits "So Far Away"',     // W1
       chords:[[220,262,330],[196,247,294],[175,220,262],[165,208,247]],
-      bass:[1,0,1,.75,0,1,1.5,.75], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:90, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,0,1,.75,0,1,1.5,.75], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:90, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'A-ha "Take On Me"',              // W2
       chords:[[220,277,330],[185,220,277],[147,185,220],[165,208,247]],
-      bass:[1,1,0,1.5,1,0,1.335,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:110, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,1,0,1.5,1,0,1.335,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:110, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Grieg "Morning Mood"',           // W3
       chords:[[165,208,247],[208,247,311],[220,277,330],[247,311,370]],
-      bass:[1,0,0,1.189,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:72, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,0,0,1.189,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:72, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Pachelbel\'s Canon',             // W4
       chords:[[147,185,220],[220,277,330],[247,294,370],[185,220,277]],
-      bass:[1,1.5,1.335,1,1.189,1,1.5,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:80, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,1.5,1.335,1,1.189,1,1.5,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:80, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Beethoven "Fur Elise"',          // W5
       chords:[[220,262,330],[165,208,247],[220,262,330],[262,330,392]],
-      bass:[1,0,1,0,1,0,1.189,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:76, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,0,1,0,1,0,1.189,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:76, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Vivaldi "Winter"',               // W6 — peak tension
       chords:[[175,208,262],[131,156,196],[139,175,208],[156,196,233]],
-      bass:[1,1,1,1.189,1,1,1.335,1.5], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:120, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,1,1,1.189,1,1,1.335,1.5], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:120, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Bach "Air on G String"',         // W7
       chords:[[196,247,294],[165,196,247],[220,262,330],[147,185,220]],
-      bass:[1,0,0,1.5,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:60, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,0,0,1.5,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:60, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Chrono Trigger "Corridors of Time"', // W8
       chords:[[165,196,247],[196,247,294],[220,262,330],[247,311,370]],
-      bass:[1,1.335,1,1.5,1.189,1,0,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:95, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,1.335,1,1.5,1.189,1,0,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:95, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Satie "Gymnopedie No.1"',        // W9
       chords:[[196,247,294],[147,185,220],[196,247,294],[147,185,220]],
-      bass:[1,0,0,0,1.5,0,0,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:56, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,0,0,0,1.5,0,0,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:56, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Mozart "Eine Kleine Nachtmusik"', // W10
       chords:[[196,247,294],[147,185,220],[165,196,247],[262,330,392]],
-      bass:[1,1,1.5,1,1.335,1,1.5,1.189], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:105, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,1,1.5,1,1.335,1,1.5,1.189], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:105, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Tchaikovsky "Swan Lake"',        // W11
       chords:[[247,294,370],[185,233,277],[247,294,370],[165,196,247]],
-      bass:[1,0,1.189,0,1,0,1.5,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:84, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,0,1.189,0,1,0,1.5,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:84, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
     {name:'Beethoven "Ode to Joy"',         // W12 — triumph
       chords:[[147,185,220],[196,247,294],[220,277,330],[147,185,220]],
-      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:100, padVol:.05, bassVol:.60, hihatVol:.11},
+      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:100, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
   ];
   let MUSIC_CONFIG=loadMusicConfig();
   let currentProgIdx=0;
   function cloneWaveConfig(cfg){
-    return{name:cfg.name,chords:cfg.chords.map(ch=>ch.slice()),bass:cfg.bass.slice(),pad:cfg.pad.slice(),tempo:cfg.tempo,padVol:cfg.padVol,bassVol:cfg.bassVol,hihatVol:cfg.hihatVol};
+    return{name:cfg.name,chords:cfg.chords.map(ch=>ch.slice()),bass:cfg.bass.slice(),pad:cfg.pad.slice(),tempo:cfg.tempo,padVol:cfg.padVol,bassVol:cfg.bassVol,hihatVol:cfg.hihatVol,hihat:Array.isArray(cfg.hihat)&&cfg.hihat.length===8?cfg.hihat.slice():[1,0,1,0,1,0,1,0]};
   }
   function cloneMusicConfig(cfgs){return cfgs.map(cloneWaveConfig)}
   function clampWaveIdx(idx){return Math.max(0,Math.min(DEFAULT_MUSIC_CONFIG.length-1,idx))}
@@ -356,6 +379,10 @@ const SFX=(()=>{
     }
     if(Number.isFinite(Number(raw&&raw.tempo))){
       safe.tempo=Math.max(50,Math.min(160,Math.round(Number(raw.tempo))));
+    }
+    // Validate hihat pattern
+    if(Array.isArray(raw&&raw.hihat)&&raw.hihat.length===8){
+      safe.hihat=raw.hihat.map(v=>(v===1||v===true)?1:0);
     }
     ['padVol','bassVol','hihatVol'].forEach(k=>{
       if(raw&&Number.isFinite(Number(raw[k])))safe[k]=Math.max(0,Math.min(1,Number(raw[k])));
@@ -649,9 +676,11 @@ const SFX=(()=>{
         const pt=startT+i*st;
         if(pt>now-.01)schedulePadStep(Math.max(0,Number(level)||0),pt,st);
       });
-      // Soft hihat on even beats
+      // Hi-hat pattern from config (default: even beats)
       const hhPeak=(cfg.hihatVol!=null?cfg.hihatVol:.11)*.04;
-      for(let i=0;i<bp.length;i+=2){
+      const hhPattern=Array.isArray(cfg.hihat)&&cfg.hihat.length===8?cfg.hihat:[1,0,1,0,1,0,1,0];
+      for(let i=0;i<bp.length;i++){
+        if(!hhPattern[i])continue;
         const ht=startT+i*st;
         if(ht>now-.01){
           noiseLP.frequency.setValueAtTime(6000,Math.max(ht,now));
@@ -1936,6 +1965,53 @@ function updatePadStep(step,value){
   setMusicStatus('Unsaved changes');
   renderMusicEditor();
 }
+// Step sequencer cycle functions
+const PAD_CYCLE=[0,.25,.55,.85]; // REST → GHOST → FULL → ACCENT
+const BASS_CYCLE=[0,1,.75,1.189,1.26,1.335,1.5]; // REST → ROOT → LOW5 → m3 → M3 → 4 → 5
+function cyclePadStep(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  const cur=cfg.pad[step];
+  const idx=PAD_CYCLE.indexOf(PAD_CYCLE.reduce((best,v)=>Math.abs(v-cur)<Math.abs(best-cur)?v:best,0));
+  cfg.pad[step]=PAD_CYCLE[(idx+1)%PAD_CYCLE.length];
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function cyclePadStepBack(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  const cur=cfg.pad[step];
+  const idx=PAD_CYCLE.indexOf(PAD_CYCLE.reduce((best,v)=>Math.abs(v-cur)<Math.abs(best-cur)?v:best,0));
+  cfg.pad[step]=PAD_CYCLE[(idx-1+PAD_CYCLE.length)%PAD_CYCLE.length];
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function cycleBassStep(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  const cur=cfg.bass[step];
+  const idx=BASS_CYCLE.indexOf(BASS_CYCLE.reduce((best,v)=>Math.abs(v-cur)<Math.abs(best-cur)?v:best,0));
+  cfg.bass[step]=BASS_CYCLE[(idx+1)%BASS_CYCLE.length];
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function cycleBassStepBack(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  const cur=cfg.bass[step];
+  const idx=BASS_CYCLE.indexOf(BASS_CYCLE.reduce((best,v)=>Math.abs(v-cur)<Math.abs(best-cur)?v:best,0));
+  cfg.bass[step]=BASS_CYCLE[(idx-1+BASS_CYCLE.length)%BASS_CYCLE.length];
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function toggleHihat(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  if(!cfg.hihat)cfg.hihat=[1,0,1,0,1,0,1,0];
+  cfg.hihat[step]=cfg.hihat[step]?0:1;
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
 function updatePadVol(value){
   SFX.stopMusicPreview();
   const cfg=currentMusicDraft();
@@ -2006,15 +2082,42 @@ function renderMusicEditor(){
   });
   html+='</div></div>';
   html+='<div class="music-card"><div class="music-card-title">TEMPO</div><div class="music-card-subtitle">Preview plays the selected wave using the current draft settings.</div><div class="tempo-shell"><input type="range" min="50" max="160" step="1" value="'+wave.tempo+'" oninput="updateMusicTempo(this.value)" onchange="updateMusicTempo(this.value)"/><div class="tempo-value" id="music-tempo-value">'+wave.tempo+' BPM</div></div></div>';
-  html+='<div class="music-card"><div class="music-card-title">PAD RHYTHM</div><div class="music-card-subtitle">Pulse the chord bed on each step so the pads can move instead of hanging flat.</div><div class="bass-grid">';
+  // ── STEP SEQUENCER ──
+  html+='<div class="music-card" style="grid-column:1/-1"><div class="music-card-title">STEP SEQUENCER</div><div class="music-card-subtitle">Click to cycle values. Right-click to cycle backward. 8-step loop per wave.</div><div class="seq-grid">';
+  // PAD ROW
+  html+='<div class="seq-row"><div class="seq-label" style="color:#ff8c00">\u266b PADS</div><div class="seq-cells">';
   wave.pad.forEach((step,idx)=>{
-    html+='<label class="bass-step"><span class="bass-step-num">STEP '+(idx+1)+'</span><select class="music-select" onchange="updatePadStep('+idx+',this.value)">'+renderPadOptions(step)+'</select></label>';
+    const lv=Number(step)||0;
+    const cls=lv>=.8?'seq-cell--accent':lv>=.5?'seq-cell--full':lv>=.2?'seq-cell--ghost':'seq-cell--off';
+    const label=lv>=.8?'ACC':lv>=.5?'FULL':lv>=.2?'GHO':'';
+    html+='<div class="seq-cell '+cls+'" onclick="cyclePadStep('+idx+')" oncontextmenu="event.preventDefault();cyclePadStepBack('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#ff8c00">'+label+'</span></div>';
   });
   html+='</div></div>';
-  html+='<div class="music-card"><div class="music-card-title">BASS GRID</div><div class="music-card-subtitle">Eight loop steps under the current chord progression.</div><div class="bass-grid">';
+  html+='<div class="seq-divider"></div>';
+  // BASS ROW
+  const BASS_LABELS={0:'',0.75:'L5',1:'R',1.189:'m3',1.26:'M3',1.335:'4',1.5:'5'};
+  html+='<div class="seq-row"><div class="seq-label" style="color:#4488ff">\u266c BASS</div><div class="seq-cells">';
   wave.bass.forEach((step,idx)=>{
-    html+='<label class="bass-step"><span class="bass-step-num">STEP '+(idx+1)+'</span><select class="music-select" onchange="updateMusicBass('+idx+',this.value)">'+renderBassOptions(step)+'</select></label>';
+    const v=Number(step)||0;
+    const best=BASS_CYCLE.reduce((b,c)=>Math.abs(c-v)<Math.abs(b-v)?c:b,0);
+    const cls=best===0?'seq-cell--off':'seq-cell--bass';
+    const label=BASS_LABELS[best]||'';
+    html+='<div class="seq-cell '+cls+'" onclick="cycleBassStep('+idx+')" oncontextmenu="event.preventDefault();cycleBassStepBack('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#88bbff">'+label+'</span></div>';
   });
+  html+='</div></div>';
+  html+='<div class="seq-divider"></div>';
+  // HI-HAT ROW
+  const hh=Array.isArray(wave.hihat)&&wave.hihat.length===8?wave.hihat:[1,0,1,0,1,0,1,0];
+  html+='<div class="seq-row"><div class="seq-label" style="color:#aaaaaa">\u2662 HAT</div><div class="seq-cells">';
+  hh.forEach((step,idx)=>{
+    const cls=step?'seq-cell--hat':'seq-cell--hat-off';
+    html+='<div class="seq-cell '+cls+'" onclick="toggleHihat('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#ddd">'+(step?'\u25cf':'')+'</span></div>';
+  });
+  html+='</div></div>';
+  // STEP NUMBERS
+  html+='<div class="seq-nums">';
+  for(let i=1;i<=8;i++)html+='<div class="seq-num">'+i+'</div>';
+  html+='</div>';
   html+='</div></div>';
   html+='<div class="music-card"><div class="music-card-title">VOLUME MIX</div><div class="music-card-subtitle">Adjust the loudness of each part independently.</div>';
   html+='<label class="music-field"><span class="music-field-label">PADS '+Math.round((wave.padVol!=null?wave.padVol:.05)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.padVol!=null?wave.padVol:.05)*100)+'" oninput="updatePadVol(this.value)" onchange="updatePadVol(this.value)"/></label>';

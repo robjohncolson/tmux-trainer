@@ -468,9 +468,10 @@ Verification completed:
   - `renderExplanationControls()`
 - `index.html` music editor helpers:
   - chord library
-  - pad options
-  - bass options
-  - editor render/update functions
+  - pad options, bass options
+  - step sequencer: `cyclePadStep()`, `cycleBassStep()`, `toggleHihat()` + backward variants
+  - `renderMusicEditor()` with FL Studio-style step sequencer card
+  - `.seq-grid`, `.seq-row`, `.seq-cell` CSS with state classes
 - `index.html` screens section:
   - `showTitleScreen(context)`
   - `showPauseScreen()`
@@ -830,6 +831,47 @@ Spec artifact:
 Verification completed:
 - JS parse check passed
 - CC agent review: all 5 check categories pass, zero issues
+
+## Latest Update: FL Studio-Style Step Sequencer in Music Editor
+
+Transformed the music editor from dropdown-based grids into a visual step sequencer inspired by FL Studio's channel rack.
+
+What shipped:
+
+- Step sequencer card replaces old PAD RHYTHM and BASS GRID dropdown cards
+- Three visual rows: PADS (amber), BASS (blue), HI-HAT (silver)
+- 8 cells per row with color-coded intensity bars
+- Pad cells: click cycles REST → GHOST → FULL → ACCENT, right-click cycles backward
+- Bass cells: click cycles REST → ROOT → L5 → m3 → M3 → 4 → 5, right-click backward
+- Hi-hat cells: click toggles on/off (binary)
+- Cell visual feedback: colored fill bars proportional to level, glow on active cells
+- Hover brightness lift, scale-0.92 press effect for tactile feel
+- Channel labels with music note symbols on the left
+- Step numbers (1-8) below the grid
+- Divider lines between rows for visual separation
+
+New hi-hat pattern feature:
+- New `hihat` config field: array of 8 (0 or 1) per wave
+- Default: [1,0,1,0,1,0,1,0] (matches old hardcoded even-beat pattern)
+- Audio engine seq() now reads cfg.hihat instead of hardcoded i%2
+- Full backwards compatibility: legacy saves without hihat get default pattern
+- cloneWaveConfig clones hihat with fallback
+- sanitizeWaveConfig validates hihat (8 elements, strict 0/1)
+
+Codex review findings incorporated:
+- HIGH: Legacy hihat compat — clone+sanitize use fallback default when field missing
+- MEDIUM: Right-click backward cycling for bass (7 states too many for forward-only)
+- MEDIUM: Mobile cells min-height 44px (up from 36px, meets touch guidelines)
+- MEDIUM: Row dividers + distinct channel colors for visual separation in merged card
+
+Spec artifact:
+- `drum-machine-editor-spec.md` with full design and Codex findings
+
+Verification completed:
+- JS parse check passed
+- CC agent review: all 8 check categories pass, zero issues
+- All 12 waves have hihat field
+- Step sequencer renders 3 rows × 8 cells with click/right-click handlers
 
 ## Likely Next Tasks
 
