@@ -36,6 +36,12 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-label{font-size:9px;letter-spacing:2px;color:#996622;font-weight:700}
 .explain-chip{font-family:inherit;font-size:10px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .15s}
 .explain-chip:hover{border-color:#ff8c00;color:#ff8c00;background:#2d1200}
+.login-box{margin-top:12px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:12px 14px;max-width:320px;text-align:center}
+.login-box input{font-family:inherit;font-size:13px;color:#ffcc66;background:#0d0500;border:1.5px solid #3d1f00;border-radius:8px;padding:8px 12px;width:100%;box-sizing:border-box;margin-bottom:8px;outline:none}
+.login-box input:focus{border-color:#ff8c00}
+.login-box .login-actions{display:flex;gap:8px;margin-top:4px}
+.login-box .login-actions .btn{flex:1;font-size:11px;padding:8px 12px;margin-top:0}
+.login-status{font-size:10px;margin-top:10px;letter-spacing:1px}
 .touch-actions{display:flex;gap:6px;margin-top:6px}
 .touch-btn{flex:1;font-family:inherit;font-size:11px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;min-height:44px;transition:all .15s}
 .touch-btn:active{transform:scale(.95);background:#2d1200}
@@ -283,6 +289,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
   <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="h-streak">0</div></div>
   <div class="hud-item hud-mobile-hide"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
   <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px;text-shadow:0 0 8px #ff0000">SAVE FAILED</div></div>
+  <div class="hud-item" id="h-sync" style="font-size:10px;color:#996622;letter-spacing:1px"></div>
   <div class="hud-item" id="h-pause-btn" style="display:none"><button onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}" style="background:none;border:1.5px solid #ff8c0044;border-radius:8px;color:#ff8c00;font-size:16px;padding:4px 10px;cursor:pointer;pointer-events:auto">⏸</button></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
@@ -2355,6 +2362,8 @@ function saveSRS(immediate){
     localStorage.setItem(key,JSON.stringify(merged));
     G.srs=merged; // sync in-memory with merged result
     G.srsError=false;
+    // Cloud push on immediate saves (fire-and-forget)
+    if(immediate&&getIdentity())syncToCloud();
   }catch(e){G.srsError=true}
 }
 function getRunStateKey(){
@@ -2477,6 +2486,162 @@ function returnToTitleFromRun(){
 }
 
 // ═══════════════════════════════════════════════
+//  CLOUD AUTH + SYNC
+// ═══════════════════════════════════════════════
+const SYNC_SERVER='https://lrsl-driller-production.up.railway.app';
+let cloudSyncReady=false;
+let cloudSyncInFlight=false;
+function getIdentity(){
+  try{
+    const username=localStorage.getItem('td-cloud-username');
+    const realName=localStorage.getItem('td-cloud-realname');
+    const password=sessionStorage.getItem('td-cloud-pw');
+    if(username)return{username,realName:realName||'',password:password||''};
+  }catch(e){}
+  // Also check lrsl-driller shared identity
+  try{
+    const shared=JSON.parse(localStorage.getItem('userIdentity')||'null');
+    if(shared&&shared.username)return{username:shared.username,realName:shared.realName||'',password:shared.password||''};
+  }catch(e){}
+  return null;
+}
+function setIdentity(username,realName,password){
+  try{
+    localStorage.setItem('td-cloud-username',username);
+    localStorage.setItem('td-cloud-realname',realName||'');
+    sessionStorage.setItem('td-cloud-pw',password);
+    // Also set shared identity for lrsl-driller cross-app compat
+    localStorage.setItem('userIdentity',JSON.stringify({username,realName:realName||'',password}));
+  }catch(e){}
+}
+function clearIdentity(){
+  try{
+    localStorage.removeItem('td-cloud-username');
+    localStorage.removeItem('td-cloud-realname');
+    sessionStorage.removeItem('td-cloud-pw');
+  }catch(e){}
+  cloudSyncReady=false;
+}
+async function verifyUser(username,password){
+  const resp=await fetch(SYNC_SERVER+'/api/users/verify',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username,password})
+  });
+  return resp.json();
+}
+async function syncToCloud(){
+  const id=getIdentity();
+  if(!id||!id.username||!activeCartridge||!cloudSyncReady||cloudSyncInFlight)return;
+  cloudSyncInFlight=true;
+  updateSyncIndicator('syncing');
+  try{
+    const entries=Object.values(G.srs);
+    const mastered=entries.filter(s=>s.mastery>=4).length;
+    const seen=entries.filter(s=>s.totalAttempts>0).length;
+    const hs=parseInt(localStorage.getItem('td-highscore-'+activeCartridge.id)||'0',10);
+    await fetch(SYNC_SERVER+'/api/progress/cartridge-sync',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        username:id.username,
+        cartridgeId:'td-'+activeCartridge.id,
+        stars:{gold:mastered,silver:seen,bronze:0,tin:0},
+        totalWeightedScore:hs,
+        modeProgress:{schemaVersion:1,srs:G.srs,highScore:hs,resetRev:G.resetRev||0}
+      })
+    });
+    updateSyncIndicator('synced');
+  }catch(e){
+    updateSyncIndicator('offline');
+  }finally{cloudSyncInFlight=false}
+}
+async function pullFromCloud(){
+  const id=getIdentity();
+  if(!id||!id.username||!activeCartridge)return;
+  updateSyncIndicator('syncing');
+  try{
+    const resp=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(id.username)+'/td-'+activeCartridge.id);
+    const result=await resp.json();
+    if(result.found&&result.data&&result.data.mode_progress&&result.data.mode_progress.srs){
+      const remote=result.data.mode_progress.srs;
+      const remoteResetRev=result.data.mode_progress.resetRev||0;
+      const localResetRev=G.resetRev||0;
+      // If remote was reset more recently, discard local cards older than reset
+      const effectiveResetRev=Math.max(remoteResetRev,localResetRev);
+      G.resetRev=effectiveResetRev;
+      // Per-card merge: higher rev wins, then lastUpdated
+      for(const cardId of Object.keys(G.srs)){
+        const local=G.srs[cardId];
+        const rem=remote[cardId];
+        if(!rem)continue;
+        if((rem.rev||0)<effectiveResetRev&&(local.rev||0)>=effectiveResetRev)continue;
+        if((local.rev||0)<effectiveResetRev&&(rem.rev||0)>=effectiveResetRev){G.srs[cardId]=sanitizeSrsCard(rem);continue}
+        const remRev=rem.rev||0,locRev=local.rev||0;
+        if(remRev>locRev)G.srs[cardId]=sanitizeSrsCard(rem);
+        else if(remRev===locRev&&(rem.lastUpdated||0)>(local.lastUpdated||0))G.srs[cardId]=sanitizeSrsCard(rem);
+      }
+      // Pick up remote-only cards not in local SRS
+      for(const cardId of Object.keys(remote)){
+        if(!G.srs[cardId]&&(remote[cardId].rev||0)>=effectiveResetRev)G.srs[cardId]=sanitizeSrsCard(remote[cardId]);
+      }
+      saveSRS(true);
+    }
+    cloudSyncReady=true;
+    updateSyncIndicator('synced');
+  }catch(e){
+    cloudSyncReady=true; // allow pushes even if pull fails
+    updateSyncIndicator('offline');
+  }
+}
+function updateSyncIndicator(state){
+  const el=document.getElementById('h-sync');
+  if(!el)return;
+  if(state==='syncing'){el.textContent='\u2601 Syncing...';el.style.color='#ffcc66'}
+  else if(state==='synced'){el.textContent='\u2601 \u2713';el.style.color='#44ff88'}
+  else if(state==='offline'){el.textContent='\u26a0 Offline';el.style.color='#ff6644'}
+  else{
+    const id=getIdentity();
+    el.textContent=id?'\u2601 '+id.username:'';
+    el.style.color='#996622';
+  }
+}
+// Flush sync on page hide
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&getIdentity()&&activeCartridge&&G.screen==='game'){
+    saveSRS(true);syncToCloud();
+  }
+});
+
+async function handleLogin(){
+  const userEl=document.getElementById('login-user');
+  const pwEl=document.getElementById('login-pw');
+  const errEl=document.getElementById('login-error');
+  if(!userEl||!pwEl)return;
+  const username=userEl.value.trim();
+  const password=pwEl.value;
+  if(!username||!password){if(errEl)errEl.textContent='Enter username and password';return}
+  if(errEl)errEl.textContent='Verifying...';
+  try{
+    const result=await verifyUser(username,password);
+    if(result.valid){
+      setIdentity(result.username,result.real_name||'',password);
+      if(errEl)errEl.textContent='';
+      // Pull remote SRS and merge
+      if(activeCartridge&&G.srs&&Object.keys(G.srs).length>0)await pullFromCloud();
+      showTitleScreen('title');
+    }else{
+      if(errEl)errEl.textContent=result.error||'Login failed';
+    }
+  }catch(e){
+    if(errEl)errEl.textContent='Server unreachable — play offline';
+  }
+}
+function handleLogout(){
+  clearIdentity();
+  cloudSyncReady=false;
+  showTitleScreen('title');
+}
+
+// ═══════════════════════════════════════════════
 //  GAME STATE
 // ═══════════════════════════════════════════════
 const G={
@@ -2487,7 +2652,7 @@ const G={
   unlockedTiers:['core'],nextEnemyId:0,
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
-  srsError:false,runStateError:false,sessionStartTime:0,
+  srsError:false,runStateError:false,sessionStartTime:0,resetRev:0,
 };
 const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0002,SPAWN_DELAY_BASE=8000;
 
@@ -3398,6 +3563,18 @@ function showTitleScreen(context){
     const hearts='\u2665'.repeat(lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-lives));
     html+='<div style="margin-top:10px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+'</div>';
   }
+  // Cloud login
+  const identity=getIdentity();
+  if(identity){
+    html+='<div class="login-status" style="color:#44ff88">\u2601 Logged in as <b>'+identity.username+'</b>'+(identity.realName?' ('+identity.realName+')':'')+'  <a href="#" onclick="event.preventDefault();handleLogout()" style="color:#996622;font-size:9px;margin-left:6px">LOG OUT</a></div>';
+  }else{
+    html+='<div class="login-box"><div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:8px">CLOUD SYNC (OPTIONAL)</div>';
+    html+='<input type="text" id="login-user" placeholder="Username (e.g. Mango_Tiger)" autocomplete="username"/>';
+    html+='<input type="password" id="login-pw" placeholder="Password" autocomplete="current-password"/>';
+    html+='<div id="login-error" style="color:#ff4422;font-size:10px;min-height:14px;margin-bottom:4px"></div>';
+    html+='<div class="login-actions"><button class="btn" onclick="handleLogin()">[ LOG IN ]</button><button class="btn btn-secondary" onclick="document.querySelector(\'.login-box\').style.display=\'none\'">[ SKIP ]</button></div>';
+    html+='</div>';
+  }
   html+='<div class="menu-actions">';
   if(savedRun)html+='<button class="btn" id="btn-continue">[ CONTINUE ]</button>';
   html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
@@ -3447,6 +3624,9 @@ function showTitleScreen(context){
   document.getElementById('btn-start').onclick=startGame;
   updateDomainAllBtn();
   renderQR('qr-canvas');
+  // Pull cloud SRS on title screen load when logged in
+  if(getIdentity()&&!cloudSyncReady)pullFromCloud();
+  updateSyncIndicator();
 }
 
 function toggleDomain(dom){
@@ -3499,6 +3679,10 @@ function resetProgress(){
   if(confirm('Reset all progress for '+activeCartridge.name+'? This cannot be undone.')){
     localStorage.removeItem('td-srs-'+activeCartridge.id);
     clearRunState();
+    // Increment resetRev so cloud merge discards old cards
+    G.resetRev=(G.resetRev||0)+1;
+    G.srs=initSRS(activeCartridge.commands);
+    saveSRS(true); // pushes reset state + resetRev to cloud
     SFX.click();
     showTitleScreen('title');
   }
