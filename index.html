@@ -3582,18 +3582,21 @@ window.addEventListener('keydown',e=>{
     else resumeFromPause();
     return;
   }
-  // Block all input while paused
-  if(G.paused)return;
-
-  // Spacebar: block native button activation on all screens, only allow wave-clear advance
+  // Spacebar: block native button activation unless focus is in an editable element
   if(e.key===' '){
-    e.preventDefault();
-    if(!MUSIC_EDITOR.open&&G.screen==='game'&&G.waveComplete){
-      const btn=document.querySelector('#input-panel .btn');
-      if(btn){btn.click();return}
+    const tag=document.activeElement&&document.activeElement.tagName;
+    if(tag!=='INPUT'&&tag!=='TEXTAREA'&&!(document.activeElement&&document.activeElement.isContentEditable)){
+      e.preventDefault();
+      if(!MUSIC_EDITOR.open&&!G.paused&&G.screen==='game'&&G.waveComplete){
+        const btn=document.querySelector('#input-panel .btn');
+        if(btn){btn.click();return}
+      }
     }
     return;
   }
+
+  // Block all input while paused
+  if(G.paused)return;
 
   if(MODKEYS.has(e.key))return;
   if(G.screen!=='game')return;

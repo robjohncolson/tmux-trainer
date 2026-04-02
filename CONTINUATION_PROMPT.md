@@ -448,9 +448,10 @@ Verification completed:
   - `animate()`
 - `index.html` label projection:
   - `updateLabels()`
-- `index.html` selected reticle helpers:
-  - `selectedReticle`
-  - `updateSelectedReticle()`
+- `index.html` ground spotlight helpers:
+  - `spotlightTex`
+  - `selectedSpotlight`
+  - `updateSelectedSpotlight()`
 - `index.html` input layout / feedback helpers:
   - `setInputPanelContent()`
   - `syncInputPanelScroll()`
@@ -642,9 +643,50 @@ Verification completed:
 - All Codex findings verified as incorporated
 - CC agent full verification: all 5 check categories pass
 
+## Latest Update: Spacebar Fix + Ground Spotlight + Tighter Camera Zoom
+
+Addressed three UX issues from playtesting: accidental game restarts via spacebar, visual clutter from the reticle system, and camera being too distant from the action.
+
+What shipped:
+
+- Fix 1 — Spacebar restart prevention:
+  - `e.preventDefault()` now fires for all spacebar keydown events unless focus is in an `<input>`, `<textarea>`, or `contentEditable` element
+  - This blocks the browser's native behavior of clicking focused buttons via space
+  - Spacebar only explicitly forwards a click during wave-clear (`G.screen==='game' && G.waveComplete`), targeting `#input-panel .btn`
+  - The spacebar handler is positioned before the `if(G.paused)return` check so it covers paused screens too
+  - Typed input mode (where users type in `<input>` fields) is exempt and still receives space characters
+
+- Fix 2 — Reticle replaced with ground spotlight:
+  - Removed all reticle infrastructure: `.target-bracket` CSS (5 rules), `reticleSquareGeo`, `makeReticleLayer()`, `selectedReticle` IIFE, `updateSelectedReticle()`, bracket `<span>` HTML in `updateLabels()`
+  - Added `spotlightTex`: 128x128 canvas with radial gradient (amber center fading to transparent)
+  - Added `selectedSpotlight`: `CircleGeometry(1,32)` on ground plane (`y=0.05`) with `AdditiveBlending`
+  - Added `updateSelectedSpotlight(time)`: positions disc under selected cube, pulses scale/opacity, depth-based color tint (amber `0xffc864` / blue `0x88bbff` / purple `0xcc88ff`)
+  - Existing selection cues retained: label opacity (ghost vs full), `.sel-arrow`, emissive mesh glow
+
+- Fix 3 — Tighter camera zoom:
+  - `zoomY`: 11/9/7 → 7.5/6/4.5 (by splitDepth 0/1/2), ~35% closer
+  - `zoomZ`: 12/10/8 → 8.5/7/5.5
+  - `trackX`: 0.4/0.5/0.6 → 0.5/0.6/0.7 (tighter following)
+  - `trackZ`: 0.3/0.4/0.5 → 0.4/0.5/0.6
+  - Lerp speed: 0.04 → 0.055 per frame (snappier response)
+
+Codex review findings incorporated:
+- HIGH: Added `<input>`/`<textarea>`/`contentEditable` exemption so typed spaces still work
+- MEDIUM: Moved spacebar handler before `if(G.paused)return` so pause screen buttons are also blocked
+- LOW (monitor): AdditiveBlending may look too hot — switch to NormalBlending if needed
+- LOW (monitor): Depth-2 enemies at path extremes may ride frame edge — add bounds clamp if needed
+
+Spec artifact:
+- `spacebar-spotlight-zoom-spec.md` with full design, blast radius, and Codex findings
+
+Verification completed:
+- JS parse check passed
+- Grep confirms zero remaining references to: `reticle`, `makeReticleLayer`, `selectedReticle`, `target-bracket`, `reticleSquareGeo`
+- CC agent deep review: all 4 check categories pass, zero HIGH/MEDIUM/LOW findings
+- Codex review: 1 HIGH + 1 MEDIUM fixed, 2 LOW accepted as monitor items
+
 ## Likely Next Tasks
 
-- Add a matching in-world reticle or subtle beam under the selected cube if the focus treatment should exist in both screen space and world space
 - If the score-funnel effect should feel more rewarding, trigger a small HUD pop or score flash when rainbow particles reach the score target
 - Expand the explanation glossary beyond AP Stats if more cartridges get the same explainer UI
 - Add richer per-term overrides where the generated command-based sentences feel too generic
