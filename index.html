@@ -834,19 +834,19 @@ const apStatsCartridge={
       latex:'\\bar{x} = \\frac{\\sum x_i}{n}',
       blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','N']}],
       subconcepts:[{q:'What does \u03a3 (sigma) mean here?',correct:'Sum all values',wrong:['Multiply all values','Find the median']},{q:'Why divide by n?',correct:'To find the average per observation',wrong:['To convert to percentage','To adjust for bias']},{q:'What does x-bar estimate?',correct:'The population mean \u03bc',wrong:['The population SD','The median']}]},
-    {id:'std-dev',action:'Sample Std Dev (s)',tier:'core',dom:'descriptive',
+    {id:'std-dev',action:'Sample Standard Deviation (s)',tier:'core',dom:'descriptive',
       hint:'Square root of variance; denominator is n-1',
       explain:'Measures spread; uses degrees of freedom to correct for sample bias',
       latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{n-1}}',
       blanks:[{latex:'s_x = \\sqrt{\\frac{\\sum(x_i-\\bar{x})^2}{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n+1']}],
       subconcepts:[{q:'Why subtract x-bar from each value?',correct:'To measure deviation from the mean',wrong:['To normalize each value','To remove outliers']},{q:'Why use n-1 instead of n?',correct:'Degrees of freedom correction for samples',wrong:['To make the value smaller','Because one value is always zero']},{q:'Why take the square root?',correct:'To convert variance back to original units',wrong:['To make the value smaller','To normalize the distribution']}]},
-    {id:'linreg',action:'Regression Line (\u0177)',tier:'core',dom:'descriptive',
+    {id:'linreg',action:'Least-Squares Regression Line (\u0177)',tier:'core',dom:'descriptive',
       hint:'\u0177 = a + bx (intercept + slope\u00b7x)',
       explain:'Predicted y from x — intercept plus slope times x',
       latex:'\\hat{y} = a + bx',
       blanks:[{latex:'\\hat{y} = a + \\boxed{\\,?\\,}\\cdot x',answer:'b',choices:['b','r','a']}],
       subconcepts:[{q:'What does "a" represent?',correct:'The y-intercept (predicted y when x=0)',wrong:['The slope of the line','The correlation coefficient']},{q:'What does "b" represent?',correct:'The slope (change in \u0177 per unit x)',wrong:['The y-intercept','The residual']},{q:'Why use \u0177 instead of y?',correct:'\u0177 is predicted, not observed',wrong:['\u0177 is always larger','It removes outliers']}]},
-    {id:'linreg-mean',action:'Regression thru means',tier:'core',dom:'descriptive',
+    {id:'linreg-mean',action:'Regression Line Passes Through (x\u0305, y\u0305)',tier:'core',dom:'descriptive',
       hint:'The regression line passes through the point of means',
       explain:'The line must pass through the centroid of the data',
       latex:'\\bar{y} = a + b\\bar{x}',
@@ -866,13 +866,13 @@ const apStatsCartridge={
       subconcepts:[{q:'What does r measure here?',correct:'Strength and direction of linear association',wrong:['The slope itself','Percentage of variation explained']},{q:'Why multiply r by sy/sx?',correct:'To scale correlation to units of y per x',wrong:['To normalize the slope','To remove the intercept']},{q:'If r=1 and sy=sx, what is b?',correct:'b = 1',wrong:['b = 0','b = r\u00b2']}]},
 
     // ══ II. PROBABILITY ══
-    {id:'add-rule',action:'Addition Rule P(A\u222aB)',tier:'core',dom:'probability',
+    {id:'add-rule',action:'Addition Rule for Probability',tier:'core',dom:'probability',
       hint:'Add individual, subtract the overlap',
       explain:'Events can overlap — subtract what you double-counted',
       latex:'P(A \\cup B) = P(A) + P(B) - P(A \\cap B)',
       blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A∩B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}],
       subconcepts:[{q:'What does P(A\u2229B) represent?',correct:'Probability both A and B occur',wrong:['Probability either occurs','Probability A causes B']},{q:'Why subtract P(A\u2229B)?',correct:'To avoid double-counting the overlap',wrong:['Because A and B are independent','To make result less than 1']},{q:'When does P(A\u222aB) = P(A)+P(B)?',correct:'When A and B are mutually exclusive',wrong:['When A and B are independent','Always']}]},
-    {id:'cond-prob',action:'Conditional Prob P(A|B)',tier:'core',dom:'probability',
+    {id:'cond-prob',action:'Conditional Probability P(A|B)',tier:'core',dom:'probability',
       hint:'Joint probability divided by the condition',
       explain:'Restrict the sample space to only where the condition is true',
       latex:'P(A|B) = \\frac{P(A \\cap B)}{P(B)}',
@@ -880,13 +880,13 @@ const apStatsCartridge={
       subconcepts:[{q:'What does "given B" mean?',correct:'Restrict sample space to only B outcomes',wrong:['B happens after A','B causes A']},{q:'If P(A|B)=P(A), what does that mean?',correct:'A and B are independent',wrong:['A and B are mutually exclusive','A always happens']},{q:'Why is P(B) in the denominator?',correct:'It becomes the new total probability',wrong:['To normalize A','Because B is always larger']}]},
 
     // ══ II. DISCRETE RANDOM VARIABLES ══
-    {id:'rv-mean',action:'Mean of Discrete R.V. (\u03bc)',tier:'core',dom:'distributions',
+    {id:'rv-mean',action:'Expected Value of a Random Variable (\u03bc)',tier:'core',dom:'distributions',
       hint:'Each value times its probability, summed',
       explain:'Expected value — each outcome weighted by how likely it is',
       latex:'\\mu_X = \\sum x_i \\cdot P(x_i)',
       blanks:[{latex:'\\mu_X = \\sum x_i \\cdot \\boxed{\\,?\\,}',answer:'P(xi)',choices:['P(x_i)','x_i','n']}],
       subconcepts:[{q:'What does P(xi) represent?',correct:'The probability of outcome xi',wrong:['The percentile of xi','The frequency of xi']},{q:'Why multiply each xi by P(xi)?',correct:'To weight outcomes by likelihood',wrong:['To normalize values','To find the median']},{q:'What is another name for \u03bcX?',correct:'Expected value E(X)',wrong:['Standard deviation','Mode']}]},
-    {id:'rv-sd',action:'SD of Discrete R.V. (\u03c3)',tier:'regular',dom:'distributions',
+    {id:'rv-sd',action:'Spread of a Random Variable (\u03c3)',tier:'regular',dom:'distributions',
       hint:'Square root of variance: weighted squared deviations',
       explain:'How far outcomes typically fall from the expected value, probability-weighted',
       latex:'\\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}',
@@ -894,19 +894,19 @@ const apStatsCartridge={
       subconcepts:[{q:'Why square (xi - \u03bc)\u00b2?',correct:'Prevents positive/negative canceling',wrong:['To make all values integers','To amplify outliers']},{q:'What role does P(xi) play?',correct:'Weights each squared deviation by probability',wrong:['Normalizes the variance','Converts to percentage']},{q:'Why the square root at the end?',correct:'To return to original units of X',wrong:['To reduce the value','To find the mean deviation']}]},
 
     // ══ II. BINOMIAL ══
-    {id:'binom-pmf',action:'Binomial P(X=x)',tier:'regular',dom:'distributions',
+    {id:'binom-pmf',action:'Binomial Probability Formula',tier:'regular',dom:'distributions',
       hint:'n choose x \u00b7 p^x \u00b7 (1-p)^(n-x)',
       explain:'Exactly x successes: choose which trials succeed, then multiply probabilities',
       latex:'P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}',
       blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'1-p',choices:['(1-p)','p','q^2']}],
       subconcepts:[{q:'What does C(n,x) count?',correct:'Ways to choose which x trials succeed',wrong:['Probability of x successes','The number of trials']},{q:'Why exponent (n-x) on (1-p)?',correct:'Remaining trials must all be failures',wrong:['To balance the equation','To calculate variance']},{q:'What are the BINS conditions?',correct:'Binary, Independent, fixed N, Same p',wrong:['Large sample, Normal, Random','Paired, Equal variance, Normal']}]},
-    {id:'binom-mean',action:'Binomial Mean (\u03bc)',tier:'core',dom:'distributions',
+    {id:'binom-mean',action:'Mean of Binomial Distribution (\u03bc)',tier:'core',dom:'distributions',
       hint:'n times p \u2014 expected successes',
       explain:'Expected successes = trials times success probability',
       latex:'\\mu_X = np',
       blanks:[{latex:'\\mu_X = n \\cdot \\boxed{\\,?\\,}',answer:'p',choices:['p','q','\\mu']}],
       subconcepts:[{q:'Why is \u03bc=np intuitive?',correct:'Expected successes = trials \u00d7 success rate',wrong:['Because variance=np','Because median=np']},{q:'If n=100 and p=0.3, what is \u03bc?',correct:'30, because μ = np = 100 × 0.3',wrong:['70','3']},{q:'What happens to \u03bc as p increases?',correct:'\u03bc increases proportionally',wrong:['\u03bc stays the same','\u03bc decreases']}]},
-    {id:'binom-sd',action:'Binomial SD (\u03c3)',tier:'core',dom:'distributions',
+    {id:'binom-sd',action:'Standard Deviation of Binomial (\u03c3)',tier:'core',dom:'distributions',
       hint:'Square root of n\u00b7p\u00b7(1-p)',
       explain:'Variability is maximized when p = 0.5 (maximum uncertainty)',
       latex:'\\sigma_X = \\sqrt{np(1-p)}',
@@ -914,19 +914,19 @@ const apStatsCartridge={
       subconcepts:[{q:'Why does p(1-p) appear?',correct:'Variability is largest when p=0.5',wrong:['It calculates the mean','It measures skewness']},{q:'What does n contribute to \u03c3?',correct:'More trials increase total variability',wrong:['More trials decrease variability','n has no effect']},{q:'What does the square root do?',correct:'Converts variance back to original units',wrong:['Squares the units','Makes the distribution symmetric']}]},
 
     // ══ II. GEOMETRIC ══
-    {id:'geom-pmf',action:'Geometric P(X=x)',tier:'regular',dom:'distributions',
+    {id:'geom-pmf',action:'Geometric Probability Formula',tier:'regular',dom:'distributions',
       hint:'Fail (x-1) times, then succeed once',
       explain:'All failures first, then one success — order matters',
       latex:'P(X=x) = (1-p)^{x-1} \\cdot p',
       blanks:[{latex:'P(X=x) = (1-p)^{\\boxed{\\,?\\,}} \\cdot p',answer:'x-1',choices:['x-1','x','x+1']}],
       subconcepts:[{q:'Why exponent x-1 on (1-p)?',correct:'Need exactly x-1 failures before first success',wrong:['Need x failures total','To count all outcomes']},{q:'What does geometric distribution count?',correct:'Trials until first success',wrong:['Successes in n trials','Probability of x successes']},{q:'How is this different from binomial?',correct:'No fixed number of trials',wrong:['Different probability formula','Requires p>0.5']}]},
-    {id:'geom-mean',action:'Geometric Mean (\u03bc)',tier:'core',dom:'distributions',
+    {id:'geom-mean',action:'Mean of Geometric Distribution (\u03bc)',tier:'core',dom:'distributions',
       hint:'Expected trials until first success',
       explain:'Lower success probability means more trials needed on average',
       latex:'\\mu_X = \\frac{1}{p}',
       blanks:[{latex:'\\mu_X = \\frac{1}{\\boxed{\\,?\\,}}',answer:'p',choices:['p','1-p','n']}],
       subconcepts:[{q:'Why is \u03bc = 1/p?',correct:'Lower p means more trials needed on average',wrong:['Because p is always less than 1','To match binomial mean']},{q:'If p=0.25, expected trials?',correct:'4 trials, because μ = 1/p = 1/0.25',wrong:['0.25','25']},{q:'What happens to \u03bc as p\u21921?',correct:'\u03bc approaches 1 (success almost certain)',wrong:['\u03bc approaches infinity','\u03bc approaches 0']}]},
-    {id:'geom-sd',action:'Geometric SD (\u03c3)',tier:'regular',dom:'distributions',
+    {id:'geom-sd',action:'Standard Deviation of Geometric (\u03c3)',tier:'regular',dom:'distributions',
       hint:'\u221a(1-p) divided by p',
       explain:'Spread depends on how rare successes are',
       latex:'\\sigma_X = \\frac{\\sqrt{1-p}}{p}',
@@ -946,7 +946,7 @@ const apStatsCartridge={
       latex:'\\text{statistic} \\pm \\text{critical value} \\times SE',
       blanks:[{latex:'\\text{statistic} \\pm \\text{critical value} \\times \\boxed{\\,?\\,}',answer:'SE',choices:['SE','\\sigma','s']}],
       subconcepts:[{q:'What is the critical value?',correct:'z* or t* from the reference distribution',wrong:['The sample mean','The standard error']},{q:'What does \u00b1 margin of error create?',correct:'A range of plausible parameter values',wrong:['The exact parameter','The p-value']},{q:'What determines interval width?',correct:'Confidence level and sample size',wrong:['Only the sample mean','Only the population parameter']}]},
-    {id:'chi-sq',action:'Chi-Square Statistic (\u03c7\u00b2)',tier:'core',dom:'chi-square',
+    {id:'chi-sq',action:'Chi-Square Test Statistic',tier:'core',dom:'chi-square',
       hint:'Sum of (observed - expected)\u00b2 / expected',
       explain:'Compares what you observed to what you expected under H0',
       latex:'\\chi^2 = \\sum\\frac{(O-E)^2}{E}',
@@ -954,19 +954,19 @@ const apStatsCartridge={
       subconcepts:[{q:'What does O represent?',correct:'Observed count from data',wrong:['The overall mean','The expected probability']},{q:'What does E represent?',correct:'Expected count under H\u2080',wrong:['The error term','The effect size']},{q:'Why square (O-E)?',correct:'To make all contributions positive',wrong:['To amplify small differences','To convert to proportions']}]},
 
     // ══ III. ONE PROPORTION ══
-    {id:'phat-mean',action:'Mean of p-hat sampling dist.',tier:'core',dom:'inf-proportions',
+    {id:'phat-mean',action:'Sampling Distribution Mean of p\u0302',tier:'core',dom:'inf-proportions',
       hint:'Mean of sampling dist. equals true proportion',
       explain:'An unbiased estimator — the center of all possible sample proportions',
       latex:'\\mu_{\\hat{p}} = p',
       blanks:[{latex:'\\mu_{\\hat{p}} = \\boxed{\\,?\\,}',answer:'p',choices:['p','\\hat{p}','\\mu']}],
       subconcepts:[{q:'Why does \u03bc_p-hat = p?',correct:'p-hat is an unbiased estimator of p',wrong:['All samples give exactly p','p-hat = p always']},{q:'What is p in this context?',correct:'The true population proportion',wrong:['The sample proportion','Probability of Type I error']},{q:'What distribution does p-hat follow?',correct:'Approximately Normal (by CLT)',wrong:['Exactly Normal always','Binomial']}]},
-    {id:'phat-sd',action:'SD of p-hat sampling dist.',tier:'core',dom:'inf-proportions',
+    {id:'phat-sd',action:'Sampling Distribution SD of p\u0302',tier:'core',dom:'inf-proportions',
       hint:'sqrt of p(1-p) over n',
       explain:'Larger samples reduce variability — sample size is in the denominator',
       latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}',
       blanks:[{latex:'\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{\\boxed{\\,?\\,}}}',answer:'n',choices:['n','n-1','n+1']}],
       subconcepts:[{q:'What does p(1-p) measure?',correct:'Max variability when p=0.5',wrong:['The mean of the distribution','The sample size effect']},{q:'Why divide by n?',correct:'Larger samples reduce variability of p-hat',wrong:['To match population size','To convert to percentage']},{q:'Why the square root?',correct:'Converting variance to SD units',wrong:['To make value smaller','To normalize distribution']}]},
-    {id:'phat-se',action:'SE of p-hat (standard error)',tier:'regular',dom:'inf-proportions',
+    {id:'phat-se',action:'Standard Error of p\u0302',tier:'regular',dom:'inf-proportions',
       hint:'Replace p with p-hat in the SD formula',
       explain:'Same structure as SD but uses the sample statistic since p is unknown',
       latex:'s_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}',
@@ -974,19 +974,19 @@ const apStatsCartridge={
       subconcepts:[{q:'Why use p-hat instead of p?',correct:'True p is unknown; estimate with p-hat',wrong:['p-hat is always more accurate','To make SE larger']},{q:'When use SE vs SD?',correct:'SE with sample data; SD when p is known',wrong:['They are the same','SE for hypothesis tests only']},{q:'What is SE used for?',correct:'Confidence intervals and test statistics',wrong:['Finding population proportion','Calculating sample size']}]},
 
     // ══ III. TWO PROPORTIONS ══
-    {id:'diff-p-sd',action:'SD of p-hat1 minus p-hat2',tier:'regular',dom:'inf-proportions',
+    {id:'diff-p-sd',action:'SD of Difference in Proportions',tier:'regular',dom:'inf-proportions',
       hint:'Add the variances of each proportion, then sqrt',
       explain:'Independent samples — add the variances, then take the square root',
       latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{n_2}}',
       blanks:[{latex:'\\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{\\boxed{\\,?\\,}}}',answer:'n2',choices:['n_2','n_1','p_2']}],
       subconcepts:[{q:'Why add the two variance terms?',correct:'Independent samples have variances that add',wrong:['To double sample size','Proportions always add']},{q:'Why separate n\u2081 and n\u2082?',correct:'Two samples can have different sizes',wrong:['To create more df','Groups must be unequal']},{q:'What does this SD describe?',correct:'Variability of p-hat1 minus p-hat2 across samples',wrong:['SD of each proportion','The effect size']}]},
-    {id:'diff-p-se',action:'SE of p-hat1 minus p-hat2',tier:'power',dom:'inf-proportions',
+    {id:'diff-p-se',action:'Standard Error of Difference in Proportions',tier:'power',dom:'inf-proportions',
       hint:'Plug in sample proportions for each group',
       explain:'For inference, plug in sample proportions instead of parameters',
       latex:'s_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',
       blanks:[{latex:'s_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{\\boxed{\\,?\\,}(1-\\hat{p}_1)}{n_1}+\\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'phat1',choices:['\\hat{p}_1','p_1','\\hat{p}_c']}],
       subconcepts:[{q:'Why plug in p-hat1 and p-hat2 separately?',correct:'Each group estimates its own proportion',wrong:['They must be different','To make SE larger']},{q:'When use this SE vs pooled?',correct:'For confidence intervals (not H\u2080 tests)',wrong:['For all hypothesis tests','When samples are dependent']},{q:'What assumption is required?',correct:'Independent random samples',wrong:['Equal sample sizes','Equal proportions']}]},
-    {id:'pooled-se',action:'Pooled SE (H\u2080: p\u2081=p\u2082)',tier:'power',dom:'inf-proportions',
+    {id:'pooled-se',action:'Pooled Standard Error for Two Proportions',tier:'power',dom:'inf-proportions',
       hint:'p-hat-c = (X1+X2)/(n1+n2), then factor out',
       explain:'Under H0 both groups share the same p, so pool the data',
       latex:'s_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\hat{p}_c(1-\\hat{p}_c)\\!\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}',
@@ -994,19 +994,19 @@ const apStatsCartridge={
       subconcepts:[{q:'What is p-hat-c?',correct:'Combined proportion: (X\u2081+X\u2082)/(n\u2081+n\u2082)',wrong:['Average of p-hat1 and p-hat2','The larger proportion']},{q:'Why pool under H\u2080?',correct:'H\u2080 assumes p\u2081=p\u2082, so use shared estimate',wrong:['To increase sample size','Pooling always reduces error']},{q:'Why factor out p-hat-c(1-p-hat-c)?',correct:'Same proportion applies to both groups under H\u2080',wrong:['To simplify algebra only','Groups are dependent']}]},
 
     // ══ III. ONE MEAN ══
-    {id:'xbar-mean',action:'Mean of x-bar sampling dist.',tier:'core',dom:'inf-means',
+    {id:'xbar-mean',action:'Sampling Distribution Mean of x\u0305',tier:'core',dom:'inf-means',
       hint:'Mean of x-bar equals the population mean',
       explain:'Sample means center on the true population mean',
       latex:'\\mu_{\\bar{x}} = \\mu',
       blanks:[{latex:'\\mu_{\\bar{x}} = \\boxed{\\,?\\,}',answer:'mu',choices:['\\mu','\\bar{x}','\\sigma']}],
       subconcepts:[{q:'Why does \u03bc_x-bar = \u03bc?',correct:'x-bar is an unbiased estimator of \u03bc',wrong:['Every sample mean equals \u03bc','Because n is always large']},{q:'What does this tell us about sampling?',correct:'Sample means center on the true population mean',wrong:['Every sample mean is close to \u03bc','Distribution is always Normal']},{q:'Does this require normality?',correct:'No \u2014 holds for any population distribution',wrong:['Yes, only for Normal populations','Only if n>30']}]},
-    {id:'xbar-sd',action:'SD of x-bar sampling dist.',tier:'core',dom:'inf-means',
+    {id:'xbar-sd',action:'Sampling Distribution SD of x\u0305',tier:'core',dom:'inf-means',
       hint:'\u03c3 divided by square root of n',
       explain:'More data points average out variation — divided by root n',
       latex:'\\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}',
       blanks:[{latex:'\\sigma_{\\bar{x}} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'sigma',choices:['\\sigma','s','\\mu']}],
       subconcepts:[{q:'Why divide \u03c3 by \u221an?',correct:'Averaging reduces variability by factor \u221an',wrong:['To convert to standard units','Because \u03c3 is for individuals']},{q:'What happens to \u03c3_x-bar as n increases?',correct:'Decreases (more precise estimates)',wrong:['Increases','Stays the same']},{q:'What is \u03c3 in this formula?',correct:'The population standard deviation',wrong:['The sample SD','The standard error']}]},
-    {id:'xbar-se',action:'SE of x-bar (standard error)',tier:'regular',dom:'inf-means',
+    {id:'xbar-se',action:'Standard Error of x\u0305',tier:'regular',dom:'inf-means',
       hint:'Use s (sample SD) when \u03c3 is unknown',
       explain:'Uses s because population sigma is almost never known in practice',
       latex:'s_{\\bar{x}} = \\frac{s}{\\sqrt{n}}',
@@ -1014,13 +1014,13 @@ const apStatsCartridge={
       subconcepts:[{q:'Why use s instead of \u03c3?',correct:'Population \u03c3 is almost never known',wrong:['s is always larger','To get a t-distribution']},{q:'What distribution do we use with SE?',correct:'t-distribution (not z)',wrong:['Standard Normal z','Chi-square']},{q:'How many df does the t have?',correct:'n - 1',wrong:['n','n - 2']}]},
 
     // ══ III. TWO MEANS ══
-    {id:'diff-x-sd',action:'SD of x-bar1 minus x-bar2',tier:'regular',dom:'inf-means',
+    {id:'diff-x-sd',action:'SD of Difference in Means',tier:'regular',dom:'inf-means',
       hint:'Add the variances, then square root',
       explain:'Independent samples — variances add, then take the square root',
       latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\sigma_1^2}{n_1}+\\frac{\\sigma_2^2}{n_2}}',
       blanks:[{latex:'\\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{\\sigma_2^2}{n_2}}',answer:'sigma1^2',choices:['\\sigma_1^2','s_1^2','\\sigma_1']}],
       subconcepts:[{q:'Why add \u03c3\u2081\u00b2/n\u2081 and \u03c3\u2082\u00b2/n\u2082?',correct:'Variances of independent quantities add',wrong:['To account for difference in means','Standard deviations add']},{q:'What does this assume?',correct:'The two samples are independent',wrong:['Populations are Normal','Sample sizes are equal']},{q:'Why use \u03c3\u00b2 not \u03c3?',correct:'Variances add for independent variables; SDs do not',wrong:['To make formula easier','Variance is always preferred']}]},
-    {id:'diff-x-se',action:'SE of x-bar1 minus x-bar2',tier:'power',dom:'inf-means',
+    {id:'diff-x-se',action:'Standard Error of Difference in Means',tier:'power',dom:'inf-means',
       hint:'Use sample variances s\u00b2 for each group',
       explain:'Sample variances replace population variances for real-world inference',
       latex:'s_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}',
@@ -1028,25 +1028,25 @@ const apStatsCartridge={
       subconcepts:[{q:'Why replace \u03c3 with s?',correct:'Population SDs are unknown in practice',wrong:['s is more accurate','To use a z-distribution']},{q:'What distribution results?',correct:'t-distribution (with complex df)',wrong:['Standard Normal','Chi-square']},{q:'Can n\u2081 and n\u2082 be different?',correct:'Yes \u2014 unequal sample sizes are fine',wrong:['No, must be equal','Only if variances are equal']}]},
 
     // ══ III. REGRESSION SLOPE ══
-    {id:'slope-mean',action:'Mean of b sampling dist.',tier:'regular',dom:'regression',
+    {id:'slope-mean',action:'Sampling Distribution Mean of Slope b',tier:'regular',dom:'regression',
       hint:'Mean of slope sampling dist. = true slope \u03b2',
       explain:'The sampling distribution of slopes centers on the true population slope',
       latex:'\\mu_b = \\beta',
       blanks:[{latex:'\\mu_b = \\boxed{\\,?\\,}',answer:'beta',choices:['\\beta','b','\\mu']}],
       subconcepts:[{q:'What is \u03b2 in this context?',correct:'The true population slope',wrong:['The sample slope','The y-intercept']},{q:'Why does \u03bc_b = \u03b2?',correct:'b is an unbiased estimator of the true slope',wrong:['Regression always finds true slope','Residuals sum to zero']},{q:'What is sampling distribution of b?',correct:'Distribution of slopes from all possible samples',wrong:['The range of the data','The residual distribution']}]},
-    {id:'slope-sd',action:'SD of b (regression slope)',tier:'power',dom:'regression',
+    {id:'slope-sd',action:'SD of Regression Slope b',tier:'power',dom:'regression',
       hint:'\u03c3 over (\u03c3\u2093 \u00b7 \u221an), where \u03c3\u2093 uses n not n-1',
       explain:'Less residual noise and more x-spread both give more precise slopes',
       latex:'\\sigma_b = \\frac{\\sigma}{\\sigma_x\\sqrt{n}}',
       blanks:[{latex:'\\sigma_b = \\frac{\\sigma}{\\boxed{\\,?\\,}\\sqrt{n}}',answer:'sigma_x',choices:['\\sigma_x','s_x','\\sigma']}],
       subconcepts:[{q:'What does \u03c3 in the numerator represent?',correct:'SD of residuals (noise around the line)',wrong:['SD of x-values','SD of y-values']},{q:'Why \u03c3x (not sx) in denominator?',correct:'\u03c3x uses population formula (divides by n, not n-1)',wrong:['They are the same thing','sx is only for means']},{q:'Why does \u221an appear?',correct:'More observations \u2192 more precise slope',wrong:['To convert to standard units','Because df=n']}]},
-    {id:'slope-se',action:'SE of b (regression slope)',tier:'power',dom:'regression',
+    {id:'slope-se',action:'Standard Error of Regression Slope b',tier:'power',dom:'regression',
       hint:'s over (s\u2093 \u00b7 \u221a(n-1)), s = residual SD',
       explain:'Residual SD replaces sigma; df adjusted for estimating the line',
       latex:'s_b = \\frac{s}{s_x\\sqrt{n-1}}',
       blanks:[{latex:'s_b = \\frac{s}{s_x\\sqrt{\\boxed{\\,?\\,}}}',answer:'n-1',choices:['n-1','n','n-2']}],
       subconcepts:[{q:'Why use s instead of \u03c3?',correct:'True residual SD is unknown; s estimates it',wrong:['s is always smaller','To use a z-test']},{q:'Why \u221a(n-1) instead of \u221an?',correct:'Degrees of freedom adjustment',wrong:['We lose 1 df for the mean','To match t-distribution exactly']},{q:'What is s in this formula?',correct:'The residual standard deviation',wrong:['Sample SD of y','Sample SD of x']}]},
-    {id:'resid-s',action:'Residual Std Dev (s)',tier:'power',dom:'regression',
+    {id:'resid-s',action:'Residual Standard Deviation (s)',tier:'power',dom:'regression',
       hint:'Like regular SD but df = n-2 for regression',
       explain:'Measures typical prediction error; loses 2 df for estimating a and b',
       latex:'s = \\sqrt{\\frac{\\sum(y_i - \\hat{y}_i)^2}{n-2}}',
@@ -1144,7 +1144,7 @@ const apStatsCartridge={
         {q:'What is the range of r squared?',correct:'0 to 1 (0% to 100%)',wrong:['-1 to 1','0 to infinity']},
         {q:'If r = -0.9, what is r squared?',correct:'0.81, because (−0.9)² = 0.81',wrong:['-0.81','0.9']}
       ]},
-    {id:'y-intercept',action:'Y-Intercept of LSRL',tier:'support',dom:'descriptive',
+    {id:'y-intercept',action:'Y-Intercept of Regression Line',tier:'support',dom:'descriptive',
       hint:'Derived from the point of means',
       explain:'Ensures the line passes through (x-bar, y-bar)',
       latex:'a = \\bar{y} - b\\bar{x}',
@@ -1234,7 +1234,7 @@ const apStatsCartridge={
         {q:'What if H0 says all categories are equally likely with k categories?',correct:'Each expected count is n/k',wrong:['Each is n times k','Each is 1/k']},
         {q:'Why do we need expected counts?',correct:'To compare with observed counts in the chi-square formula',wrong:['To find the p-value directly','To determine the sample size']}
       ]},
-    {id:'df-gof',action:'Degrees of Freedom (Chi-Square GOF)',tier:'support',dom:'chi-square',
+    {id:'df-gof',action:'Degrees of Freedom for Goodness-of-Fit',tier:'support',dom:'chi-square',
       hint:'Number of categories minus one',
       explain:'Lose 1 df because proportions must sum to 1',
       latex:'df = k - 1 \\quad \\text{(k = number of categories)}',
@@ -1244,7 +1244,7 @@ const apStatsCartridge={
         {q:'If there are 5 categories, what is df?',correct:'4, because df = k − 1 = 5 − 1',wrong:['5','3']},
         {q:'How is df used?',correct:'To find the p-value from the chi-square distribution',wrong:['To calculate the test statistic','To determine sample size']}
       ]},
-    {id:'df-twoway',action:'Degrees of Freedom (Two-Way Table)',tier:'support',dom:'chi-square',
+    {id:'df-twoway',action:'Degrees of Freedom for Two-Way Table',tier:'support',dom:'chi-square',
       hint:'(rows minus 1) times (columns minus 1)',
       explain:'Reflects the number of independent cells in the table',
       latex:'df = (r-1)(c-1)',
@@ -1274,7 +1274,7 @@ const apStatsCartridge={
         {q:'How does increasing confidence level affect ME?',correct:'ME increases (wider interval, more confident)',wrong:['ME decreases','ME stays the same']},
         {q:'How does increasing n affect ME?',correct:'ME decreases (SE gets smaller, more precise)',wrong:['ME increases','No effect']}
       ]},
-    {id:'width-ci',action:'CI Width and Sample Size',tier:'support',dom:'inference',
+    {id:'width-ci',action:'Confidence Interval Width and Sample Size',tier:'support',dom:'inference',
       hint:'Width proportional to 1 over square root of n',
       explain:'Quadrupling n only halves the margin of error',
       latex:'\\text{Width} \\propto \\frac{1}{\\sqrt{n}}',
@@ -1299,7 +1299,7 @@ const apStatsCartridge={
         {q:'What does d-bar represent?',correct:'The mean of the paired differences, in the order defined by the problem',wrong:['The difference of the two sample means','The population mean difference']},
         {q:'What are the degrees of freedom for a paired t-test?',correct:'n minus 1, where n is the number of pairs',wrong:['n1 plus n2 minus 2','The smaller of n1-1 and n2-1']}
       ]},
-    {id:'slope-ci',action:'CI for Regression Slope',tier:'power',dom:'regression',
+    {id:'slope-ci',action:'Confidence Interval for Slope',tier:'power',dom:'regression',
       hint:'b plus or minus t-star times SE of b',
       explain:'Estimates the true population slope with a confidence interval',
       latex:'b \\pm t^* \\cdot SE_b',
@@ -1313,7 +1313,7 @@ const apStatsCartridge={
         {q:'If 0 is in the confidence interval for slope, what does that suggest?',correct:'The linear relationship may not be statistically significant',wrong:['The model is perfect','The slope must be exactly zero']},
         {q:'What conditions must be checked for slope CI?',correct:'Linearity, independence, normal residuals, equal variance (LINE)',wrong:['Only normality of x values','Only that n is large enough']}
       ]},
-    {id:'df-t',action:'Degrees of Freedom (t)',tier:'support',dom:'inference',
+    {id:'df-t',action:'Degrees of Freedom for t-Tests',tier:'support',dom:'inference',
       hint:'Depends on the type of t procedure',
       explain:'df determines the shape of the t distribution used for inference',
       latex:'df = \\begin{cases} n-1 & \\text{one-sample / paired} \\\\ \\min(n_1{-}1,\\,n_2{-}1) & \\text{two-sample (conservative)} \\\\ n-2 & \\text{regression slope} \\end{cases}',
@@ -1366,7 +1366,7 @@ const apStatsCartridge={
         {q:'What is the relationship between Type II error and power?',correct:'Power = 1 \u2212 \u03b2, so lower \u03b2 means higher power',wrong:['Power = \u03b2','Power = \u03b1 + \u03b2']},
         {q:'How can you reduce Type II error?',correct:'Increase sample size, increase \u03b1, or study a larger effect',wrong:['Decrease the significance level','Use a one-tailed test always']}
       ]},
-    {id:'log-transform',action:'Logarithmic Re-expression',tier:'power',dom:'regression',
+    {id:'log-transform',action:'Log Transformation for Curved Data',tier:'power',dom:'regression',
       hint:'Take log of response variable to linearize curved relationships',
       explain:'Used when a scatterplot shows exponential or power-law curvature',
       latex:'\\log(\\hat{y}) = a + bx \\quad\\Rightarrow\\quad \\hat{y} = 10^{a + bx}',
@@ -1393,9 +1393,20 @@ const apStatsCartridge={
       const pool=[...sameDom,...shuffleArr(diffDom)];
       // Strip parenthetical notation from answers so formulas don't give away the answer
       function stripNot(s){return s.replace(/\s*\([^)]*\)\s*$/,'').trim()}
-      const picks=shuffleArr(pool).slice(0,3).map(c=>stripNot(c.action));
-      while(picks.length<3){picks.push(stripNot(allCommands[Math.floor(Math.random()*allCommands.length)].action))}
       const correctLabel=stripNot(cmd.action);
+      // Dedup: skip distractors whose stripped text matches correct or an already-picked distractor
+      const picks=[];const usedTexts=new Set([correctLabel.toLowerCase()]);
+      for(const c of shuffleArr(pool)){
+        if(picks.length>=3)break;
+        const text=stripNot(c.action);
+        if(!usedTexts.has(text.toLowerCase())){picks.push(text);usedTexts.add(text.toLowerCase())}
+      }
+      // Fallback if not enough unique distractors
+      for(const c of shuffleArr(allCommands)){
+        if(picks.length>=3)break;
+        const text=stripNot(c.action);
+        if(!usedTexts.has(text.toLowerCase())){picks.push(text);usedTexts.add(text.toLowerCase())}
+      }
       const options=shuffleArr([correctLabel,...picks]);
       const correctIdx=options.indexOf(correctLabel);
       return{type:'identify',latex:cmd.latex,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
