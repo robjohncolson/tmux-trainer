@@ -3569,7 +3569,7 @@ function showTitleScreen(context){
     html+='<div class="login-status" style="color:#44ff88">\u2601 Logged in as <b>'+identity.username+'</b>'+(identity.realName?' ('+identity.realName+')':'')+'  <a href="#" onclick="event.preventDefault();handleLogout()" style="color:#996622;font-size:9px;margin-left:6px">LOG OUT</a></div>';
   }else{
     html+='<div class="login-box"><div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:8px">CLOUD SYNC (OPTIONAL)</div>';
-    html+='<input type="text" id="login-user" placeholder="Username (e.g. Mango_Tiger)" autocomplete="username"/>';
+    html+='<select id="login-user" class="music-select" style="margin-bottom:8px"><option value="">Loading students...</option></select>';
     html+='<input type="password" id="login-pw" placeholder="Password" autocomplete="current-password"/>';
     html+='<div id="login-error" style="color:#ff4422;font-size:10px;min-height:14px;margin-bottom:4px"></div>';
     html+='<div class="login-actions"><button class="btn" onclick="handleLogin()">[ LOG IN ]</button><button class="btn btn-secondary" onclick="document.querySelector(\'.login-box\').style.display=\'none\'">[ SKIP ]</button></div>';
@@ -3627,6 +3627,22 @@ function showTitleScreen(context){
   // Pull cloud SRS on title screen load when logged in
   if(getIdentity()&&!cloudSyncReady)pullFromCloud();
   updateSyncIndicator();
+  // Populate user dropdown if login form visible
+  const userSelect=document.getElementById('login-user');
+  if(userSelect&&!getIdentity()){
+    fetch(SYNC_SERVER+'/api/users').then(r=>r.json()).then(users=>{
+      if(!Array.isArray(users))return;
+      userSelect.innerHTML='<option value="">— Select your name —</option>'+
+        users.map(u=>'<option value="'+u.username+'">'+u.username+(u.real_name?' — '+u.real_name:'')+(u.class_period?' (P'+u.class_period+')':'')+'</option>').join('');
+    }).catch(()=>{
+      userSelect.innerHTML='<option value="">Server offline — type username below</option>';
+      // Fallback: swap select for text input
+      const inp=document.createElement('input');
+      inp.type='text';inp.id='login-user';inp.placeholder='Username (e.g. Mango_Tiger)';
+      inp.className=userSelect.className;inp.style.cssText=userSelect.style.cssText;
+      userSelect.replaceWith(inp);
+    });
+  }
 }
 
 function toggleDomain(dom){
