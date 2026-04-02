@@ -36,6 +36,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-label{font-size:9px;letter-spacing:2px;color:#996622;font-weight:700}
 .explain-chip{font-family:inherit;font-size:10px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .15s}
 .explain-chip:hover{border-color:#ff8c00;color:#ff8c00;background:#2d1200}
+.menu-tabs{display:flex;gap:0;margin:12px 0 8px;border-bottom:2px solid #3d1f0044;max-width:360px}
+.menu-tab{flex:1;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:2px;color:#5a3800;background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;transition:all .15s;margin-bottom:-2px}
+.menu-tab:hover{color:#ff8c00}
+.menu-tab.active{color:#ff8c00;border-bottom-color:#ff8c00}
 .login-box{margin-top:12px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:12px 14px;max-width:320px;text-align:center}
 .login-box input{font-family:inherit;font-size:13px;color:#ffcc66;background:#0d0500;border:1.5px solid #3d1f00;border-radius:8px;padding:8px 12px;width:100%;box-sizing:border-box;margin-bottom:8px;outline:none}
 .login-box input:focus{border-color:#ff8c00}
@@ -3532,97 +3536,97 @@ function showTitleScreen(context){
   const titleHS=parseInt(localStorage.getItem('td-highscore-'+activeCartridge.id)||'0',10);
   const emphasizeHighScore=context==='game';
   const ov=document.getElementById('overlay');ov.classList.remove('hidden');
+  const identity=getIdentity();
+  const isTouch='ontouchstart' in window||navigator.maxTouchPoints>0;
   let html='<div class="title-shell">';
   html+='<h1>'+activeCartridge.title+'</h1>';
   html+='<h2>'+activeCartridge.subtitle+'</h2>';
-  html+='<p class="desc">'+activeCartridge.instructions+'</p>';
-  if(activeCartridge.instructionsSub)html+='<p class="desc" style="font-size:10px;color:#5a3800">'+activeCartridge.instructionsSub+'</p>';
 
-  // Domain filter pills (only show if cartridge has multiple domains)
-  if(allDomains.length>1){
-    html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:8px">DOMAINS</div>';
-    html+='<div class="domain-pills" id="domain-pills">';
-    html+='<button class="domain-pill active" id="domain-all" onclick="toggleAllDomains()">ALL</button>';
-    allDomains.forEach(d=>{
-      const active=G.domainFilter.includes(d);
-      const label=domainLabels[d]||d;
-      html+='<button class="domain-pill'+(active?' active':'')+'" data-domain="'+d+'" onclick="toggleDomain(\''+d+'\')">'+label+'</button>';
+  // ── TAB BAR ──
+  const activeTab=G._menuTab||'play';
+  html+='<div class="menu-tabs">';
+  html+='<button class="menu-tab'+(activeTab==='play'?' active':'')+'" onclick="G._menuTab=\'play\';showTitleScreen(\''+context+'\')">PLAY</button>';
+  html+='<button class="menu-tab'+(activeTab==='leaderboard'?' active':'')+'" onclick="G._menuTab=\'leaderboard\';showTitleScreen(\''+context+'\')">RANKS</button>';
+  html+='<button class="menu-tab'+(activeTab==='settings'?' active':'')+'" onclick="G._menuTab=\'settings\';showTitleScreen(\''+context+'\')">MORE</button>';
+  html+='</div>';
+
+  // ═══ PLAY TAB ═══
+  if(activeTab==='play'){
+    if(identity)html+='<div style="font-size:10px;color:#44ff88;margin:6px 0;letter-spacing:1px">\u2601 '+identity.username+(identity.realName?' ('+identity.realName+')':'')+'</div>';
+    // Domain filter pills
+    if(allDomains.length>1){
+      html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:6px">DOMAINS</div>';
+      html+='<div class="domain-pills" id="domain-pills">';
+      html+='<button class="domain-pill active" id="domain-all" onclick="toggleAllDomains()">ALL</button>';
+      allDomains.forEach(d=>{
+        const active=G.domainFilter.includes(d);
+        const label=domainLabels[d]||d;
+        html+='<button class="domain-pill'+(active?' active':'')+'" data-domain="'+d+'" onclick="toggleDomain(\''+d+'\')">'+label+'</button>';
+      });
+      html+='</div>';
+    }
+    // Difficulty
+    html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:8px">DIFFICULTY</div>';
+    html+='<div class="diff-group">';
+    [{id:'learn',label:'LEARN',desc:'Identify only (MC)\\nSlowest speed'},{id:'practice',label:'PRACTICE',desc:'Identify + Fill-blank\\nNormal speed'},{id:'challenge',label:'CHALLENGE',desc:'All question types\\nFaster speed'}].forEach(d=>{
+      html+='<button class="diff-btn'+(G.difficulty===d.id?' active':'')+'" data-diff="'+d.id+'" onclick="setDifficulty(\''+d.id+'\')">';
+      html+='<div class="diff-label">'+d.label+'</div><div class="diff-desc">'+d.desc.replace(/\\n/g,'<br>')+'</div></button>';
     });
     html+='</div>';
-  }
-
-  // Difficulty tier buttons
-  html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:10px">DIFFICULTY</div>';
-  html+='<div class="diff-group">';
-  const diffs=[
-    {id:'learn',label:'LEARN',desc:'Identify only (MC)\\nSlowest speed'},
-    {id:'practice',label:'PRACTICE',desc:'Identify + Fill-blank\\nNormal speed'},
-    {id:'challenge',label:'CHALLENGE',desc:'All question types\\nFaster speed'}
-  ];
-  diffs.forEach(d=>{
-    const active=G.difficulty===d.id;
-    html+='<button class="diff-btn'+(active?' active':'')+'" data-diff="'+d.id+'" onclick="setDifficulty(\''+d.id+'\')">';
-    html+='<div class="diff-label">'+d.label+'</div>';
-    html+='<div class="diff-desc">'+d.desc.replace(/\\n/g,'<br>')+'</div>';
-    html+='</button>';
-  });
-  html+='</div>';
-
-  // High score display
-  if(titleHS>0&&!emphasizeHighScore)html+='<div style="margin-top:10px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
-  if(savedRun){
-    const lives=Math.max(0,Math.min(BASE_LIVES,Math.round(Number(savedRun.lives)||BASE_LIVES)));
-    const hearts='\u2665'.repeat(lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-lives));
-    html+='<div style="margin-top:10px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+'</div>';
-  }
-  // Cloud login
-  const identity=getIdentity();
-  if(identity){
-    html+='<div class="login-status" style="color:#44ff88">\u2601 Logged in as <b>'+identity.username+'</b>'+(identity.realName?' ('+identity.realName+')':'')+'  <a href="#" onclick="event.preventDefault();handleLogout()" style="color:#996622;font-size:9px;margin-left:6px">LOG OUT</a></div>';
-  }else{
-    html+='<div class="login-box"><div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:8px">CLOUD SYNC (OPTIONAL)</div>';
-    html+='<select id="login-user" class="music-select" style="margin-bottom:8px"><option value="">Loading students...</option></select>';
-    html+='<input type="password" id="login-pw" placeholder="Password" autocomplete="current-password"/>';
-    html+='<div id="login-error" style="color:#ff4422;font-size:10px;min-height:14px;margin-bottom:4px"></div>';
-    html+='<div class="login-actions"><button class="btn" onclick="handleLogin()">[ LOG IN ]</button><button class="btn btn-secondary" onclick="document.querySelector(\'.login-box\').style.display=\'none\'">[ SKIP ]</button></div>';
+    if(titleHS>0&&!emphasizeHighScore)html+='<div style="margin-top:8px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
+    if(savedRun){
+      const lives=Math.max(0,Math.min(BASE_LIVES,Math.round(Number(savedRun.lives)||BASE_LIVES)));
+      const hearts='\u2665'.repeat(lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-lives));
+      html+='<div style="margin-top:6px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+'</div>';
+    }
+    html+='<div class="menu-actions">';
+    if(savedRun)html+='<button class="btn" id="btn-continue">[ CONTINUE ]</button>';
+    html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
     html+='</div>';
-  }
-  html+='<div class="menu-actions">';
-  if(savedRun)html+='<button class="btn" id="btn-continue">[ CONTINUE ]</button>';
-  html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
-  html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'title\')">[ MUSIC EDITOR ]</button>';
-  html+='</div>';
-  // Controls + rules reference — detect touch vs keyboard
-  const isTouch='ontouchstart' in window||navigator.maxTouchPoints>0;
-  html+='<div style="margin-top:14px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:10px 14px;max-width:420px;text-align:left">';
-  html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:6px;text-align:center">HOW TO PLAY</div>';
-  html+='<div style="font-size:10px;color:#996622;line-height:1.7">';
-  if(isTouch){
-    html+='<b style="color:#ff8c00">Tap answer</b> \u2014 choose A / B / C / D<br>';
-    html+='<b style="color:#ff8c00">Tap enemy</b> \u2014 target a different enemy<br>';
-    html+='<b style="color:#ff8c00">Swipe left/right</b> \u2014 cycle enemies<br>';
-    html+='<b style="color:#ff8c00">\u23f8 button</b> \u2014 pause (top-right corner)<br>';
-    html+='<b style="color:#ff8c00">Tap correction</b> \u2014 hold to read feedback longer<br>';
+
+  // ═══ LEADERBOARD TAB ═══
+  }else if(activeTab==='leaderboard'){
+    html+='<div id="leaderboard-content" style="margin-top:10px;width:100%;max-width:420px">';
+    html+='<div style="font-size:10px;color:#996622;text-align:center">Loading leaderboard...</div>';
+    html+='</div>';
+
+  // ═══ SETTINGS TAB ═══
   }else{
-    html+='<b style="color:#ff8c00">A B C D</b> \u2014 answer multiple choice<br>';
-    html+='<b style="color:#ff8c00">Tab</b> \u2014 cycle between enemies<br>';
-    html+='<b style="color:#ff8c00">P</b> \u2014 pause / resume<br>';
-    html+='<b style="color:#ff8c00">Esc</b> \u2014 save + exit to menu<br>';
-    html+='<b style="color:#ff8c00">Space</b> \u2014 hold to read feedback longer<br>';
-    html+='<b style="color:#ff8c00">Alt+H</b> \u2014 hint (half points)<br>';
-    html+='<b style="color:#ff8c00">Alt+E</b> \u2014 explain current formula<br>';
+    // Login
+    if(identity){
+      html+='<div class="login-status" style="color:#44ff88;margin-top:8px">\u2601 Logged in as <b>'+identity.username+'</b>'+(identity.realName?' ('+identity.realName+')':'')+'  <a href="#" onclick="event.preventDefault();handleLogout()" style="color:#996622;font-size:9px;margin-left:6px">LOG OUT</a></div>';
+    }else{
+      html+='<div class="login-box"><div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:8px">CLOUD SYNC</div>';
+      html+='<select id="login-user" class="music-select" style="margin-bottom:8px"><option value="">Loading students...</option></select>';
+      html+='<input type="password" id="login-pw" placeholder="Password" autocomplete="current-password"/>';
+      html+='<div id="login-error" style="color:#ff4422;font-size:10px;min-height:14px;margin-bottom:4px"></div>';
+      html+='<div class="login-actions"><button class="btn" onclick="handleLogin()">[ LOG IN ]</button></div>';
+      html+='</div>';
+    }
+    // Music editor + HOW TO PLAY
+    html+='<div class="menu-actions" style="margin-top:10px"><button class="btn btn-secondary" onclick="openMusicEditor(\'title\')">[ MUSIC EDITOR ]</button></div>';
+    html+='<div style="margin-top:12px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:10px 14px;max-width:420px;text-align:left">';
+    html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:6px;text-align:center">HOW TO PLAY</div>';
+    html+='<div style="font-size:10px;color:#996622;line-height:1.7">';
+    if(isTouch){
+      html+='<b style="color:#ff8c00">Tap answer</b> \u2014 choose A/B/C/D<br>';
+      html+='<b style="color:#ff8c00">Tap enemy</b> \u2014 target different enemy<br>';
+      html+='<b style="color:#ff8c00">Swipe</b> \u2014 cycle enemies<br>';
+      html+='<b style="color:#ff8c00">\u23f8</b> \u2014 pause<br>';
+      html+='<b style="color:#ff8c00">Tap correction</b> \u2014 hold feedback<br>';
+    }else{
+      html+='<b style="color:#ff8c00">A-D</b> answer \u00b7 <b style="color:#ff8c00">Tab</b> cycle \u00b7 <b style="color:#ff8c00">P</b> pause \u00b7 <b style="color:#ff8c00">Esc</b> exit<br>';
+      html+='<b style="color:#ff8c00">Space</b> hold feedback \u00b7 <b style="color:#ff8c00">Alt+H</b> hint \u00b7 <b style="color:#ff8c00">Alt+E</b> explain<br>';
+    }
+    html+='</div>';
+    html+='<div style="font-size:9px;color:#5a3800;margin-top:4px;line-height:1.5">Wrong answers push enemies forward and fracture them. Survive 12 waves. SRS tracks mastery across sessions.</div>';
+    html+='</div>';
+    // Reset + QR
+    const prog=getCartridgeProgress(activeCartridge.id);
+    if(prog.seen>0)html+='<div style="margin-top:10px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
   }
-  html+='</div>';
-  html+='<div style="font-size:9px;color:#5a3800;margin-top:6px;line-height:1.6">';
-  html+='Wrong answers push enemies forward and fracture them into harder sub-questions. Survive 12 waves to secure the server. SRS tracks your mastery across sessions.';
-  html+='</div>';
-  html+='</div>';
-  // Reset progress link
-  const prog=getCartridgeProgress(activeCartridge.id);
-  if(prog.seen>0){
-    html+='<div style="margin-top:12px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
-  }
-  // QR code for sharing
+
+  // QR code (all tabs)
   if(typeof QRCode!=='undefined'){
     html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
   }
@@ -3631,15 +3635,54 @@ function showTitleScreen(context){
     html+='<div class="dvd-score-stage"><div class="dvd-score-badge"><div class="dvd-score-kicker">HIGH SCORE</div><div class="dvd-score-value">'+titleHS.toLocaleString()+'</div><div class="dvd-score-note">back on the main screen</div></div></div>';
   }
   ov.innerHTML=html;
-  const continueBtn=document.getElementById('btn-continue');
-  if(continueBtn)continueBtn.onclick=continueGame;
-  document.getElementById('btn-start').onclick=startGame;
-  updateDomainAllBtn();
+  // Post-render: wire up buttons based on active tab
+  if(activeTab==='play'){
+    const continueBtn=document.getElementById('btn-continue');
+    if(continueBtn)continueBtn.onclick=continueGame;
+    const startBtn=document.getElementById('btn-start');
+    if(startBtn)startBtn.onclick=startGame;
+    updateDomainAllBtn();
+  }else if(activeTab==='leaderboard'){
+    // Fetch leaderboard data from server
+    const lbEl=document.getElementById('leaderboard-content');
+    if(lbEl){
+      const cartId='td-'+activeCartridge.id;
+      fetch(SYNC_SERVER+'/api/users').then(r=>r.json()).then(async users=>{
+        if(!Array.isArray(users)){lbEl.innerHTML='<div style="color:#996622;font-size:10px">Could not load</div>';return}
+        // Fetch progress for each user (batch — max 20 for perf)
+        const rows=[];
+        for(const u of users.slice(0,30)){
+          try{
+            const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
+            const d=await r.json();
+            if(d.found&&d.data)rows.push({username:u.username,realName:u.real_name||'',mastered:d.data.gold_stars||0,highScore:d.data.total_weighted_score||0});
+          }catch(e){}
+        }
+        rows.sort((a,b)=>b.highScore-a.highScore||b.mastered-a.mastered);
+        if(rows.length===0){lbEl.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">No scores yet. Play a game and sync to appear here!</div>';return}
+        let t='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+        t+='<tr style="color:#5a3800;font-size:9px;letter-spacing:1px;text-align:left"><th style="padding:4px 6px">#</th><th style="padding:4px 6px">PLAYER</th><th style="padding:4px 6px;text-align:right">SCORE</th><th style="padding:4px 6px;text-align:right">\u2605</th></tr>';
+        const me=identity?identity.username:null;
+        rows.forEach((r,i)=>{
+          const isMe=r.username===me;
+          const bg=isMe?'#ff8c0018':'transparent';
+          const c=i===0?'#ffcc66':i<3?'#ff8c00':'#996622';
+          t+='<tr style="color:'+c+';background:'+bg+';border-bottom:1px solid #3d1f0022">';
+          t+='<td style="padding:5px 6px;font-weight:700">'+(i+1)+'</td>';
+          t+='<td style="padding:5px 6px">'+(r.realName||r.username)+(isMe?' <span style="font-size:8px;color:#44ff88">YOU</span>':'')+'</td>';
+          t+='<td style="padding:5px 6px;text-align:right;font-weight:700">'+r.highScore.toLocaleString()+'</td>';
+          t+='<td style="padding:5px 6px;text-align:right">'+r.mastered+'</td>';
+          t+='</tr>';
+        });
+        t+='</table>';
+        lbEl.innerHTML=t;
+      }).catch(()=>{lbEl.innerHTML='<div style="color:#ff6644;font-size:10px;text-align:center">\u26a0 Server offline</div>'});
+    }
+  }
   renderQR('qr-canvas');
-  // Pull cloud SRS on title screen load when logged in
   if(getIdentity()&&!cloudSyncReady)pullFromCloud();
   updateSyncIndicator();
-  // Populate user dropdown if login form visible
+  // Populate user dropdown if on settings tab
   const userSelect=document.getElementById('login-user');
   if(userSelect&&!getIdentity()){
     fetch(SYNC_SERVER+'/api/users').then(r=>r.json()).then(users=>{
@@ -3647,10 +3690,9 @@ function showTitleScreen(context){
       userSelect.innerHTML='<option value="">— Select your name —</option>'+
         users.map(u=>'<option value="'+u.username+'">'+u.username+(u.real_name?' — '+u.real_name:'')+(u.class_period?' (P'+u.class_period+')':'')+'</option>').join('');
     }).catch(()=>{
-      userSelect.innerHTML='<option value="">Server offline — type username below</option>';
-      // Fallback: swap select for text input
+      userSelect.innerHTML='<option value="">Server offline</option>';
       const inp=document.createElement('input');
-      inp.type='text';inp.id='login-user';inp.placeholder='Username (e.g. Mango_Tiger)';
+      inp.type='text';inp.id='login-user';inp.placeholder='Username';
       inp.className=userSelect.className;inp.style.cssText=userSelect.style.cssText;
       userSelect.replaceWith(inp);
     });
