@@ -3696,7 +3696,11 @@ function showTitleScreen(context){
           try{
             const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
             const d=await r.json();
-            if(d.found&&d.data)rows.push({username:u.username,realName:u.real_name||'',mastered:d.data.gold_stars||0,seen:d.data.silver_stars||0,highScore:d.data.total_weighted_score||0});
+            if(d.found&&d.data){
+              const mp=d.data.mode_progress||{};
+              const hs=mp.highScore||0;
+              rows.push({username:u.username,realName:u.real_name||'',mastered:parseInt(d.data.gold_stars)||0,seen:parseInt(d.data.silver_stars)||0,highScore:hs});
+            }
           }catch(e){}
         }
         // Filter out users with no activity and sort by score
