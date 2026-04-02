@@ -493,6 +493,9 @@ Verification completed:
   - `recomputeCompositePKnown()`, `bktUpdate()`
   - `infoGain()`, `pickScore()`
   - `bktBootstrapFromMastery()`, `findSubconceptIndex()`
+- `index.html` volume control helpers:
+  - `updatePadVol()`, `updateBassVol()`, `updateHihatVol()`
+  - Volume scaling in `startBGM()`, `setKey()`, `setProgress()`, `seq()` hi-hat
 - `index.html` anti-button-mash helpers:
   - `reshuffleQuestionOptions()`
   - `enemy.missCount` (per-enemy miss counter)
@@ -684,6 +687,43 @@ Verification completed:
 - Grep confirms zero remaining references to: `reticle`, `makeReticleLayer`, `selectedReticle`, `target-bracket`, `reticleSquareGeo`
 - CC agent deep review: all 4 check categories pass, zero HIGH/MEDIUM/LOW findings
 - Codex review: 1 HIGH + 1 MEDIUM fixed, 2 LOW accepted as monitor items
+
+## Latest Update: Per-Part Volume Controls in Music Editor
+
+Added per-part volume sliders to the music editor so players can adjust the mix balance of pads/chords, bass, and hi-hat independently per wave.
+
+What shipped:
+
+- Three new config fields per wave: `padVol`, `bassVol`, `hihatVol` (0.0–1.0 stored, scaled to safe bus gains)
+- Volume mapping with headroom ceilings:
+  - Pads: `padVol * 0.5` (max bus gain 0.5), default slider 50% → 0.25 gain (was hardcoded 0.35, ~30% quieter)
+  - Bass: `bassVol * 0.35` (max bus gain 0.35), default slider 60% → 0.21 gain (≈ current 0.20)
+  - Hi-hat: `hihatVol * 0.04` (max peak 0.04), default slider 50% → 0.02 peak (unchanged)
+- Volume scaling applied consistently across all gain sites:
+  - `startBGM()`: pad and bass bus ramps use per-wave volumes
+  - `setKey()`: wave-transition pad accent uses per-wave padVol
+  - `setProgress()`: progress swell multiplies padVol base, bypasses at 0, capped at 0.5
+  - `seq()` hi-hat loop: peak uses per-wave hihatVol
+- Music editor VOLUME MIX card with 3 range sliders (0–100%) between bass grid and actions
+- `updatePadVol()`, `updateBassVol()`, `updateHihatVol()` update functions
+- `cloneWaveConfig()` updated to copy volume fields (Codex HIGH finding)
+- `sanitizeWaveConfig()` validates volume fields: Number.isFinite check, 0–1 clamp, fallback to defaults
+- Backwards compatible: legacy saves without volume fields get default values via sanitization
+
+Codex review findings incorporated:
+- HIGH: Bass volume mapping made consistent — single control point at bassBus, scaled by 0.35
+- HIGH: cloneWaveConfig updated to include volume fields (prevents stripping in editor drafts/resets)
+- MEDIUM: Default padVol raised from 0.15 to 0.50 (stored) to avoid over-aggressive reduction
+- MEDIUM: setProgress mute guaranteed — padVol=0 bypasses swell entirely
+- MEDIUM: setKey and preview paths updated with per-wave volumes (no more hardcoded gains)
+
+Spec artifact:
+- `music-volume-controls-spec.md` with full design, Codex findings, and testing plan
+
+Verification completed:
+- JS parse check passed
+- CC agent deep review confirmed all Codex findings addressed
+- Volume scaling applied at all 4 gain sites with safe ceilings
 
 ## Likely Next Tasks
 
