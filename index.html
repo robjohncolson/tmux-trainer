@@ -2260,7 +2260,40 @@ function pickScore(srsCard,wave){
 // ═══════════════════════════════════════════════
 //  SRS — Enhanced with time + attempts
 // ═══════════════════════════════════════════════
+const EXAM_DATE=new Date('2026-05-07T23:59:59');
 function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},lastUpdated:0,rev:0}});return s}
+// Time-based knowledge decay — mastery fades if not reviewed
+function applyTimeDecay(srs){
+  const now=Date.now();
+  const HALF_LIVES=[2,2,3,5,7,10,14]; // days by mastery level 0-5 (index 6 = safety)
+  const MASTERY_THRESHOLDS=[0,0.25,0.45,0.65,0.82,0.93]; // pKnown → mastery mapping
+  let changed=false;
+  for(const id of Object.keys(srs)){
+    const c=srs[id];
+    if(!c.lastUpdated||c.totalAttempts===0)continue; // never studied — no decay
+    const daysSince=(now-c.lastUpdated)/86400000;
+    if(daysSince<0.5)continue; // less than 12 hours — no decay
+    const halfLife=HALF_LIVES[Math.min(c.mastery||0,5)];
+    const decay=Math.pow(0.5,daysSince/halfLife);
+    const decayedPK=Math.max(0.001,c.pKnown*decay);
+    if(Math.abs(decayedPK-c.pKnown)<0.01)continue; // negligible change
+    c.pKnown=decayedPK;
+    c.pKnownDirect=Math.max(0.001,c.pKnownDirect*decay);
+    // Recompute mastery from decayed pKnown
+    let newMastery=0;
+    for(let m=5;m>=1;m--){if(decayedPK>=MASTERY_THRESHOLDS[m]){newMastery=m;break}}
+    if(newMastery<c.mastery){c.mastery=newMastery;changed=true}
+  }
+  return changed;
+}
+// Exam deadline urgency — modifies question selection pressure
+function getExamUrgency(){
+  const daysLeft=Math.max(0,(EXAM_DATE.getTime()-Date.now())/86400000);
+  if(daysLeft>30)return{urgency:0,daysLeft:Math.round(daysLeft),mode:'normal'};
+  if(daysLeft>14)return{urgency:0.3,daysLeft:Math.round(daysLeft),mode:'focused'};
+  if(daysLeft>3)return{urgency:0.7,daysLeft:Math.round(daysLeft),mode:'intensive'};
+  return{urgency:1.0,daysLeft:Math.round(daysLeft),mode:'cram'};
+}
 function sanitizeSrsCard(card,defaults){
   const d=defaults||{ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},lastUpdated:0,rev:0};
   const c={...d,...card};
@@ -2322,17 +2355,26 @@ function srsMiss(card,wave,bktOutcome){
   c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;return c;
 }
 function pickCommands(pool,srs,count,wave){
-  const due=[],overdue=[],fresh=[],notDue=[];
+  const exam=getExamUrgency();
+  const due=[],overdue=[],fresh=[],notDue=[],decayed=[];
   pool.forEach(cmd=>{const s=srs[cmd.id],ws=wave-s.lastSeen;
+    // Cards that were mastered but decayed below threshold
+    if(s.totalAttempts>0&&s.pKnown<0.65&&s.correct>=3)decayed.push(cmd);
     if(s.lastSeen===0&&s.correct===0)fresh.push(cmd);
     else if(ws>=s.interval+2)overdue.push(cmd);
     else if(ws>=s.interval)due.push(cmd);
     else notDue.push(cmd)});
   const picked=[],used=new Set();
   function add(c){if(used.has(c.id))return false;picked.push(c);used.add(c.id);return true}
+  // Near exam: prioritize decayed cards first (bring back forgotten material)
+  if(exam.urgency>0.3){
+    decayed.sort((a,b)=>(srs[a.id].pKnown||0)-(srs[b.id].pKnown||0)); // weakest first
+    decayed.forEach(c=>{if(picked.length<Math.ceil(count*exam.urgency))add(c)});
+  }
   overdue.sort((a,b)=>pickScore(srs[b.id],wave)-pickScore(srs[a.id],wave));overdue.forEach(c=>{if(picked.length<count)add(c)});
   due.sort((a,b)=>pickScore(srs[b.id],wave)-pickScore(srs[a.id],wave));due.forEach(c=>{if(picked.length<count)add(c)});
-  const maxNew=Math.min(3,Math.max(1,Math.floor(count*.3)));let na=0;
+  // Near exam: reduce new card intake
+  const maxNew=exam.urgency>0.7?1:Math.min(3,Math.max(1,Math.floor(count*.3)));let na=0;
   for(const c of fresh){if(picked.length>=count||na>=maxNew)break;if(add(c))na++}
   notDue.sort((a,b)=>pickScore(srs[b.id],wave)-pickScore(srs[a.id],wave));notDue.forEach(c=>{if(picked.length<count)add(c)});
   pool.forEach(c=>{if(picked.length<count)add(c)});
@@ -2641,8 +2683,11 @@ async function handleLogin(){
     if(result.valid){
       setIdentity(result.username,result.real_name||'',password);
       if(errEl)errEl.textContent='';
-      // Pull remote SRS and merge
-      if(activeCartridge&&G.srs&&Object.keys(G.srs).length>0)await pullFromCloud();
+      // Pull remote SRS, merge, then push local state so leaderboard is accurate
+      if(activeCartridge&&G.srs&&Object.keys(G.srs).length>0){
+        await pullFromCloud();
+        await syncToCloud();
+      }
       showTitleScreen('title');
     }else{
       if(errEl)errEl.textContent=result.error||'Login failed';
@@ -3372,11 +3417,10 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
   if(isCorrect)enemy.pendingCorrectHit=true;
   // Increment missCount BEFORE scheduling so delay uses updated value
   if(!isCorrect)enemy.missCount=(enemy.missCount||0)+1;
-  const MISS_DELAYS=[800,1800,3000];
-  const delay=isCorrect?220:MISS_DELAYS[Math.min((enemy.missCount||1)-1,2)];
+  const delay=isCorrect?220:0; // wrong answers auto-hold (no timer)
   if(group)group.classList.add('answer-pending');
   if(btn)btn.classList.add(isCorrect?'correct':'wrong');
-  // Show correction feedback on wrong answer
+  // Show correction feedback on wrong answer — auto-holds until dismissed
   if(!isCorrect&&enemy.question){
     const q=enemy.question;
     const chosenIdx=['a','b','c','d'].indexOf(key);
@@ -3384,20 +3428,7 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
     const correctText=(q.options||q.choices||[])[q.correctIdx]||'';
     const explain=enemy.cmd&&enemy.cmd.explain?enemy.cmd.explain:'';
     const fb=document.createElement('div');fb.className='wrong-feedback';fb.id='wrong-fb';
-    fb.innerHTML='<div class="wf-wrong">\u2717 '+chosenText+'</div><div class="wf-correct">\u2713 '+correctText+'</div>'+(explain?'<div class="wf-explain">'+explain+'</div>':'')+'<div style="color:#aaa;font-size:8px;margin-top:4px;letter-spacing:1px;text-align:center">TAP HERE or HOLD SPACE to read longer</div>';
-    fb.onclick=function(ev){
-      ev.stopPropagation();
-      if(!QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.timer&&QUIZ_ANSWER_FEEDBACK.heldCallback){
-        QUIZ_ANSWER_FEEDBACK.held=true;
-        clearTimeout(QUIZ_ANSWER_FEEDBACK.timer);
-        QUIZ_ANSWER_FEEDBACK.timer=null;
-        this.querySelector('div:last-child').textContent='HOLDING \u2014 tap again to continue';
-      }else if(QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.heldCallback){
-        const holdEl=document.getElementById('wf-hold');if(holdEl)holdEl.remove();
-        QUIZ_ANSWER_FEEDBACK.held=false;
-        QUIZ_ANSWER_FEEDBACK.heldCallback();
-      }
-    };
+    fb.innerHTML='<div class="wf-wrong">\u2717 '+chosenText+'</div><div class="wf-correct">\u2713 '+correctText+'</div>'+(explain?'<div class="wf-explain">'+explain+'</div>':'')+'<button class="btn" style="margin-top:8px;padding:6px 16px;font-size:10px;width:100%" id="wrong-fb-dismiss">GOT IT</button>';
     const body=document.getElementById('ip-body');
     if(body){body.appendChild(fb);body.scrollTop=body.scrollHeight}
   }
@@ -3421,8 +3452,16 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
       if(stillAlive&&stillAlive.question)reshuffleQuestionOptions(stillAlive);
     }
   };
-  QUIZ_ANSWER_FEEDBACK.heldCallback=resolveFn; // store so spacebar hold can re-invoke
-  QUIZ_ANSWER_FEEDBACK.timer=setTimeout(resolveFn,delay);
+  QUIZ_ANSWER_FEEDBACK.heldCallback=resolveFn;
+  if(delay>0){
+    // Correct answers: auto-resolve after short flash
+    QUIZ_ANSWER_FEEDBACK.timer=setTimeout(resolveFn,delay);
+  }else{
+    // Wrong answers: auto-hold until GOT IT button or space pressed
+    QUIZ_ANSWER_FEEDBACK.held=true;
+    const dismissBtn=document.getElementById('wrong-fb-dismiss');
+    if(dismissBtn)dismissBtn.onclick=function(){QUIZ_ANSWER_FEEDBACK.held=false;resolveFn()};
+  }
 }
 
 // Quiz mode handlers (called from onclick in MC buttons)
@@ -3552,7 +3591,11 @@ function showTitleScreen(context){
 
   // ═══ PLAY TAB ═══
   if(activeTab==='play'){
-    if(identity)html+='<div style="font-size:10px;color:#44ff88;margin:6px 0;letter-spacing:1px">\u2601 '+identity.username+(identity.realName?' ('+identity.realName+')':'')+'</div>';
+    // Exam countdown + decay status
+    const examInfo=getExamUrgency();
+    const examColor=examInfo.daysLeft<=7?'#ff4422':examInfo.daysLeft<=14?'#ffcc66':'#996622';
+    html+='<div style="font-size:10px;color:'+examColor+';margin:6px 0;letter-spacing:1px">\ud83c\udfaf AP EXAM: '+examInfo.daysLeft+' days \u2014 <span style="text-transform:uppercase">'+examInfo.mode+'</span></div>';
+    if(identity)html+='<div style="font-size:10px;color:#44ff88;margin:2px 0;letter-spacing:1px">\u2601 '+identity.username+(identity.realName?' ('+identity.realName+')':'')+'</div>';
     // Domain filter pills
     if(allDomains.length>1){
       html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:6px">DOMAINS</div>';
@@ -3608,15 +3651,13 @@ function showTitleScreen(context){
     html+='<div style="margin-top:12px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:10px 14px;max-width:420px;text-align:left">';
     html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:6px;text-align:center">HOW TO PLAY</div>';
     html+='<div style="font-size:10px;color:#996622;line-height:1.7">';
+    html+='<div style="font-size:8px;letter-spacing:1px;color:#5a3800;margin-bottom:2px">KEYBOARD</div>';
+    html+='<b style="color:#ff8c00">A-D</b> answer \u00b7 <b style="color:#ff8c00">Tab</b> cycle \u00b7 <b style="color:#ff8c00">P</b> pause \u00b7 <b style="color:#ff8c00">Esc</b> exit<br>';
+    html+='<b style="color:#ff8c00">Space</b> hold feedback \u00b7 <b style="color:#ff8c00">Alt+H</b> hint \u00b7 <b style="color:#ff8c00">Alt+E</b> explain<br>';
     if(isTouch){
-      html+='<b style="color:#ff8c00">Tap answer</b> \u2014 choose A/B/C/D<br>';
-      html+='<b style="color:#ff8c00">Tap enemy</b> \u2014 target different enemy<br>';
-      html+='<b style="color:#ff8c00">Swipe</b> \u2014 cycle enemies<br>';
-      html+='<b style="color:#ff8c00">\u23f8</b> \u2014 pause<br>';
-      html+='<b style="color:#ff8c00">Tap correction</b> \u2014 hold feedback<br>';
-    }else{
-      html+='<b style="color:#ff8c00">A-D</b> answer \u00b7 <b style="color:#ff8c00">Tab</b> cycle \u00b7 <b style="color:#ff8c00">P</b> pause \u00b7 <b style="color:#ff8c00">Esc</b> exit<br>';
-      html+='<b style="color:#ff8c00">Space</b> hold feedback \u00b7 <b style="color:#ff8c00">Alt+H</b> hint \u00b7 <b style="color:#ff8c00">Alt+E</b> explain<br>';
+      html+='<div style="font-size:8px;letter-spacing:1px;color:#5a3800;margin:4px 0 2px">TOUCH</div>';
+      html+='<b style="color:#ff8c00">Tap answer</b> \u00b7 <b style="color:#ff8c00">Tap enemy</b> to target \u00b7 <b style="color:#ff8c00">Swipe</b> cycle<br>';
+      html+='<b style="color:#ff8c00">\u23f8</b> pause \u00b7 <b style="color:#ff8c00">Tap correction</b> to hold feedback<br>';
     }
     html+='</div>';
     html+='<div style="font-size:9px;color:#5a3800;margin-top:4px;line-height:1.5">Wrong answers push enemies forward and fracture them. Survive 12 waves. SRS tracks mastery across sessions.</div>';
@@ -3626,8 +3667,8 @@ function showTitleScreen(context){
     if(prog.seen>0)html+='<div style="margin-top:10px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
   }
 
-  // QR code (all tabs)
-  if(typeof QRCode!=='undefined'){
+  // QR code (MORE tab only)
+  if(activeTab==='settings'&&typeof QRCode!=='undefined'){
     html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
   }
   html+='</div>';
@@ -3811,6 +3852,7 @@ function startGame(){
     srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',hintUsed:false,showHint:false,
     spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
     unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
+  applyTimeDecay(G.srs);
   G.waveCommands=genWave(1);
   lastSpawnTime=performance.now();
   lastInputState='';
@@ -3846,6 +3888,7 @@ function continueGame(){
   G.domainFilter=safeDomains.slice();
   G.difficulty=safeDifficulty;
   G.srs=mergedSrs;
+  applyTimeDecay(G.srs);
   G.sessionStartTime=Date.now();
   const fallbackWaveCommands=genWave(wave);
   const restoredEnemies=Array.isArray(snapshot.enemies)?snapshot.enemies:[];
@@ -4197,13 +4240,10 @@ window.addEventListener('keydown',e=>{
     const tag=document.activeElement&&document.activeElement.tagName;
     if(tag!=='INPUT'&&tag!=='TEXTAREA'&&!(document.activeElement&&document.activeElement.isContentEditable)){
       e.preventDefault();
-      // Hold wrong-answer feedback on screen while space is pressed
-      if(QUIZ_ANSWER_FEEDBACK.locked&&QUIZ_ANSWER_FEEDBACK.timer&&QUIZ_ANSWER_FEEDBACK.heldCallback&&!QUIZ_ANSWER_FEEDBACK.held){
-        QUIZ_ANSWER_FEEDBACK.held=true;
-        clearTimeout(QUIZ_ANSWER_FEEDBACK.timer);
-        QUIZ_ANSWER_FEEDBACK.timer=null;
-        const fb=document.getElementById('wrong-fb');
-        if(fb)fb.insertAdjacentHTML('beforeend','<div class="wf-hold" id="wf-hold" style="color:#aaa;font-size:9px;margin-top:4px;letter-spacing:1px">HOLDING \u2014 release space to continue</div>');
+      // Space dismisses held wrong-answer feedback
+      if(QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.heldCallback){
+        QUIZ_ANSWER_FEEDBACK.held=false;
+        QUIZ_ANSWER_FEEDBACK.heldCallback();
         return;
       }
       if(!MUSIC_EDITOR.open&&!G.paused&&G.screen==='game'&&G.waveComplete){
@@ -4341,14 +4381,6 @@ document.getElementById('mute-btn').onclick=()=>{
 // ═══════════════════════════════════════════════
 document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault()},{passive:false});
 let lastTouchEnd=0;
-// Release held feedback on space keyup
-window.addEventListener('keyup',e=>{
-  if(e.key===' '&&QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.heldCallback){
-    const holdEl=document.getElementById('wf-hold');if(holdEl)holdEl.remove();
-    QUIZ_ANSWER_FEEDBACK.held=false;
-    QUIZ_ANSWER_FEEDBACK.heldCallback(); // re-fire resolution
-  }
-});
 document.addEventListener('touchend',function(e){const now=Date.now();if(now-lastTouchEnd<300)e.preventDefault();lastTouchEnd=now},{passive:false});
 // Swipe to cycle enemies
 let touchStartX=0,touchStartY=0,touchStartTime=0;
