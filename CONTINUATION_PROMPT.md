@@ -447,7 +447,9 @@ Verification completed:
   - `spawnExplosion()`
   - `animate()`
 - `index.html` label projection:
-  - `updateLabels()`
+  - `updateLabels()` — cached label DOM via `labelCache` Map
+  - `clearLabelCache()` — cleanup on screen transitions
+  - `HUD` object + `initHUD()` — cached HUD element refs
 - `index.html` ground spotlight helpers:
   - `spotlightTex`
   - `selectedSpotlight`
@@ -779,6 +781,55 @@ Verification completed:
 - JS parse check passed
 - CC agent deep review: all 14 check categories pass, zero HIGH/MEDIUM findings
 - Two informational items accepted: streak/lastSeen no upper cap (defensible), tie-break policy contextually correct
+
+## Latest Update: Performance + Mechanics + UX Polish Batch
+
+Comprehensive audit identified 30 improvement areas across UI, stability, perf, and code quality. Shipped the 5 highest-impact fixes.
+
+What shipped:
+
+- Fix 1 — Label DOM caching (performance):
+  - `updateLabels()` no longer recreates all label DOM every frame
+  - `labelCache` Map stores div nodes keyed by enemy ID, reuses them across frames
+  - `contentKey` hash skips innerHTML update when label content hasn't changed
+  - Hidden labels (behind camera, mobile ghost hiding) get `display:none` instead of being destroyed
+  - Orphan cleanup removes labels for dead enemies
+  - `clearLabelCache()` replaces old `labelsDiv.innerHTML=''` at screen transitions
+  - Reusable `_labelVec` Vector3 eliminates per-frame allocation for projection
+
+- Fix 2 — HUD element caching (performance):
+  - `HUD` object caches all 6 element references (`h-wave`, `h-score`, `h-lives`, `h-streak`, `h-mastery`, `h-save-warn`)
+  - `initHUD()` called once, with lazy-init fallback if HUD isn't populated yet
+  - Eliminates 6 `document.getElementById()` calls per frame
+
+- Fix 3 — Hydra spawn breach cap (game mechanics):
+  - Depth-1 children: if parent is past t=0.82, children are not spawned at all (prevents cheap breach)
+  - Depth-2 grandchildren: if parent is past t=0.85, grandchildren skipped
+  - Child position caps lowered from 0.96/0.98 to 0.82/0.85
+  - Per Codex review: uses skip-spawn (not rewind) so children never spawn behind the death point
+
+- Fix 4 — Session stats on end screen (UX):
+  - `G.sessionStartTime` set on `startGame()` and `continueGame()`
+  - End screen now shows TIME (session duration) and AVG RESP (average response time)
+  - Handles 0-answer edge case: shows '--' for avg response
+  - Duration formatted as `Xm Ys`
+
+- Fix 5 — Console.log cleanup:
+  - Removed debug `console.log(err)` from QR code generation
+
+Codex review findings incorporated:
+- HIGH: Hydra cap uses skip-spawn instead of rewind (prevents children behind death point)
+- MEDIUM: Label visibility is first-class cached state (display:none for hidden)
+- MEDIUM: Click handler is stable on cached div (doesn't depend on innerHTML churn)
+- MEDIUM: HUD cache has lazy-init fallback
+- LOW: Session timer always set fresh in continueGame; NaN guarded
+
+Spec artifact:
+- `polish-batch-spec.md` with full audit findings and Codex review
+
+Verification completed:
+- JS parse check passed
+- CC agent review: all 5 check categories pass, zero issues
 
 ## Likely Next Tasks
 

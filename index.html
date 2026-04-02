@@ -2035,7 +2035,7 @@ function renderQR(canvasId){
   if(typeof QRCode==='undefined')return;
   const el=document.getElementById(canvasId);
   if(!el)return;
-  QRCode.toCanvas(el,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(err){if(err)console.log(err)});
+  QRCode.toCanvas(el,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(){});
 }
 
 // Domain → Unit/Topic label mapping (AP Stats 2026 curriculum)
@@ -2362,7 +2362,7 @@ const G={
   unlockedTiers:['core'],nextEnemyId:0,
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
-  srsError:false,runStateError:false,
+  srsError:false,runStateError:false,sessionStartTime:0,
 };
 const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0002,SPAWN_DELAY_BASE=8000;
 
@@ -2744,43 +2744,79 @@ function updateEnemyMeshes(){
 //  LABEL PROJECTION
 // ═══════════════════════════════════════════════
 const labelsDiv=document.getElementById('labels');
+const labelCache=new Map(); // enemy ID → {div, key}
+const _labelVec=new THREE.Vector3(); // reusable projection vector
 function updateLabels(){
-  labelsDiv.innerHTML='';
   const hideGhostLabels=isCompactMobileViewport();
+  const activeIds=new Set();
   G.enemies.forEach(e=>{
     const m=enemyMeshes[e.id];if(!m)return;
-    const v=m.position.clone();v.y+=.6;
-    v.project(camera);
-    const x=(v.x*.5+.5)*window.innerWidth;
-    const y=(-(v.y*.5)+.5)*window.innerHeight;
-    if(v.z>1)return;
+    _labelVec.copy(m.position);_labelVec.y+=.6;
+    _labelVec.project(camera);
+    const x=(_labelVec.x*.5+.5)*window.innerWidth;
+    const y=(-(_labelVec.y*.5)+.5)*window.innerHeight;
+    if(_labelVec.z>1){
+      // Behind camera — hide if cached
+      const cached=labelCache.get(e.id);
+      if(cached)cached.div.style.display='none';
+      activeIds.add(e.id);
+      return;
+    }
     const isSel=e.id===G.selectedId;
-    if(hideGhostLabels&&!isSel)return;
+    if(hideGhostLabels&&!isSel){
+      const cached=labelCache.get(e.id);
+      if(cached)cached.div.style.display='none';
+      activeIds.add(e.id);
+      return;
+    }
     const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
-    const div=document.createElement('div');div.className='enemy-label'+(isSel?' selected':'');
     const cardPK=G.srs[e.cmd.id]?G.srs[e.cmd.id].pKnown:0.1;
-    if(cardPK<0.3)div.classList.add('bkt-uncertain');
-    div.style.left=x+'px';div.style.top=y+'px';
-    // For quiz mode, show cached unit label instead of formula name (which gives away the answer!)
-    const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
-    const speedTag=e.speedMult>1?' <span style="color:#ff4422;font-size:7px">\u26a1'+e.speedMult.toFixed(1)+'x</span>':'';
     const dp=e.splitDepth||0;
+    const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
+    const speedTag=e.speedMult>1?'\u26a1'+e.speedMult.toFixed(1)+'x':'';
+    const contentKey=e.cmd.id+'|'+isSel+'|'+mastery+'|'+speedTag+'|'+dp+'|'+(cardPK<0.3?1:0);
     const textC=isSel?(dp>=2?'#c892ff':dp>=1?'#7eb9ff':'#d0d0d0'):(dp>=2?'#b67adf':dp>=1?'#78a7ea':'#c78234');
-    div.style.color=textC;
-    div.innerHTML='<div class="enemy-label-shell"><div class="enemy-label-inner"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedTag+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
-    div.onclick=()=>{
-      if(QUIZ_ANSWER_FEEDBACK.locked)return;
-      resetExplanationState();
-      G.selectedId=e.id;
-      const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
-      G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
-      G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
-      SFX.select();
-      if(im==='quiz')setTimeout(focusBlankInput,50);
-      else if(im==='typed')focusTypedInput();
-    };
-    labelsDiv.appendChild(div);
+    let cached=labelCache.get(e.id);
+    if(!cached){
+      const div=document.createElement('div');
+      div.onclick=()=>{
+        if(QUIZ_ANSWER_FEEDBACK.locked)return;
+        resetExplanationState();
+        G.selectedId=e.id;
+        const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+        G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
+        G.showHint=false;G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+        SFX.select();
+        if(im==='quiz')setTimeout(focusBlankInput,50);
+        else if(im==='typed')focusTypedInput();
+      };
+      labelsDiv.appendChild(div);
+      cached={div,key:''};
+      labelCache.set(e.id,cached);
+    }
+    cached.div.style.display='';
+    cached.div.style.left=x+'px';
+    cached.div.style.top=y+'px';
+    cached.div.style.color=textC;
+    if(cached.key!==contentKey){
+      cached.key=contentKey;
+      cached.div.className='enemy-label'+(isSel?' selected':'')+(cardPK<0.3?' bkt-uncertain':'');
+      const speedHtml=speedTag?(' <span style="color:#ff4422;font-size:7px">'+speedTag+'</span>'):'';
+      cached.div.innerHTML='<div class="enemy-label-shell"><div class="enemy-label-inner"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedHtml+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
+    }
+    activeIds.add(e.id);
   });
+  // Remove orphaned labels (dead enemies)
+  for(const [id,cached] of labelCache){
+    if(!activeIds.has(id)){
+      cached.div.remove();
+      labelCache.delete(id);
+    }
+  }
+}
+function clearLabelCache(){
+  for(const [,cached] of labelCache)cached.div.remove();
+  labelCache.clear();
 }
 
 function pickEnemyAtScreenPoint(clientX,clientY){
@@ -2809,26 +2845,32 @@ function pickEnemyAtScreenPoint(clientX,clientY){
 // ═══════════════════════════════════════════════
 //  HUD & INPUT UPDATE
 // ═══════════════════════════════════════════════
+const HUD={};
+function initHUD(){
+  HUD.wave=document.getElementById('h-wave');
+  HUD.score=document.getElementById('h-score');
+  HUD.lives=document.getElementById('h-lives');
+  HUD.streak=document.getElementById('h-streak');
+  HUD.mastery=document.getElementById('h-mastery');
+  HUD.saveWarn=document.getElementById('h-save-warn');
+}
 function updateHUD(){
-  document.getElementById('h-wave').textContent=G.wave+'/12';
-  document.getElementById('h-score').textContent=G.score.toLocaleString();
+  if(!HUD.wave)initHUD(); // lazy init fallback
+  HUD.wave.textContent=G.wave+'/12';
+  HUD.score.textContent=G.score.toLocaleString();
   const hearts='\u2665'.repeat(G.lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-G.lives));
-  const hEl=document.getElementById('h-lives');hEl.textContent=hearts;hEl.style.color=G.lives<=2?'#ff4422':AMB.css.hot;
-  const sEl=document.getElementById('h-streak');
-  sEl.textContent=G.streak+(G.combo>1?' (\u00d7'+G.combo.toFixed(1)+')':'');
-  sEl.style.color=G.streak>=5?AMB.css.white:AMB.css.hot;
-  // Mastery progress: seen / proficient / total
-  const mEl=document.getElementById('h-mastery');
-  if(mEl&&COMMANDS.length>0){
+  HUD.lives.textContent=hearts;HUD.lives.style.color=G.lives<=2?'#ff4422':AMB.css.hot;
+  HUD.streak.textContent=G.streak+(G.combo>1?' (\u00d7'+G.combo.toFixed(1)+')':'');
+  HUD.streak.style.color=G.streak>=5?AMB.css.white:AMB.css.hot;
+  if(HUD.mastery&&COMMANDS.length>0){
     const entries=Object.values(G.srs);
     const seen=entries.filter(s=>s.totalAttempts>0).length;
     const prof=entries.filter(s=>s.mastery>=4).length;
     const total=COMMANDS.length;
-    mEl.textContent=prof+'\u2605 '+seen+'/'+total;
-    mEl.style.color=prof>=total*0.8?'#44ff88':prof>=total*0.4?AMB.css.white:AMB.css.hot;
+    HUD.mastery.textContent=prof+'\u2605 '+seen+'/'+total;
+    HUD.mastery.style.color=prof>=total*0.8?'#44ff88':prof>=total*0.4?AMB.css.white:AMB.css.hot;
   }
-  const saveWarn=document.getElementById('h-save-warn');
-  if(saveWarn)saveWarn.style.display=(G.srsError||G.runStateError)?'block':'none';
+  if(HUD.saveWarn)HUD.saveWarn.style.display=(G.srsError||G.runStateError)?'block':'none';
 }
 
 let lastInputState='';
@@ -3124,7 +3166,7 @@ function showTitleScreen(context){
   document.getElementById('tier-bar').style.display='none';
   document.getElementById('input-panel').style.display='none';
   document.getElementById('queue-bar').style.display='none';
-  labelsDiv.innerHTML='';
+  clearLabelCache();
   cancelQueuedBGMStart();
   SFX.stopBGM();
   // Collect unique domains from active cartridge
@@ -3326,7 +3368,7 @@ function startGame(){
   Object.assign(G,{screen:'game',wave:1,score:0,lives:BASE_LIVES,streak:0,maxStreak:0,
     srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',hintUsed:false,showHint:false,
     spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
-    unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false});
+    unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
   G.waveCommands=genWave(1);
   lastSpawnTime=performance.now();
   lastInputState='';
@@ -3362,6 +3404,7 @@ function continueGame(){
   G.domainFilter=safeDomains.slice();
   G.difficulty=safeDifficulty;
   G.srs=mergedSrs;
+  G.sessionStartTime=Date.now();
   const fallbackWaveCommands=genWave(wave);
   const restoredEnemies=Array.isArray(snapshot.enemies)?snapshot.enemies:[];
   const maxEnemyId=restoredEnemies.reduce((max,e)=>Math.max(max,Math.round(Number(e&&e.id)||0)),0);
@@ -3419,7 +3462,7 @@ function showEndScreen(victory){
   document.getElementById('tier-bar').style.display='none';
   document.getElementById('input-panel').style.display='none';
   document.getElementById('queue-bar').style.display='none';
-  labelsDiv.innerHTML='';
+  clearLabelCache();
   const ov=document.getElementById('overlay');ov.classList.remove('hidden');
   const acc=G.totalCorrect+G.totalWrong>0?Math.round(G.totalCorrect/(G.totalCorrect+G.totalWrong)*100):0;
   const seen=Object.entries(G.srs).filter(([,v])=>v.correct+v.wrong>0);
@@ -3432,7 +3475,13 @@ function showEndScreen(victory){
 
   let html='<h1 style="font-size:32px;color:'+(victory?AMB.css.hot:'#ff4422')+'">'+(victory?'SERVER SECURED':'SERVER BREACHED')+'</h1>';
   if(isNewHigh&&G.score>0)html+='<div style="color:#44ff88;font-size:14px;font-weight:700;letter-spacing:3px;margin-bottom:8px">\u2605 NEW HIGH SCORE! \u2605</div>';
-  html+='<div class="stats-grid">'+[['SCORE',G.score.toLocaleString()+(isNewHigh?' \u2605':'')],['HIGH SCORE',highScore.toLocaleString()],['WAVE',G.wave+'/12'],['ACCURACY',acc+'%'],['STREAK',G.maxStreak]].map(([l,v])=>'<div class="stat-box"><div class="sl">'+l+'</div><div class="sv">'+v+'</div></div>').join('')+'</div>';
+  const sessionSec=G.sessionStartTime?Math.round((Date.now()-G.sessionStartTime)/1000):0;
+  const sessionMin=Math.floor(sessionSec/60);
+  const sessionSecRem=sessionSec%60;
+  const sessionStr=sessionMin>0?sessionMin+'m '+sessionSecRem+'s':sessionSecRem+'s';
+  const seenCards=Object.values(G.srs).filter(s=>s.totalAttempts>0&&s.avgTimeMs>0);
+  const avgResp=seenCards.length>0?Math.round(seenCards.reduce((s,c)=>s+c.avgTimeMs,0)/seenCards.length/100)/10:0;
+  html+='<div class="stats-grid">'+[['SCORE',G.score.toLocaleString()+(isNewHigh?' \u2605':'')],['HIGH SCORE',highScore.toLocaleString()],['WAVE',G.wave+'/12'],['ACCURACY',acc+'%'],['STREAK',G.maxStreak],['TIME',sessionStr],['AVG RESP',avgResp>0?avgResp+'s':'--']].map(([l,v])=>'<div class="stat-box"><div class="sl">'+l+'</div><div class="sv">'+v+'</div></div>').join('')+'</div>';
   if(seen.length>0){
     const avgPK=seen.length>0?(seen.reduce((s,[,v])=>s+(v.pKnown||0.1),0)/seen.length):0;
     html+='<div style="width:100%;max-width:360px;position:relative"><div class="sl" style="text-align:center;margin-bottom:4px">MASTERY</div><div class="mastery-bar" style="position:relative">'+mc.map((n,i)=>n>0?'<div style="flex:'+n+';background:'+MASTERY_COLORS[i]+';opacity:'+(0.5+i*0.1)+'"></div>':'').join('')+'<div style="position:absolute;left:'+(avgPK*100)+'%;top:0;bottom:0;width:2px;background:#fff;opacity:.7" title="BKT Confidence: '+(avgPK*100).toFixed(0)+'%"></div></div><div class="mastery-legend">'+MASTERY_LABELS.map((l,i)=>mc[i]>0?'<span style="color:'+MASTERY_COLORS[i]+'">'+'\u25a0 '+l+' ('+mc[i]+')</span>':'').join('')+'</div></div>';
@@ -3635,7 +3684,8 @@ function spawnHydraChildren(parentEnemy){
     const picked=ranked.slice(0,count).map(r=>r.sc);
     const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1)*1.35;
     picked.forEach((sc,i)=>{
-      const childT=Math.min(.96,Math.max(0,parentEnemy.t+0.02*(i+1)));
+      if(parentEnemy.t>0.82)return; // too close to breach — skip spawning children
+      const childT=Math.min(.82,Math.max(0,parentEnemy.t+0.02*(i+1)));
       const options=shuffleArr([sc.correct,...sc.wrong]);
       const correctIdx=options.indexOf(sc.correct);
       const child={
@@ -3656,7 +3706,8 @@ function spawnHydraChildren(parentEnemy){
     const count=2;
     const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1.15)*1.6;
     for(let i=0;i<count;i++){
-      const childT=Math.min(.98,Math.max(0,parentEnemy.t+0.025*(i+1)));
+      if(parentEnemy.t>0.85)continue; // too close to breach — skip grandchild
+      const childT=Math.min(.85,Math.max(0,parentEnemy.t+0.025*(i+1)));
       // Binary question: "Is this true about [topic]?"
       const wrongPick=sc.wrong[i%sc.wrong.length];
       const statements=shuffleArr([sc.correct,wrongPick]);
