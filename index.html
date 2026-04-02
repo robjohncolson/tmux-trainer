@@ -10,6 +10,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:
 canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
 .hud-item{text-align:center;pointer-events:none}
+#h-pause-btn{display:none}
 .hud-label{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600}
 .hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 .hud-val.score-pop{animation:score-pop .28s ease-out}
@@ -207,6 +208,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hint-text{font-size:11px;margin-top:4px}
 .latex-display .katex{font-size:1em}
 .hud-item.hud-mobile-hide{display:none}
+#h-pause-btn{display:block!important}
 .enemy-label{pointer-events:none}
 #queue-bar{bottom:auto;top:55px;font-size:8px}
 #overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
@@ -278,6 +280,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
   <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="h-streak">0</div></div>
   <div class="hud-item hud-mobile-hide"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
   <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px;text-shadow:0 0 8px #ff0000">SAVE FAILED</div></div>
+  <div class="hud-item" id="h-pause-btn" style="display:none"><button onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}" style="background:none;border:1.5px solid #ff8c0044;border-radius:8px;color:#ff8c00;font-size:16px;padding:4px 10px;cursor:pointer;pointer-events:auto">⏸</button></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
 <div id="labels"></div>
@@ -3186,7 +3189,20 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
     const correctText=(q.options||q.choices||[])[q.correctIdx]||'';
     const explain=enemy.cmd&&enemy.cmd.explain?enemy.cmd.explain:'';
     const fb=document.createElement('div');fb.className='wrong-feedback';fb.id='wrong-fb';
-    fb.innerHTML='<div class="wf-wrong">\u2717 '+chosenText+'</div><div class="wf-correct">\u2713 '+correctText+'</div>'+(explain?'<div class="wf-explain">'+explain+'</div>':'');
+    fb.innerHTML='<div class="wf-wrong">\u2717 '+chosenText+'</div><div class="wf-correct">\u2713 '+correctText+'</div>'+(explain?'<div class="wf-explain">'+explain+'</div>':'')+'<div style="color:#aaa;font-size:8px;margin-top:4px;letter-spacing:1px;text-align:center">TAP HERE or HOLD SPACE to read longer</div>';
+    fb.onclick=function(ev){
+      ev.stopPropagation();
+      if(!QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.timer&&QUIZ_ANSWER_FEEDBACK.heldCallback){
+        QUIZ_ANSWER_FEEDBACK.held=true;
+        clearTimeout(QUIZ_ANSWER_FEEDBACK.timer);
+        QUIZ_ANSWER_FEEDBACK.timer=null;
+        this.querySelector('div:last-child').textContent='HOLDING \u2014 tap again to continue';
+      }else if(QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.heldCallback){
+        const holdEl=document.getElementById('wf-hold');if(holdEl)holdEl.remove();
+        QUIZ_ANSWER_FEEDBACK.held=false;
+        QUIZ_ANSWER_FEEDBACK.heldCallback();
+      }
+    };
     const body=document.getElementById('ip-body');
     if(body){body.appendChild(fb);body.scrollTop=body.scrollHeight}
   }
@@ -3373,17 +3389,26 @@ function showTitleScreen(context){
   html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'title\')">[ MUSIC EDITOR ]</button>';
   html+='</div>';
-  // Keyboard shortcuts + rules reference
+  // Controls + rules reference — detect touch vs keyboard
+  const isTouch='ontouchstart' in window||navigator.maxTouchPoints>0;
   html+='<div style="margin-top:14px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:10px 14px;max-width:420px;text-align:left">';
   html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:6px;text-align:center">HOW TO PLAY</div>';
   html+='<div style="font-size:10px;color:#996622;line-height:1.7">';
-  html+='<b style="color:#ff8c00">A B C D</b> \u2014 answer multiple choice<br>';
-  html+='<b style="color:#ff8c00">Tab</b> \u2014 cycle between enemies<br>';
-  html+='<b style="color:#ff8c00">P</b> \u2014 pause / resume<br>';
-  html+='<b style="color:#ff8c00">Esc</b> \u2014 save + exit to menu<br>';
-  html+='<b style="color:#ff8c00">Space</b> \u2014 hold to read feedback longer<br>';
-  html+='<b style="color:#ff8c00">Alt+H</b> \u2014 hint (half points)<br>';
-  html+='<b style="color:#ff8c00">Alt+E</b> \u2014 explain current formula<br>';
+  if(isTouch){
+    html+='<b style="color:#ff8c00">Tap answer</b> \u2014 choose A / B / C / D<br>';
+    html+='<b style="color:#ff8c00">Tap enemy</b> \u2014 target a different enemy<br>';
+    html+='<b style="color:#ff8c00">Swipe left/right</b> \u2014 cycle enemies<br>';
+    html+='<b style="color:#ff8c00">\u23f8 button</b> \u2014 pause (top-right corner)<br>';
+    html+='<b style="color:#ff8c00">Tap correction</b> \u2014 hold to read feedback longer<br>';
+  }else{
+    html+='<b style="color:#ff8c00">A B C D</b> \u2014 answer multiple choice<br>';
+    html+='<b style="color:#ff8c00">Tab</b> \u2014 cycle between enemies<br>';
+    html+='<b style="color:#ff8c00">P</b> \u2014 pause / resume<br>';
+    html+='<b style="color:#ff8c00">Esc</b> \u2014 save + exit to menu<br>';
+    html+='<b style="color:#ff8c00">Space</b> \u2014 hold to read feedback longer<br>';
+    html+='<b style="color:#ff8c00">Alt+H</b> \u2014 hint (half points)<br>';
+    html+='<b style="color:#ff8c00">Alt+E</b> \u2014 explain current formula<br>';
+  }
   html+='</div>';
   html+='<div style="font-size:9px;color:#5a3800;margin-top:6px;line-height:1.6">';
   html+='Wrong answers push enemies forward and fracture them into harder sub-questions. Survive 12 waves to secure the server. SRS tracks your mastery across sessions.';
