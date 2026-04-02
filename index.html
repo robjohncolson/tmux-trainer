@@ -3585,10 +3585,14 @@ window.addEventListener('keydown',e=>{
   // Block all input while paused
   if(G.paused)return;
 
-  // Spacebar advances only during wave-clear (not end/title screens)
-  if(!MUSIC_EDITOR.open&&e.key===' '&&G.screen==='game'&&G.waveComplete){
-    const btn=document.querySelector('#input-panel .btn');
-    if(btn){e.preventDefault();btn.click();return}
+  // Spacebar: block native button activation on all screens, only allow wave-clear advance
+  if(e.key===' '){
+    e.preventDefault();
+    if(!MUSIC_EDITOR.open&&G.screen==='game'&&G.waveComplete){
+      const btn=document.querySelector('#input-panel .btn');
+      if(btn){btn.click();return}
+    }
+    return;
   }
 
   if(MODKEYS.has(e.key))return;
