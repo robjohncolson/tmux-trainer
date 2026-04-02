@@ -2932,6 +2932,10 @@ function updateInput(){
       const scBorder=scDepth>=2?'#aa44ff33':'#4488ff33';
       const scLabel=scDepth>=2?'DEEP CONCEPT':'SUB-CONCEPT';
       headerHtml+='<div class="q-type-badge" style="background:'+scBg+';border-color:'+scBorder+';color:'+scColor+'">'+scLabel+'</div>'+speedInfo;
+      // Show parent formula for context so "this" / "here" references are clear
+      const scParent=activeCartridge?activeCartridge.formatPrompt(sel.cmd):sel.cmd.action;
+      headerHtml+='<div style="font-size:10px;color:'+AMB.css.mid+';margin:2px 0;letter-spacing:1px;opacity:.7">RE: '+scParent+'</div>';
+      if(sel.cmd.latex)headerHtml+='<div class="latex-shell" style="margin:2px 0 4px"><div class="latex-scroll"><div class="latex-display sc-latex" style="font-size:13px"></div></div></div>';
       headerHtml+='<div style="font-size:14px;color:'+scColor+';margin:4px 0;font-weight:700">'+q.text+'</div>';
       bodyHtml+='<div class="mc-grid">';
       const scKeys=q.options.length<=2?['A','B']:['A','B','C'];
@@ -2963,6 +2967,9 @@ function updateInput(){
     // Render LaTeX into the display element
     const latexEl=document.getElementById('quiz-latex');
     if(latexEl)renderLatex(q.latex,latexEl);
+    // Render parent formula LaTeX for subconcept context
+    const scLatexEl=document.querySelector('.sc-latex');
+    if(scLatexEl&&sel&&sel.cmd&&sel.cmd.latex)renderLatex(sel.cmd.latex,scLatexEl);
     // Render fill-blank choice LaTeX (always, not just on hint)
     if(q.type==='fillblank'){
       q.choices.forEach((ch,i)=>{
