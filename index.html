@@ -197,7 +197,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hud-val{font-size:clamp(12px,3.5vw,16px)}
 #h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
 #tier-bar{top:40px;font-size:8px}
-#mute-btn{font-size:16px;padding:6px 8px;top:6px;right:6px}
+#mute-btn{font-size:16px;padding:6px 8px;top:6px;right:auto;left:6px}
 .enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
 .sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
@@ -217,6 +217,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hint-text{font-size:11px;margin-top:4px}
 .latex-display .katex{font-size:1em}
 .hud-item.hud-mobile-hide{display:none}
+#h-sync{font-size:8px!important;max-width:20px;overflow:hidden}
 #h-pause-btn{display:block!important}
 .enemy-label{pointer-events:none}
 #queue-bar{bottom:auto;top:55px;font-size:8px}
@@ -290,7 +291,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
   <div class="hud-item hud-mobile-hide"><div class="hud-label">MASTERY</div><div class="hud-val" id="h-mastery" style="font-size:13px">0/39</div></div>
   <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px;text-shadow:0 0 8px #ff0000">SAVE FAILED</div></div>
   <div class="hud-item" id="h-sync" style="font-size:10px;color:#996622;letter-spacing:1px"></div>
-  <div class="hud-item" id="h-pause-btn" style="display:none"><button onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}" style="background:none;border:1.5px solid #ff8c0044;border-radius:8px;color:#ff8c00;font-size:16px;padding:4px 10px;cursor:pointer;pointer-events:auto">⏸</button></div>
+  <div class="hud-item" id="h-pause-btn" style="display:none"><button onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}" style="background:#0d050088;border:1.5px solid #ff8c0066;border-radius:8px;color:#ff8c00;font-size:18px;padding:6px 14px;cursor:pointer;pointer-events:auto;min-width:44px;min-height:44px">⏸</button></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
 <div id="labels"></div>
@@ -1857,9 +1858,9 @@ function renderExplanationControls(answerLabels){
   const isMobile=isCompactMobileViewport();
   // Mobile: compact touch buttons for hint/explain; Desktop: rely on Alt+E, Alt+H, Space
   if(isMobile){
-    html+='<div class="touch-actions"><button class="touch-btn" onclick="openExplanationForSelectedCommand()">\ud83d\udcd6 EXPLAIN</button>';
-    if(!G.hintUsed)html+='<button class="touch-btn" onclick="toggleHintFromButton()">\ud83d\udca1 HINT</button>';
-    html+='</div>';
+    if(!G.hintUsed){
+      html+='<div class="touch-actions"><button class="touch-btn" onclick="toggleHintFromButton()">\ud83d\udca1 HINT (half pts)</button></div>';
+    }
   }
   // Render open explainer panel (both platforms)
   if(EXPLAINER_STATE.open){
