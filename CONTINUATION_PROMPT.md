@@ -487,6 +487,11 @@ Verification completed:
 - `index.html` wave-clear handling:
   - `updateInput()`
   - `checkWaveComplete()`
+- `index.html` BKT (Bayesian Knowledge Tracing):
+  - `clampProb()`, `bayesPosterior()`, `effectivePGuess()`
+  - `recomputeCompositePKnown()`, `bktUpdate()`
+  - `infoGain()`, `pickScore()`
+  - `bktBootstrapFromMastery()`, `findSubconceptIndex()`
 - `index.html` anti-button-mash helpers:
   - `reshuffleQuestionOptions()`
   - `enemy.missCount` (per-enemy miss counter)
@@ -539,6 +544,61 @@ Verification completed:
 - JavaScript parse check passed after all 4 fixes
 - Agent-based code review confirmed all spec requirements met
 - One code-smell fix applied (subconcept correctKey computation clarified for depth-2 binary questions)
+
+## Latest Update: Bayesian Knowledge Tracing (BKT) Augmentation
+
+Layered a probabilistic BKT model on top of the existing SM-2 SRS system. The SRS fields (ease, interval, streak, mastery) continue to drive scheduling and display. BKT adds a proper Bayesian model that improves question selection and hydra targeting.
+
+What shipped:
+
+- Core BKT math:
+  - `clampProb()`, `bayesPosterior()`, `effectivePGuess()`, `recomputeCompositePKnown()`, `bktUpdate()`
+  - `infoGain()` (entropy-based), `pickScore()` (hybrid: entropy + overdueness + low-knowledge boost)
+  - Conservative fixed parameters in v1: pTransit=0.03, pGuess=0.25, pSlip=0.10
+  - Adaptive parameter evolution deferred to v2 (Codex finding: one-way drift risk)
+
+- Per-card BKT fields added to SRS:
+  - `pKnownDirect` — direct parent-question evidence
+  - `pKnown` — composite (direct + child evidence, 70/30 blend)
+  - `pTransit`, `pGuess`, `pSlip` — fixed in v1
+  - `subPKnown` — per-subconcept knowledge map, lazily populated
+
+- Source-separated tree propagation:
+  - Direct parent answers update `pKnownDirect`
+  - Hydra child answers update `subPKnown[childIndex]`
+  - `recomputeCompositePKnown()` reblends from sources each time (no compounding)
+  - Child evidence contributes 30% to parent composite
+
+- Context-sensitive P(G):
+  - 4-choice MC: P(G)=0.25; with hint: P(G)=0.33; 2-choice: P(G)=0.50
+  - Free recall (typed/prefix): P(G)=0.05
+  - Hint-adjusted `remainingChoices` correctly decrements by 1 when hint eliminates an option
+
+- Information-gain question selection:
+  - `pickCommands` now sorts within each bucket (overdue/due/fresh/notDue) by hybrid `pickScore`
+  - High-entropy (uncertain) cards are prioritized; low-knowledge cards get a boost to avoid starvation
+
+- Weakest-subconcept hydra targeting:
+  - `spawnHydraChildren` ranks subconcepts by `subPKnown` ascending (weakest first)
+  - Unseen subconcepts default to 0.1 (fresh prior)
+
+- HUD polish:
+  - Uncertainty pulse animation (`.bkt-uncertain`) on enemy labels where `pKnown < 0.3`
+  - End-screen mastery bar has a white vertical confidence line at avgPKnown position
+
+- Backwards compatibility:
+  - Legacy saves without BKT fields are bootstrapped: `pKnown = [0.10, 0.25, 0.45, 0.65, 0.82, 0.93][mastery]`
+  - `subPKnown` deep-copied in srsHit/srsMiss to prevent aliasing bugs
+  - Breach events: SRS penalty only, no BKT update (no student response to observe)
+
+Spec artifact:
+- `bkt-augmentation-spec.md` (v2) with Codex review findings, full implementation plan, and testing plan
+
+Verification completed:
+- JavaScript parse check passed
+- BKT math verified: correct/wrong answers move pKnown in expected directions; 5 consecutive corrects: 0.1→0.99; 5 consecutive wrongs: 0.9→0.035; entropy=1.0 at p=0.5
+- Codex spec review: 3 HIGH findings incorporated (pTransit lowered, adaptive params deferred, source-separated propagation)
+- CC agent deep review: 1 MEDIUM finding fixed (hint remainingChoices), 1 LOW fixed (subPKnown deep copy)
 
 ## Likely Next Tasks
 
