@@ -3696,23 +3696,27 @@ function showTitleScreen(context){
           try{
             const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
             const d=await r.json();
-            if(d.found&&d.data)rows.push({username:u.username,realName:u.real_name||'',mastered:d.data.gold_stars||0,highScore:d.data.total_weighted_score||0});
+            if(d.found&&d.data)rows.push({username:u.username,realName:u.real_name||'',mastered:d.data.gold_stars||0,seen:d.data.silver_stars||0,highScore:d.data.total_weighted_score||0});
           }catch(e){}
         }
-        rows.sort((a,b)=>b.highScore-a.highScore||b.mastered-a.mastered);
-        if(rows.length===0){lbEl.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">No scores yet. Play a game and sync to appear here!</div>';return}
+        // Filter out users with no activity and sort by score
+        const active=rows.filter(r=>r.highScore>0||r.seen>0);
+        active.sort((a,b)=>b.highScore-a.highScore||b.seen-a.seen);
+        if(active.length===0){lbEl.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">No scores yet. Play a game and sync to appear here!</div>';return}
         let t='<table style="width:100%;border-collapse:collapse;font-size:11px">';
-        t+='<tr style="color:#5a3800;font-size:9px;letter-spacing:1px;text-align:left"><th style="padding:4px 6px">#</th><th style="padding:4px 6px">PLAYER</th><th style="padding:4px 6px;text-align:right">SCORE</th><th style="padding:4px 6px;text-align:right">\u2605</th></tr>';
+        t+='<tr style="color:#5a3800;font-size:9px;letter-spacing:1px;text-align:left"><th style="padding:4px 6px">#</th><th style="padding:4px 6px">PLAYER</th><th style="padding:4px 6px;text-align:right">SCORE</th><th style="padding:4px 6px;text-align:right">SEEN</th><th style="padding:4px 6px;text-align:right">\u2605</th></tr>';
         const me=identity?identity.username:null;
-        rows.forEach((r,i)=>{
+        active.forEach((r,i)=>{
           const isMe=r.username===me;
           const bg=isMe?'#ff8c0018':'transparent';
           const c=i===0?'#ffcc66':i<3?'#ff8c00':'#996622';
+          const medal=i===0?'\ud83e\udd47':i===1?'\ud83e\udd48':i===2?'\ud83e\udd49':'';
           t+='<tr style="color:'+c+';background:'+bg+';border-bottom:1px solid #3d1f0022">';
-          t+='<td style="padding:5px 6px;font-weight:700">'+(i+1)+'</td>';
+          t+='<td style="padding:5px 6px;font-weight:700">'+medal+(i+1)+'</td>';
           t+='<td style="padding:5px 6px">'+(r.realName||r.username)+(isMe?' <span style="font-size:8px;color:#44ff88">YOU</span>':'')+'</td>';
           t+='<td style="padding:5px 6px;text-align:right;font-weight:700">'+r.highScore.toLocaleString()+'</td>';
-          t+='<td style="padding:5px 6px;text-align:right">'+r.mastered+'</td>';
+          t+='<td style="padding:5px 6px;text-align:right;color:#996622">'+r.seen+'/66</td>';
+          t+='<td style="padding:5px 6px;text-align:right;color:#44ff88">'+r.mastered+'</td>';
           t+='</tr>';
         });
         t+='</table>';
