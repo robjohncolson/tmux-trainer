@@ -15,12 +15,13 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 .hud-val.score-pop{animation:score-pop .28s ease-out}
 #tier-bar{position:fixed;top:52px;left:0;right:0;z-index:10;text-align:center;pointer-events:none;font-size:10px}
-#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate}
+#input-panel{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:6px 12px;text-align:center;pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate;max-height:55vh}
 #input-panel::before{content:'';position:absolute;left:0;right:0;bottom:0;top:-18vh;z-index:-1;pointer-events:none;background:linear-gradient(to bottom,rgba(13,5,0,0.15) 0%,rgba(13,5,0,0.65) 30%,rgba(13,5,0,0.82) 100%)}
 #input-panel *{pointer-events:auto}
 #ip-header,#ip-body{width:min(760px,100%);margin:0 auto;background:rgba(13,5,0,0.8);border:1px solid #ff8c0018;box-shadow:0 10px 24px #00000033}
 #ip-header{flex:0 0 auto;max-height:40%;overflow:hidden;border-bottom:none;border-radius:12px 12px 0 0;padding:8px 10px 8px}
-#ip-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border-top:none;border-radius:0 0 12px 12px;padding:6px 10px 8px}
+#ip-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border-top:none;border-radius:0 0 12px 12px;padding:6px 10px 8px;scrollbar-width:none}
+#ip-body::-webkit-scrollbar{display:none}
 #ip-header:empty,#ip-body:empty{display:none}
 #ip-header:empty+#ip-body{border-top:1px solid #ff8c0018;border-radius:12px;padding-top:10px}
 .prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
