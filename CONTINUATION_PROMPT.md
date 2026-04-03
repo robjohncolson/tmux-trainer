@@ -441,7 +441,8 @@ Verification completed:
 - `index.html` input layout / feedback:
   - `setInputPanelContent()`, `queueQuizChoiceResolution()`, `clearQuizAnswerFeedback()`
   - Wrong-answer auto-hold: `QUIZ_ANSWER_FEEDBACK.held`, GOT IT button, space-to-dismiss
-  - `renderExplanationControls()` — mobile: HINT button only; desktop: keyboard shortcuts
+  - `renderExplanationControls()` — renders explainer panel with WATCH button + video player
+  - `openAnimationForSelectedCommand()` — standalone Alt+W: opens explainer + loads video in one step
 - `index.html` music editor:
   - FL Studio-style step sequencer: `cyclePadStep()`, `cycleBassStep()`, `toggleHihat()` + backward variants
   - `renderMusicEditor()` with STEP SEQUENCER card, VOLUME MIX card, ACTIONS card
@@ -609,9 +610,49 @@ Implemented a complete pipeline for 3Blue1Brown-style Manim animations embedded 
 
 - `manim-animation-spec.md` with full design, Codex review findings table, and implementation plan
 
+## Latest Update: Shortcut Simplification — Remove Hint, Parallel Alt+E / Alt+W
+
+Simplified the shortcut system from three overlapping learning aids to two clean parallel paths:
+
+### What shipped
+
+- **Alt+E** — text explanation (3-sentence panel, unchanged)
+- **Alt+W** — visual explanation (Manim animation video, now standalone — no longer requires Alt+E to be open first)
+- **Alt+H removed** — hint mechanic fully deleted
+
+### Hint removal details
+
+- Removed `hintUsed` and `showHint` from game state (`G`), all init/reset paths, and state persistence
+- Removed hint scoring penalty (was 0.5x for quiz, 0.7x for typed)
+- Removed SRS quality penalty (`q -= 2` when hint used)
+- Removed `eliminatedIdx` answer elimination mechanic from quiz rendering and keyboard handlers
+- Removed `toggleHintFromButton()` function and mobile HINT touch button
+- Removed all "Alt+H" references from help text, instructions, HOW TO PLAY
+- Old saved runs with `hintUsed`/`showHint` fields are silently ignored (backward compatible)
+
+### Alt+W standalone
+
+- New `openAnimationForSelectedCommand()` — opens explainer + immediately loads video in one step
+- Alt+W handler: close if playing → load if explainer open → open fresh with video if not
+- Alt+W added to all `.input-help` strings and HOW TO PLAY
+
+### UI polish (Gemini 3.2 review)
+
+- Video player: title bar renders before video, smooth fade-in animation, glass-morphic close pill
+- Mobile video: text lines collapse with opacity/max-height transition (not abrupt display:none)
+- Pause screen: removed QR code that was bleeding through overlay
+- Global .btn styles: removed #overlay scoping (fixes unstyled GOT IT button)
+- Tactile :active press state (scale 0.96) on all interactive buttons
+- Themed thin scrollbar on #ip-body (was hidden)
+- Mobile mute button: enforced 44px min touch target
+
+### Spec artifacts
+
+- `shortcut-simplify-spec.md` — hint removal + Alt+W independence design
+- `gemini-ui-review-prompt.md` — Gemini review prompt for UI polish pass
+
 ## Likely Next Tasks
 
-- **Batch-generate all 66 Manim animations** — dispatch parallel Codex agents per domain
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
 - Add server endpoint for batch leaderboard query (currently N sequential requests)
 - Tune SRS decay half-lives based on student feedback
