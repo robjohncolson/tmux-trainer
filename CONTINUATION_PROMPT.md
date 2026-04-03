@@ -726,6 +726,36 @@ Replaced all basic Web Audio oscillators with FM synthesis voices:
 - `contextual-blend-spec.md` — color palette design
 - `fm-synthesis-spec.md` — full FM synthesis architecture + Codex review findings
 
+## Latest Update: Alt+E Cycle, Answer Lock, Speed Fix
+
+### Alt+E 3-state cycle
+
+- `Alt+E` now cycles: closed → text explanation → video animation → close
+- `Alt+W` removed entirely — one shortcut to learn
+- `closeAnimationVideo()` and `openAnimationForSelectedCommand()` deleted (dead code)
+- `.explain-video-close` CSS deleted (no overlay close button on video)
+- Shortcut badge is one contextual button: `[Alt+E] explain` / `[Alt+E] watch` / `[Alt+E] close`
+- Panel title bar: one contextual button with `<kbd>Alt+E</kbd>` label showing next action
+- `videoLoading` treated as video state — Alt+E during load cancels/closes
+- Alt+E blocked during answer feedback flash (`QUIZ_ANSWER_FEEDBACK.locked`)
+
+### Answer lock during learning mode
+
+- `handleQuizChoice()`, `handleHintChoice()`, `handleSubconceptChoice()` — guard: `EXPLAINER_STATE.open` blocks
+- Keyboard A/B/C/D blocked in quiz mode when explainer open
+- Typed submit (Enter) blocked when explainer open
+- Prefix-key progression blocked when explainer open
+- MC/fillblank button grids visually dimmed (opacity 0.3, pointer-events none) when explainer open
+
+### Speed fix
+
+- `explainerSlow` only applies when explainer open AND feedback NOT locked
+- During answer flash window (~220ms), enemies move at full speed regardless of explainer state
+
+### Spec artifact
+
+- `alt-e-cycle-spec.md` — full design + Codex review findings (5 findings, all addressed)
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula

@@ -65,8 +65,6 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-video-wrap{position:relative;margin-top:8px;margin-bottom:8px;border-radius:8px;overflow:hidden;background:#000;animation:explain-fade-in .3s ease-out}
 @keyframes explain-fade-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .explain-video{width:100%;display:block;border-radius:8px}
-.explain-video-close{position:absolute;top:8px;right:8px;font-family:inherit;font-size:9px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .2s}
-.explain-video-close:hover{background:rgba(255,68,34,.8);border-color:#ff4422}
 .explain-video-loading{font-size:10px;color:#66ccff88;padding:12px;text-align:center}
 .explain-video-error{font-size:10px;color:#99666688;padding:6px;text-align:center}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
@@ -1098,7 +1096,7 @@ const apStatsCartridge={
   subtitle:'FORMULA DEFENSE',
   startButton:'[ DEPLOY ]',
   instructions:'Enemies carry formulas rendered in LaTeX.<br><b>Identify</b>: pick what the formula calculates (A\u2013D)<br><b>Fill-blank</b>: pick the missing symbol or term (A\u2013C)',
-  instructionsSub:'Wrong answer = enemy surges forward and fractures into harder variants \u00b7 Alt+E = explain \u00b7 Alt+W = watch<br>Tab = cycle \u00b7 12 waves',
+  instructionsSub:'Wrong answer = enemy surges forward and fractures into harder variants \u00b7 Alt+E = explain / watch / close<br>Tab = cycle \u00b7 12 waves',
   commands:[
     // ══ I. DESCRIPTIVE STATISTICS ══
     {id:'mean',action:'Sample Mean (x-bar)',tier:'core',dom:'descriptive',
@@ -2142,25 +2140,20 @@ function openExplanationForSelectedCommand(){
   const entry=EXPLANATION_BANK.byId[sel.cmd.id];
   if(entry)openExplanationEntry(entry,'cmd-'+entry.id);
 }
-function openAnimationForSelectedCommand(){
-  const sel=G.selectedId?G.enemies.find(e=>e.id===G.selectedId):null;
-  if(!sel||!sel.cmd)return;
-  const entry=EXPLANATION_BANK.byId[sel.cmd.id];
-  if(!entry)return;
-  openExplanationEntry(entry,'cmd-'+entry.id);
-  loadAnimation(entry.id);
-}
 function renderShortcutBadges(){
   const sel=G.selectedId?G.enemies.find(e=>e.id===G.selectedId):null;
   const cmdId=sel&&sel.cmd?sel.cmd.id:null;
-  let html='<div class="shortcut-row">';
-  html+='<button class="shortcut-badge" onclick="if(EXPLAINER_STATE.open)closeExplanation();else openExplanationForSelectedCommand()"><kbd>Alt+E</kbd> explain</button>';
-  const avail=getAnimationAvailability(cmdId);
-  if(avail!=='unavailable'){
-    html+='<button class="shortcut-badge" onclick="if(EXPLAINER_STATE.videoUrl)closeAnimationVideo();else openAnimationForSelectedCommand()"><kbd>Alt+W</kbd> watch</button>';
+  let label,action;
+  if(EXPLAINER_STATE.videoUrl||EXPLAINER_STATE.videoLoading){
+    label='close';action='closeExplanation()';
+  }else if(EXPLAINER_STATE.open){
+    const avail=getAnimationAvailability(cmdId);
+    if(avail!=='unavailable'){label='watch';action='loadAnimation(\''+EXPLAINER_STATE.animationId+'\')';}
+    else{label='close';action='closeExplanation()';}
+  }else{
+    label='explain';action='openExplanationForSelectedCommand()';
   }
-  html+='</div>';
-  return html;
+  return '<div class="shortcut-row"><button class="shortcut-badge" onclick="'+action+'"><kbd>Alt+E</kbd> '+label+'</button></div>';
 }
 function renderExplanationControls(answerLabels){
   let html='';
@@ -2168,23 +2161,30 @@ function renderExplanationControls(answerLabels){
   // Render open explainer panel (both platforms)
   if(EXPLAINER_STATE.open){
     const hasVideo=!!EXPLAINER_STATE.videoUrl;
+    const isLoading=EXPLAINER_STATE.videoLoading;
     html+='<div class="explain-panel'+(hasVideo?' has-video':'')+'">';
-    // 1. Title bar goes first
+    // Title bar with one contextual button
     html+='<div class="explain-panel-top"><div class="explain-title">'+EXPLAINER_STATE.title+'</div>';
-    const avail=getAnimationAvailability(EXPLAINER_STATE.animationId);
-    if(!EXPLAINER_STATE.videoUrl&&!EXPLAINER_STATE.videoLoading&&avail!=='unavailable'&&!EXPLAINER_STATE.videoError){
-      html+='<button class="explain-watch" onclick="loadAnimation(\''+EXPLAINER_STATE.animationId+'\')">WATCH</button>';
+    if(hasVideo||isLoading){
+      html+='<button class="explain-close" onclick="closeExplanation()"><kbd>Alt+E</kbd> close</button>';
+    }else{
+      const avail=getAnimationAvailability(EXPLAINER_STATE.animationId);
+      if(avail!=='unavailable'&&!EXPLAINER_STATE.videoError){
+        html+='<button class="explain-watch" onclick="loadAnimation(\''+EXPLAINER_STATE.animationId+'\')"><kbd>Alt+E</kbd> watch</button>';
+      }else{
+        html+='<button class="explain-close" onclick="closeExplanation()"><kbd>Alt+E</kbd> close</button>';
+      }
     }
-    html+='<button class="explain-close" onclick="closeExplanation()">CLOSE</button></div>';
-    // 2. Video player area
-    if(EXPLAINER_STATE.videoUrl){
-      html+='<div class="explain-video-wrap"><video class="explain-video" src="'+EXPLAINER_STATE.videoUrl+'" autoplay playsinline muted loop preload="metadata" onclick="this.muted=!this.muted"></video><button class="explain-video-close" onclick="closeAnimationVideo()">CLOSE VIDEO</button></div>';
-    }else if(EXPLAINER_STATE.videoLoading){
+    html+='</div>';
+    // Video player area
+    if(hasVideo){
+      html+='<div class="explain-video-wrap"><video class="explain-video" src="'+EXPLAINER_STATE.videoUrl+'" autoplay playsinline muted loop preload="metadata" onclick="this.muted=!this.muted"></video></div>';
+    }else if(isLoading){
       html+='<div class="explain-video-loading">Loading animation\u2026</div>';
     }else if(EXPLAINER_STATE.videoError){
       html+='<div class="explain-video-error">Animation not available yet</div>';
     }
-    // 3. Text lines
+    // Text lines
     EXPLAINER_STATE.lines.forEach(line=>{html+='<div class="explain-line">'+line+'</div>'});
     html+='</div>';
   }
@@ -2240,13 +2240,7 @@ function loadAnimation(cmdId){
     lastInputState='';updateInput();
   });
 }
-function closeAnimationVideo(){
-  EXPLAINER_STATE.videoUrl=null;
-  EXPLAINER_STATE.videoLoading=false;
-  EXPLAINER_STATE.videoError=false;
-  EXPLAINER_STATE.videoNonce++;
-  lastInputState='';updateInput();
-}
+
 
 // Utility: shuffle an array (returns new array)
 function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -3665,7 +3659,8 @@ function updateInput(){
       headerHtml+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
       headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
       headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does this formula calculate?</div>';
-      bodyHtml+='<div class="mc-grid">';
+      const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
+      bodyHtml+='<div class="mc-grid"'+answerDim+'>';
       const keys=['A','B','C','D'];
       q.options.forEach((opt,i)=>{
         bodyHtml+='<button class="mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
@@ -3686,7 +3681,7 @@ function updateInput(){
       headerHtml+='<div style="font-size:10px;color:'+AMB.css.mid+';margin:2px 0;letter-spacing:1px;opacity:.7">RE: '+scParent+'</div>';
       if(sel.cmd.latex)headerHtml+='<div class="latex-shell" style="margin:2px 0 4px"><div class="latex-scroll"><div class="latex-display sc-latex" style="font-size:13px"></div></div></div>';
       headerHtml+='<div style="font-size:14px;color:'+scColor+';margin:4px 0;font-weight:700">'+q.text+'</div>';
-      bodyHtml+='<div class="mc-grid">';
+      bodyHtml+='<div class="mc-grid"'+(EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'')+'>';
       const scKeys=q.options.length<=2?['A','B']:['A','B','C'];
       q.options.forEach((opt,i)=>{
         bodyHtml+='<button class="mc-btn" style="border-color:'+scColor+'44" data-choice="'+scKeys[i].toLowerCase()+'" onclick="handleSubconceptChoice(\''+scKeys[i].toLowerCase()+'\')"><span class="mc-key" style="background:'+scColor+'">'+scKeys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
@@ -3699,7 +3694,7 @@ function updateInput(){
       headerHtml+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
       headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
       headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What goes in the blank?</div>';
-      bodyHtml+='<div class="hint-mc-grid">';
+      bodyHtml+='<div class="hint-mc-grid"'+(EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'')+'>';
       const keys2=['A','B','C'];
       q.choices.forEach((ch,i)=>{
         bodyHtml+='<button class="hint-mc-btn" data-choice="'+keys2[i].toLowerCase()+'" onclick="handleHintChoice(\''+keys2[i].toLowerCase()+'\')"><span class="mc-key">'+keys2[i]+'</span> <span id="hint-ch-'+i+'"></span></button>';
@@ -3855,13 +3850,13 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
 
 // Quiz mode handlers (called from onclick in MC buttons)
 function handleQuizChoice(key){
-  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked)return;
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='identify')return;
   queueQuizChoiceResolution(enemy,key,key===enemy.question.correctKey);
 }
 function handleHintChoice(key){
-  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked)return;
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='fillblank')return;
   const idx=['a','b','c'].indexOf(key);
@@ -3870,7 +3865,7 @@ function handleHintChoice(key){
   queueQuizChoiceResolution(enemy,key,activeCartridge.validateBlank(chosen,enemy.question.answer));
 }
 function handleSubconceptChoice(key){
-  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked)return;
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='subconcept')return;
   const idx=['a','b','c'].indexOf(key);
@@ -4037,7 +4032,7 @@ function showTitleScreen(context){
     html+='<div style="font-size:10px;color:#996622;line-height:1.7">';
     html+='<div style="font-size:8px;letter-spacing:1px;color:#5a3800;margin-bottom:2px">KEYBOARD</div>';
     html+='<b style="color:#ff8c00">A-D</b> answer \u00b7 <b style="color:#ff8c00">Tab</b> cycle \u00b7 <b style="color:#ff8c00">P</b> pause \u00b7 <b style="color:#ff8c00">Esc</b> exit<br>';
-    html+='<b style="color:#ff8c00">Space</b> hold feedback \u00b7 <b style="color:#ff8c00">Alt+E</b> explain \u00b7 <b style="color:#ff8c00">Alt+W</b> watch animation<br>';
+    html+='<b style="color:#ff8c00">Space</b> hold feedback \u00b7 <b style="color:#ff8c00">Alt+E</b> explain \u2192 watch \u2192 close<br>';
     if(isTouch){
       html+='<div style="font-size:8px;letter-spacing:1px;color:#5a3800;margin:4px 0 2px">TOUCH</div>';
       html+='<b style="color:#ff8c00">Tap answer</b> \u00b7 <b style="color:#ff8c00">Tap enemy</b> to target \u00b7 <b style="color:#ff8c00">Swipe</b> cycle<br>';
@@ -4405,7 +4400,7 @@ function moveEnemies(){
   const masteryMult=1.0+(avgMastery/5)*0.5;
   // Streak slowmo: time slows during hot streaks (reward for flow state)
   const streakSlow=G.streak>=10?0.5:G.streak>=5?0.7:G.streak>=3?0.85:1.0;
-  const explainerSlow=EXPLAINER_STATE.open?0.35:1.0;
+  const explainerSlow=(EXPLAINER_STATE.open&&!QUIZ_ANSWER_FEEDBACK.locked)?0.35:1.0;
   const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow*explainerSlow;
   G.enemies.forEach(e=>{
     if(e.pendingCorrectHit)return;
@@ -4638,8 +4633,7 @@ window.addEventListener('keydown',e=>{
       }
       // Space dismisses explainer/video
       if(EXPLAINER_STATE.open){
-        if(EXPLAINER_STATE.videoUrl)closeAnimationVideo();
-        else closeExplanation();
+        closeExplanation();
         return;
       }
       if(!MUSIC_EDITOR.open&&!G.paused&&G.screen==='game'&&G.waveComplete){
@@ -4675,18 +4669,21 @@ window.addEventListener('keydown',e=>{
     setTimeout(()=>{if(im2==='quiz')focusBlankInput();else focusTypedInput()},50);
     return;
   }
+  // Alt+E: 3-state cycle (closed → text → video → close)
   if(e.key==='e'&&e.altKey){
     e.preventDefault();
-    if(EXPLAINER_STATE.open)closeExplanation();
-    else openExplanationForSelectedCommand();
-    return;
-  }
-  // Alt+W animation video toggle (standalone — does not require Alt+E first)
-  if(e.key==='w'&&e.altKey){
-    e.preventDefault();
-    if(EXPLAINER_STATE.videoUrl)closeAnimationVideo();
-    else if(EXPLAINER_STATE.open&&EXPLAINER_STATE.animationId)loadAnimation(EXPLAINER_STATE.animationId);
-    else openAnimationForSelectedCommand();
+    if(QUIZ_ANSWER_FEEDBACK.locked)return; // block during feedback
+    if(EXPLAINER_STATE.videoUrl||EXPLAINER_STATE.videoLoading){
+      // video or loading → close everything
+      closeExplanation();
+    }else if(EXPLAINER_STATE.open){
+      // text → try video, or close if unavailable
+      const avail=getAnimationAvailability(EXPLAINER_STATE.animationId);
+      if(avail!=='unavailable')loadAnimation(EXPLAINER_STATE.animationId);
+      else closeExplanation();
+    }else{
+      openExplanationForSelectedCommand();
+    }
     return;
   }
 
@@ -4696,6 +4693,7 @@ window.addEventListener('keydown',e=>{
 
   if(mode==='quiz'){
     // Quiz mode keyboard handling
+    if(EXPLAINER_STATE.open)return; // answers locked during learning mode
     const q=enemy.question;
     if(!q)return;
 
@@ -4720,6 +4718,7 @@ window.addEventListener('keydown',e=>{
     }
   }else if(mode==='prefix-key'){
     e.preventDefault();
+    if(EXPLAINER_STATE.open)return;
     if(G.inputState==='await_prefix'){
       if(e.ctrlKey&&e.key==='b'){G.inputState='await_command';SFX.prefix()}
       return;
@@ -4732,6 +4731,7 @@ window.addEventListener('keydown',e=>{
       }
     }
   }else if(mode==='typed'){
+    if(EXPLAINER_STATE.open)return;
     // If input exists but isn't focused, redirect focus and replay the keystroke
     const inp=document.getElementById('typed-input');
     if(inp&&document.activeElement!==inp){
