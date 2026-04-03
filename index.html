@@ -33,6 +33,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .input-box.done{border-color:#ff8c0088;color:#ff8c00;background:#ff8c0011}
 .hint-text{font-size:12px;color:#996622;margin-top:2px;padding:2px 6px;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:4px}
 .input-help{font-size:10px;color:#3d1f00;margin-top:8px;display:none;line-height:1.4}
+.shortcut-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.shortcut-badge{font-family:inherit;font-size:10px;color:#996622;background:transparent;border:1px solid #5a280044;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.shortcut-badge:hover{border-color:#ff8c00;color:#ff8c00}
+.shortcut-badge:active{transform:scale(.96)}
+.shortcut-badge kbd{font-family:inherit;font-size:9px;font-weight:700;color:#ff8c00;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:3px;padding:1px 5px}
 .explain-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
 .explain-label{font-size:9px;letter-spacing:2px;color:#996622;font-weight:700}
 .explain-chip{font-family:inherit;font-size:10px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .15s}
@@ -1896,6 +1901,18 @@ function openAnimationForSelectedCommand(){
   openExplanationEntry(entry,'cmd-'+entry.id);
   loadAnimation(entry.id);
 }
+function renderShortcutBadges(){
+  const sel=G.selectedId?G.enemies.find(e=>e.id===G.selectedId):null;
+  const cmdId=sel&&sel.cmd?sel.cmd.id:null;
+  let html='<div class="shortcut-row">';
+  html+='<button class="shortcut-badge" onclick="if(EXPLAINER_STATE.open)closeExplanation();else openExplanationForSelectedCommand()"><kbd>Alt+E</kbd> explain</button>';
+  const avail=getAnimationAvailability(cmdId);
+  if(avail!=='unavailable'){
+    html+='<button class="shortcut-badge" onclick="if(EXPLAINER_STATE.videoUrl)closeAnimationVideo();else openAnimationForSelectedCommand()"><kbd>Alt+W</kbd> watch</button>';
+  }
+  html+='</div>';
+  return html;
+}
 function renderExplanationControls(answerLabels){
   let html='';
   const isMobile=isCompactMobileViewport();
@@ -3352,7 +3369,7 @@ function updateInput(){
       });
       bodyHtml+='</div>';
       bodyHtml+=renderExplanationControls(q.options);
-      bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C/D = answer \u00b7 Alt+E = explain \u00b7 Alt+W = watch \u00b7 Tab = switch</div>';
+      bodyHtml+=renderShortcutBadges();
     }else if(q.type==='subconcept'){
       // Sub-concept / sub-sub-concept question (from hydra split)
       const scDepth=sel.splitDepth||1;
@@ -3373,7 +3390,7 @@ function updateInput(){
       });
       bodyHtml+='</div>';
       bodyHtml+=renderExplanationControls();
-      bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">'+(q.options.length<=2?'A/B':'A/B/C')+' = answer \u00b7 Alt+E = explain target \u00b7 Tab = switch</div>';
+      bodyHtml+=renderShortcutBadges();
     }else{
       // fill-blank — always show A/B/C choices
       headerHtml+='<div class="q-type-badge">FILL THE BLANK</div>'+speedInfo;
@@ -3386,7 +3403,7 @@ function updateInput(){
       });
       bodyHtml+='</div>';
       bodyHtml+=renderExplanationControls(q.choices);
-      bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">A/B/C = answer \u00b7 Alt+E = explain \u00b7 Alt+W = watch \u00b7 Tab = switch</div>';
+      bodyHtml+=renderShortcutBadges();
     }
     setInputPanelContent(headerHtml,bodyHtml);
     // Render LaTeX into the display element
@@ -3416,7 +3433,7 @@ function updateInput(){
     let headerHtml='<div class="prompt-label">TARGET:</div><div class="prompt-text">'+promptText+'</div>';
     let bodyHtml='<div style="margin-top:8px"><input type="text" class="typed-input" id="typed-input" placeholder="Type answer..." value="'+G.typedBuffer.replace(/"/g,'&quot;')+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>';
     bodyHtml+=renderExplanationControls();
-    bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Enter = submit \u00b7 Alt+E = explain \u00b7 Alt+W = watch \u00b7 Tab = switch</div>';
+    bodyHtml+=renderShortcutBadges();
     setInputPanelContent(headerHtml,bodyHtml);
     focusTypedInput();
   }else{
@@ -3431,7 +3448,7 @@ function updateInput(){
     let headerHtml='<div class="prompt-label">TARGET COMMAND:</div><div class="prompt-text">'+cmd.action+'</div>';
     let bodyHtml='<div class="input-boxes"><div class="input-box '+(isPre?'active':isCmd?'done':'')+'">'+(isCmd?prefix+' \u2713':prefix)+'</div><span style="color:'+AMB.css.mid+';font-size:16px">\u2192</span><div class="input-box '+(isCmd?'active':'')+'\">'+(isCmd?'?':'\u00b7\u00b7\u00b7')+'</div></div>';
     bodyHtml+=renderExplanationControls();
-    bodyHtml+='<div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Alt+E = explain \u00b7 Alt+W = watch \u00b7 Tab = switch</div>';
+    bodyHtml+=renderShortcutBadges();
     setInputPanelContent(headerHtml,bodyHtml);
   }
 }
