@@ -862,6 +862,23 @@ Removed `setProgress()` which was detuning pads by up to 50% per wave:
 
 Chords now stay perfectly in tune throughout the wave. Only `setKey()` (wave transitions), `syncCurrentVoicing()` (editor), and `seq()` (auto-advance) touch voice frequencies.
 
+## Latest Update: Fractal Trees Background
+
+Replaced fBm shader with 3 recursive 2D fractal trees rendered as Three.js `LineSegments`:
+
+- Recursion depth = musical health (0-5). Health 0 = empty. Health 5 = full canopy. Unmistakable per level.
+- 3 trees: center (tall), left (smaller, offset), right (mirrored). Asymmetric, natural.
+- Beat-synced sway: `sin(timeSec * omega + depth * 0.4) * swayAmp * (0.2 + depth * 0.8)`. Trunk barely moves, tips sway most. Cascading wind ripple effect.
+- Tempo-locked: `omega = (tempo / 60) * 2π`, using `time * 0.001` for seconds.
+- Amber color by depth: dark trunk `#3d1f00` → bright gold tips `#ff8c00` via vertex colors.
+- Smooth health transitions: `treeDisplayDepth` interpolates toward `targetDepth` each frame.
+- `setDrawRange()` controls visible branch count (no per-branch opacity needed).
+- Fog disabled on tree material (`fog: false`) to prevent wash-out.
+- Pre-allocated `Float32Array` with `DynamicDrawUsage` — zero GC churn.
+- 93 segments total at health 5 (3 trees × 31). Cheaper than the shader it replaced.
+- Removed: fBm shader, fractalScene, fractalCamera, dual-pass rendering.
+- Restored: `renderer.setClearColor(AMB.black)`, single-pass render.
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula

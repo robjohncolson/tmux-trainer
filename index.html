@@ -3141,53 +3141,48 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.shadowMap.enabled=false;
 
 // ── Julia set fractal background ──
-const fractalScene=new THREE.Scene();
-const fractalCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-const fractalMaterial=new THREE.ShaderMaterial({
-  depthTest:false,depthWrite:false,
-  uniforms:{
-    octaves:{value:5.0},
-    speed:{value:1.0},
-    time:{value:0.0},
-    resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)}
-  },
-  vertexShader:'void main(){gl_Position=vec4(position,1.0);}',
-  fragmentShader:[
-    'uniform float octaves,speed,time;',
-    'uniform vec2 resolution;',
-    // Hash-based gradient noise for visible fractal structure
-    'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
-    'float noise(vec2 p){',
-    '  vec2 i=floor(p),f=fract(p);',
-    '  f=f*f*(3.0-2.0*f);',
-    '  float a=hash(i),b=hash(i+vec2(1.0,0.0)),c=hash(i+vec2(0.0,1.0)),d=hash(i+vec2(1.0,1.0));',
-    '  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);',
-    '}',
-    'void main(){',
-    '  if(octaves<0.5){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
-    '  vec2 uv=(gl_FragCoord.xy/resolution)*3.0;',
-    '  float t=time*speed*0.08;',
-    '  float v=0.0,amp=0.5,freq=1.0;',
-    // Unrolled 5-octave fBm with step mask for GLSL ES 1.0 compat
-    '  v+=amp*noise(uv*freq+t)*step(0.5,octaves);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq-t*0.7)*step(1.5,octaves);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq+t*0.5)*step(2.5,octaves);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq-t*0.3)*step(3.5,octaves);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq+t*0.2)*step(4.5,octaves);',
-    '  v=pow(v*0.5+0.5,0.7);', // contrast curve
-    // Amber palette
-    '  vec3 dark=vec3(0.05,0.02,0.0);',
-    '  vec3 mid=vec3(0.35,0.18,0.02);',
-    '  vec3 bright=vec3(1.0,0.55,0.0);',
-    '  vec3 col=mix(dark,mix(mid,bright,v),v);',
-    '  col*=0.4;', // dim for readability
-    '  col*=0.88+0.12*sin(time*0.4);', // gentle pulse
-    '  gl_FragColor=vec4(col,1.0);',
-    '}'
-  ].join('\n')
+renderer.setClearColor(AMB.black);
+
+// ── Fractal trees background ──
+const TREE_MAX_SEGMENTS=63; // max per tree at depth 5 (2^6 - 1)
+const TREE_CONFIGS=[
+  {x:0,y:-6,z:-6,scale:1.0,angle:0,branchAngle:Math.PI/6,lenScale:0.68,len:3.5},
+  {x:-5,y:-6,z:-7,scale:0.7,angle:0.15,branchAngle:Math.PI/5.5,lenScale:0.65,len:2.8},
+  {x:4.5,y:-6,z:-7.5,scale:0.65,angle:-0.1,branchAngle:Math.PI/6.5,lenScale:0.7,len:2.6},
+];
+function generateTree(ox,oy,len,angle,ba,ls,depth,levels,timeSec,omega,swayAmp,pos,col,idx){
+  if(depth>=levels)return idx;
+  const sway=Math.sin(timeSec*omega+depth*0.4)*swayAmp*(0.2+depth*0.8);
+  // Deterministic jitter per depth for natural look
+  const jitter=(depth%2===0?0.05:-0.04)*depth*0.3;
+  const a=angle+sway+jitter;
+  const ex=ox+Math.sin(a)*len;
+  const ey=oy+Math.cos(a)*len;
+  pos[idx*6]=ox;pos[idx*6+1]=oy;pos[idx*6+2]=0;
+  pos[idx*6+3]=ex;pos[idx*6+4]=ey;pos[idx*6+5]=0;
+  const t=depth/Math.max(levels-1,1);
+  const r=0.24+t*0.76,g=0.12+t*0.22,b=0.0;
+  col[idx*6]=r;col[idx*6+1]=g;col[idx*6+2]=b;
+  col[idx*6+3]=r;col[idx*6+4]=g;col[idx*6+5]=b;
+  idx++;
+  const cl=len*ls;
+  // Slightly unequal children for organic look
+  idx=generateTree(ex,ey,cl*1.02,a+ba,ba,ls,depth+1,levels,timeSec,omega,swayAmp,pos,col,idx);
+  idx=generateTree(ex,ey,cl*0.98,a-ba,ba,ls,depth+1,levels,timeSec,omega,swayAmp,pos,col,idx);
+  return idx;
+}
+const treeMeshes=TREE_CONFIGS.map(tc=>{
+  const posArr=new Float32Array(TREE_MAX_SEGMENTS*6);
+  const colArr=new Float32Array(TREE_MAX_SEGMENTS*6);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(posArr,3).setUsage(THREE.DynamicDrawUsage));
+  geo.setAttribute('color',new THREE.BufferAttribute(colArr,3).setUsage(THREE.DynamicDrawUsage));
+  const mat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.7,fog:false});
+  const mesh=new THREE.LineSegments(geo,mat);
+  mesh.position.set(tc.x,tc.y,tc.z);
+  return{mesh,geo,posArr,colArr,config:tc};
 });
-const fractalMesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),fractalMaterial);
-fractalScene.add(fractalMesh);
+let treeDisplayDepth=5;
 
 const scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(AMB.black,.035);
@@ -3196,6 +3191,7 @@ const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight
 camera.position.set(0,18,14);
 camera.lookAt(0,0,-1);
 
+treeMeshes.forEach(t=>scene.add(t.mesh));
 const ambLight=new THREE.AmbientLight(AMB.dark,.4);scene.add(ambLight);
 const dirLight=new THREE.DirectionalLight(AMB.bright,.6);dirLight.position.set(5,12,8);scene.add(dirLight);
 const serverLight=new THREE.PointLight(AMB.hot,1.5,15);serverLight.position.set(-7,2,5);scene.add(serverLight);
@@ -5006,18 +5002,26 @@ function animate(time){
     if(b.life<=0){scene.remove(b.line);b.line.material.dispose();b.line.geometry.dispose();beams.splice(i,1)}
   }
 
-  // fBm fractal background pass
+  // Fractal trees background
   const mh=SFX.getMusicalHealth();
   const sk=SFX.getStreak();
-  fractalMaterial.uniforms.octaves.value=mh;
-  fractalMaterial.uniforms.speed.value=1.0+sk*0.1;
-  fractalMaterial.uniforms.time.value=time*0.001;
-  renderer.autoClear=false;
-  renderer.clear();
-  if(mh>0){renderer.render(fractalScene,fractalCamera);}
-  renderer.clearDepth();
+  const targetDepth=mh; // 0-5
+  treeDisplayDepth+=(targetDepth-treeDisplayDepth)*0.05; // smooth transition
+  const displayLevels=Math.round(treeDisplayDepth);
+  const timeSec=time*0.001;
+  const tempo=SFX.getMusicConfig?SFX.getMusicConfig().tempo||80:80;
+  const omega=(tempo/60)*Math.PI*2;
+  const swayAmp=0.03+sk*0.005;
+  treeMeshes.forEach(t=>{
+    const tc=t.config;
+    const levels=Math.max(0,Math.min(6,displayLevels+1));
+    const count=generateTree(0,0,tc.len,tc.angle,tc.branchAngle,tc.lenScale,0,levels,timeSec,omega,swayAmp,t.posArr,t.colArr,0);
+    t.geo.attributes.position.needsUpdate=true;
+    t.geo.attributes.color.needsUpdate=true;
+    t.geo.setDrawRange(0,count*2);
+    t.mesh.visible=displayLevels>0;
+  });
   renderer.render(scene,camera);
-  renderer.autoClear=true;
 }
 requestAnimationFrame(animate);
 
@@ -5031,7 +5035,6 @@ function handleResize(){
   camera.fov=isPortrait()?65:50;
   camera.updateProjectionMatrix();
   renderer.setSize(w,h);
-  fractalMaterial.uniforms.resolution.value.set(w,h);
 }
 window.addEventListener('resize',handleResize);
 window.addEventListener('orientationchange',()=>setTimeout(handleResize,150));
