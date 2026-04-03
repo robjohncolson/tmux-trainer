@@ -651,6 +651,36 @@ Simplified the shortcut system from three overlapping learning aids to two clean
 - `shortcut-simplify-spec.md` — hint removal + Alt+W independence design
 - `gemini-ui-review-prompt.md` — Gemini review prompt for UI polish pass
 
+## Latest Update: Service Worker — Offline Caching
+
+Added `sw.js` for offline-capable caching of the app shell, CDN libs, and Manim animation videos.
+
+### Caching strategy (per Codex review)
+
+- **Navigation (index.html)**: network-first with cache fallback — deploys propagate immediately, offline still works
+- **CDN assets** (Three.js, KaTeX, QRCode): cache-first — version-pinned URLs are immutable
+- **Animation MP4s**: cache-first from runtime cache — cached after first watch, instant replay
+- **Animation manifest**: stale-while-revalidate — picks up new animations on next visit
+- **Range requests** (video seeking): bypass SW entirely — prevents broken seeking/206 responses
+- **Railway API** (cloud sync): never cached — always hits network
+
+### CDN CORS fix
+
+Added `crossorigin="anonymous"` to all 4 CDN `<script>`/`<link>` tags so the SW gets proper CORS responses instead of opaque objects.
+
+### Install resilience
+
+Same-origin shell precached on install (must succeed). CDN assets cached individually with per-asset error handling — a single CDN failure won't block SW activation.
+
+### Immediate takeover
+
+`skipWaiting()` + `clients.claim()` — new SW versions activate immediately across all tabs.
+
+### Files
+
+- `sw.js` — Service Worker with install/activate/fetch handlers
+- `index.html` — 3-line SW registration at end of script, `crossorigin` on CDN tags
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
