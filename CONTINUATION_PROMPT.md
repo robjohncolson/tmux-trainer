@@ -879,6 +879,31 @@ Replaced fBm shader with 3 recursive 2D fractal trees rendered as Three.js `Line
 - Removed: fBm shader, fractalScene, fractalCamera, dual-pass rendering.
 - Restored: `renderer.setClearColor(AMB.black)`, single-pass render.
 
+## Latest Update: Grounded Trees + fBm Amber Sky
+
+### Trees grounded on terrain
+
+- `terrainHeight(x,z)` helper extracts the terrain height formula for reuse
+- Tree mesh positions now use `terrainHeight(tc.x, tc.z)` for y — trunks grow from the grid surface
+- Tree positions: center (0,-4), left (-5,-6), right (4.5,-5) — behind the enemy path
+- Trees grow upward in world y from their terrain-grounded base
+
+### fBm amber sky restored
+
+- Brought back the fBm noise shader as a pure decorative backdrop (always 5 octaves, not health-driven)
+- `skyScene` + `skyCamera` + `skyMaterial` — separate render pass
+- Dual-pass: sky rendered first → `clearDepth()` → game scene on top
+- Dimmed to 0.25 intensity so it doesn't fight the game foreground
+- Gentle time-based pulse animation
+
+### Render order
+
+1. fBm amber sky (fullscreen shader quad)
+2. Clear depth buffer
+3. Game scene (terrain, trees, enemies, particles, etc.)
+
+Trees are IN the game scene so they interact with fog, camera, and depth correctly.
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
