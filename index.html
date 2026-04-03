@@ -31,7 +31,6 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .input-box{padding:6px 16px;border:1.5px solid #3d1f00;border-radius:4px;font-size:16px;font-weight:600;color:#5a3800;background:#0d0500;min-width:64px;text-align:center;transition:all .2s}
 .input-box.active{border-color:#ff8c00;color:#ff8c00;box-shadow:0 0 10px #ff8c0044}
 .input-box.done{border-color:#ff8c0088;color:#ff8c00;background:#ff8c0011}
-.hint-text{font-size:12px;color:#996622;margin-top:2px;padding:2px 6px;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:4px}
 .input-help{font-size:10px;color:#3d1f00;margin-top:8px;display:none;line-height:1.4}
 .shortcut-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .shortcut-badge{font-family:inherit;font-size:10px;color:#996622;background:transparent;border:1px solid #5a280044;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
@@ -238,7 +237,6 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .prompt-label{font-size:8px;letter-spacing:2px}
 .q-type-badge{font-size:7px}
 .input-help{display:none}
-.hint-text{font-size:11px;margin-top:4px}
 .latex-display .katex{font-size:1em}
 .hud-item.hud-mobile-hide{display:none}
 #h-sync{font-size:8px!important;max-width:20px;overflow:hidden}
@@ -2435,7 +2433,7 @@ function sanitizeSrsCard(card,defaults){
   c.rev=Number.isFinite(c.rev)?Math.max(0,Math.floor(c.rev)):0;
   return c;
 }
-function srsHit(card,wave,timeMs,usedHint,attempts,bktOutcome){
+function srsHit(card,wave,timeMs,attempts,bktOutcome){
   const c={...card,subPKnown:{...(card.subPKnown||{})}};c.correct++;c.streak++;c.lastSeen=wave;
   c.avgTimeMs=c.totalAttempts>0?(c.avgTimeMs*c.totalAttempts+timeMs)/(c.totalAttempts+1):timeMs;
   c.totalAttempts++;
@@ -4187,7 +4185,7 @@ function handleHit(enemy){
   SFX.advanceChord(); // Progress the chord on each correct answer
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
   const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,responseTimeMs:responseTime};
-  G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,false,attempts,bktCtx);
+  G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
   saveSRS(); // debounced per-answer save
   removeEnemyMesh(enemy.id);
   G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
