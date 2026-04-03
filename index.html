@@ -4100,7 +4100,8 @@ function moveEnemies(){
   const masteryMult=1.0+(avgMastery/5)*0.5;
   // Streak slowmo: time slows during hot streaks (reward for flow state)
   const streakSlow=G.streak>=10?0.5:G.streak>=5?0.7:G.streak>=3?0.85:1.0;
-  const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow;
+  const explainerSlow=EXPLAINER_STATE.open?0.1:1.0;
+  const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow*explainerSlow;
   G.enemies.forEach(e=>{
     if(e.pendingCorrectHit)return;
     e.t+=speed*(e.speedMult||1);
