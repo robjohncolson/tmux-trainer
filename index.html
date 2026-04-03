@@ -20,8 +20,9 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #input-panel *{pointer-events:auto}
 #ip-header,#ip-body{width:min(760px,100%);margin:0 auto;background:rgba(13,5,0,0.8);border:1px solid #ff8c0018;box-shadow:0 10px 24px #00000033}
 #ip-header{flex:0 0 auto;max-height:40%;overflow:hidden;border-bottom:none;border-radius:12px 12px 0 0;padding:8px 10px 8px}
-#ip-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border-top:none;border-radius:0 0 12px 12px;padding:6px 10px 8px;scrollbar-width:none}
-#ip-body::-webkit-scrollbar{display:none}
+#ip-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;border-top:none;border-radius:0 0 12px 12px;padding:6px 10px 8px;scrollbar-width:thin;scrollbar-color:#ff8c0044 transparent}
+#ip-body::-webkit-scrollbar{display:block;width:6px}
+#ip-body::-webkit-scrollbar-thumb{background:#ff8c0044;border-radius:4px}
 #ip-header:empty,#ip-body:empty{display:none}
 #ip-header:empty+#ip-body{border-top:1px solid #ff8c0018;border-radius:12px;padding-top:10px}
 .prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
@@ -57,9 +58,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-line{font-size:11px;line-height:1.55;color:#d8943d;margin-top:4px}
 .explain-watch{font-family:inherit;font-size:10px;font-weight:700;color:#66ccff;background:transparent;border:1px solid #2266aa;border-radius:999px;padding:4px 9px;cursor:pointer;margin-left:auto}
 .explain-watch:hover{border-color:#66ccff}
-.explain-video-wrap{position:relative;margin-bottom:8px;border-radius:8px;overflow:hidden;background:#000}
+.explain-video-wrap{position:relative;margin-top:8px;margin-bottom:8px;border-radius:8px;overflow:hidden;background:#000;animation:explain-fade-in .3s ease-out}
+@keyframes explain-fade-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .explain-video{width:100%;display:block;border-radius:8px}
-.explain-video-close{position:absolute;top:4px;right:4px;font-family:inherit;font-size:9px;font-weight:700;color:#fff;background:#0008;border:none;border-radius:999px;padding:3px 8px;cursor:pointer}
+.explain-video-close{position:absolute;top:8px;right:8px;font-family:inherit;font-size:9px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .2s}
+.explain-video-close:hover{background:rgba(255,68,34,.8);border-color:#ff4422}
 .explain-video-loading{font-size:10px;color:#66ccff88;padding:12px;text-align:center}
 .explain-video-error{font-size:10px;color:#99666688;padding:6px;text-align:center}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
@@ -77,8 +80,8 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #overlay.hidden{opacity:0;pointer-events:none}
 #overlay h1{font-size:56px;font-weight:900;letter-spacing:14px;color:#ff8c00;text-shadow:0 0 20px #ff8c00,0 0 40px #ff8c0044;margin-bottom:4px}
 #overlay h2{font-size:16px;font-weight:400;letter-spacing:8px;color:#cc6600;margin-bottom:20px}
-#overlay .btn{font-family:inherit;font-size:15px;font-weight:700;color:#0d0500;background:#ff8c00;border:none;padding:12px 36px;cursor:pointer;letter-spacing:3px;text-transform:uppercase;box-shadow:0 0 20px #ff8c0066;margin-top:16px}
-#overlay .btn:hover{background:#ffaa22}
+.btn{font-family:inherit;font-size:15px;font-weight:700;color:#0d0500;background:#ff8c00;border:none;padding:12px 36px;cursor:pointer;letter-spacing:3px;text-transform:uppercase;box-shadow:0 0 20px #ff8c0066;margin-top:16px}
+.btn:hover{background:#ffaa22}
 #overlay .desc{font-size:12px;line-height:1.7;color:#996622;max-width:380px;text-align:center;margin-bottom:12px}
 #overlay .sub{font-size:11px;color:#5a3800;margin-top:12px;text-align:center}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;width:100%;max-width:320px}
@@ -141,10 +144,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .diff-btn{font-family:inherit;font-size:11px;font-weight:600;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s;text-align:center}
 .diff-btn.active{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018;box-shadow:0 0 8px #ff8c0022}
 .diff-btn:hover{border-color:#ff8c00}
+.btn:active,.mc-btn:active,.hint-mc-btn:active,.domain-pill:active,.diff-btn:active,.touch-btn:active{transform:scale(.96);transition:transform .05s}
 .diff-btn .diff-label{font-size:11px;font-weight:700;letter-spacing:1px}
 .diff-btn .diff-desc{font-size:8px;color:#5a3800;margin-top:2px}
-#overlay .btn.btn-secondary{color:#ff8c00;background:transparent;border:1.5px solid #ff8c0033;box-shadow:none}
-#overlay .btn.btn-secondary:hover{background:#ff8c0018}
+.btn.btn-secondary{color:#ff8c00;background:transparent;border:1.5px solid #ff8c0033;box-shadow:none}
+.btn.btn-secondary:hover{background:#ff8c0018}
 .menu-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .menu-actions .btn{margin-top:0}
 .music-editor{width:min(960px,92vw);max-height:min(86vh,820px);overflow-y:auto;padding:22px 24px 24px;border-radius:16px;border:1px solid #ff8c0033;background:linear-gradient(180deg,#1a0800f5,#100600f7);box-shadow:0 22px 70px #00000099,0 0 30px #ff8c0018}
@@ -208,7 +212,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hud-val{font-size:clamp(12px,3.5vw,16px)}
 #h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
 #tier-bar{top:40px;font-size:8px}
-#mute-btn{font-size:16px;padding:6px 8px;top:6px;right:auto;left:6px}
+#mute-btn{font-size:16px;padding:6px 8px;top:6px;right:auto;left:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
 .sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
@@ -223,7 +227,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-panel.has-video{max-height:min(45vh,360px)}
 .explain-video-wrap{max-height:30vh}
 .explain-video{max-height:30vh;object-fit:contain}
-.explain-panel.has-video .explain-line{display:none}
+.explain-panel.has-video .explain-line{opacity:0;max-height:0;margin:0;overflow:hidden;transition:all .3s ease-out}
 .explain-line{font-size:10px}
 .prompt-text{font-size:clamp(13px,3.5vw,18px)}
 .prompt-label{font-size:8px;letter-spacing:2px}
@@ -239,7 +243,7 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
 #overlay h2{font-size:clamp(11px,3vw,16px);letter-spacing:clamp(3px,1.5vw,8px)}
 #overlay .desc{font-size:clamp(10px,2.5vw,12px);max-width:90vw;padding:0 10px}
-#overlay .btn{font-size:14px;padding:14px 28px;min-height:48px}
+.btn{font-size:14px;padding:14px 28px;min-height:48px}
 #overlay .sub{font-size:10px}
 .menu-actions{width:100%;padding:0 10px}
 .menu-actions .btn{width:100%}
@@ -1902,21 +1906,22 @@ function renderExplanationControls(answerLabels){
   if(EXPLAINER_STATE.open){
     const hasVideo=!!EXPLAINER_STATE.videoUrl;
     html+='<div class="explain-panel'+(hasVideo?' has-video':'')+'">';
-    // Video player area
-    if(EXPLAINER_STATE.videoUrl){
-      html+='<div class="explain-video-wrap"><video class="explain-video" src="'+EXPLAINER_STATE.videoUrl+'" autoplay playsinline muted loop preload="metadata" onclick="this.muted=!this.muted"></video><button class="explain-video-close" onclick="closeAnimationVideo()">CLOSE</button></div>';
-    }else if(EXPLAINER_STATE.videoLoading){
-      html+='<div class="explain-video-loading">Loading animation\u2026</div>';
-    }else if(EXPLAINER_STATE.videoError){
-      html+='<div class="explain-video-error">Animation not available yet</div>';
-    }
-    // Title bar with optional WATCH button
+    // 1. Title bar goes first
     html+='<div class="explain-panel-top"><div class="explain-title">'+EXPLAINER_STATE.title+'</div>';
     const avail=getAnimationAvailability(EXPLAINER_STATE.animationId);
     if(!EXPLAINER_STATE.videoUrl&&!EXPLAINER_STATE.videoLoading&&avail!=='unavailable'&&!EXPLAINER_STATE.videoError){
       html+='<button class="explain-watch" onclick="loadAnimation(\''+EXPLAINER_STATE.animationId+'\')">WATCH</button>';
     }
     html+='<button class="explain-close" onclick="closeExplanation()">CLOSE</button></div>';
+    // 2. Video player area
+    if(EXPLAINER_STATE.videoUrl){
+      html+='<div class="explain-video-wrap"><video class="explain-video" src="'+EXPLAINER_STATE.videoUrl+'" autoplay playsinline muted loop preload="metadata" onclick="this.muted=!this.muted"></video><button class="explain-video-close" onclick="closeAnimationVideo()">CLOSE VIDEO</button></div>';
+    }else if(EXPLAINER_STATE.videoLoading){
+      html+='<div class="explain-video-loading">Loading animation\u2026</div>';
+    }else if(EXPLAINER_STATE.videoError){
+      html+='<div class="explain-video-error">Animation not available yet</div>';
+    }
+    // 3. Text lines
     EXPLAINER_STATE.lines.forEach(line=>{html+='<div class="explain-line">'+line+'</div>'});
     html+='</div>';
   }
@@ -3626,11 +3631,7 @@ function showPauseScreen(){
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'pause\')">[ MUSIC EDITOR ]</button>';
   html+='<button class="btn btn-secondary" onclick="returnToTitleFromRun()">[ MAIN MENU ]</button>';
   html+='</div>';
-  if(typeof QRCode!=='undefined'){
-    html+='<div style="margin-top:16px;text-align:center"><canvas id="pause-qr"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
-  }
   ov.innerHTML=html;
-  renderQR('pause-qr');
   SFX.stopBGM();
 }
 
