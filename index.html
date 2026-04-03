@@ -3192,16 +3192,16 @@ skyScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),skyMaterial));
 function terrainHeight(x,z){return Math.sin(x*.3)*Math.cos(z*.4)*.4+Math.sin(x*.7+z*.5)*.2;}
 const TREE_MAX_SEGMENTS=1023; // depth 10
 const TREE_POOL=[
-  {x:0,   z:-4,  angle:0,    ba:Math.PI/6,  ls:0.68,len:3.5,unlockAt:1},
-  {x:-4,  z:-5,  angle:0.15, ba:Math.PI/5.5,ls:0.65,len:2.8,unlockAt:3},
-  {x:4,   z:-4.5,angle:-0.1, ba:Math.PI/6.5,ls:0.70,len:2.6,unlockAt:3},
-  {x:-7,  z:-7,  angle:0.08, ba:Math.PI/5,  ls:0.63,len:2.2,unlockAt:5},
-  {x:6,   z:-6.5,angle:-0.12,ba:Math.PI/6.2,ls:0.66,len:2.0,unlockAt:5},
-  {x:-2,  z:-8,  angle:0.05, ba:Math.PI/5.8,ls:0.64,len:2.4,unlockAt:7},
-  {x:2.5, z:-7.5,angle:-0.07,ba:Math.PI/6.3,ls:0.67,len:2.3,unlockAt:7},
-  {x:-8,  z:-9,  angle:0.1,  ba:Math.PI/5.2,ls:0.62,len:1.8,unlockAt:9},
-  {x:7.5, z:-8.5,angle:-0.08,ba:Math.PI/6.8,ls:0.65,len:1.9,unlockAt:9},
-  {x:0,   z:-10, angle:0,    ba:Math.PI/5.5,ls:0.60,len:2.0,unlockAt:10},
+  {x:0,   z:-10,  angle:0,    ba:Math.PI/6,  ls:0.68,len:3.5,unlockAt:1},
+  {x:-4,  z:-11,  angle:0.15, ba:Math.PI/5.5,ls:0.65,len:2.8,unlockAt:3},
+  {x:4,   z:-10.5,angle:-0.1, ba:Math.PI/6.5,ls:0.70,len:2.6,unlockAt:3},
+  {x:-7,  z:-13,  angle:0.08, ba:Math.PI/5,  ls:0.63,len:2.2,unlockAt:5},
+  {x:6,   z:-12.5,angle:-0.12,ba:Math.PI/6.2,ls:0.66,len:2.0,unlockAt:5},
+  {x:-2,  z:-14,  angle:0.05, ba:Math.PI/5.8,ls:0.64,len:2.4,unlockAt:7},
+  {x:2.5, z:-13.5,angle:-0.07,ba:Math.PI/6.3,ls:0.67,len:2.3,unlockAt:7},
+  {x:-8,  z:-15,  angle:0.1,  ba:Math.PI/5.2,ls:0.62,len:1.8,unlockAt:9},
+  {x:7.5, z:-14.5,angle:-0.08,ba:Math.PI/6.8,ls:0.65,len:1.9,unlockAt:9},
+  {x:0,   z:-16,  angle:0,    ba:Math.PI/5.5,ls:0.60,len:2.0,unlockAt:10},
 ];
 function generateTree(ox,oy,len,angle,ba,ls,depth,levels,timeSec,omega,swayAmp,pos,col,idx){
   if(depth>=levels)return idx;
@@ -3873,6 +3873,9 @@ function clearQuizAnswerFeedback(){
   document.querySelectorAll('.mc-grid.answer-pending,.hint-mc-grid.answer-pending').forEach(el=>el.classList.remove('answer-pending'));
   document.querySelectorAll('.mc-btn.correct,.mc-btn.wrong,.hint-mc-btn.correct,.hint-mc-btn.wrong').forEach(btn=>btn.classList.remove('correct','wrong'));
   const fb=document.getElementById('wrong-fb');if(fb)fb.remove();
+  const reId=QUIZ_ANSWER_FEEDBACK.reshuffleEnemyId;
+  QUIZ_ANSWER_FEEDBACK.reshuffleEnemyId=null;
+  if(reId){const re=G.enemies.find(en=>en.id===reId);if(re&&re.question)reshuffleQuestionOptions(re);}
 }
 function reshuffleQuestionOptions(enemy){
   const q=enemy.question;
@@ -3902,7 +3905,7 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
   QUIZ_ANSWER_FEEDBACK.locked=true;
   if(isCorrect)enemy.pendingCorrectHit=true;
   // Increment missCount BEFORE scheduling so delay uses updated value
-  if(!isCorrect)enemy.missCount=(enemy.missCount||0)+1;
+  if(!isCorrect){enemy.missCount=(enemy.missCount||0)+1;QUIZ_ANSWER_FEEDBACK.reshuffleEnemyId=enemy.id;}
   const delay=isCorrect?220:0; // wrong answers auto-hold (no timer)
   if(group)group.classList.add('answer-pending');
   if(btn)btn.classList.add(isCorrect?'correct':'wrong');
@@ -3933,9 +3936,6 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
     if(isCorrect){handleHit(liveEnemy)}
     else{
       handleMiss(liveEnemy);
-      // Reshuffle options after miss so player can't systematically try a→b→c→d
-      const stillAlive=G.enemies.find(en=>en.id===enemy.id);
-      if(stillAlive&&stillAlive.question)reshuffleQuestionOptions(stillAlive);
     }
   };
   QUIZ_ANSWER_FEEDBACK.heldCallback=resolveFn;

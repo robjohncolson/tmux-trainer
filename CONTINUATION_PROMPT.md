@@ -938,6 +938,18 @@ Trees are IN the game scene so they interact with fog, camera, and depth correct
 - `SFX.musicalMiss()` / `SFX.musicalBreach()` → deleted (game code sets `G.treeDepth` directly)
 - `SFX.setTreeDepth(d)` → new, replaces all three
 
+## Latest Update: Answer Validation Fix + Tree Z-Push
+
+### Reshuffle timing fix
+- `reshuffleQuestionOptions()` moved from `resolveFn()` to `clearQuizAnswerFeedback()`
+- Options stay stable while wrong-answer feedback is visible (GOT IT / space)
+- `QUIZ_ANSWER_FEEDBACK.reshuffleEnemyId` stores target for deferred reshuffle
+- Reshuffle triggers on any feedback dismiss path (GOT IT, space, enemy death, game restart)
+
+### Tree positioning
+- All TREE_POOL z-coordinates pushed back by 6 units (z:-4..-10 → z:-10..-16)
+- Trees now well behind enemy cubes when camera zooms in
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
