@@ -1662,8 +1662,24 @@ const apStatsCartridge={
   // Generate a question for an enemy at spawn time
   generateQuestion(cmd, allCommands){
     const diff=G.difficulty||'learn';
-    const fillChance=diff==='learn'?0.25:diff==='practice'?0.65:0.85;
-    const type=Math.random()<fillChance?'fillblank':'identify';
+    const vars=VARIABLE_BANK[cmd.id];
+    const hasVars=vars&&vars.length>0;
+    const varChance=hasVars?0.20:0;
+    const fillChance=diff==='learn'?0.25*(1-varChance):diff==='practice'?0.65*(1-varChance):0.85*(1-varChance);
+    const roll=Math.random();
+    const type=roll<varChance?'variable':roll<varChance+fillChance?'fillblank':'identify';
+    if(type==='variable'){
+      const v=vars[Math.floor(Math.random()*vars.length)];
+      const allDescs=[];
+      for(const id of Object.keys(VARIABLE_BANK)){
+        if(id===cmd.id)continue;
+        VARIABLE_BANK[id].forEach(vv=>{if(vv.d!==v.d&&!allDescs.includes(vv.d))allDescs.push(vv.d)});
+      }
+      const distractors=shuffleArr(allDescs).slice(0,3);
+      const options=shuffleArr([v.d,...distractors]);
+      const correctIdx=options.indexOf(v.d);
+      return{type:'variable',latex:cmd.latex,symbol:v.s,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    }
     if(type==='identify'){
       // Pick 3 distractors from other commands, prefer same domain
       const sameDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom===cmd.dom);
@@ -1713,6 +1729,75 @@ const apStatsCartridge={
     const ai=aliases[ni]||ni, aa=aliases[na]||na;
     return ai===aa;
   },
+};
+
+const VARIABLE_BANK={
+  'mean':[{s:'\\bar{x}',d:'sample mean'},{s:'x_i',d:'individual data values'},{s:'n',d:'sample size'}],
+  'std-dev':[{s:'s',d:'sample standard deviation'},{s:'n-1',d:'degrees of freedom'}],
+  'linreg':[{s:'\\hat{y}',d:'predicted response'},{s:'b',d:'slope'},{s:'a',d:'y-intercept'}],
+  'linreg-mean':[{s:'\\bar{x}',d:'mean of x-values'},{s:'\\bar{y}',d:'mean of y-values'}],
+  'corr-r':[{s:'r',d:'correlation coefficient'},{s:'z_x',d:'standardized x'},{s:'z_y',d:'standardized y'}],
+  'slope-b':[{s:'b',d:'sample slope'},{s:'x_i',d:'x-values'},{s:'y_i',d:'y-values'}],
+  'zscore':[{s:'z',d:'z-score'},{s:'\\mu',d:'population mean'},{s:'\\sigma',d:'population SD'}],
+  'iqr':[{s:'IQR',d:'interquartile range'},{s:'Q_1',d:'25th percentile'},{s:'Q_3',d:'75th percentile'}],
+  'outlier-iqr':[{s:'Q_1',d:'25th percentile'},{s:'Q_3',d:'75th percentile'},{s:'IQR',d:'spread of middle 50%'}],
+  'empirical-rule':[{s:'\\mu',d:'center of distribution'},{s:'\\sigma',d:'standard deviation'},{s:'2\\sigma',d:'captures ~95% of data'}],
+  'residual':[{s:'e',d:'residual'},{s:'y',d:'observed value'},{s:'\\hat{y}',d:'predicted value'}],
+  'r-squared':[{s:'r^2',d:'proportion of variation explained'},{s:'r',d:'correlation coefficient'}],
+  'y-intercept':[{s:'a',d:'y-intercept'},{s:'\\bar{y}',d:'mean of y'},{s:'\\bar{x}',d:'mean of x'}],
+  'add-rule':[{s:'P(A \\cup B)',d:'prob of A or B'},{s:'P(A \\cap B)',d:'prob of A and B'}],
+  'cond-prob':[{s:'P(A|B)',d:'prob of A given B'},{s:'P(B)',d:'prob of condition'}],
+  'complement':[{s:'P(A^c)',d:'prob event does NOT happen'},{s:'P(A)',d:'prob event happens'}],
+  'mult-rule':[{s:'P(A \\cap B)',d:'prob of both'},{s:'P(B|A)',d:'prob of B given A'}],
+  'mult-independent':[{s:'P(A)',d:'prob of first event'},{s:'P(B)',d:'prob of second event'}],
+  'rv-mean':[{s:'\\mu_X',d:'expected value'},{s:'x_i',d:'possible outcomes'},{s:'P(x_i)',d:'probability of each outcome'}],
+  'rv-sd':[{s:'\\sigma_X',d:'SD of random variable'},{s:'\\mu_X',d:'expected value'}],
+  'binom-pmf':[{s:'n',d:'number of trials'},{s:'k',d:'number of successes'},{s:'p',d:'prob of success per trial'}],
+  'binom-mean':[{s:'\\mu',d:'expected number of successes'},{s:'n',d:'number of trials'},{s:'p',d:'prob of success'}],
+  'binom-sd':[{s:'\\sigma',d:'SD of binomial'},{s:'n',d:'number of trials'},{s:'p',d:'prob of success'}],
+  'geom-pmf':[{s:'k',d:'trial of first success'},{s:'p',d:'prob of success per trial'}],
+  'geom-mean':[{s:'\\mu',d:'expected trials to first success'},{s:'p',d:'prob of success'}],
+  'geom-sd':[{s:'\\sigma',d:'SD of geometric'},{s:'p',d:'prob of success'}],
+  'lincomb-mean':[{s:'a',d:'coefficient/multiplier'},{s:'\\mu_X',d:'mean of X'},{s:'\\mu_Y',d:'mean of Y'}],
+  'lincomb-var':[{s:'a^2',d:'squared coefficient'},{s:'\\sigma^2_X',d:'variance of X'}],
+  'lintransform':[{s:'a',d:'multiplier \u2014 stretches spread'},{s:'b',d:'shift \u2014 moves center only'}],
+  'chi-sq':[{s:'\\chi^2',d:'test statistic'},{s:'O',d:'observed count'},{s:'E',d:'expected count'}],
+  'expected-twoway':[{s:'E',d:'expected count'},{s:'n',d:'grand total'}],
+  'expected-gof':[{s:'E',d:'expected count'},{s:'n',d:'sample size'},{s:'p',d:'hypothesized proportion'}],
+  'df-gof':[{s:'df',d:'degrees of freedom'},{s:'k',d:'number of categories'}],
+  'df-twoway':[{s:'r',d:'number of rows'},{s:'c',d:'number of columns'}],
+  'z-test-stat':[{s:'z',d:'test statistic'},{s:'SE',d:'standard error'}],
+  'ci-formula':[{s:'\\text{statistic}',d:'point estimate'},{s:'SE',d:'standard error'}],
+  'power':[{s:'\\beta',d:'prob of Type II error'},{s:'\\text{Power}',d:'prob of correctly rejecting false H_0'}],
+  'margin-error':[{s:'ME',d:'margin of error'},{s:'z^*',d:'critical value'}],
+  'width-ci':[{s:'n',d:'sample size'},{s:'ME',d:'margin of error'}],
+  'df-t':[{s:'df',d:'degrees of freedom'},{s:'n',d:'sample size'}],
+  'type-i-error':[{s:'\\alpha',d:'significance level'},{s:'H_0',d:'null hypothesis'}],
+  'type-ii-error':[{s:'\\beta',d:'Type II error rate'},{s:'H_a',d:'alternative hypothesis'}],
+  'large-counts':[{s:'n',d:'sample size'},{s:'p',d:'proportion'},{s:'np',d:'expected successes'}],
+  'phat-mean':[{s:'\\mu_{\\hat{p}}',d:'center of sampling dist'},{s:'p',d:'true population proportion'}],
+  'phat-sd':[{s:'\\sigma_{\\hat{p}}',d:'SD of sampling dist'},{s:'p',d:'population proportion'},{s:'n',d:'sample size'}],
+  'phat-se':[{s:'SE_{\\hat{p}}',d:'standard error'},{s:'\\hat{p}',d:'sample proportion'}],
+  'diff-p-sd':[{s:'p_1',d:'population proportion group 1'},{s:'p_2',d:'population proportion group 2'},{s:'n_1',d:'sample size group 1'}],
+  'diff-p-se':[{s:'\\hat{p}_1',d:'sample proportion group 1'},{s:'\\hat{p}_2',d:'sample proportion group 2'}],
+  'pooled-se':[{s:'\\hat{p}_c',d:'combined sample proportion'},{s:'n_1',d:'sample size group 1'},{s:'n_2',d:'sample size group 2'}],
+  'one-prop-z':[{s:'\\hat{p}',d:'sample proportion'},{s:'p_0',d:'hypothesized proportion under H_0'},{s:'n',d:'sample size'}],
+  'two-prop-z':[{s:'\\hat{p}_1',d:'sample proportion group 1'},{s:'\\hat{p}_2',d:'sample proportion group 2'},{s:'\\hat{p}_c',d:'pooled proportion'}],
+  'xbar-mean':[{s:'\\mu_{\\bar{x}}',d:'center of sampling dist'},{s:'\\mu',d:'population mean'}],
+  'xbar-sd':[{s:'\\sigma_{\\bar{x}}',d:'SD of sampling dist'},{s:'\\sigma',d:'population SD'},{s:'n',d:'sample size'}],
+  'xbar-se':[{s:'SE_{\\bar{x}}',d:'standard error'},{s:'s',d:'sample SD'}],
+  'diff-x-sd':[{s:'\\sigma_1',d:'pop SD group 1'},{s:'\\sigma_2',d:'pop SD group 2'}],
+  'diff-x-se':[{s:'s_1',d:'sample SD group 1'},{s:'s_2',d:'sample SD group 2'}],
+  'one-mean-t':[{s:'\\bar{x}',d:'sample mean'},{s:'\\mu_0',d:'hypothesized mean under H_0'},{s:'s',d:'sample SD'}],
+  'two-mean-t':[{s:'\\bar{x}_1',d:'sample mean group 1'},{s:'\\bar{x}_2',d:'sample mean group 2'}],
+  'paired-t':[{s:'\\bar{d}',d:'mean of paired differences'},{s:'s_d',d:'SD of differences'},{s:'n',d:'number of pairs'}],
+  'slope-mean':[{s:'\\mu_b',d:'center of slope sampling dist'},{s:'\\beta',d:'true population slope'}],
+  'slope-sd':[{s:'\\sigma',d:'residual SD'},{s:'\\sigma_x',d:'SD of x-values'},{s:'n',d:'sample size'}],
+  'slope-se':[{s:'s',d:'residual SD'},{s:'s_x',d:'sample SD of x'},{s:'n-1',d:'df adjustment'}],
+  'resid-s':[{s:'s',d:'residual SD'},{s:'n-2',d:'df for regression'}],
+  'slope-t':[{s:'b',d:'sample slope'},{s:'\\beta_0',d:'hypothesized slope under H_0'},{s:'s_b',d:'SE of slope'}],
+  'slope-ci':[{s:'b',d:'sample slope'},{s:'t^*',d:'critical value'},{s:'SE_b',d:'standard error of slope'}],
+  'log-transform':[{s:'\\hat{y}',d:'predicted response'},{s:'a',d:'intercept'},{s:'b',d:'slope of log model'}],
 };
 
 const AUTO_BLANK_SPECS=[
@@ -2683,7 +2768,7 @@ function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5
 // Time-based knowledge decay — mastery fades if not reviewed
 function applyTimeDecay(srs){
   const now=Date.now();
-  const HALF_LIVES=[2,2,3,5,7,10,14]; // days by mastery level 0-5 (index 6 = safety)
+  const HALF_LIVES=[2,3,5,10,18,30,45]; // days by mastery level 0-5 (index 6 = safety)
   const MASTERY_THRESHOLDS=[0,0.25,0.45,0.65,0.82,0.93]; // pKnown → mastery mapping
   let changed=false;
   for(const id of Object.keys(srs)){
@@ -2707,7 +2792,7 @@ function applyTimeDecay(srs){
 // Exam deadline urgency — modifies question selection pressure
 function getExamUrgency(){
   const daysLeft=Math.max(0,(EXAM_DATE.getTime()-Date.now())/86400000);
-  if(daysLeft>30)return{urgency:0,daysLeft:Math.round(daysLeft),mode:'normal'};
+  if(daysLeft>35)return{urgency:0,daysLeft:Math.round(daysLeft),mode:'normal'};
   if(daysLeft>14)return{urgency:0.3,daysLeft:Math.round(daysLeft),mode:'focused'};
   if(daysLeft>3)return{urgency:0.7,daysLeft:Math.round(daysLeft),mode:'intensive'};
   return{urgency:1.0,daysLeft:Math.round(daysLeft),mode:'cram'};
@@ -3758,10 +3843,15 @@ function updateInput(){
     const q=sel.question;
     const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">\u26a1'+sel.speedMult.toFixed(1)+'x speed</span>':'';
     let headerHtml='',bodyHtml='';
-    if(q.type==='identify'){
-      headerHtml+='<div class="q-type-badge">IDENTIFY</div>'+speedInfo;
+    if(q.type==='identify'||q.type==='variable'){
+      const isVar=q.type==='variable';
+      headerHtml+='<div class="q-type-badge"'+(isVar?' style="background:#22886618;border-color:#22886633;color:#228866"':'')+'>'+(isVar?'VARIABLE':'IDENTIFY')+'</div>'+speedInfo;
       headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
-      headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does this formula calculate?</div>';
+      if(isVar){
+        headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does <span id="var-symbol" style="display:inline-block"></span> represent in this formula?</div>';
+      }else{
+        headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">What does this formula calculate?</div>';
+      }
       const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
       bodyHtml+='<div class="mc-grid"'+answerDim+'>';
       const keys=['A','B','C','D'];
@@ -3810,6 +3900,9 @@ function updateInput(){
     // Render LaTeX into the display element
     const latexEl=document.getElementById('quiz-latex');
     if(latexEl)renderLatex(q.latex,latexEl);
+    // Render variable symbol LaTeX inline
+    const varSymEl=document.getElementById('var-symbol');
+    if(varSymEl&&q.symbol){try{katex.render(q.symbol,varSymEl,{throwOnError:false,displayMode:false})}catch(e2){varSymEl.textContent=q.symbol}}
     // Render parent formula LaTeX for subconcept context
     const scLatexEl=document.querySelector('.sc-latex');
     if(scLatexEl&&sel&&sel.cmd&&sel.cmd.latex)renderLatex(sel.cmd.latex,scLatexEl);
@@ -3881,7 +3974,7 @@ function clearQuizAnswerFeedback(){
 function reshuffleQuestionOptions(enemy){
   const q=enemy.question;
   if(!q)return;
-  if(q.type==='identify'){
+  if(q.type==='identify'||q.type==='variable'){
     const correct=q.options[q.correctIdx];
     q.options=shuffleArr(q.options);
     q.correctIdx=q.options.indexOf(correct);
@@ -3956,7 +4049,7 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
 function handleQuizChoice(key){
   if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
-  if(!enemy||!enemy.question||enemy.question.type!=='identify')return;
+  if(!enemy||!enemy.question||(enemy.question.type!=='identify'&&enemy.question.type!=='variable'))return;
   queueQuizChoiceResolution(enemy,key,key===enemy.question.correctKey);
 }
 function handleHintChoice(key){
@@ -4171,21 +4264,26 @@ function showTitleScreen(context){
     const lbEl=document.getElementById('leaderboard-content');
     if(lbEl){
       const cartId='td-'+activeCartridge.id;
-      fetch(SYNC_SERVER+'/api/users').then(r=>r.json()).then(async users=>{
-        if(!Array.isArray(users)){lbEl.innerHTML='<div style="color:#996622;font-size:10px">Could not load</div>';return}
-        // Fetch progress for each user (batch — max 20 for perf)
+      // Try batch endpoint first, fall back to sequential if not available
+      async function fetchLeaderboardRows(cartId){
+        try{
+          const br=await fetch(SYNC_SERVER+'/api/progress/leaderboard/'+cartId);
+          if(br.ok){const data=await br.json();if(Array.isArray(data))return data.map(d=>({username:d.username,realName:d.real_name||'',mastered:parseInt(d.gold_stars)||0,seen:parseInt(d.silver_stars)||0,highScore:d.highScore||d.high_score||0}))}
+        }catch(e){}
+        // Fallback: sequential per-user fetch
+        const ur=await fetch(SYNC_SERVER+'/api/users');const users=await ur.json();
+        if(!Array.isArray(users))return[];
         const rows=[];
         for(const u of users.slice(0,30)){
           try{
             const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
             const d=await r.json();
-            if(d.found&&d.data){
-              const mp=d.data.mode_progress||{};
-              const hs=mp.highScore||0;
-              rows.push({username:u.username,realName:u.real_name||'',mastered:parseInt(d.data.gold_stars)||0,seen:parseInt(d.data.silver_stars)||0,highScore:hs});
-            }
+            if(d.found&&d.data){const mp=d.data.mode_progress||{};rows.push({username:u.username,realName:u.real_name||'',mastered:parseInt(d.data.gold_stars)||0,seen:parseInt(d.data.silver_stars)||0,highScore:mp.highScore||0})}
           }catch(e){}
         }
+        return rows;
+      }
+      fetchLeaderboardRows(cartId).then(rows=>{
         // Filter out users with no activity and sort by score
         const active=rows.filter(r=>r.highScore>0||r.seen>0);
         active.sort((a,b)=>b.highScore-a.highScore||b.seen-a.seen);
@@ -4807,7 +4905,7 @@ window.addEventListener('keydown',e=>{
     const q=enemy.question;
     if(!q)return;
 
-    if(q.type==='identify'){
+    if(q.type==='identify'||q.type==='variable'){
       const k=e.key.toLowerCase();
       if(['a','b','c','d'].includes(k)){
         e.preventDefault();

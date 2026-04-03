@@ -955,12 +955,31 @@ Trees are IN the game scene so they interact with fog, camera, and depth correct
 - TREE_POOL z-coordinates restored to original (-4..-10, close to action)
 - `len` values scaled down ~40% (e.g., 3.5→2.1, 2.8→1.7) so trees fit in viewport when zoomed
 
+## Latest Update: SRS Tuning + Variable Questions + Batch Leaderboard
+
+### SRS half-life tuning for exam prep
+- Half-lives changed from [2,2,3,5,7,10,14] to [2,3,5,10,18,30,45] days by mastery
+- Mastery-5 cards now survive weekly study gaps (86% retained vs 62% before)
+- Urgency threshold shifted: focused mode at 35 days (was 30)
+
+### Variable Role question type
+- New `VARIABLE_BANK` constant: 66 entries (2-3 vars per command) with AP Stats-accurate descriptions
+- 20% chance of variable question when command has vars in bank
+- "What does [symbol] represent in this formula?" with 4-option MC
+- Green "VARIABLE" badge distinguishes from identify questions
+- Integrated into keyboard handler, reshuffleQuestionOptions, and handleQuizChoice
+
+### Batch leaderboard client
+- `fetchLeaderboardRows()` tries `/api/progress/leaderboard/{cartId}` first (1 request)
+- Falls back to sequential per-user fetch if batch endpoint returns non-200
+- Server-side batch endpoint in lrsl-driller is a follow-up task
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
-- Add server endpoint for batch leaderboard query (currently N sequential requests)
-- Tune SRS decay half-lives based on student feedback
-- Add adaptive BKT params (v2) once enough data collected
+- Add server-side `/api/progress/leaderboard/:cartId` endpoint to lrsl-driller
+- Add adaptive BKT params (v2) once enough telemetry collected
+- Author Application and Relationship question types (spec item 3)
 - Consider splitting `index.html` into modules (now ~4500 lines)
 - Add teacher dashboard view for class mastery overview
 - Particle pooling for main particles (trail ghosts already pooled)
