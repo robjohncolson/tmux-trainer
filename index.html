@@ -347,7 +347,7 @@ const SFX=(()=>{
   let voices=[],noiseGate=null,noiseLP=null,noiseBP=null;
   let padBus=null,bassBus=null,sfxBus=null,drumBus=null;
   let bgmSeqTimer=null,currentWaveIdx=0,previewTimer=null,previewConfig=null;
-  let pendingChordAdvances=0,currentStreak=0;
+  let currentStreak=0,musicalHealth=5;
   const MUSIC_STORAGE_KEY='td-music-config-v1';
 
   // ── MUSIC CONFIG — edit these to customize each wave's sound ──
@@ -849,17 +849,17 @@ const SFX=(()=>{
       playFmNote(ch[2]*2,.3,2,0.8,.06);
     }
   }
-  // Advance to next chord — queued, resolves on next bar start
-  function advanceChord(){
+  // Musical hit — health +1, kill melody on current chord
+  function musicalHit(){
     if(!ctx||!bgmPlaying)return;
-    pendingChordAdvances=Math.min(pendingChordAdvances+1,2);
-    // Preview melody: foreshadow the NEXT chord (always +1, not backlog end)
+    musicalHealth=Math.min(5,musicalHealth+1);
     const prog=getWaveConfig(currentWaveIdx).chords;
-    const peekIdx=(currentProgIdx+1)%prog.length;
-    const peekCh=prog[peekIdx];
-    playFmNote(peekCh[2]*2,.4,3,1,.05);
-    playFmNote(peekCh[0]*2,.3,2,0.8,.04,.12);
+    const ch=prog[currentProgIdx%prog.length];
+    playFmNote(ch[2]*2,.4,3,1,.05);
+    playFmNote(ch[0]*2,.3,2,0.8,.04,.12);
   }
+  function musicalMiss(){musicalHealth=Math.max(0,musicalHealth-1);}
+  function musicalBreach(){musicalHealth=Math.max(0,musicalHealth-2);}
   function setStreak(n){currentStreak=Math.max(0,n|0);}
 
   // Opens the filter and shifts voicing as the student progresses
@@ -894,7 +894,7 @@ const SFX=(()=>{
     clearBgmAutomation(t);
     bgmPlaying=true;
     currentProgIdx=0;
-    pendingChordAdvances=0;
+    musicalHealth=5;
     const waveCfg=getWaveConfig(currentWaveIdx);
     const pv=(waveCfg.padVol!=null?waveCfg.padVol:.05)*.5;
     const bv=(waveCfg.bassVol!=null?waveCfg.bassVol:.6)*.35;
@@ -909,18 +909,19 @@ const SFX=(()=>{
       const cfg=getWaveConfig(currentWaveIdx);
       st=60/(cfg.tempo||80)/2;
       const prog=cfg.chords;
-      // Resolve queued chord advance at bar start
-      if(pendingChordAdvances>0&&!previewConfig){
-        currentProgIdx=(currentProgIdx+1)%prog.length;
-        pendingChordAdvances=Math.max(0,pendingChordAdvances-1);
-        const nch=prog[currentProgIdx];
-        for(let i=0;i<3;i++){
-          voices[i].carrier.frequency.setTargetAtTime(nch[i],startT,.15);
-          voices[i].modulator.frequency.setTargetAtTime(nch[i]*2,startT,.15);
-          voices[i].modGain.gain.setTargetAtTime(nch[i]*0.5,startT,.15);
-        }
-      }
       const ch=prog[currentProgIdx%prog.length];
+      const h=previewConfig?5:musicalHealth; // preview ignores health
+      // Glide pads to current chord (audible if health >= 5)
+      for(let i=0;i<3;i++){
+        voices[i].carrier.frequency.setTargetAtTime(ch[i],startT,.15);
+        voices[i].modulator.frequency.setTargetAtTime(ch[i]*2,startT,.15);
+        voices[i].modGain.gain.setTargetAtTime(ch[i]*0.5,startT,.15);
+      }
+      // Health-gated layer volumes
+      const pv=(cfg.padVol!=null?cfg.padVol:.05)*.5;
+      const bv=(cfg.bassVol!=null?cfg.bassVol:.6)*.35;
+      padBus.gain.setTargetAtTime(h>=5?pv:0,startT,.3);
+      bassBus.gain.setTargetAtTime(h>=4?bv:0,startT,.3);
       const bp=cfg.bass||DEFAULT_MUSIC_CONFIG[0].bass;
       const padPattern=cfg.pad||DEFAULT_MUSIC_CONFIG[0].pad;
       const stepCount=Math.max(bp.length,padPattern.length);
@@ -951,32 +952,18 @@ const SFX=(()=>{
         const pt=startT+i*st;
         if(pt>now-.01)schedulePadStep(Math.max(0,Number(level)||0),pt,st);
       });
-      // Kick pattern
+      // Health-gated drums
       const kickPattern=cfg.kick||[1,0,0,0,1,0,0,0];
       const kickPeak=(cfg.kickVol!=null?cfg.kickVol:.30);
-      for(let i=0;i<bp.length;i++){
-        if(!kickPattern[i])continue;
-        const kt=startT+i*st;
-        if(kt>now-.01)scheduleFmKick(kt,kickPeak);
-      }
-      // Snare pattern
       const snarePattern=cfg.snare||[0,0,0,0,0,0,1,0];
       const snarePeak=(cfg.snareVol!=null?cfg.snareVol:.25);
-      for(let i=0;i<bp.length;i++){
-        if(!snarePattern[i])continue;
-        const snt=startT+i*st;
-        if(snt>now-.01)scheduleFmSnare(snt,snarePeak);
-      }
-      // Hi-hat pattern using FM voice 6
       const hhPeak=(cfg.hihatVol!=null?cfg.hihatVol:.11)*.25;
       const hhPattern=Array.isArray(cfg.hihat)&&cfg.hihat.length===8?cfg.hihat:[1,0,1,0,1,0,1,0];
-      for(let i=0;i<bp.length;i++){
-        if(!hhPattern[i])continue;
-        const ht=startT+i*st;
-        if(ht>now-.01)scheduleFmHihat(ht,hhPeak,true);
-      }
-      // Streak groove embellishments (additive, skip during preview)
-      if(!previewConfig&&currentStreak>=3){
+      if(h>=3){for(let i=0;i<bp.length;i++){if(!kickPattern[i])continue;const kt=startT+i*st;if(kt>now-.01)scheduleFmKick(kt,kickPeak);}}
+      if(h>=2){for(let i=0;i<bp.length;i++){if(!snarePattern[i])continue;const snt=startT+i*st;if(snt>now-.01)scheduleFmSnare(snt,snarePeak);}}
+      if(h>=1){for(let i=0;i<bp.length;i++){if(!hhPattern[i])continue;const ht=startT+i*st;if(ht>now-.01)scheduleFmHihat(ht,hhPeak,true);}}
+      // Streak groove embellishments (only at full health, skip during preview)
+      if(!previewConfig&&h>=5&&currentStreak>=3){
         // Streak 3+: ghost hihats on odd steps (offbeats)
         for(let i=1;i<8;i+=2){
           if(hhPattern[i])continue;
@@ -984,12 +971,12 @@ const SFX=(()=>{
           if(ght>now-.01)scheduleFmHihat(ght,hhPeak*0.3,true);
         }
       }
-      if(!previewConfig&&currentStreak>=5){
+      if(!previewConfig&&h>=5&&currentStreak>=5){
         // Streak 5+: ghost snare fill on step 7 (last offbeat before downbeat)
         const fillT=startT+7*st;
         if(fillT>now-.01)scheduleFmSnare(fillT,snarePeak*0.4);
       }
-      if(!previewConfig&&currentStreak>=8){
+      if(!previewConfig&&h>=5&&currentStreak>=8){
         // Streak 8+: syncopated kicks on steps 3 and 5
         [3,5].forEach(i=>{
           if(kickPattern[i])return;
@@ -997,7 +984,7 @@ const SFX=(()=>{
           if(kt>now-.01)scheduleFmKick(kt,kickPeak*0.5);
         });
       }
-      if(!previewConfig&&currentStreak>=10){
+      if(!previewConfig&&h>=5&&currentStreak>=10){
         // Streak 10+: bass passing tones (geometric mean for correct pitch)
         bp.forEach((r,i)=>{
           if(r===0||i>=bp.length-1)return;
@@ -1014,22 +1001,14 @@ const SFX=(()=>{
         });
       }
       startT+=ll;
-      if(previewConfig&&previewConfig.waveIdx===currentWaveIdx){
-        const nextIdx=(currentProgIdx+1)%prog.length;
-        const nextChord=prog[nextIdx];
-        for(let i=0;i<3;i++){
-          voices[i].carrier.frequency.setTargetAtTime(nextChord[i],startT,.08);
-          voices[i].modulator.frequency.setTargetAtTime(nextChord[i]*2,startT,.08);
-          voices[i].modGain.gain.setTargetAtTime(nextChord[i]*0.5,startT,.08);
-        }
-        currentProgIdx=nextIdx;
-      }
+      // Auto-advance chord for next bar (song plays itself)
+      currentProgIdx=(currentProgIdx+1)%prog.length;
       bgmSeqTimer=setTimeout(seq,ll*1000*.8);
     }
     seq();
   }
   function stopBGM(){
-    if(!ctx)return;bgmPlaying=false;pendingChordAdvances=0;
+    if(!ctx)return;bgmPlaying=false;
     if(bgmSeqTimer){clearTimeout(bgmSeqTimer);bgmSeqTimer=null}
     const t=ctx.currentTime;
     clearBgmAutomation(t);
@@ -1038,7 +1017,7 @@ const SFX=(()=>{
   // ── Public API ──
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
-    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,advanceChord,setStreak,
+    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,musicalHit,musicalMiss,musicalBreach,setStreak,
     getMusicConfig(wave){return cloneWaveConfig(getWaveConfig(typeof wave==='number'?wave:currentWaveIdx))},
     getAllMusicConfig(){return cloneMusicConfig(MUSIC_CONFIG)},
     getDefaultMusicConfig(){return cloneMusicConfig(DEFAULT_MUSIC_CONFIG)},
@@ -4457,7 +4436,7 @@ function moveEnemies(){
 function checkBreach(){
   const reached=G.enemies.filter(e=>e.t>=1&&!e.pendingCorrectHit);
   if(reached.length===0)return;
-  SFX.breach();
+  SFX.breach();SFX.musicalBreach();
   reached.forEach(e=>{
     spawnExplosion(enemyMeshes[e.id]?.position||pathPts[pathPts.length-1],20,0xff2200);
     removeEnemyMesh(e.id);
@@ -4529,7 +4508,7 @@ function handleHit(enemy){
   SFX.setStreak(G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
   G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
-  SFX.advanceChord(); // Queue chord advance (resolves on next bar)
+  SFX.musicalHit(); // health +1, kill melody
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
   const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,responseTimeMs:responseTime};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
@@ -4543,7 +4522,7 @@ function handleHit(enemy){
 
 function handleMiss(enemy){
   const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
-  SFX.miss();
+  SFX.miss();SFX.musicalMiss();
   G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;

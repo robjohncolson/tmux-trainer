@@ -784,6 +784,36 @@ Replaced all basic Web Audio oscillators with FM synthesis voices:
 
 - `chord-quantize-groove-spec.md` — design + Codex review (5 medium findings, all addressed)
 
+## Latest Update: Musical Health — Performance Drives Instrumentation
+
+Replaced kill-driven chord progression with auto-advancing chords + performance-gated layers.
+
+### How it works
+
+- Chords auto-advance every bar in `seq()` — the song plays itself like real music
+- Musical health (0-5) determines which layers are audible
+- Correct answer: health +1 (layer fades in). Wrong answer: health -1 (layer fades out). Breach: health -2.
+- Health 5 = full arrangement. Health 0 = silence (only SFX).
+- Wave start resets health to 5.
+
+### Layer stack
+
+| Health | Layers |
+|--------|--------|
+| 5 | Pads + bass + kick + snare + hihat (+ streak groove at 3+) |
+| 4 | Bass + kick + snare + hihat |
+| 3 | Kick + snare + hihat |
+| 2 | Snare + hihat |
+| 1 | Hihat only |
+| 0 | Silence |
+
+### API changes
+
+- `advanceChord()` → renamed `musicalHit()` (health +1, kill melody on current chord)
+- New: `musicalMiss()` (health -1), `musicalBreach()` (health -2)
+- `pendingChordAdvances` deleted — chords are automatic now
+- Streak groove gated on `health>=5 && streak>=3`
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
