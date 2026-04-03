@@ -424,468 +424,140 @@ Verification completed:
 ## Important Code Areas
 
 - `index.html` CSS top section:
-  - overlay styles
-  - mobile breakpoints
-  - music editor styles
-  - explainer tray styles
-  - score-pop HUD styles
-  - label ghosting / bracket styles
-  - sticky input panel layout
-  - `latex-shell` / `latex-scroll`
+  - overlay styles, mobile breakpoints, music editor styles
+  - step sequencer CSS: `.seq-grid`, `.seq-row`, `.seq-cell` with state classes
+  - login form CSS: `.login-box`, `.menu-tabs`, `.menu-tab`
+  - wrong-answer feedback: `.wrong-feedback`, `.wf-wrong`, `.wf-correct`, `.wf-explain`
+  - `latex-shell` / `latex-scroll`, score-pop HUD, label ghosting
 - `index.html` `SFX` module:
-  - built-in music defaults
-  - pad rhythm scheduling
-  - BGM automation cleanup
-  - load/save/reset/preview API
-- `index.html` particle / score-funnel helpers:
-  - `getScoreFunnelTarget()`
-  - `buildScoreChunks()`
-  - `createScoreAward()`
-  - `flushPendingScoreAwards()`
-  - `collectScoreAwardChunk()`
-  - `spawnTrailGhost()`
-  - `spawnExplosion()`
-  - `animate()`
+  - built-in music defaults with per-wave `padVol`, `bassVol`, `hihatVol`, `hihat` pattern
+  - pad rhythm scheduling, BGM automation, hi-hat pattern from config
+  - load/save/reset/preview API, volume scaling in `startBGM()`, `setKey()`, `setProgress()`, `seq()`
 - `index.html` label projection:
   - `updateLabels()` — cached label DOM via `labelCache` Map
   - `clearLabelCache()` — cleanup on screen transitions
   - `HUD` object + `initHUD()` — cached HUD element refs
-- `index.html` ground spotlight helpers:
-  - `spotlightTex`
-  - `selectedSpotlight`
-  - `updateSelectedSpotlight()`
-- `index.html` input layout / feedback helpers:
-  - `setInputPanelContent()`
-  - `syncInputPanelScroll()`
-  - `queueQuizChoiceResolution()`
-  - `clearQuizAnswerFeedback()`
-- `index.html` explanation helpers:
-  - `EXPLANATION_GLOSSARY`
-  - `buildExplanationBank()`
-  - `normalizeExplanationLookup()`
-  - `openExplanationForActiveAnswer()`
-  - `openExplanationForSelectedCommand()`
-  - `renderExplanationControls()`
-- `index.html` music editor helpers:
-  - chord library
-  - pad options, bass options
-  - step sequencer: `cyclePadStep()`, `cycleBassStep()`, `toggleHihat()` + backward variants
-  - `renderMusicEditor()` with FL Studio-style step sequencer card
-  - `.seq-grid`, `.seq-row`, `.seq-cell` CSS with state classes
+- `index.html` ground spotlight: `spotlightTex`, `selectedSpotlight`, `updateSelectedSpotlight()`
+- `index.html` input layout / feedback:
+  - `setInputPanelContent()`, `queueQuizChoiceResolution()`, `clearQuizAnswerFeedback()`
+  - Wrong-answer auto-hold: `QUIZ_ANSWER_FEEDBACK.held`, GOT IT button, space-to-dismiss
+  - `renderExplanationControls()` — mobile: HINT button only; desktop: keyboard shortcuts
+- `index.html` music editor:
+  - FL Studio-style step sequencer: `cyclePadStep()`, `cycleBassStep()`, `toggleHihat()` + backward variants
+  - `renderMusicEditor()` with STEP SEQUENCER card, VOLUME MIX card, ACTIONS card
 - `index.html` screens section:
-  - `showTitleScreen(context)`
-  - `showPauseScreen()`
-  - `resumeFromPause()`
-- `index.html` persistence / exit helpers:
-  - `syncHighScore()`
-  - `syncRunCheckpoint()`
-  - `saveRunState()`
-  - `loadRunState()`
-  - `clearRunState()`
-  - `returnToTitleFromRun()`
-- `index.html` run-entry helpers:
-  - `startGame()`
-  - `continueGame()`
-  - `queueBGMStart()`
-  - `cancelQueuedBGMStart()`
-- `index.html` wave-clear handling:
-  - `updateInput()`
-  - `checkWaveComplete()`
-- `index.html` BKT (Bayesian Knowledge Tracing):
-  - `clampProb()`, `bayesPosterior()`, `effectivePGuess()`
-  - `recomputeCompositePKnown()`, `bktUpdate()`
-  - `infoGain()`, `pickScore()`
-  - `bktBootstrapFromMastery()`, `findSubconceptIndex()`
-- `index.html` volume control helpers:
-  - `updatePadVol()`, `updateBassVol()`, `updateHihatVol()`
-  - Volume scaling in `startBGM()`, `setKey()`, `setProgress()`, `seq()` hi-hat
-- `index.html` SRS hardening helpers:
-  - `sanitizeSrsCard(card, defaults)` — range validation for all 16 fields
-  - `saveSRS(immediate)` — debounced per-answer save with read-modify-write merge
-  - `rev` + `lastUpdated` fields on each SRS card
-  - HUD `#h-save-warn` element + `G.srsError` / `G.runStateError` flags
-- `index.html` anti-button-mash helpers:
-  - `reshuffleQuestionOptions()`
-  - `enemy.missCount` (per-enemy miss counter)
-  - escalating delay in `queueQuizChoiceResolution()`
-  - attempt cap in `handleMiss()`
-
-## Latest Update: Anti-Button-Mash Mechanics
-
-Implemented 4 reinforcing fixes to prevent brute-forcing through quiz mode by button-mashing.
-
-What shipped:
-
-- Fix 1 — Escalating Lockout:
-  - Wrong-answer feedback delay now escalates per enemy: 800ms (1st miss), 1800ms (2nd miss), 3000ms (3rd+ miss)
-  - Correct answers stay at 220ms (unchanged)
-  - Miss counter stored on `enemy.missCount`, not on `G`, so tab-retargeting cannot reset it
-  - `missCount` is initialized to 0 on all enemy creation paths (trySpawn, hydra depth-1, hydra depth-2)
-  - `missCount` is persisted via the enemies array in run checkpoint save/restore
-
-- Fix 2 — Harsher Miss Surge:
-  - Quiz-mode surge values increased from 0.08/0.13/0.20 to 0.15/0.22/0.30
-  - 3 misses at depth 0 now push the enemy 0.45 along the path (nearly half the track)
-  - Non-quiz modes (prefix-key, typed) unchanged at 0.06
-
-- Fix 3 — Option Shuffle on Miss:
-  - New `reshuffleQuestionOptions(enemy)` function shuffles MC options after every wrong answer
-  - Handles all 3 question types: identify (4 options), fillblank (choices array), subconcept (3 or 2 options)
-  - Recomputes `correctIdx` and `correctKey` after shuffle
-  - Clears `G.showHint` (keeps `G.hintUsed` for scoring) and deletes `eliminatedIdx`
-  - Busts `lastInputState` render cache and calls `updateInput()` to force repaint
-  - Called after `handleMiss()` in the timeout callback, with a `stillAlive` check to skip if hydra split removed the enemy
-
-- Fix 4 — Attempt Cap with Auto-Surge:
-  - After 3 misses on the same enemy, auto-surge to `t = max(current_t, 0.85)` and `speedMult = max(current, 3.0)`
-  - Flashes `MAX MISS! BREACHING` warning in red
-  - Placed after hydra split check so depth-0/1 enemies that split never reach the cap
-  - The cap primarily affects depth-2 grandchildren and split-failure cases
-
-Combined anti-mash effect:
-- Escalating delays slow down mashing (220ms → 800ms → 1800ms → 3000ms)
-- Shuffled options prevent systematic a→b→c→d elimination
-- Heavy surge (0.15 per miss × 3 = 0.45) pushes enemies near breach
-- Auto-surge at 3 misses virtually guarantees breach
-- A knowledgeable player answering correctly sees zero difference
-
-Spec artifact:
-- `anti-button-mash-spec.md` (v3) with the full feature contract, Codex review findings, and testing plan
-
-Verification completed:
-- JavaScript parse check passed after all 4 fixes
-- Agent-based code review confirmed all spec requirements met
-- One code-smell fix applied (subconcept correctKey computation clarified for depth-2 binary questions)
-
-## Latest Update: Bayesian Knowledge Tracing (BKT) Augmentation
-
-Layered a probabilistic BKT model on top of the existing SM-2 SRS system. The SRS fields (ease, interval, streak, mastery) continue to drive scheduling and display. BKT adds a proper Bayesian model that improves question selection and hydra targeting.
-
-What shipped:
-
-- Core BKT math:
-  - `clampProb()`, `bayesPosterior()`, `effectivePGuess()`, `recomputeCompositePKnown()`, `bktUpdate()`
-  - `infoGain()` (entropy-based), `pickScore()` (hybrid: entropy + overdueness + low-knowledge boost)
-  - Conservative fixed parameters in v1: pTransit=0.03, pGuess=0.25, pSlip=0.10
-  - Adaptive parameter evolution deferred to v2 (Codex finding: one-way drift risk)
-
-- Per-card BKT fields added to SRS:
-  - `pKnownDirect` — direct parent-question evidence
-  - `pKnown` — composite (direct + child evidence, 70/30 blend)
-  - `pTransit`, `pGuess`, `pSlip` — fixed in v1
-  - `subPKnown` — per-subconcept knowledge map, lazily populated
-
-- Source-separated tree propagation:
-  - Direct parent answers update `pKnownDirect`
-  - Hydra child answers update `subPKnown[childIndex]`
-  - `recomputeCompositePKnown()` reblends from sources each time (no compounding)
-  - Child evidence contributes 30% to parent composite
-
-- Context-sensitive P(G):
-  - 4-choice MC: P(G)=0.25; with hint: P(G)=0.33; 2-choice: P(G)=0.50
-  - Free recall (typed/prefix): P(G)=0.05
-  - Hint-adjusted `remainingChoices` correctly decrements by 1 when hint eliminates an option
-
-- Information-gain question selection:
-  - `pickCommands` now sorts within each bucket (overdue/due/fresh/notDue) by hybrid `pickScore`
-  - High-entropy (uncertain) cards are prioritized; low-knowledge cards get a boost to avoid starvation
-
-- Weakest-subconcept hydra targeting:
-  - `spawnHydraChildren` ranks subconcepts by `subPKnown` ascending (weakest first)
-  - Unseen subconcepts default to 0.1 (fresh prior)
-
-- HUD polish:
-  - Uncertainty pulse animation (`.bkt-uncertain`) on enemy labels where `pKnown < 0.3`
-  - End-screen mastery bar has a white vertical confidence line at avgPKnown position
-
-- Backwards compatibility:
-  - Legacy saves without BKT fields are bootstrapped: `pKnown = [0.10, 0.25, 0.45, 0.65, 0.82, 0.93][mastery]`
-  - `subPKnown` deep-copied in srsHit/srsMiss to prevent aliasing bugs
-  - Breach events: SRS penalty only, no BKT update (no student response to observe)
-
-Spec artifact:
-- `bkt-augmentation-spec.md` (v2) with Codex review findings, full implementation plan, and testing plan
-
-Verification completed:
-- JavaScript parse check passed
-- BKT math verified: correct/wrong answers move pKnown in expected directions; 5 consecutive corrects: 0.1→0.99; 5 consecutive wrongs: 0.9→0.035; entropy=1.0 at p=0.5
-- Codex spec review: 3 HIGH findings incorporated (pTransit lowered, adaptive params deferred, source-separated propagation)
-- CC agent deep review: 1 MEDIUM finding fixed (hint remainingChoices), 1 LOW fixed (subPKnown deep copy)
-
-## Latest Update: Curriculum Alignment — BKT Tree Completeness
-
-Cross-referenced the game's commands against 817 curriculum questions in `school/curriculum_render/data/curriculum.js` and fixed three categories of gaps.
-
-What shipped:
-
-- Fix 1 — Overlapping subconcept replacement (2 commands):
-  - `binom-sd` Q3: replaced duplicate "when is σ maximized" with "what does the square root do"
-  - `residual` Q2: replaced mirror-image "negative residual" with "sum of residuals equals zero"
-
-- Fix 2 — 7 new curriculum-aligned formulas (59 → 66 commands):
-  - `paired-t`: t = (d-bar − μ_{d0}) / (s_d / √n) — tier:power, dom:inf-means
-  - `slope-ci`: b ± t* · SE_b — tier:power, dom:regression
-  - `df-t`: degrees of freedom for one-sample, two-sample, regression — tier:support, dom:inference
-  - `large-counts`: np ≥ 10 and n(1-p) ≥ 10 — tier:support, dom:inf-proportions
-  - `type-i-error`: α = P(reject H0 | H0 true) — tier:support, dom:inference
-  - `type-ii-error`: β = P(fail to reject H0 | Ha true) — tier:support, dom:inference
-  - `log-transform`: log(ŷ) = a + bx → ŷ = 10^(a+bx) — tier:power, dom:regression
-  - All 7 have 3 subconcepts with 2 wrong answers each, 2-3 blanks, latex, hint, explain
-  - Auto-registered in BKT tree via initSRS iteration over COMMANDS
-
-- Fix 3 — Enriched bare-number answers (6 subconcepts):
-  - Added explanatory text to numeric correct answers for better depth-2 T/F generation
-  - binom-mean, geom-mean, empirical-rule, r-squared, complement, df-gof
-
-Codex review findings incorporated:
-- Blank answer fields match LaTeX choice text (not plain-text aliases)
-- log-transform uses consistent base-10 (no ln/e mixing)
-- paired-t uses general form with μ_{d0} parameter
-- paired-t Q2 uses direction-agnostic wording
-- binom-sd Q3 wrong answers strengthened per Codex review
-
-Spec artifact:
-- `curriculum-alignment-spec.md` with full gap analysis, Codex findings, and testing plan
-
-Verification completed:
-- Parse check passed
-- 66 commands, 198 subconcepts (66×3), 198 wrong arrays (all correct)
-- No duplicate command IDs
-- All Codex findings verified as incorporated
-- CC agent full verification: all 5 check categories pass
-
-## Latest Update: Spacebar Fix + Ground Spotlight + Tighter Camera Zoom
-
-Addressed three UX issues from playtesting: accidental game restarts via spacebar, visual clutter from the reticle system, and camera being too distant from the action.
-
-What shipped:
-
-- Fix 1 — Spacebar restart prevention:
-  - `e.preventDefault()` now fires for all spacebar keydown events unless focus is in an `<input>`, `<textarea>`, or `contentEditable` element
-  - This blocks the browser's native behavior of clicking focused buttons via space
-  - Spacebar only explicitly forwards a click during wave-clear (`G.screen==='game' && G.waveComplete`), targeting `#input-panel .btn`
-  - The spacebar handler is positioned before the `if(G.paused)return` check so it covers paused screens too
-  - Typed input mode (where users type in `<input>` fields) is exempt and still receives space characters
-
-- Fix 2 — Reticle replaced with ground spotlight:
-  - Removed all reticle infrastructure: `.target-bracket` CSS (5 rules), `reticleSquareGeo`, `makeReticleLayer()`, `selectedReticle` IIFE, `updateSelectedReticle()`, bracket `<span>` HTML in `updateLabels()`
-  - Added `spotlightTex`: 128x128 canvas with radial gradient (amber center fading to transparent)
-  - Added `selectedSpotlight`: `CircleGeometry(1,32)` on ground plane (`y=0.05`) with `AdditiveBlending`
-  - Added `updateSelectedSpotlight(time)`: positions disc under selected cube, pulses scale/opacity, depth-based color tint (amber `0xffc864` / blue `0x88bbff` / purple `0xcc88ff`)
-  - Existing selection cues retained: label opacity (ghost vs full), `.sel-arrow`, emissive mesh glow
-
-- Fix 3 — Tighter camera zoom:
-  - `zoomY`: 11/9/7 → 7.5/6/4.5 (by splitDepth 0/1/2), ~35% closer
-  - `zoomZ`: 12/10/8 → 8.5/7/5.5
-  - `trackX`: 0.4/0.5/0.6 → 0.5/0.6/0.7 (tighter following)
-  - `trackZ`: 0.3/0.4/0.5 → 0.4/0.5/0.6
-  - Lerp speed: 0.04 → 0.055 per frame (snappier response)
-
-Codex review findings incorporated:
-- HIGH: Added `<input>`/`<textarea>`/`contentEditable` exemption so typed spaces still work
-- MEDIUM: Moved spacebar handler before `if(G.paused)return` so pause screen buttons are also blocked
-- LOW (monitor): AdditiveBlending may look too hot — switch to NormalBlending if needed
-- LOW (monitor): Depth-2 enemies at path extremes may ride frame edge — add bounds clamp if needed
-
-Spec artifact:
-- `spacebar-spotlight-zoom-spec.md` with full design, blast radius, and Codex findings
-
-Verification completed:
-- JS parse check passed
-- Grep confirms zero remaining references to: `reticle`, `makeReticleLayer`, `selectedReticle`, `target-bracket`, `reticleSquareGeo`
-- CC agent deep review: all 4 check categories pass, zero HIGH/MEDIUM/LOW findings
-- Codex review: 1 HIGH + 1 MEDIUM fixed, 2 LOW accepted as monitor items
-
-## Latest Update: Per-Part Volume Controls in Music Editor
-
-Added per-part volume sliders to the music editor so players can adjust the mix balance of pads/chords, bass, and hi-hat independently per wave.
-
-What shipped:
-
-- Three new config fields per wave: `padVol`, `bassVol`, `hihatVol` (0.0–1.0 stored, scaled to safe bus gains)
-- Volume mapping with headroom ceilings:
-  - Pads: `padVol * 0.5` (max bus gain 0.5), default slider 50% → 0.25 gain (was hardcoded 0.35, ~30% quieter)
-  - Bass: `bassVol * 0.35` (max bus gain 0.35), default slider 60% → 0.21 gain (≈ current 0.20)
-  - Hi-hat: `hihatVol * 0.04` (max peak 0.04), default slider 50% → 0.02 peak (unchanged)
-- Volume scaling applied consistently across all gain sites:
-  - `startBGM()`: pad and bass bus ramps use per-wave volumes
-  - `setKey()`: wave-transition pad accent uses per-wave padVol
-  - `setProgress()`: progress swell multiplies padVol base, bypasses at 0, capped at 0.5
-  - `seq()` hi-hat loop: peak uses per-wave hihatVol
-- Music editor VOLUME MIX card with 3 range sliders (0–100%) between bass grid and actions
-- `updatePadVol()`, `updateBassVol()`, `updateHihatVol()` update functions
-- `cloneWaveConfig()` updated to copy volume fields (Codex HIGH finding)
-- `sanitizeWaveConfig()` validates volume fields: Number.isFinite check, 0–1 clamp, fallback to defaults
-- Backwards compatible: legacy saves without volume fields get default values via sanitization
-
-Codex review findings incorporated:
-- HIGH: Bass volume mapping made consistent — single control point at bassBus, scaled by 0.35
-- HIGH: cloneWaveConfig updated to include volume fields (prevents stripping in editor drafts/resets)
-- MEDIUM: Default padVol raised from 0.15 to 0.50 (stored) to avoid over-aggressive reduction
-- MEDIUM: setProgress mute guaranteed — padVol=0 bypasses swell entirely
-- MEDIUM: setKey and preview paths updated with per-wave volumes (no more hardcoded gains)
-
-Spec artifact:
-- `music-volume-controls-spec.md` with full design, Codex findings, and testing plan
-
-Verification completed:
-- JS parse check passed
-- CC agent deep review confirmed all Codex findings addressed
-- Volume scaling applied at all 4 gain sites with safe ceilings
-
-## Latest Update: SRS/BKT Persistence Hardening
-
-Hardened the comprehension tracking system across four dimensions: data integrity, conflict resolution, failure visibility, and save frequency.
-
-What shipped:
-
-- Fix 1 — Timestamp + revision-based SRS merge:
-  - Every card now carries `lastUpdated` (wall clock) and `rev` (monotonic counter)
-  - `srsHit()` and `srsMiss()` increment `rev` and set `lastUpdated = Date.now()` on every update
-  - `continueGame()` merge compares per-card `rev` first, then `lastUpdated`; persistent wins ties
-  - `saveSRS()` does read-modify-write: loads existing localStorage, merges per-card by rev/timestamp, writes merged result
-  - Prevents stale tab or stale checkpoint from overwriting fresher mastery data
-
-- Fix 2 — `sanitizeSrsCard()` range validation:
-  - Clamps all 16 fields to valid ranges on load (ease 1.3–5.0, mastery 0–5, pKnown 0.001–0.999, etc.)
-  - Floors integer fields (interval, streak, correct, wrong, mastery, lastSeen, totalAttempts, rev)
-  - Forces BKT v1 params (pTransit=0.03, pGuess=0.25, pSlip=0.10) — prevents tampering
-  - Repairs totalAttempts to at least `correct + wrong`
-  - Sanitizes subPKnown: clamps each value, drops non-finite entries
-  - Called in `loadSRS()` for every card and in `continueGame()` for snapshot cards
-
-- Fix 3 — Save failure visibility:
-  - `G.srsError` and `G.runStateError` flags track per-system save status
-  - `saveSRS()` sets `G.srsError = true` on catch, clears on success
-  - `saveRunState()` sets `G.runStateError = true` on catch, clears on success
-  - HUD shows "SAVE FAILED" warning in red when either flag is true
-  - Warning clears automatically on next successful save
-
-- Fix 4 — Per-answer SRS save (debounced):
-  - `saveSRS()` called after every `srsHit()`, `srsMiss()`, and breach penalty
-  - Non-checkpoint saves debounced at 300ms to coalesce rapid answers
-  - Checkpoint saves (`syncRunCheckpoint`) use `saveSRS(true)` for immediate write
-  - Reduces max crash data loss from "1 wave of answers" to "at most 1 answer"
-
-Codex review findings incorporated:
-- HIGH: saveSRS now does read-modify-write per-card merge (prevents multi-tab stale overwrites)
-- HIGH: Separate error flags for SRS and run-state (prevents partial failure masking)
-- MEDIUM: Added monotonic `rev` counter alongside `Date.now()` (handles clock skew)
-- MEDIUM: BKT params forced to v1 constants on load (prevents tampered learning rates)
-- MEDIUM: Per-answer saves debounced at 300ms (prevents burst performance issues)
-- MEDIUM: buildRunStateSnapshot already includes G.srs directly (no extra work needed)
-
-Spec artifact:
-- `srs-hardening-spec.md` with full design, Codex findings, and testing plan
-
-Verification completed:
-- JS parse check passed
-- CC agent deep review: all 14 check categories pass, zero HIGH/MEDIUM findings
-- Two informational items accepted: streak/lastSeen no upper cap (defensible), tie-break policy contextually correct
-
-## Latest Update: Performance + Mechanics + UX Polish Batch
-
-Comprehensive audit identified 30 improvement areas across UI, stability, perf, and code quality. Shipped the 5 highest-impact fixes.
-
-What shipped:
-
-- Fix 1 — Label DOM caching (performance):
-  - `updateLabels()` no longer recreates all label DOM every frame
-  - `labelCache` Map stores div nodes keyed by enemy ID, reuses them across frames
-  - `contentKey` hash skips innerHTML update when label content hasn't changed
-  - Hidden labels (behind camera, mobile ghost hiding) get `display:none` instead of being destroyed
-  - Orphan cleanup removes labels for dead enemies
-  - `clearLabelCache()` replaces old `labelsDiv.innerHTML=''` at screen transitions
-  - Reusable `_labelVec` Vector3 eliminates per-frame allocation for projection
-
-- Fix 2 — HUD element caching (performance):
-  - `HUD` object caches all 6 element references (`h-wave`, `h-score`, `h-lives`, `h-streak`, `h-mastery`, `h-save-warn`)
-  - `initHUD()` called once, with lazy-init fallback if HUD isn't populated yet
-  - Eliminates 6 `document.getElementById()` calls per frame
-
-- Fix 3 — Hydra spawn breach cap (game mechanics):
-  - Depth-1 children: if parent is past t=0.82, children are not spawned at all (prevents cheap breach)
-  - Depth-2 grandchildren: if parent is past t=0.85, grandchildren skipped
-  - Child position caps lowered from 0.96/0.98 to 0.82/0.85
-  - Per Codex review: uses skip-spawn (not rewind) so children never spawn behind the death point
-
-- Fix 4 — Session stats on end screen (UX):
-  - `G.sessionStartTime` set on `startGame()` and `continueGame()`
-  - End screen now shows TIME (session duration) and AVG RESP (average response time)
-  - Handles 0-answer edge case: shows '--' for avg response
-  - Duration formatted as `Xm Ys`
-
-- Fix 5 — Console.log cleanup:
-  - Removed debug `console.log(err)` from QR code generation
-
-Codex review findings incorporated:
-- HIGH: Hydra cap uses skip-spawn instead of rewind (prevents children behind death point)
-- MEDIUM: Label visibility is first-class cached state (display:none for hidden)
-- MEDIUM: Click handler is stable on cached div (doesn't depend on innerHTML churn)
-- MEDIUM: HUD cache has lazy-init fallback
-- LOW: Session timer always set fresh in continueGame; NaN guarded
-
-Spec artifact:
-- `polish-batch-spec.md` with full audit findings and Codex review
-
-Verification completed:
-- JS parse check passed
-- CC agent review: all 5 check categories pass, zero issues
-
-## Latest Update: FL Studio-Style Step Sequencer in Music Editor
-
-Transformed the music editor from dropdown-based grids into a visual step sequencer inspired by FL Studio's channel rack.
-
-What shipped:
-
-- Step sequencer card replaces old PAD RHYTHM and BASS GRID dropdown cards
-- Three visual rows: PADS (amber), BASS (blue), HI-HAT (silver)
-- 8 cells per row with color-coded intensity bars
-- Pad cells: click cycles REST → GHOST → FULL → ACCENT, right-click cycles backward
-- Bass cells: click cycles REST → ROOT → L5 → m3 → M3 → 4 → 5, right-click backward
-- Hi-hat cells: click toggles on/off (binary)
-- Cell visual feedback: colored fill bars proportional to level, glow on active cells
-- Hover brightness lift, scale-0.92 press effect for tactile feel
-- Channel labels with music note symbols on the left
-- Step numbers (1-8) below the grid
-- Divider lines between rows for visual separation
-
-New hi-hat pattern feature:
-- New `hihat` config field: array of 8 (0 or 1) per wave
-- Default: [1,0,1,0,1,0,1,0] (matches old hardcoded even-beat pattern)
-- Audio engine seq() now reads cfg.hihat instead of hardcoded i%2
-- Full backwards compatibility: legacy saves without hihat get default pattern
-- cloneWaveConfig clones hihat with fallback
-- sanitizeWaveConfig validates hihat (8 elements, strict 0/1)
-
-Codex review findings incorporated:
-- HIGH: Legacy hihat compat — clone+sanitize use fallback default when field missing
-- MEDIUM: Right-click backward cycling for bass (7 states too many for forward-only)
-- MEDIUM: Mobile cells min-height 44px (up from 36px, meets touch guidelines)
-- MEDIUM: Row dividers + distinct channel colors for visual separation in merged card
-
-Spec artifact:
-- `drum-machine-editor-spec.md` with full design and Codex findings
-
-Verification completed:
-- JS parse check passed
-- CC agent review: all 8 check categories pass, zero issues
-- All 12 waves have hihat field
-- Step sequencer renders 3 rows × 8 cells with click/right-click handlers
+  - `showTitleScreen(context)` — tabbed menu: PLAY / RANKS / MORE tabs via `G._menuTab`
+  - Leaderboard fetches per-user progress from lrsl-driller server
+  - Login form with student dropdown (fetched from `/api/users`)
+  - `showPauseScreen()`, `resumeFromPause()`
+- `index.html` cloud auth + sync:
+  - `SYNC_SERVER` constant → `https://lrsl-driller-production.up.railway.app`
+  - `getIdentity()` / `setIdentity()` / `clearIdentity()` — password in sessionStorage, username in localStorage
+  - `verifyUser()` → POST `/api/users/verify`
+  - `syncToCloud()` → POST `/api/progress/cartridge-sync` with `modeProgress` JSONB
+  - `pullFromCloud()` → GET `/api/progress/cartridge/:username/:cartridgeId` with per-card rev+timestamp merge
+  - `cloudSyncReady` gate, `cloudSyncInFlight` guard, `resetRev` tombstone
+  - `updateSyncIndicator()` — HUD shows ☁ synced / ☁ syncing / ⚠ offline
+  - `visibilitychange` flush on page hide
+- `index.html` SRS time decay + exam deadline:
+  - `EXAM_DATE = new Date('2026-05-07')` — configurable
+  - `applyTimeDecay(srs)` — half-life decay by mastery level (2-14 days)
+  - `getExamUrgency()` — returns `{urgency, daysLeft, mode}` (normal/focused/intensive/cram)
+  - `pickCommands()` uses exam urgency to prioritize decayed cards and limit new card intake
+- `index.html` persistence:
+  - `saveSRS(immediate)` — debounced per-answer save with read-modify-write merge + cloud push
+  - `sanitizeSrsCard()` — range validation for all 16+ fields
+  - `syncRunCheckpoint()`, `saveRunState()`, `loadRunState()`, `clearRunState()`
+- `index.html` BKT: `clampProb()`, `bayesPosterior()`, `bktUpdate()`, `pickScore()`, `infoGain()`
+- `index.html` anti-button-mash: `reshuffleQuestionOptions()`, `enemy.missCount`, attempt cap
+- `index.html` MC dedup: identify question generation deduplicates distractor options via Set
+
+## Latest Session Work (April 1-2, 2026)
+
+This session shipped 18 commits covering UI polish, audio, persistence hardening, cloud sync, and exam-prep features.
+
+### Spacebar Fix + Ground Spotlight + Tighter Camera Zoom
+- Spacebar no longer restarts the game (preventDefault on all screens, input exemption)
+- Replaced 3D square reticle with ground-plane spotlight disc (amber/blue/purple by depth)
+- Camera ~35% closer to focused enemy, faster lerp tracking
+
+### Per-Part Volume Controls + FL Studio Step Sequencer
+- 3 volume sliders (pads/bass/hihat) with headroom ceilings (pads×0.5, bass×0.35, hihat×0.04)
+- Default pads 5%, hihat 11%, bass 60%
+- Replaced dropdown grids with clickable step sequencer (3 rows × 8 cells)
+- New editable hi-hat pattern (was hardcoded even beats)
+- Right-click cycles backward on bass/pad cells
+
+### SRS/BKT Persistence Hardening
+- Per-card `rev` counter + `lastUpdated` timestamp for conflict resolution
+- `saveSRS()` does read-modify-write per-card merge (prevents stale-tab overwrites)
+- `sanitizeSrsCard()` validates all 16 fields, forces BKT v1 params
+- Per-answer debounced saves (300ms), HUD “SAVE FAILED” warning
+
+### Performance + Mechanics Polish
+- Label DOM caching (no more 60fps DOM rebuild)
+- HUD element caching (6 fewer getElementById calls per frame)
+- Hydra children skip spawning if parent past t=0.82/0.85
+- Session stats (TIME, AVG RESP) on end screen
+
+### Subconcept Question Context
+- Parent formula name + LaTeX shown above subconcept questions (“RE: Sample Mean”)
+- Fixes “What does Σ mean here?” having no context for what “here” refers to
+
+### Wrong-Answer Feedback Overhaul
+- Correction banner shows: ✗ chosen answer, ✓ correct answer, explain text
+- Auto-hold: banner stays until GOT IT button or space pressed (no more racing the timer)
+- Mobile: tap the banner to dismiss
+
+### Mobile Touch Controls
+- ⏸ pause button in HUD (visible only on mobile, top-right)
+- Mute button moved to top-left on mobile (was overlapping pause)
+- HINT touch button replaces EXPLAIN+HINT (simpler)
+- HOW TO PLAY shows both keyboard AND touch controls
+
+### Tabbed Menu System + Leaderboard
+- Title screen reorganized into PLAY / RANKS / MORE tabs
+- PLAY: domains, difficulty, deploy/continue, exam countdown
+- RANKS: leaderboard fetched from server (score, seen/66, mastered stars, medals)
+- MORE: cloud login, music editor, HOW TO PLAY, reset progress, QR code
+
+### Cloud Auth + Cross-Device SRS Sync
+- Login via lrsl-driller shared auth (student dropdown + password)
+- SRS pushed to server on checkpoint saves, pulled on login/title screen load
+- Per-card rev+timestamp merge for conflict resolution
+- `resetRev` tombstone prevents deleted progress from resurrecting
+- Password in sessionStorage (dies on tab close), username in localStorage
+- Sync indicator in HUD: ☁ synced / ⚠ offline
+
+### SRS Time Decay + Exam Deadline
+- Knowledge decays based on real calendar time since last review
+- Half-life by mastery: 2d (m0-1), 3-5d (m2-3), 7-14d (m4-5)
+- Mastery levels drop as pKnown decays below thresholds
+- EXAM_DATE = May 7, 2026 — countdown on PLAY tab
+- Near exam: prioritize decayed cards, reduce new card intake (cram mode last 3 days)
+
+### Formula Name Readability + MC Dedup
+- Renamed 34 of 66 command action fields for student clarity
+- “Mean of Discrete R.V.” → “Expected Value of a Random Variable”
+- All “Std Dev” → “Standard Deviation”, all “SE of” → “Standard Error of”
+- MC distractor selection now deduplicates via case-insensitive Set
+
+### Input Panel Slim-Down
+- Removed DEFINITIONS/TARGET/A/B/C/D chip row on desktop (saves ~32-120px)
+- Hidden .input-help shortcut text (covered by HOW TO PLAY)
+- Hidden scrollbar on ip-body
+- Desktop input panel max-height 55vh
 
 ## Likely Next Tasks
 
-- If the score-funnel effect should feel more rewarding, trigger a small HUD pop or score flash when rainbow particles reach the score target
-- Expand the explanation glossary beyond AP Stats if more cartridges get the same explainer UI
-- Add richer per-term overrides where the generated command-based sentences feel too generic
-- Consider a small touch-only `?` affordance on each answer row if mobile users miss the explainer chips
-- Expand pad rhythm presets if users want one-click groove templates instead of per-step editing
-- Add a touch-visible pause/menu button if mobile players need the new pause flow without a hardware keyboard
-- Decide whether `Continue` should restore an exact mid-wave moment forever or periodically collapse back to “start of current wave” checkpoints for simpler state
-- Expand chord library if more harmonic variety is wanted than major/minor triads
-- Add explicit “discard draft changes” behavior if the editor should preserve unsaved edits across closes
-- Consider naming editable waves separately from the original song labels if users should author custom presets
-- If more structural work happens, split `index.html` into smaller modules before feature work gets deeper
+- Add server endpoint for batch leaderboard query (currently N sequential requests)
+- Tune SRS decay half-lives based on student feedback
+- Add adaptive BKT params (v2) once enough data collected
+- Consider splitting `index.html` into modules (now ~4500 lines)
+- Add teacher dashboard view for class mastery overview
+- Particle pooling for main particles (trail ghosts already pooled)
+- Event listener cleanup on screen transitions (memory leak prevention)
+- Accessibility pass: ARIA labels, semantic HTML, WCAG contrast fixes
 
 ## GitNexus Note
 
