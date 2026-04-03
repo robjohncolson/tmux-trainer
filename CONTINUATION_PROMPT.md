@@ -839,6 +839,29 @@ Each of the 12 waves has a unique Julia `c` parameter creating a distinct fracta
 
 - `fractal-background-spec.md` — full design + Codex review (4 findings, all addressed)
 
+## Latest Update: fBm Amber Fractal + Pitch Stability Fix
+
+### fBm shader swap
+
+Replaced Julia set fractal with fractal Brownian motion noise in amber tones:
+- Hash-based gradient noise with 5 unrolled octaves (GLSL ES 1.0 compatible via `step()` mask)
+- Octaves = musical health (1-5) — dramatically visible complexity growth
+- Pure amber palette: dark amber → mid → bright `#ff8c00`
+- Streak drives flow speed (faster turbulence at high streak)
+- Contrast curve `pow(v, 0.7)` keeps midtones visible
+- 0.4 intensity cap — visible as reward, doesn't fight foreground
+
+### Pitch stability fix
+
+Removed `setProgress()` which was detuning pads by up to 50% per wave:
+- `setProgress()` function deleted
+- `SFX.setProgress()` call in animate() deleted
+- `lastProgress` state variable deleted
+- `setProgress` removed from SFX public API
+- `padBus.gain` now exclusively owned by `seq()` via health gating
+
+Chords now stay perfectly in tune throughout the wave. Only `setKey()` (wave transitions), `syncCurrentVoicing()` (editor), and `seq()` (auto-advance) touch voice frequencies.
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula

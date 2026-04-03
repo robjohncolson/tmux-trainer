@@ -718,7 +718,6 @@ const SFX=(()=>{
     voices[3].carrier.frequency.setTargetAtTime(ch[0]/4,t,.12);
     voices[3].modulator.frequency.setTargetAtTime(ch[0]/4,t,.12); // ratio 1
     voices[3].modGain.gain.setTargetAtTime((ch[0]/4)*2,t,.12); // modIndex 2
-    lastProgress=-1;
     if(restartBgm&&bgmPlaying){
       stopBGM();
       startBGM();
@@ -863,28 +862,6 @@ const SFX=(()=>{
   function setStreak(n){currentStreak=Math.max(0,n|0);}
 
   // Opens the filter and shifts voicing as the student progresses
-  let lastProgress=-1;
-  function setProgress(frac){
-    if(!ctx||!bgmPlaying)return;
-    const p=Math.max(0,Math.min(1,frac));
-    if(Math.abs(p-lastProgress)<.05)return;
-    lastProgress=p;
-    const t=ctx.currentTime;
-    const cfg=getWaveConfig(currentWaveIdx);
-    const ch=cfg.chords[currentProgIdx%cfg.chords.length];
-    // Pad voices shift up in octave blend as progress grows
-    for(let i=0;i<3;i++){
-      const target=ch[i]*(1+p*.5);
-      voices[i].carrier.frequency.setTargetAtTime(target,t,.3);
-      voices[i].modulator.frequency.setTargetAtTime(target*2,t,.3);
-      // Increase mod depth with progress (brighter FM timbre)
-      voices[i].modGain.gain.setTargetAtTime(target*(0.5+p*0.8),t,.3);
-    }
-    // Pad volume subtly grows with progress, scaled by padVol
-    const spv=(cfg.padVol!=null?cfg.padVol:.05)*.5;
-    if(spv===0){padBus.gain.setTargetAtTime(0,t,.3)}
-    else{padBus.gain.setTargetAtTime(Math.min(.5,spv*(1+p*.4)),t,.3)}
-  }
 
   // ── BGM ──
   function startBGM(){
@@ -1017,7 +994,7 @@ const SFX=(()=>{
   // ── Public API ──
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
-    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,musicalHit,musicalMiss,musicalBreach,setStreak,
+    isMuted(){return muted},startBGM,stopBGM,setKey,musicalHit,musicalMiss,musicalBreach,setStreak,
     getMusicConfig(wave){return cloneWaveConfig(getWaveConfig(typeof wave==='number'?wave:currentWaveIdx))},
     getAllMusicConfig(){return cloneMusicConfig(MUSIC_CONFIG)},
     getDefaultMusicConfig(){return cloneMusicConfig(DEFAULT_MUSIC_CONFIG)},
@@ -3164,46 +3141,47 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.shadowMap.enabled=false;
 
 // ── Julia set fractal background ──
-const JULIA_PARAMS=[
-  [-0.7,0.27015],[-0.8,0.156],[-0.4,0.6],[0.285,0.01],
-  [-0.70176,-0.3842],[-0.835,-0.2321],[0.355,0.355],[-0.54,0.54],
-  [0.37,0.1],[-0.123,0.745],[-0.75,0.0],[-0.1,0.651]
-];
 const fractalScene=new THREE.Scene();
 const fractalCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
 const fractalMaterial=new THREE.ShaderMaterial({
   depthTest:false,depthWrite:false,
   uniforms:{
-    c:{value:new THREE.Vector2(-0.7,0.27015)},
-    maxIter:{value:80.0},
-    colorShift:{value:0.0},
+    octaves:{value:5.0},
+    speed:{value:1.0},
     time:{value:0.0},
-    resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)},
-    intensity:{value:0.45}
+    resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)}
   },
   vertexShader:'void main(){gl_Position=vec4(position,1.0);}',
   fragmentShader:[
-    'uniform vec2 c;',
-    'uniform float maxIter,colorShift,time,intensity;',
+    'uniform float octaves,speed,time;',
     'uniform vec2 resolution;',
+    // Hash-based gradient noise for visible fractal structure
+    'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+    'float noise(vec2 p){',
+    '  vec2 i=floor(p),f=fract(p);',
+    '  f=f*f*(3.0-2.0*f);',
+    '  float a=hash(i),b=hash(i+vec2(1.0,0.0)),c=hash(i+vec2(0.0,1.0)),d=hash(i+vec2(1.0,1.0));',
+    '  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);',
+    '}',
     'void main(){',
-    '  if(maxIter<1.0){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
-    '  vec2 uv=(gl_FragCoord.xy-resolution*0.5)/min(resolution.x,resolution.y)*3.0;',
-    '  vec2 z=uv;',
-    '  int mi=int(maxIter);',
-    '  float n=0.0;',
-    '  for(int i=0;i<100;i++){',
-    '    if(i>=mi)break;',
-    '    z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;',
-    '    if(dot(z,z)>4.0)break;',
-    '    n=float(i);',
-    '  }',
-    '  float t=n/maxIter;',
-    '  vec3 col=0.5+0.5*cos(6.2831*(t*0.8+colorShift+vec3(0.0,0.33,0.67)));',
-    '  if(n>=maxIter-1.0)col=vec3(0.0);',
-    '  col*=smoothstep(0.0,3.0,maxIter/20.0);',
-    '  col*=0.85+0.15*sin(time*0.5);',
-    '  col*=intensity;',
+    '  if(octaves<0.5){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
+    '  vec2 uv=(gl_FragCoord.xy/resolution)*3.0;',
+    '  float t=time*speed*0.08;',
+    '  float v=0.0,amp=0.5,freq=1.0;',
+    // Unrolled 5-octave fBm with step mask for GLSL ES 1.0 compat
+    '  v+=amp*noise(uv*freq+t)*step(0.5,octaves);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq-t*0.7)*step(1.5,octaves);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq+t*0.5)*step(2.5,octaves);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq-t*0.3)*step(3.5,octaves);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq+t*0.2)*step(4.5,octaves);',
+    '  v=pow(v*0.5+0.5,0.7);', // contrast curve
+    // Amber palette
+    '  vec3 dark=vec3(0.05,0.02,0.0);',
+    '  vec3 mid=vec3(0.35,0.18,0.02);',
+    '  vec3 bright=vec3(1.0,0.55,0.0);',
+    '  vec3 col=mix(dark,mix(mid,bright,v),v);',
+    '  col*=0.4;', // dim for readability
+    '  col*=0.88+0.12*sin(time*0.4);', // gentle pulse
     '  gl_FragColor=vec4(col,1.0);',
     '}'
   ].join('\n')
@@ -4961,7 +4939,6 @@ function animate(time){
       const mainEnemies=G.enemies.filter(e=>!e.splitDepth||e.splitDepth===0).length;
       const unspawned=G.waveCommands.length-G.spawnIdx;
       const mainRemaining=mainEnemies+unspawned;
-      SFX.setProgress(Math.max(0,1-mainRemaining/G.waveCommands.length));
     }
   }
   updateSelectedSpotlight(time);
@@ -5029,14 +5006,11 @@ function animate(time){
     if(b.life<=0){scene.remove(b.line);b.line.material.dispose();b.line.geometry.dispose();beams.splice(i,1)}
   }
 
-  // Fractal background pass
+  // fBm fractal background pass
   const mh=SFX.getMusicalHealth();
   const sk=SFX.getStreak();
-  const wi=SFX.getWaveIndex();
-  const jp=JULIA_PARAMS[Math.min(wi,JULIA_PARAMS.length-1)];
-  fractalMaterial.uniforms.c.value.set(jp[0],jp[1]);
-  fractalMaterial.uniforms.maxIter.value=mh*16;
-  fractalMaterial.uniforms.colorShift.value=sk*0.05;
+  fractalMaterial.uniforms.octaves.value=mh;
+  fractalMaterial.uniforms.speed.value=1.0+sk*0.1;
   fractalMaterial.uniforms.time.value=time*0.001;
   renderer.autoClear=false;
   renderer.clear();
