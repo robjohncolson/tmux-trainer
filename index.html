@@ -1021,6 +1021,9 @@ const SFX=(()=>{
     getMusicConfig(wave){return cloneWaveConfig(getWaveConfig(typeof wave==='number'?wave:currentWaveIdx))},
     getAllMusicConfig(){return cloneMusicConfig(MUSIC_CONFIG)},
     getDefaultMusicConfig(){return cloneMusicConfig(DEFAULT_MUSIC_CONFIG)},
+    getMusicalHealth(){return musicalHealth},
+    getStreak(){return currentStreak},
+    getWaveIndex(){return currentWaveIdx},
     previewMusicConfig,
     stopMusicPreview(){stopPreview(false)},
     saveMusicConfig(nextConfig){return applyMusicConfig(nextConfig,true)},
@@ -3158,8 +3161,55 @@ const canvas=document.getElementById('game-canvas');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setClearColor(AMB.black);
 renderer.shadowMap.enabled=false;
+
+// ── Julia set fractal background ──
+const JULIA_PARAMS=[
+  [-0.7,0.27015],[-0.8,0.156],[-0.4,0.6],[0.285,0.01],
+  [-0.70176,-0.3842],[-0.835,-0.2321],[0.355,0.355],[-0.54,0.54],
+  [0.37,0.1],[-0.123,0.745],[-0.75,0.0],[-0.1,0.651]
+];
+const fractalScene=new THREE.Scene();
+const fractalCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const fractalMaterial=new THREE.ShaderMaterial({
+  depthTest:false,depthWrite:false,
+  uniforms:{
+    c:{value:new THREE.Vector2(-0.7,0.27015)},
+    maxIter:{value:80.0},
+    colorShift:{value:0.0},
+    time:{value:0.0},
+    resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)},
+    intensity:{value:0.45}
+  },
+  vertexShader:'void main(){gl_Position=vec4(position,1.0);}',
+  fragmentShader:[
+    'uniform vec2 c;',
+    'uniform float maxIter,colorShift,time,intensity;',
+    'uniform vec2 resolution;',
+    'void main(){',
+    '  if(maxIter<1.0){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
+    '  vec2 uv=(gl_FragCoord.xy-resolution*0.5)/min(resolution.x,resolution.y)*3.0;',
+    '  vec2 z=uv;',
+    '  int mi=int(maxIter);',
+    '  float n=0.0;',
+    '  for(int i=0;i<100;i++){',
+    '    if(i>=mi)break;',
+    '    z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;',
+    '    if(dot(z,z)>4.0)break;',
+    '    n=float(i);',
+    '  }',
+    '  float t=n/maxIter;',
+    '  vec3 col=0.5+0.5*cos(6.2831*(t*0.8+colorShift+vec3(0.0,0.33,0.67)));',
+    '  if(n>=maxIter-1.0)col=vec3(0.0);',
+    '  col*=smoothstep(0.0,3.0,maxIter/20.0);',
+    '  col*=0.85+0.15*sin(time*0.5);',
+    '  col*=intensity;',
+    '  gl_FragColor=vec4(col,1.0);',
+    '}'
+  ].join('\n')
+});
+const fractalMesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),fractalMaterial);
+fractalScene.add(fractalMesh);
 
 const scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(AMB.black,.035);
@@ -4979,7 +5029,21 @@ function animate(time){
     if(b.life<=0){scene.remove(b.line);b.line.material.dispose();b.line.geometry.dispose();beams.splice(i,1)}
   }
 
+  // Fractal background pass
+  const mh=SFX.getMusicalHealth();
+  const sk=SFX.getStreak();
+  const wi=SFX.getWaveIndex();
+  const jp=JULIA_PARAMS[Math.min(wi,JULIA_PARAMS.length-1)];
+  fractalMaterial.uniforms.c.value.set(jp[0],jp[1]);
+  fractalMaterial.uniforms.maxIter.value=mh*16;
+  fractalMaterial.uniforms.colorShift.value=sk*0.05;
+  fractalMaterial.uniforms.time.value=time*0.001;
+  renderer.autoClear=false;
+  renderer.clear();
+  if(mh>0){renderer.render(fractalScene,fractalCamera);}
+  renderer.clearDepth();
   renderer.render(scene,camera);
+  renderer.autoClear=true;
 }
 requestAnimationFrame(animate);
 
@@ -4993,6 +5057,7 @@ function handleResize(){
   camera.fov=isPortrait()?65:50;
   camera.updateProjectionMatrix();
   renderer.setSize(w,h);
+  fractalMaterial.uniforms.resolution.value.set(w,h);
 }
 window.addEventListener('resize',handleResize);
 window.addEventListener('orientationchange',()=>setTimeout(handleResize,150));

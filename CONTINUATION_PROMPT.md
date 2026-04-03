@@ -814,6 +814,31 @@ Replaced kill-driven chord progression with auto-advancing chords + performance-
 - `pendingChordAdvances` deleted — chords are automatic now
 - Streak groove gated on `health>=5 && streak>=3`
 
+## Latest Update: Julia Set Fractal Background
+
+Added a fullscreen Julia set fractal rendered as a GLSL shader behind the Three.js scene. The fractal responds to musical health and streak:
+
+- **Health 0**: black background (shader short-circuits, nearly free)
+- **Health 1-4**: progressively more detailed fractal (16-64 iterations)
+- **Health 5**: full vivid fractal (80 iterations) with gentle pulse
+- **Streak 3+**: color cycling accelerates
+
+Each of the 12 waves has a unique Julia `c` parameter creating a distinct fractal shape. Wave transitions change the fractal's geometry.
+
+### Implementation
+
+- Dual-pass rendering: `fractalScene` (ortho camera + fullscreen quad) rendered first, then `renderer.clearDepth()`, then game `scene`
+- `ShaderMaterial` with `depthTest:false, depthWrite:false` prevents depth buffer conflict
+- Division-by-zero guard: skip fractal pass entirely when `musicalHealth=0`
+- GLSL `int` loop with `const int` max for mobile compatibility
+- 0.45 intensity cap keeps fractal visible as reward but readable against game elements
+- `SFX.getMusicalHealth()`, `SFX.getStreak()`, `SFX.getWaveIndex()` — read-only getters
+- Resize handler updates `resolution` uniform
+
+### Spec artifact
+
+- `fractal-background-spec.md` — full design + Codex review (4 findings, all addressed)
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
