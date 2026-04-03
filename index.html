@@ -1691,7 +1691,8 @@ const apStatsCartridge={
     }else{
       const blank=cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
       const shuffledChoices=shuffleArr([...blank.choices]);
-      return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffledChoices,fullLatex:cmd.latex};
+      const correctIdx=shuffledChoices.indexOf(blank.choices[0]);
+      return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffledChoices,correctIdx,fullLatex:cmd.latex};
     }
   },
 
@@ -1700,7 +1701,7 @@ const apStatsCartridge={
 
   // Validate fill-blank answers
   validateBlank(input,answer){
-    function norm(s){return s.trim().toLowerCase().replace(/\s+/g,'').replace(/\u03c3/g,'sigma').replace(/\u03bc/g,'mu').replace(/\u03b2/g,'beta').replace(/\u03c7/g,'chi').replace(/\\hat\{p\}/g,'phat').replace(/\\bar\{x\}/g,'xbar').replace(/p\u0302/g,'phat').replace(/x\u0304/g,'xbar')}
+    function norm(s){return s.trim().toLowerCase().replace(/\s+/g,'').replace(/\u03c3/g,'sigma').replace(/\u03bc/g,'mu').replace(/\u03b2/g,'beta').replace(/\u03c7/g,'chi').replace(/\\hat\{p\}/g,'phat').replace(/\\bar\{x\}/g,'xbar').replace(/p\u0302/g,'phat').replace(/x\u0304/g,'xbar').replace(/[\\{}_]/g,'')}
     const ni=norm(input),na=norm(answer);
     if(ni===na)return true;
     // Common aliases
@@ -3192,16 +3193,16 @@ skyScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),skyMaterial));
 function terrainHeight(x,z){return Math.sin(x*.3)*Math.cos(z*.4)*.4+Math.sin(x*.7+z*.5)*.2;}
 const TREE_MAX_SEGMENTS=1023; // depth 10
 const TREE_POOL=[
-  {x:0,   z:-10,  angle:0,    ba:Math.PI/6,  ls:0.68,len:3.5,unlockAt:1},
-  {x:-4,  z:-11,  angle:0.15, ba:Math.PI/5.5,ls:0.65,len:2.8,unlockAt:3},
-  {x:4,   z:-10.5,angle:-0.1, ba:Math.PI/6.5,ls:0.70,len:2.6,unlockAt:3},
-  {x:-7,  z:-13,  angle:0.08, ba:Math.PI/5,  ls:0.63,len:2.2,unlockAt:5},
-  {x:6,   z:-12.5,angle:-0.12,ba:Math.PI/6.2,ls:0.66,len:2.0,unlockAt:5},
-  {x:-2,  z:-14,  angle:0.05, ba:Math.PI/5.8,ls:0.64,len:2.4,unlockAt:7},
-  {x:2.5, z:-13.5,angle:-0.07,ba:Math.PI/6.3,ls:0.67,len:2.3,unlockAt:7},
-  {x:-8,  z:-15,  angle:0.1,  ba:Math.PI/5.2,ls:0.62,len:1.8,unlockAt:9},
-  {x:7.5, z:-14.5,angle:-0.08,ba:Math.PI/6.8,ls:0.65,len:1.9,unlockAt:9},
-  {x:0,   z:-16,  angle:0,    ba:Math.PI/5.5,ls:0.60,len:2.0,unlockAt:10},
+  {x:0,   z:-4,  angle:0,    ba:Math.PI/6,  ls:0.68,len:2.1,unlockAt:1},
+  {x:-4,  z:-5,  angle:0.15, ba:Math.PI/5.5,ls:0.65,len:1.7,unlockAt:3},
+  {x:4,   z:-4.5,angle:-0.1, ba:Math.PI/6.5,ls:0.70,len:1.6,unlockAt:3},
+  {x:-7,  z:-7,  angle:0.08, ba:Math.PI/5,  ls:0.63,len:1.3,unlockAt:5},
+  {x:6,   z:-6.5,angle:-0.12,ba:Math.PI/6.2,ls:0.66,len:1.2,unlockAt:5},
+  {x:-2,  z:-8,  angle:0.05, ba:Math.PI/5.8,ls:0.64,len:1.4,unlockAt:7},
+  {x:2.5, z:-7.5,angle:-0.07,ba:Math.PI/6.3,ls:0.67,len:1.4,unlockAt:7},
+  {x:-8,  z:-9,  angle:0.1,  ba:Math.PI/5.2,ls:0.62,len:1.1,unlockAt:9},
+  {x:7.5, z:-8.5,angle:-0.08,ba:Math.PI/6.8,ls:0.65,len:1.1,unlockAt:9},
+  {x:0,   z:-10, angle:0,    ba:Math.PI/5.5,ls:0.60,len:1.2,unlockAt:10},
 ];
 function generateTree(ox,oy,len,angle,ba,ls,depth,levels,timeSec,omega,swayAmp,pos,col,idx){
   if(depth>=levels)return idx;
@@ -3886,8 +3887,9 @@ function reshuffleQuestionOptions(enemy){
     q.correctIdx=q.options.indexOf(correct);
     q.correctKey=['a','b','c','d'][q.correctIdx];
   }else if(q.type==='fillblank'){
+    const correct=q.choices[q.correctIdx];
     q.choices=shuffleArr(q.choices);
-    // No correctIdx/correctKey needed — validateBlank compares against q.answer
+    q.correctIdx=q.choices.indexOf(correct);
   }else if(q.type==='subconcept'){
     const correct=q.options[q.correctIdx];
     q.options=shuffleArr(q.options);

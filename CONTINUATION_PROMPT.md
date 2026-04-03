@@ -938,17 +938,22 @@ Trees are IN the game scene so they interact with fog, camera, and depth correct
 - `SFX.musicalMiss()` / `SFX.musicalBreach()` → deleted (game code sets `G.treeDepth` directly)
 - `SFX.setTreeDepth(d)` → new, replaces all three
 
-## Latest Update: Answer Validation Fix + Tree Z-Push
+## Latest Update: Validation Fixes + Tree Scaling
 
 ### Reshuffle timing fix
 - `reshuffleQuestionOptions()` moved from `resolveFn()` to `clearQuizAnswerFeedback()`
 - Options stay stable while wrong-answer feedback is visible (GOT IT / space)
 - `QUIZ_ANSWER_FEEDBACK.reshuffleEnemyId` stores target for deferred reshuffle
-- Reshuffle triggers on any feedback dismiss path (GOT IT, space, enemy death, game restart)
 
-### Tree positioning
-- All TREE_POOL z-coordinates pushed back by 6 units (z:-4..-10 → z:-10..-16)
-- Trees now well behind enemy cubes when camera zooms in
+### validateBlank LaTeX normalization fix
+- `norm()` now strips LaTeX formatting: `\\`, `{`, `}`, `_` via `.replace(/[\\{}_]/g,'')`
+- Fixes: `\\beta` now matches answer `beta`, `\\mu_0` matches `mu0`, etc.
+- Fillblank questions now include `correctIdx` for proper wrong-answer feedback display
+- `reshuffleQuestionOptions` maintains `correctIdx` for fillblank after reshuffle
+
+### Tree sizing
+- TREE_POOL z-coordinates restored to original (-4..-10, close to action)
+- `len` values scaled down ~40% (e.g., 3.5→2.1, 2.8→1.7) so trees fit in viewport when zoomed
 
 ## Likely Next Tasks
 
