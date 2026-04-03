@@ -33,10 +33,10 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .input-box.done{border-color:#ff8c0088;color:#ff8c00;background:#ff8c0011}
 .input-help{font-size:10px;color:#3d1f00;margin-top:8px;display:none;line-height:1.4}
 .shortcut-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.shortcut-badge{font-family:inherit;font-size:10px;color:#996622;background:transparent;border:1px solid #5a280044;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
-.shortcut-badge:hover{border-color:#ff8c00;color:#ff8c00}
+.shortcut-badge{font-family:inherit;font-size:10px;color:#7799aa;background:transparent;border:1px solid #58C4DD33;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.shortcut-badge:hover{border-color:#58C4DD;color:#58C4DD}
 .shortcut-badge:active{transform:scale(.96)}
-.shortcut-badge kbd{font-family:inherit;font-size:9px;font-weight:700;color:#ff8c00;background:#ff8c0011;border:1px solid #ff8c0033;border-radius:3px;padding:1px 5px}
+.shortcut-badge kbd{font-family:inherit;font-size:9px;font-weight:700;color:#58C4DD;background:#58C4DD11;border:1px solid #58C4DD44;border-radius:3px;padding:1px 5px}
 .explain-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
 .explain-label{font-size:9px;letter-spacing:2px;color:#996622;font-weight:700}
 .explain-chip{font-family:inherit;font-size:10px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .15s}
@@ -54,12 +54,12 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .touch-actions{display:flex;gap:6px;margin-top:6px}
 .touch-btn{flex:1;font-family:inherit;font-size:11px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;min-height:44px;transition:all .15s}
 .touch-btn:active{transform:scale(.95);background:#2d1200}
-.explain-panel{margin-top:10px;padding:10px 12px;border:1px solid #ff8c0033;border-radius:10px;background:#ff8c000f;text-align:left}
+.explain-panel{margin-top:10px;padding:10px 12px;border:1px solid #58C4DD33;border-radius:10px;background:#58C4DD0a;text-align:left}
 .explain-panel-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.explain-title{font-size:11px;letter-spacing:2px;color:#ffcc66;font-weight:700}
-.explain-close{font-family:inherit;font-size:10px;font-weight:700;color:#996622;background:transparent;border:1px solid #5a2800;border-radius:999px;padding:4px 9px;cursor:pointer}
-.explain-close:hover{border-color:#ff8c00;color:#ff8c00}
-.explain-line{font-size:11px;line-height:1.55;color:#d8943d;margin-top:4px}
+.explain-title{font-size:11px;letter-spacing:2px;color:#58C4DD;font-weight:700}
+.explain-close{font-family:inherit;font-size:10px;font-weight:700;color:#58C4DD;background:transparent;border:1px solid #3388aa;border-radius:999px;padding:4px 9px;cursor:pointer}
+.explain-close:hover{border-color:#66ccff;color:#66ccff}
+.explain-line{font-size:11px;line-height:1.55;color:#99bbcc;margin-top:4px}
 .explain-watch{font-family:inherit;font-size:10px;font-weight:700;color:#66ccff;background:transparent;border:1px solid #2266aa;border-radius:999px;padding:4px 9px;cursor:pointer;margin-left:auto}
 .explain-watch:hover{border-color:#66ccff}
 .explain-video-wrap{position:relative;margin-top:8px;margin-bottom:8px;border-radius:8px;overflow:hidden;background:#000;animation:explain-fade-in .3s ease-out}
@@ -200,8 +200,13 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .seq-cell--full{border-color:#ff8c0055}.seq-cell--full .seq-bar{height:55%;background:#ff8c0088}
 .seq-cell--accent{border-color:#ff8c00aa}.seq-cell--accent .seq-bar{height:85%;background:#ff8c00cc}
 .seq-cell--bass{border-color:#4488ff44}.seq-cell--bass .seq-bar{height:60%;background:#4488ff66}
+.seq-cell--kick{border-color:#ff444466;background:#ff44440c}.seq-cell--kick .seq-bar{height:70%;background:#ff4444aa}
+.seq-cell--kick-off{background:#0d0500}
+.seq-cell--snare{border-color:#ffaa2266;background:#ffaa220c}.seq-cell--snare .seq-bar{height:60%;background:#ffaa22aa}
+.seq-cell--snare-off{background:#0d0500}
 .seq-cell--hat{border-color:#aaaaaa66;background:#ffffff0c}.seq-cell--hat .seq-bar{height:50%;background:#ffffffaa;border-radius:50%;width:50%;left:25%}
 .seq-cell--hat-off{background:#0d0500}
+.seq-section-header{font-size:8px;letter-spacing:2px;color:#5a3800;font-weight:700;text-align:center;padding:4px 0 2px;margin:0}
 .seq-nums{display:flex;gap:3px;margin-left:66px}
 .seq-num{flex:1;text-align:center;font-size:8px;color:#5a3800;font-weight:600}
 .seq-divider{height:1px;background:#3d1f0033;margin:2px 0 2px 66px}
@@ -338,59 +343,73 @@ const MASTERY_LABELS=['New','Learning','Familiar','Practiced','Proficient','Mast
 //  SOUND ENGINE
 // ═══════════════════════════════════════════════
 const SFX=(()=>{
-  // ── Persistent polyphonic synth engine ──
-  // Pre-allocated voice pool: oscillators never stop, controlled via gain
+  // ── FM Synthesis polyphonic engine ──
+  // 14 voices: 0-2 FM pad, 3 FM bass, 4 FM kick, 5 FM snare, 6 FM hihat, 7-13 FM SFX pool
   let ctx=null,muted=false,masterGain=null,bgmPlaying=false;
-  let voices=[],noiseGate=null,noiseLP=null;
-  let padBus=null,bassBus=null,sfxBus=null;
+  let voices=[],noiseGate=null,noiseLP=null,noiseBP=null;
+  let padBus=null,bassBus=null,sfxBus=null,drumBus=null;
   let bgmSeqTimer=null,currentWaveIdx=0,previewTimer=null,previewConfig=null;
   const MUSIC_STORAGE_KEY='td-music-config-v1';
 
   // ── MUSIC CONFIG — edit these to customize each wave's sound ──
-  // Each wave: {name, chords: [[root,3rd,5th],...], bass: [ratios, 0=rest], tempo: bpm}
-  // Chords cycle on correct answers. Bass loops continuously.
   const DEFAULT_MUSIC_CONFIG=[
     {name:'Dire Straits "So Far Away"',     // W1
       chords:[[220,262,330],[196,247,294],[175,220,262],[165,208,247]],
-      bass:[1,0,1,.75,0,1,1.5,.75], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:90, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,0,1,.75,0,1,1.5,.75], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:90, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,0,1,0,0,0], snare:[0,0,0,0,0,0,1,0], kickVol:.30, snareVol:.25},
     {name:'A-ha "Take On Me"',              // W2
       chords:[[220,277,330],[185,220,277],[147,185,220],[165,208,247]],
-      bass:[1,1,0,1.5,1,0,1.335,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:110, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,1,0,1.5,1,0,1.335,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:110, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,0,1,0,0,0], snare:[0,0,0,0,1,0,0,0], kickVol:.30, snareVol:.25},
     {name:'Grieg "Morning Mood"',           // W3
       chords:[[165,208,247],[208,247,311],[220,277,330],[247,311,370]],
-      bass:[1,0,0,1.189,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:72, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,0,0,1.189,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:72, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,0,1,0,0,0], snare:[0,0,0,0,0,0,1,0], kickVol:.30, snareVol:.25},
     {name:'Pachelbel\'s Canon',             // W4
       chords:[[147,185,220],[220,277,330],[247,294,370],[185,220,277]],
-      bass:[1,1.5,1.335,1,1.189,1,1.5,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:80, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,1.5,1.335,1,1.189,1,1.5,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:80, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,1,0,0,1,0], snare:[0,0,0,0,1,0,0,0], kickVol:.30, snareVol:.25},
     {name:'Beethoven "Fur Elise"',          // W5
       chords:[[220,262,330],[165,208,247],[220,262,330],[262,330,392]],
-      bass:[1,0,1,0,1,0,1.189,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:76, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,0,1,0,1,0,1.189,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:76, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,1,0,0,1,0], snare:[0,0,0,0,1,0,0,1], kickVol:.30, snareVol:.25},
     {name:'Vivaldi "Winter"',               // W6 — peak tension
       chords:[[175,208,262],[131,156,196],[139,175,208],[156,196,233]],
-      bass:[1,1,1,1.189,1,1,1.335,1.5], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:120, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,1,1,1.189,1,1,1.335,1.5], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:120, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,1,0,1,0,1,0], snare:[0,0,0,0,1,0,0,1], kickVol:.30, snareVol:.25},
     {name:'Bach "Air on G String"',         // W7
       chords:[[196,247,294],[165,196,247],[220,262,330],[147,185,220]],
-      bass:[1,0,0,1.5,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:60, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,0,0,1.5,0,0,1.335,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:60, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,0,1,0,1,0], snare:[0,0,1,0,0,0,1,0], kickVol:.30, snareVol:.25},
     {name:'Chrono Trigger "Corridors of Time"', // W8
       chords:[[165,196,247],[196,247,294],[220,262,330],[247,311,370]],
-      bass:[1,1.335,1,1.5,1.189,1,0,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:95, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,1.335,1,1.5,1.189,1,0,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:95, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,1,0,1,0,0], snare:[0,0,0,0,1,0,0,1], kickVol:.30, snareVol:.25},
     {name:'Satie "Gymnopedie No.1"',        // W9
       chords:[[196,247,294],[147,185,220],[196,247,294],[147,185,220]],
-      bass:[1,0,0,0,1.5,0,0,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:56, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,0,0,0,1.5,0,0,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:56, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,0,1,1,0,0,1], snare:[0,0,1,0,0,1,0,0], kickVol:.30, snareVol:.25},
     {name:'Mozart "Eine Kleine Nachtmusik"', // W10
       chords:[[196,247,294],[147,185,220],[165,196,247],[262,330,392]],
-      bass:[1,1,1.5,1,1.335,1,1.5,1.189], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:105, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,1,1.5,1,1.335,1,1.5,1.189], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:105, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,1,0,0,1,0,1], snare:[0,0,0,1,0,0,1,0], kickVol:.30, snareVol:.25},
     {name:'Tchaikovsky "Swan Lake"',        // W11
       chords:[[247,294,370],[185,233,277],[247,294,370],[165,196,247]],
-      bass:[1,0,1.189,0,1,0,1.5,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:84, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,0,1.189,0,1,0,1.5,0], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:84, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,1,0,1,0,0,1], snare:[0,1,0,0,1,0,1,0], kickVol:.30, snareVol:.25},
     {name:'Beethoven "Ode to Joy"',         // W12 — triumph
       chords:[[147,185,220],[196,247,294],[220,277,330],[147,185,220]],
-      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:100, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0]},
+      bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:100, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+      kick:[1,0,1,1,0,1,0,1], snare:[0,1,0,0,1,0,1,0], kickVol:.30, snareVol:.25},
   ];
   let MUSIC_CONFIG=loadMusicConfig();
   let currentProgIdx=0;
   function cloneWaveConfig(cfg){
-    return{name:cfg.name,chords:cfg.chords.map(ch=>ch.slice()),bass:cfg.bass.slice(),pad:cfg.pad.slice(),tempo:cfg.tempo,padVol:cfg.padVol,bassVol:cfg.bassVol,hihatVol:cfg.hihatVol,hihat:Array.isArray(cfg.hihat)&&cfg.hihat.length===8?cfg.hihat.slice():[1,0,1,0,1,0,1,0]};
+    return{name:cfg.name,chords:cfg.chords.map(ch=>ch.slice()),bass:cfg.bass.slice(),pad:cfg.pad.slice(),tempo:cfg.tempo,padVol:cfg.padVol,bassVol:cfg.bassVol,hihatVol:cfg.hihatVol,hihat:Array.isArray(cfg.hihat)&&cfg.hihat.length===8?cfg.hihat.slice():[1,0,1,0,1,0,1,0],
+      kick:Array.isArray(cfg.kick)&&cfg.kick.length===8?cfg.kick.slice():[1,0,0,0,1,0,0,0],
+      snare:Array.isArray(cfg.snare)&&cfg.snare.length===8?cfg.snare.slice():[0,0,0,0,0,0,1,0],
+      kickVol:typeof cfg.kickVol==='number'?cfg.kickVol:.30,
+      snareVol:typeof cfg.snareVol==='number'?cfg.snareVol:.25};
   }
   function cloneMusicConfig(cfgs){return cfgs.map(cloneWaveConfig)}
   function clampWaveIdx(idx){return Math.max(0,Math.min(DEFAULT_MUSIC_CONFIG.length-1,idx))}
@@ -425,6 +444,17 @@ const SFX=(()=>{
     if(Array.isArray(raw&&raw.hihat)&&raw.hihat.length===8){
       safe.hihat=raw.hihat.map(v=>(v===1||v===true)?1:0);
     }
+    // Validate kick pattern
+    if(!Array.isArray(raw&&raw.kick)||raw.kick.length!==8){safe.kick=fallback.kick?fallback.kick.slice():[1,0,0,0,1,0,0,0]}
+    else{safe.kick=raw.kick.map(v=>(v===1||v===true)?1:0)}
+    // Validate snare pattern
+    if(!Array.isArray(raw&&raw.snare)||raw.snare.length!==8){safe.snare=fallback.snare?fallback.snare.slice():[0,0,0,0,0,0,1,0]}
+    else{safe.snare=raw.snare.map(v=>(v===1||v===true)?1:0)}
+    // Validate kick/snare volumes
+    if(typeof(raw&&raw.kickVol)!=='number'||raw.kickVol<0||raw.kickVol>1){safe.kickVol=fallback.kickVol!=null?fallback.kickVol:.30}
+    else{safe.kickVol=raw.kickVol}
+    if(typeof(raw&&raw.snareVol)!=='number'||raw.snareVol<0||raw.snareVol>1){safe.snareVol=fallback.snareVol!=null?fallback.snareVol:.25}
+    else{safe.snareVol=raw.snareVol}
     ['padVol','bassVol','hihatVol'].forEach(k=>{
       if(raw&&Number.isFinite(Number(raw[k])))safe[k]=Math.max(0,Math.min(1,Number(raw[k])));
     });
@@ -454,14 +484,46 @@ const SFX=(()=>{
     return cfg.chords[currentProgIdx%cfg.chords.length];
   }
 
+  // ── FM voice creation helpers ──
+  function createFmVoice(carrierType,dest){
+    const carrier=ctx.createOscillator();
+    carrier.type=carrierType||'sine';
+    const modulator=ctx.createOscillator();
+    modulator.type='sine';
+    const modGain=ctx.createGain();
+    modGain.gain.value=0;
+    const outputGain=ctx.createGain();
+    outputGain.gain.value=0;
+    // FM: modulator → modGain → carrier.frequency
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+    carrier.connect(outputGain);
+    outputGain.connect(dest);
+    carrier.start();
+    modulator.start();
+    return{carrier,modulator,modGain,outputGain,active:false};
+  }
+  function createSimpleVoice(carrierType,dest){
+    // For kick: no modulator needed, just carrier + output gain
+    const carrier=ctx.createOscillator();
+    carrier.type=carrierType||'sine';
+    const outputGain=ctx.createGain();
+    outputGain.gain.value=0;
+    carrier.connect(outputGain);
+    outputGain.connect(dest);
+    carrier.start();
+    return{carrier,modulator:null,modGain:null,outputGain,active:false};
+  }
+
   function init(){
     if(ctx)return;
     ctx=new(window.AudioContext||window.webkitAudioContext)();
     masterGain=ctx.createGain();masterGain.gain.value=1;masterGain.connect(ctx.destination);
-    // Three buses
+    // Four buses
     padBus=ctx.createGain();padBus.gain.value=0;padBus.connect(masterGain);
     bassBus=ctx.createGain();bassBus.gain.value=0;bassBus.connect(masterGain);
     sfxBus=ctx.createGain();sfxBus.gain.value=.8;sfxBus.connect(masterGain);
+    drumBus=ctx.createGain();drumBus.gain.value=.7;drumBus.connect(masterGain);
     // Pad filter with shimmer LFO
     const padF=ctx.createBiquadFilter();padF.type='lowpass';padF.frequency.value=900;
     padF.connect(padBus);
@@ -472,26 +534,142 @@ const SFX=(()=>{
     bassF.connect(bassBus);
     const bassLFO=ctx.createOscillator();bassLFO.type='sine';bassLFO.frequency.value=.3;
     const bassLG=ctx.createGain();bassLG.gain.value=120;bassLFO.connect(bassLG);bassLG.connect(bassF.frequency);bassLFO.start();
-    // Create 12 voices: 0-2=pad, 3=bass, 4-11=SFX
-    for(let i=0;i<12;i++){
-      const osc=ctx.createOscillator();
-      const gain=ctx.createGain();gain.gain.value=0;
-      osc.connect(gain);
-      if(i<3){osc.type='triangle';osc.frequency.value=DEFAULT_MUSIC_CONFIG[0].chords[0][i];gain.connect(padF)}
-      else if(i===3){osc.type='sawtooth';osc.frequency.value=55;gain.connect(bassF)}
-      else{osc.type='triangle';osc.frequency.value=440;gain.connect(sfxBus)}
-      osc.start();
-      voices.push({osc,gain,active:false});
+
+    // ── Voices 0-2: FM pad (carrier sine + modulator sine, ratio 2, low depth = bell/e-piano) ──
+    for(let i=0;i<3;i++){
+      const v=createFmVoice('sine',padF);
+      const freq=DEFAULT_MUSIC_CONFIG[0].chords[0][i];
+      v.carrier.frequency.value=freq;
+      v.modulator.frequency.value=freq*2; // ratio 2
+      v.modGain.gain.value=freq*0.5; // modIndex 0.5 → gentle bell
+      voices.push(v);
     }
-    // Persistent noise source
+    // ── Voice 3: FM bass (carrier sine + modulator sine, ratio 1, modIndex ~2) ──
+    {
+      const v=createFmVoice('sine',bassF);
+      v.carrier.frequency.value=55;
+      v.modulator.frequency.value=55; // ratio 1
+      v.modGain.gain.value=55*2; // modIndex 2 → warm fat bass
+      voices.push(v);
+    }
+    // ── Voice 4: FM kick (carrier sine, pitch envelope, no modulator) ──
+    {
+      const v=createSimpleVoice('sine',drumBus);
+      v.carrier.frequency.value=55;
+      voices.push(v);
+    }
+    // ── Voice 5: FM snare (carrier + modulator ratio 2.3, inharmonic) ──
+    {
+      const v=createFmVoice('sine',drumBus);
+      v.carrier.frequency.value=200;
+      v.modulator.frequency.value=200*2.3;
+      v.modGain.gain.value=200*3; // modIndex 3
+      voices.push(v);
+    }
+    // ── Voice 6: FM hihat (carrier ~400Hz + modulator ratio sqrt(2), high depth = metallic) ──
+    {
+      const v=createFmVoice('sine',drumBus);
+      v.carrier.frequency.value=400;
+      v.modulator.frequency.value=400*1.414; // sqrt(2) ratio
+      v.modGain.gain.value=400*8; // modIndex 8 → metallic
+      voices.push(v);
+    }
+    // ── Voices 7-13: FM SFX pool ──
+    for(let i=7;i<14;i++){
+      const v=createFmVoice('sine',sfxBus);
+      v.carrier.frequency.value=440;
+      v.modulator.frequency.value=440*2;
+      v.modGain.gain.value=0;
+      voices.push(v);
+    }
+
+    // Persistent noise source (used for hihat mix-in and snare burst)
     const nBuf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
     const nData=nBuf.getChannelData(0);for(let i=0;i<nData.length;i++)nData[i]=Math.random()*2-1;
     const nSrc=ctx.createBufferSource();nSrc.buffer=nBuf;nSrc.loop=true;
     noiseLP=ctx.createBiquadFilter();noiseLP.type='lowpass';noiseLP.frequency.value=3000;
     noiseGate=ctx.createGain();noiseGate.gain.value=0;
-    nSrc.connect(noiseLP);noiseLP.connect(noiseGate);noiseGate.connect(sfxBus);nSrc.start();
+    nSrc.connect(noiseLP);noiseLP.connect(noiseGate);noiseGate.connect(sfxBus);
+    // Second noise path: bandpass for snare burst, routed through drumBus
+    noiseBP=ctx.createBiquadFilter();noiseBP.type='bandpass';noiseBP.frequency.value=2000;noiseBP.Q.value=1.5;
+    const noiseBPGate=ctx.createGain();noiseBPGate.gain.value=0;
+    nSrc.connect(noiseBP);noiseBP.connect(noiseBPGate);noiseBPGate.connect(drumBus);
+    nSrc.start();
+    // Store bandpass gate for snare scheduling
+    voices._noiseBPGate=noiseBPGate;
   }
   function ensure(){if(!ctx)init();if(ctx.state==='suspended')ctx.resume()}
+
+  // ── FM drum scheduling ──
+  function scheduleFmKick(time,vol){
+    if(!ctx||!voices[4])return;
+    const v=voices[4],t=Math.max(time,ctx.currentTime);
+    // Pitch envelope: 150Hz → 55Hz in 60ms
+    v.carrier.frequency.cancelScheduledValues(t);
+    v.carrier.frequency.setValueAtTime(150,t);
+    v.carrier.frequency.exponentialRampToValueAtTime(55,t+0.06);
+    // Amplitude: attack 2ms, hold 120ms, decay 80ms
+    v.outputGain.gain.cancelScheduledValues(t);
+    v.outputGain.gain.setValueAtTime(0,t);
+    v.outputGain.gain.linearRampToValueAtTime(vol,t+0.002);
+    v.outputGain.gain.setValueAtTime(vol,t+0.122);
+    v.outputGain.gain.linearRampToValueAtTime(0,t+0.202);
+  }
+  function scheduleFmSnare(time,vol){
+    if(!ctx||!voices[5])return;
+    const v=voices[5],t=Math.max(time,ctx.currentTime);
+    // Carrier pitch: 200Hz → 120Hz in 30ms
+    v.carrier.frequency.cancelScheduledValues(t);
+    v.carrier.frequency.setValueAtTime(200,t);
+    v.carrier.frequency.exponentialRampToValueAtTime(120,t+0.03);
+    // Modulator: ratio 2.3, modIndex 3, depth decays to 0 in 60ms
+    v.modulator.frequency.cancelScheduledValues(t);
+    v.modulator.frequency.setValueAtTime(200*2.3,t);
+    v.modGain.gain.cancelScheduledValues(t);
+    v.modGain.gain.setValueAtTime(200*3,t); // depth = modIndex * carrierFreq
+    v.modGain.gain.linearRampToValueAtTime(0,t+0.06);
+    // Amplitude: 5ms attack, 100ms decay
+    v.outputGain.gain.cancelScheduledValues(t);
+    v.outputGain.gain.setValueAtTime(0,t);
+    v.outputGain.gain.linearRampToValueAtTime(vol,t+0.005);
+    v.outputGain.gain.exponentialRampToValueAtTime(0.001,t+0.105);
+    v.outputGain.gain.setValueAtTime(0,t+0.106);
+    // Noise burst via bandpass
+    if(voices._noiseBPGate){
+      const ng=voices._noiseBPGate;
+      ng.gain.cancelScheduledValues(t);
+      ng.gain.setValueAtTime(vol*0.6,t);
+      ng.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+      ng.gain.setValueAtTime(0,t+0.101);
+    }
+  }
+  function scheduleFmHihat(time,vol,closed){
+    if(!ctx||!voices[6])return;
+    const v=voices[6],t=Math.max(time,ctx.currentTime);
+    const decay=closed?0.025:0.12;
+    // Carrier 400Hz, modulator ratio 1.414, modIndex 8
+    v.carrier.frequency.cancelScheduledValues(t);
+    v.carrier.frequency.setValueAtTime(400,t);
+    v.modulator.frequency.cancelScheduledValues(t);
+    v.modulator.frequency.setValueAtTime(400*1.414,t);
+    v.modGain.gain.cancelScheduledValues(t);
+    v.modGain.gain.setValueAtTime(400*8,t);
+    v.modGain.gain.linearRampToValueAtTime(400*2,t+decay);
+    // Amplitude
+    v.outputGain.gain.cancelScheduledValues(t);
+    v.outputGain.gain.setValueAtTime(vol,t);
+    v.outputGain.gain.exponentialRampToValueAtTime(0.001,t+decay);
+    v.outputGain.gain.setValueAtTime(0,t+decay+0.001);
+    // Mix in a little noise (reduced level)
+    if(noiseGate&&noiseLP){
+      noiseLP.frequency.setValueAtTime(8000,t);
+      noiseGate.gain.cancelScheduledValues(t);
+      noiseGate.gain.setValueAtTime(vol*0.15,t);
+      noiseGate.gain.exponentialRampToValueAtTime(0.001,t+decay);
+      noiseGate.gain.setValueAtTime(0,t+decay+0.001);
+    }
+  }
+
   function clearBgmAutomation(time){
     if(!ctx)return;
     const t=Math.max(time||ctx.currentTime,ctx.currentTime);
@@ -511,11 +689,21 @@ const SFX=(()=>{
       bassBus.gain.cancelScheduledValues(t);
       bassBus.gain.setValueAtTime(0,t);
     }
-    for(let i=0;i<4;i++){
+    // Clear pad voices (0-2), bass voice (3), kick (4), snare (5), hihat (6)
+    for(let i=0;i<7;i++){
       if(!voices[i])continue;
-      voices[i].gain.gain.cancelScheduledValues(t);
-      voices[i].gain.gain.setValueAtTime(0,t);
-      voices[i].osc.frequency.cancelScheduledValues(t);
+      voices[i].outputGain.gain.cancelScheduledValues(t);
+      voices[i].outputGain.gain.setValueAtTime(0,t);
+      voices[i].carrier.frequency.cancelScheduledValues(t);
+      if(voices[i].modulator){
+        voices[i].modulator.frequency.cancelScheduledValues(t);
+        voices[i].modGain.gain.cancelScheduledValues(t);
+      }
+    }
+    // Clear noise bandpass gate
+    if(voices._noiseBPGate){
+      voices._noiseBPGate.gain.cancelScheduledValues(t);
+      voices._noiseBPGate.gain.setValueAtTime(0,t);
     }
   }
   function syncCurrentVoicing(restartBgm){
@@ -523,8 +711,14 @@ const SFX=(()=>{
     const cfg=getWaveConfig(currentWaveIdx);
     const ch=cfg.chords[currentProgIdx%cfg.chords.length];
     const t=ctx.currentTime;
-    for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.12);
-    voices[3].osc.frequency.setTargetAtTime(ch[0]/4,t,.12);
+    for(let i=0;i<3;i++){
+      voices[i].carrier.frequency.setTargetAtTime(ch[i],t,.12);
+      voices[i].modulator.frequency.setTargetAtTime(ch[i]*2,t,.12); // ratio 2
+      voices[i].modGain.gain.setTargetAtTime(ch[i]*0.5,t,.12); // modIndex 0.5
+    }
+    voices[3].carrier.frequency.setTargetAtTime(ch[0]/4,t,.12);
+    voices[3].modulator.frequency.setTargetAtTime(ch[0]/4,t,.12); // ratio 1
+    voices[3].modGain.gain.setTargetAtTime((ch[0]/4)*2,t,.12); // modIndex 2
     lastProgress=-1;
     if(restartBgm&&bgmPlaying){
       stopBGM();
@@ -535,15 +729,23 @@ const SFX=(()=>{
     const t=Math.max(time,ctx.currentTime);
     for(let i=0;i<3;i++){
       if(level<=0){
-        voices[i].gain.gain.setTargetAtTime(0,t,.02);
+        voices[i].outputGain.gain.setTargetAtTime(0,t,.02);
+        // Settle mod depth low when silent
+        voices[i].modGain.gain.setTargetAtTime(0,t,.02);
         continue;
       }
       const peak=level*.75;
       const sustain=Math.max(.02,level*.2);
-      voices[i].gain.gain.cancelScheduledValues(t);
-      voices[i].gain.gain.setValueAtTime(0,t);
-      voices[i].gain.gain.linearRampToValueAtTime(peak,t+Math.min(stepDur*.18,.05));
-      voices[i].gain.gain.linearRampToValueAtTime(sustain,t+Math.max(stepDur*.72,.12));
+      const freq=voices[i].carrier.frequency.value||220;
+      // Amplitude envelope
+      voices[i].outputGain.gain.cancelScheduledValues(t);
+      voices[i].outputGain.gain.setValueAtTime(0,t);
+      voices[i].outputGain.gain.linearRampToValueAtTime(peak,t+Math.min(stepDur*.18,.05));
+      voices[i].outputGain.gain.linearRampToValueAtTime(sustain,t+Math.max(stepDur*.72,.12));
+      // FM mod depth envelope: bell attack, softer sustain
+      voices[i].modGain.gain.cancelScheduledValues(t);
+      voices[i].modGain.gain.setValueAtTime(freq*1.5,t); // high modIndex on attack (bell)
+      voices[i].modGain.gain.linearRampToValueAtTime(freq*0.3,t+Math.min(stepDur*.25,.06)); // settle low
     }
   }
   function getPreviewDurationMs(cfg){
@@ -590,20 +792,33 @@ const SFX=(()=>{
     return true;
   }
 
-  // ── Voice helpers ──
-  function playNote(freq,dur,type,vol,del){
+  // ── FM voice helpers ──
+  function playFmNote(freq,dur,ratio,modIndex,vol,del){
     if(muted)return;ensure();
-    for(let i=4;i<12;i++){
+    for(let i=7;i<14;i++){
       if(!voices[i].active){
         const v=voices[i],t=ctx.currentTime+(del||0);
-        v.active=true;v.osc.type=type||'triangle';
-        v.osc.frequency.setTargetAtTime(freq,t,.005);
-        v.gain.gain.setTargetAtTime(vol||.08,t,.005);
-        v.gain.gain.setTargetAtTime(0,t+dur,.03);
+        v.active=true;
+        v.carrier.frequency.setValueAtTime(freq,t);
+        v.modulator.frequency.setValueAtTime(freq*(ratio||2),t);
+        v.modGain.gain.setValueAtTime((modIndex||1)*freq,t);
+        // Brief mod depth decay for natural timbre
+        v.modGain.gain.setTargetAtTime((modIndex||1)*freq*0.3,t+dur*0.3,.02);
+        v.outputGain.gain.setTargetAtTime(vol||.08,t,.005);
+        v.outputGain.gain.setTargetAtTime(0,t+dur,.03);
         setTimeout(()=>{v.active=false},((del||0)+dur+.15)*1000);
         return v;
       }
     }
+  }
+  // Backward-compatible wrapper
+  function playNote(freq,dur,type,vol,del){
+    // Map old oscillator types to FM ratios/modIndex
+    const ratioMap={sine:2,triangle:2,sawtooth:3,square:2};
+    const modMap={sine:0.5,triangle:1,sawtooth:2.5,square:2};
+    const r=ratioMap[type]||2;
+    const mi=modMap[type]||1;
+    return playFmNote(freq,dur,r,mi,vol,del);
   }
   function noise(dur,vol,del){
     if(muted||!noiseGate)return;ensure();
@@ -615,21 +830,26 @@ const SFX=(()=>{
   function setKey(wave){
     if(!ctx)return;
     const wIdx=clampWaveIdx((wave||1)-1);
-    if(wIdx===currentWaveIdx&&voices[0].gain.gain.value>0)return;
+    if(wIdx===currentWaveIdx&&voices[0].outputGain.gain.value>0)return;
     const oldIdx=currentWaveIdx;
     currentWaveIdx=wIdx;
-    currentProgIdx=0; // reset to first chord of new progression
+    currentProgIdx=0;
     const ch=getWaveConfig(wIdx).chords[0],t=ctx.currentTime;
-    for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.15);
-    voices[3].osc.frequency.setTargetAtTime(ch[0]/4,t,.15);
+    for(let i=0;i<3;i++){
+      voices[i].carrier.frequency.setTargetAtTime(ch[i],t,.15);
+      voices[i].modulator.frequency.setTargetAtTime(ch[i]*2,t,.15);
+      voices[i].modGain.gain.setTargetAtTime(ch[i]*0.5,t,.15);
+    }
+    voices[3].carrier.frequency.setTargetAtTime(ch[0]/4,t,.15);
+    voices[3].modulator.frequency.setTargetAtTime(ch[0]/4,t,.15);
+    voices[3].modGain.gain.setTargetAtTime((ch[0]/4)*2,t,.15);
     if(bgmPlaying&&oldIdx!==wIdx){
       const kpv=(getWaveConfig(wIdx).padVol!=null?getWaveConfig(wIdx).padVol:.05)*.5;
       padBus.gain.setTargetAtTime(Math.min(.5,kpv*1.6),t,.05);
       padBus.gain.setTargetAtTime(kpv,t+.4,.3);
-      playNote(ch[2]*2,.3,'sine',.06);
+      playFmNote(ch[2]*2,.3,2,0.8,.06);
     }
   }
-  // Evolve the pad within a wave based on kill progress (0-1)
   // Advance to next chord in wave progression — called on correct answer
   function advanceChord(){
     if(!ctx||!bgmPlaying)return;
@@ -637,12 +857,16 @@ const SFX=(()=>{
     currentProgIdx=(currentProgIdx+1)%prog.length;
     const ch=prog[currentProgIdx];
     const t=ctx.currentTime;
-    // Glide pad to new chord
-    for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(ch[i],t,.15);
-    // Melody note: play the 5th of the new chord, one octave up (sings the transition)
-    playNote(ch[2]*2,.4,'sine',.05);
-    // Play root an octave up too, slightly delayed (two-note melodic figure)
-    playNote(ch[0]*2,.3,'triangle',.04,.12);
+    // Glide pad to new chord with FM tracking
+    for(let i=0;i<3;i++){
+      voices[i].carrier.frequency.setTargetAtTime(ch[i],t,.15);
+      voices[i].modulator.frequency.setTargetAtTime(ch[i]*2,t,.15);
+      voices[i].modGain.gain.setTargetAtTime(ch[i]*0.5,t,.15);
+    }
+    // Melody note: FM bell on the 5th, one octave up
+    playFmNote(ch[2]*2,.4,3,1,.05);
+    // Play root an octave up, slightly delayed (two-note figure)
+    playFmNote(ch[0]*2,.3,2,0.8,.04,.12);
   }
 
   // Opens the filter and shifts voicing as the student progresses
@@ -650,19 +874,18 @@ const SFX=(()=>{
   function setProgress(frac){
     if(!ctx||!bgmPlaying)return;
     const p=Math.max(0,Math.min(1,frac));
-    // Only update if progress changed meaningfully (avoid per-frame noise)
     if(Math.abs(p-lastProgress)<.05)return;
     lastProgress=p;
     const t=ctx.currentTime;
     const cfg=getWaveConfig(currentWaveIdx);
     const ch=cfg.chords[currentProgIdx%cfg.chords.length];
-    // Pad filter opens as progress increases (darker → brighter)
-    const padF=600+p*1200; // 600Hz at start → 1800Hz when wave nearly clear
     // Pad voices shift up in octave blend as progress grows
     for(let i=0;i<3;i++){
-      // Gradually blend toward octave-up voicing (brighter as you progress)
-      const base=ch[i],target=ch[i]*(1+p*.5); // up to 50% frequency shift at 100%
-      voices[i].osc.frequency.setTargetAtTime(target,t,.3);
+      const target=ch[i]*(1+p*.5);
+      voices[i].carrier.frequency.setTargetAtTime(target,t,.3);
+      voices[i].modulator.frequency.setTargetAtTime(target*2,t,.3);
+      // Increase mod depth with progress (brighter FM timbre)
+      voices[i].modGain.gain.setTargetAtTime(target*(0.5+p*0.8),t,.3);
     }
     // Pad volume subtly grows with progress, scaled by padVol
     const spv=(cfg.padVol!=null?cfg.padVol:.05)*.5;
@@ -683,13 +906,12 @@ const SFX=(()=>{
     const bv=(waveCfg.bassVol!=null?waveCfg.bassVol:.6)*.35;
     padBus.gain.setTargetAtTime(pv,t,.3);
     bassBus.gain.setTargetAtTime(bv,t,.3);
-    for(let i=0;i<3;i++)voices[i].gain.gain.setTargetAtTime(0,t,.05);
-    voices[3].gain.gain.setTargetAtTime(.6,t,.3);
-    let st=60/(getWaveConfig(currentWaveIdx).tempo||80)/2; // step duration from tempo
+    for(let i=0;i<3;i++)voices[i].outputGain.gain.setTargetAtTime(0,t,.05);
+    voices[3].outputGain.gain.setTargetAtTime(.6,t,.3);
+    let st=60/(getWaveConfig(currentWaveIdx).tempo||80)/2;
     let startT=t;
     function seq(){
       if(!bgmPlaying)return;
-      // Recalculate tempo each bar (may change on wave transition)
       const cfg=getWaveConfig(currentWaveIdx);
       st=60/(cfg.tempo||80)/2;
       const prog=cfg.chords;
@@ -700,40 +922,63 @@ const SFX=(()=>{
       const ll=stepCount*st;
       const now=ctx.currentTime;
       const root=ch[0]/4;
-      // Schedule bass notes — 0 = rest (silence the bass briefly)
+      // Schedule bass notes with FM tracking
       bp.forEach((r,i)=>{
         const nt=startT+i*st;
         if(nt>now-.01){
+          const ht=Math.max(nt,now);
           if(r===0){
-            voices[3].gain.gain.setValueAtTime(0,Math.max(nt,now));
+            voices[3].outputGain.gain.setValueAtTime(0,ht);
           }else{
-            voices[3].gain.gain.setValueAtTime(.6,Math.max(nt,now));
-            voices[3].osc.frequency.setValueAtTime(root*r,Math.max(nt,now));
+            const bassFreq=root*r;
+            voices[3].outputGain.gain.setValueAtTime(.6,ht);
+            voices[3].carrier.frequency.setValueAtTime(bassFreq,ht);
+            // Track modulator: ratio 1, modIndex 2 for warmth
+            voices[3].modulator.frequency.setValueAtTime(bassFreq,ht);
+            // Brief mod depth attack for pluck, then settle
+            voices[3].modGain.gain.setValueAtTime(bassFreq*3.5,ht); // high attack
+            voices[3].modGain.gain.setTargetAtTime(bassFreq*2,ht+0.02,.01); // settle
           }
         }
       });
-      // Step-gate the pads so they can carry rhythmic motion instead of a flat sustain
+      // Step-gate the pads with FM mod depth envelope
       padPattern.forEach((level,i)=>{
         const pt=startT+i*st;
         if(pt>now-.01)schedulePadStep(Math.max(0,Number(level)||0),pt,st);
       });
-      // Hi-hat pattern from config (default: even beats)
-      const hhPeak=(cfg.hihatVol!=null?cfg.hihatVol:.11)*.04;
+      // Kick pattern
+      const kickPattern=cfg.kick||[1,0,0,0,1,0,0,0];
+      const kickPeak=(cfg.kickVol!=null?cfg.kickVol:.30);
+      for(let i=0;i<bp.length;i++){
+        if(!kickPattern[i])continue;
+        const kt=startT+i*st;
+        if(kt>now-.01)scheduleFmKick(kt,kickPeak);
+      }
+      // Snare pattern
+      const snarePattern=cfg.snare||[0,0,0,0,0,0,1,0];
+      const snarePeak=(cfg.snareVol!=null?cfg.snareVol:.25);
+      for(let i=0;i<bp.length;i++){
+        if(!snarePattern[i])continue;
+        const snt=startT+i*st;
+        if(snt>now-.01)scheduleFmSnare(snt,snarePeak);
+      }
+      // Hi-hat pattern using FM voice 6
+      const hhPeak=(cfg.hihatVol!=null?cfg.hihatVol:.11)*.25;
       const hhPattern=Array.isArray(cfg.hihat)&&cfg.hihat.length===8?cfg.hihat:[1,0,1,0,1,0,1,0];
       for(let i=0;i<bp.length;i++){
         if(!hhPattern[i])continue;
         const ht=startT+i*st;
-        if(ht>now-.01){
-          noiseLP.frequency.setValueAtTime(6000,Math.max(ht,now));
-          noiseGate.gain.setValueAtTime(hhPeak,Math.max(ht,now));
-          noiseGate.gain.setTargetAtTime(0,Math.max(ht,now)+.02,.005);
-        }
+        if(ht>now-.01)scheduleFmHihat(ht,hhPeak,true);
       }
       startT+=ll;
       if(previewConfig&&previewConfig.waveIdx===currentWaveIdx){
         const nextIdx=(currentProgIdx+1)%prog.length;
         const nextChord=prog[nextIdx];
-        for(let i=0;i<3;i++)voices[i].osc.frequency.setTargetAtTime(nextChord[i],startT,.08);
+        for(let i=0;i<3;i++){
+          voices[i].carrier.frequency.setTargetAtTime(nextChord[i],startT,.08);
+          voices[i].modulator.frequency.setTargetAtTime(nextChord[i]*2,startT,.08);
+          voices[i].modGain.gain.setTargetAtTime(nextChord[i]*0.5,startT,.08);
+        }
         currentProgIdx=nextIdx;
       }
       bgmSeqTimer=setTimeout(seq,ll*1000*.8);
@@ -764,60 +1009,66 @@ const SFX=(()=>{
       syncCurrentVoicing(true);
       return cloneMusicConfig(MUSIC_CONFIG);
     },
-    prefix(){playNote(1100,.04,'sine',.06);playNote(1650,.06,'triangle',.04,.03)},
+    prefix(){playFmNote(1100,.04,2,0.3,.06);playFmNote(1650,.06,2,0.2,.04,.03)},
     hit(intensity=1){
       if(muted)return;ensure();
       const ch=wc();
-      ch.forEach((f,i)=>{playNote(f*2,.2,'triangle',.07+intensity*.02,i*.06);playNote(f*4,.12,'sine',.03,i*.06+.03)});
-      playNote(ch[0]/2,.3,'sine',.1+intensity*.05);
+      // FM bell: carrier at chord freq x2, ratio 3, modIndex 1.5, quick decay
+      ch.forEach((f,i)=>{playFmNote(f*2,.2,3,1.5,.07+intensity*.02,i*.06);playFmNote(f*4,.12,3,0.8,.03,i*.06+.03)});
+      playFmNote(ch[0]/2,.3,2,0.5,.1+intensity*.05);
     },
     miss(){
       if(muted)return;ensure();
       const ch=wc();
-      ch.forEach(f=>{playNote(f*1.03,.2,'sawtooth',.06);playNote(f*.97,.2,'sawtooth',.05,.02)});
+      // FM metallic dissonance: detuned carriers, high modIndex, harsh burst
+      ch.forEach(f=>{playFmNote(f*1.03,.2,1.03,4,.06);playFmNote(f*.97,.2,0.97,4,.05,.02)});
       noise(.15,.08,.05);
     },
     breach(){
       if(muted)return;ensure();
       const ch=wc();
-      playNote(ch[0]/2,.5,'sine',.15);
-      ch.forEach((f,i)=>playNote(f*.7,.35,'sawtooth',.07,i*.05));
+      // Low FM growl: carrier at root/2, ratio 7, modIndex 2, 500ms decay
+      playFmNote(ch[0]/2,.5,7,2,.15);
+      ch.forEach((f,i)=>playFmNote(f*.7,.35,3,2.5,.07,i*.05));
       noise(.3,.1,.1);
     },
     waveClear(){
       if(muted)return;ensure();
       const nw=clampWaveIdx(currentWaveIdx+1);
       const nc=getWaveConfig(nw).chords[0];
-      nc.forEach((f,i)=>{playNote(f*2,.25,'triangle',.08,i*.1);playNote(f*4,.15,'sine',.04,i*.1+.05)});
+      // FM arpeggio: ascending chord tones with ratio 3, modIndex 1, like bells
+      nc.forEach((f,i)=>{playFmNote(f*2,.25,3,1,.08,i*.1);playFmNote(f*4,.15,3,0.5,.04,i*.1+.05)});
       // Full chord shimmer
-      setTimeout(()=>nc.forEach(f=>playNote(f*2,.3,'sine',.04)),350);
+      setTimeout(()=>nc.forEach(f=>playFmNote(f*2,.3,3,0.8,.04)),350);
     },
     victory(){
       if(muted)return;ensure();stopBGM();
+      // Full ascending FM arpeggio with longer sustain
       [262,330,392,494,523,659,784].forEach((f,i)=>{
-        playNote(f,.3,'triangle',.06,i*.07);playNote(f*1.25,.3,'sine',.03,i*.07);playNote(f*1.5,.3,'sine',.03,i*.07);
+        playFmNote(f,.4,3,1.2,.06,i*.07);playFmNote(f*1.25,.35,2,0.8,.03,i*.07);playFmNote(f*1.5,.35,2,0.6,.03,i*.07);
       });
     },
     gameOver(){
       if(muted)return;ensure();stopBGM();
       [400,340,280,220,160].forEach((f,i)=>{
-        playNote(f,.35,'sawtooth',.06,i*.14);playNote(f*1.2,.35,'sawtooth',.04,i*.14);
+        playFmNote(f,.35,3,3,.06,i*.14);playFmNote(f*1.2,.35,1.5,2,.04,i*.14);
       });
       noise(.8,.06,.6);
     },
-    spawn(){playNote(165,.1,'triangle',.05);playNote(220,.08,'sine',.03,.02)},
-    select(){playNote(880,.05,'sine',.06);playNote(1320,.04,'sine',.04,.02)},
-    click(){const ch=wc();ch.forEach(f=>playNote(f*2,.06,'sine',.04))},
+    spawn(){playFmNote(165,.1,2,0.8,.05);playFmNote(220,.08,2,0.5,.03,.02)},
+    select(){playFmNote(880,.05,2,0.3,.06);playFmNote(1320,.04,2,0.2,.04,.02)},
+    click(){const ch=wc();ch.forEach(f=>playFmNote(f*2,.06,2,0.5,.04))},
     combo(){
       if(muted)return;ensure();
       const ch=wc();
-      ch.forEach((f,i)=>playNote(f*2,.15,'triangle',.06,i*.04));
-      playNote(ch[2]*4,.1,'sine',.04,.15);
+      // Quick bright FM chirp
+      ch.forEach((f,i)=>playFmNote(f*2,.15,3,1.5,.06,i*.04));
+      playFmNote(ch[2]*4,.1,3,1,.04,.15);
     },
     split(){
       if(muted)return;ensure();
       const ch=wc();
-      ch.forEach(f=>playNote(f*1.414,.2,'sawtooth',.06)); // tritone
+      ch.forEach(f=>playFmNote(f*1.414,.2,2.5,3,.06));
       noise(.12,.07,.03);
     }
   };
@@ -2168,6 +2419,22 @@ function toggleHihat(step){
   setMusicStatus('Unsaved changes');
   renderMusicEditor();
 }
+function toggleKick(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  if(!cfg.kick)cfg.kick=[1,0,0,0,1,0,0,0];
+  cfg.kick[step]=cfg.kick[step]?0:1;
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function toggleSnare(step){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  if(!cfg.snare)cfg.snare=[0,0,0,0,0,0,1,0];
+  cfg.snare[step]=cfg.snare[step]?0:1;
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
 function updatePadVol(value){
   SFX.stopMusicPreview();
   const cfg=currentMusicDraft();
@@ -2186,6 +2453,20 @@ function updateHihatVol(value){
   SFX.stopMusicPreview();
   const cfg=currentMusicDraft();
   cfg.hihatVol=Math.max(0,Math.min(1,Number(value)/100));
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function updateKickVol(value){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  cfg.kickVol=Math.max(0,Math.min(1,Number(value)/100));
+  setMusicStatus('Unsaved changes');
+  renderMusicEditor();
+}
+function updateSnareVol(value){
+  SFX.stopMusicPreview();
+  const cfg=currentMusicDraft();
+  cfg.snareVol=Math.max(0,Math.min(1,Number(value)/100));
   setMusicStatus('Unsaved changes');
   renderMusicEditor();
 }
@@ -2240,6 +2521,37 @@ function renderMusicEditor(){
   html+='<div class="music-card"><div class="music-card-title">TEMPO</div><div class="music-card-subtitle">Preview plays the selected wave using the current draft settings.</div><div class="tempo-shell"><input type="range" min="50" max="160" step="1" value="'+wave.tempo+'" oninput="updateMusicTempo(this.value)" onchange="updateMusicTempo(this.value)"/><div class="tempo-value" id="music-tempo-value">'+wave.tempo+' BPM</div></div></div>';
   // ── STEP SEQUENCER ──
   html+='<div class="music-card" style="grid-column:1/-1"><div class="music-card-title">STEP SEQUENCER</div><div class="music-card-subtitle">Click to cycle values. Right-click to cycle backward. 8-step loop per wave.</div><div class="seq-grid">';
+  // DRUMS section header (visible on mobile for clarity)
+  html+='<div class="seq-section-header">DRUMS</div>';
+  // KICK ROW
+  const kk=Array.isArray(wave.kick)&&wave.kick.length===8?wave.kick:[1,0,0,0,1,0,0,0];
+  html+='<div class="seq-row"><div class="seq-label" style="color:#ff4444">\u25cf KICK</div><div class="seq-cells">';
+  kk.forEach((step,idx)=>{
+    const cls=step?'seq-cell--kick':'seq-cell--kick-off';
+    html+='<div class="seq-cell '+cls+'" onclick="toggleKick('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#ff6666">'+(step?'\u25cf':'')+'</span></div>';
+  });
+  html+='</div></div>';
+  html+='<div class="seq-divider"></div>';
+  // SNARE ROW
+  const sn=Array.isArray(wave.snare)&&wave.snare.length===8?wave.snare:[0,0,0,0,0,0,1,0];
+  html+='<div class="seq-row"><div class="seq-label" style="color:#ffaa22">\u25cb SNARE</div><div class="seq-cells">';
+  sn.forEach((step,idx)=>{
+    const cls=step?'seq-cell--snare':'seq-cell--snare-off';
+    html+='<div class="seq-cell '+cls+'" onclick="toggleSnare('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#ffcc44">'+(step?'\u25cf':'')+'</span></div>';
+  });
+  html+='</div></div>';
+  html+='<div class="seq-divider"></div>';
+  // HI-HAT ROW
+  const hh=Array.isArray(wave.hihat)&&wave.hihat.length===8?wave.hihat:[1,0,1,0,1,0,1,0];
+  html+='<div class="seq-row"><div class="seq-label" style="color:#aaaaaa">\u2662 HAT</div><div class="seq-cells">';
+  hh.forEach((step,idx)=>{
+    const cls=step?'seq-cell--hat':'seq-cell--hat-off';
+    html+='<div class="seq-cell '+cls+'" onclick="toggleHihat('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#ddd">'+(step?'\u25cf':'')+'</span></div>';
+  });
+  html+='</div></div>';
+  html+='<div class="seq-divider"></div>';
+  // MELODY section header
+  html+='<div class="seq-section-header">MELODY</div>';
   // PAD ROW
   html+='<div class="seq-row"><div class="seq-label" style="color:#ff8c00">\u266b PADS</div><div class="seq-cells">';
   wave.pad.forEach((step,idx)=>{
@@ -2261,15 +2573,6 @@ function renderMusicEditor(){
     html+='<div class="seq-cell '+cls+'" onclick="cycleBassStep('+idx+')" oncontextmenu="event.preventDefault();cycleBassStepBack('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#88bbff">'+label+'</span></div>';
   });
   html+='</div></div>';
-  html+='<div class="seq-divider"></div>';
-  // HI-HAT ROW
-  const hh=Array.isArray(wave.hihat)&&wave.hihat.length===8?wave.hihat:[1,0,1,0,1,0,1,0];
-  html+='<div class="seq-row"><div class="seq-label" style="color:#aaaaaa">\u2662 HAT</div><div class="seq-cells">';
-  hh.forEach((step,idx)=>{
-    const cls=step?'seq-cell--hat':'seq-cell--hat-off';
-    html+='<div class="seq-cell '+cls+'" onclick="toggleHihat('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#ddd">'+(step?'\u25cf':'')+'</span></div>';
-  });
-  html+='</div></div>';
   // STEP NUMBERS
   html+='<div class="seq-nums">';
   for(let i=1;i<=8;i++)html+='<div class="seq-num">'+i+'</div>';
@@ -2278,6 +2581,8 @@ function renderMusicEditor(){
   html+='<div class="music-card"><div class="music-card-title">VOLUME MIX</div><div class="music-card-subtitle">Adjust the loudness of each part independently.</div>';
   html+='<label class="music-field"><span class="music-field-label">PADS '+Math.round((wave.padVol!=null?wave.padVol:.05)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.padVol!=null?wave.padVol:.05)*100)+'" oninput="updatePadVol(this.value)" onchange="updatePadVol(this.value)"/></label>';
   html+='<label class="music-field"><span class="music-field-label">BASS '+Math.round((wave.bassVol!=null?wave.bassVol:.6)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.bassVol!=null?wave.bassVol:.6)*100)+'" oninput="updateBassVol(this.value)" onchange="updateBassVol(this.value)"/></label>';
+  html+='<label class="music-field"><span class="music-field-label">KICK '+Math.round((wave.kickVol!=null?wave.kickVol:.30)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.kickVol!=null?wave.kickVol:.30)*100)+'" oninput="updateKickVol(this.value)" onchange="updateKickVol(this.value)"/></label>';
+  html+='<label class="music-field"><span class="music-field-label">SNARE '+Math.round((wave.snareVol!=null?wave.snareVol:.25)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.snareVol!=null?wave.snareVol:.25)*100)+'" oninput="updateSnareVol(this.value)" onchange="updateSnareVol(this.value)"/></label>';
   html+='<label class="music-field"><span class="music-field-label">HI-HAT '+Math.round((wave.hihatVol!=null?wave.hihatVol:.11)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.hihatVol!=null?wave.hihatVol:.11)*100)+'" oninput="updateHihatVol(this.value)" onchange="updateHihatVol(this.value)"/></label>';
   html+='</div>';
   html+='<div class="music-card"><div class="music-card-title">ACTIONS</div><div class="music-card-subtitle">Preview now runs the whole progression so you can hear chords 1 through 4 before saving. Save writes the full 12-wave draft to localStorage. Reset restores the draft to stock music until you save.</div><div class="editor-actions">';

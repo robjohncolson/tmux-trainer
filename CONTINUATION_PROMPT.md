@@ -429,9 +429,13 @@ Verification completed:
   - login form CSS: `.login-box`, `.menu-tabs`, `.menu-tab`
   - wrong-answer feedback: `.wrong-feedback`, `.wf-wrong`, `.wf-correct`, `.wf-explain`
   - `latex-shell` / `latex-scroll`, score-pop HUD, label ghosting
-- `index.html` `SFX` module:
-  - built-in music defaults with per-wave `padVol`, `bassVol`, `hihatVol`, `hihat` pattern
-  - pad rhythm scheduling, BGM automation, hi-hat pattern from config
+- `index.html` `SFX` module (FM synthesis):
+  - 14 FM voices: 3 pad + bass + kick + snare + hihat + 7 SFX pool
+  - `drumBus` gain node for kick/snare/hihat routing
+  - `scheduleFmKick()`, `scheduleFmSnare()`, `scheduleFmHihat()` — drum scheduling
+  - FM modulation index approach: `modIndex × carrierFreq` for pitch-independent timbre
+  - built-in music defaults with per-wave `padVol`, `bassVol`, `hihatVol`, `kickVol`, `snareVol`, `kick`/`snare` patterns
+  - pad rhythm scheduling with FM mod depth envelopes, BGM automation
   - load/save/reset/preview API, volume scaling in `startBGM()`, `setKey()`, `setProgress()`, `seq()`
 - `index.html` label projection:
   - `updateLabels()` — cached label DOM via `labelCache` Map
@@ -680,6 +684,47 @@ Same-origin shell precached on install (must succeed). CDN assets cached individ
 
 - `sw.js` — Service Worker with install/activate/fetch handlers
 - `index.html` — 3-line SW registration at end of script, `crossorigin` on CDN tags
+
+## Latest Update: Contextual Color Blend + FM Synthesis Audio
+
+Two parallel features shipped:
+
+### Contextual Color Blend
+
+Explainer panel now uses a cool blue Manim-inspired palette instead of the game's amber theme:
+- Panel border/background: `#58C4DD` blue tones
+- Title, close button, text lines: cool blue/grey
+- Shortcut badges: blue `kbd` pills with blue borders
+- Creates a clear "learning mode" visual signal when Alt+E or Alt+W is open
+- Rest of the game stays amber — the color shift is contextual
+
+### FM Synthesis Audio Overhaul (Genesis/YM2612 inspired)
+
+Replaced all basic Web Audio oscillators with FM synthesis voices:
+- **FM Pads**: carrier sine + modulator at ratio 2, modIndex 0.5 → bell/electric piano timbre
+- **FM Bass**: carrier + modulator at ratio 1, modIndex 2 → warm fat bass with pluck attack
+- **FM Kick**: pitch envelope 150→55Hz, punchy sine sweep (new instrument)
+- **FM Snare**: carrier + modulator ratio 2.3, inharmonic + filtered noise burst (new instrument)
+- **FM Hihat**: carrier 400Hz + modulator ratio √2, modIndex 8 → metallic (upgraded from noise-only)
+- **FM SFX**: hit (bell, ratio 3), miss (detuned dissonance), breach (low growl, ratio 7), waveClear (arpeggio)
+- Uses modulation INDEX (`modIndex × carrierFreq`) for pitch-independent timbre
+- 14 FM voices total: 3 pad + bass + kick + snare + hihat + 7 SFX pool
+- Added `drumBus` gain node for drum routing
+
+### Music Editor Updates
+
+- Step sequencer expanded from 3 to 5 rows with section headers:
+  - DRUMS section: kick, snare, hihat (toggle 0/1)
+  - MELODY section: bass, pads (existing multi-level cells)
+- Volume MIX card: 5 sliders (pads, bass, kick, snare, hihat)
+- DEFAULT_MUSIC_CONFIG: all 12 waves now have kick/snare patterns (varied by wave)
+- `sanitizeWaveConfig()` handles all 4 new fields (kick, snare, kickVol, snareVol)
+- Full backward compat with old saved configs
+
+### Spec artifacts
+
+- `contextual-blend-spec.md` — color palette design
+- `fm-synthesis-spec.md` — full FM synthesis architecture + Codex review findings
 
 ## Likely Next Tasks
 
