@@ -756,6 +756,34 @@ Replaced all basic Web Audio oscillators with FM synthesis voices:
 
 - `alt-e-cycle-spec.md` — full design + Codex review findings (5 findings, all addressed)
 
+## Latest Update: Quantized Chord Changes + Streak-Driven Groove
+
+### Chord quantization
+
+- `advanceChord()` now queues chord changes instead of applying immediately
+- Preview melody plays instantly on kill (5th + root of next chord, FM bell)
+- Chord resolves on next bar start in `seq()` — harmonic changes land on beat 1
+- Capped at 2 pending advances — multiple kills in one bar don't create chord salad
+- `pendingChordAdvances` reset on BGM start/stop
+
+### Streak-driven groove
+
+| Streak | Addition |
+|--------|----------|
+| 0-2 | Straight beats from config |
+| 3+ | Ghost hihats on odd steps (offbeats, 30% volume) |
+| 5+ | Ghost snare fill on step 7 (before downbeat, 40% volume) |
+| 8+ | Syncopated kicks on steps 3 and 5 (50% volume) |
+| 10+ | Bass passing tones (geometric mean for correct pitch) |
+
+- `SFX.setStreak(n)` called from `handleHit()`, `handleMiss()`, `checkBreach()`
+- Miss/breach resets to straight beats on next bar
+- Groove embellishments skipped during music editor preview
+
+### Spec artifact
+
+- `chord-quantize-groove-spec.md` — design + Codex review (5 medium findings, all addressed)
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula

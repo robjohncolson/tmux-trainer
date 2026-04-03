@@ -347,6 +347,7 @@ const SFX=(()=>{
   let voices=[],noiseGate=null,noiseLP=null,noiseBP=null;
   let padBus=null,bassBus=null,sfxBus=null,drumBus=null;
   let bgmSeqTimer=null,currentWaveIdx=0,previewTimer=null,previewConfig=null;
+  let pendingChordAdvances=0,currentStreak=0;
   const MUSIC_STORAGE_KEY='td-music-config-v1';
 
   // ── MUSIC CONFIG — edit these to customize each wave's sound ──
@@ -848,24 +849,18 @@ const SFX=(()=>{
       playFmNote(ch[2]*2,.3,2,0.8,.06);
     }
   }
-  // Advance to next chord in wave progression — called on correct answer
+  // Advance to next chord — queued, resolves on next bar start
   function advanceChord(){
     if(!ctx||!bgmPlaying)return;
+    pendingChordAdvances=Math.min(pendingChordAdvances+1,2);
+    // Preview melody: foreshadow the NEXT chord (always +1, not backlog end)
     const prog=getWaveConfig(currentWaveIdx).chords;
-    currentProgIdx=(currentProgIdx+1)%prog.length;
-    const ch=prog[currentProgIdx];
-    const t=ctx.currentTime;
-    // Glide pad to new chord with FM tracking
-    for(let i=0;i<3;i++){
-      voices[i].carrier.frequency.setTargetAtTime(ch[i],t,.15);
-      voices[i].modulator.frequency.setTargetAtTime(ch[i]*2,t,.15);
-      voices[i].modGain.gain.setTargetAtTime(ch[i]*0.5,t,.15);
-    }
-    // Melody note: FM bell on the 5th, one octave up
-    playFmNote(ch[2]*2,.4,3,1,.05);
-    // Play root an octave up, slightly delayed (two-note figure)
-    playFmNote(ch[0]*2,.3,2,0.8,.04,.12);
+    const peekIdx=(currentProgIdx+1)%prog.length;
+    const peekCh=prog[peekIdx];
+    playFmNote(peekCh[2]*2,.4,3,1,.05);
+    playFmNote(peekCh[0]*2,.3,2,0.8,.04,.12);
   }
+  function setStreak(n){currentStreak=Math.max(0,n|0);}
 
   // Opens the filter and shifts voicing as the student progresses
   let lastProgress=-1;
@@ -899,6 +894,7 @@ const SFX=(()=>{
     clearBgmAutomation(t);
     bgmPlaying=true;
     currentProgIdx=0;
+    pendingChordAdvances=0;
     const waveCfg=getWaveConfig(currentWaveIdx);
     const pv=(waveCfg.padVol!=null?waveCfg.padVol:.05)*.5;
     const bv=(waveCfg.bassVol!=null?waveCfg.bassVol:.6)*.35;
@@ -913,6 +909,17 @@ const SFX=(()=>{
       const cfg=getWaveConfig(currentWaveIdx);
       st=60/(cfg.tempo||80)/2;
       const prog=cfg.chords;
+      // Resolve queued chord advance at bar start
+      if(pendingChordAdvances>0&&!previewConfig){
+        currentProgIdx=(currentProgIdx+1)%prog.length;
+        pendingChordAdvances=Math.max(0,pendingChordAdvances-1);
+        const nch=prog[currentProgIdx];
+        for(let i=0;i<3;i++){
+          voices[i].carrier.frequency.setTargetAtTime(nch[i],startT,.15);
+          voices[i].modulator.frequency.setTargetAtTime(nch[i]*2,startT,.15);
+          voices[i].modGain.gain.setTargetAtTime(nch[i]*0.5,startT,.15);
+        }
+      }
       const ch=prog[currentProgIdx%prog.length];
       const bp=cfg.bass||DEFAULT_MUSIC_CONFIG[0].bass;
       const padPattern=cfg.pad||DEFAULT_MUSIC_CONFIG[0].pad;
@@ -968,6 +975,44 @@ const SFX=(()=>{
         const ht=startT+i*st;
         if(ht>now-.01)scheduleFmHihat(ht,hhPeak,true);
       }
+      // Streak groove embellishments (additive, skip during preview)
+      if(!previewConfig&&currentStreak>=3){
+        // Streak 3+: ghost hihats on odd steps (offbeats)
+        for(let i=1;i<8;i+=2){
+          if(hhPattern[i])continue;
+          const ght=startT+i*st;
+          if(ght>now-.01)scheduleFmHihat(ght,hhPeak*0.3,true);
+        }
+      }
+      if(!previewConfig&&currentStreak>=5){
+        // Streak 5+: ghost snare fill on step 7 (last offbeat before downbeat)
+        const fillT=startT+7*st;
+        if(fillT>now-.01)scheduleFmSnare(fillT,snarePeak*0.4);
+      }
+      if(!previewConfig&&currentStreak>=8){
+        // Streak 8+: syncopated kicks on steps 3 and 5
+        [3,5].forEach(i=>{
+          if(kickPattern[i])return;
+          const kt=startT+i*st;
+          if(kt>now-.01)scheduleFmKick(kt,kickPeak*0.5);
+        });
+      }
+      if(!previewConfig&&currentStreak>=10){
+        // Streak 10+: bass passing tones (geometric mean for correct pitch)
+        bp.forEach((r,i)=>{
+          if(r===0||i>=bp.length-1)return;
+          const nextR=bp[(i+1)%bp.length];
+          if(nextR===0)return;
+          const passFreq=root*Math.sqrt(r*nextR);
+          const passT=startT+i*st+st*0.75;
+          if(passT>now-.01){
+            const pt=Math.max(passT,now);
+            voices[3].carrier.frequency.setValueAtTime(passFreq,pt);
+            voices[3].modulator.frequency.setValueAtTime(passFreq,pt);
+            voices[3].outputGain.gain.setValueAtTime(.3,pt);
+          }
+        });
+      }
       startT+=ll;
       if(previewConfig&&previewConfig.waveIdx===currentWaveIdx){
         const nextIdx=(currentProgIdx+1)%prog.length;
@@ -984,7 +1029,7 @@ const SFX=(()=>{
     seq();
   }
   function stopBGM(){
-    if(!ctx)return;bgmPlaying=false;
+    if(!ctx)return;bgmPlaying=false;pendingChordAdvances=0;
     if(bgmSeqTimer){clearTimeout(bgmSeqTimer);bgmSeqTimer=null}
     const t=ctx.currentTime;
     clearBgmAutomation(t);
@@ -993,7 +1038,7 @@ const SFX=(()=>{
   // ── Public API ──
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
-    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,advanceChord,
+    isMuted(){return muted},startBGM,stopBGM,setKey,setProgress,advanceChord,setStreak,
     getMusicConfig(wave){return cloneWaveConfig(getWaveConfig(typeof wave==='number'?wave:currentWaveIdx))},
     getAllMusicConfig(){return cloneMusicConfig(MUSIC_CONFIG)},
     getDefaultMusicConfig(){return cloneMusicConfig(DEFAULT_MUSIC_CONFIG)},
@@ -4420,7 +4465,7 @@ function checkBreach(){
     saveSRS(); // debounced per-answer save
   });
   G.enemies=G.enemies.filter(e=>e.t<1);
-  G.lives-=reached.length;G.streak=0;G.combo=1;
+  G.lives-=reached.length;G.streak=0;SFX.setStreak(0);G.combo=1;
   if(G.lives<=0){G.lives=0;SFX.gameOver();showEndScreen(false)}
 }
 
@@ -4481,9 +4526,10 @@ function handleHit(enemy){
   spawnExplosion(ePos,particleCount,AMB.glow,true,award?{awardId:award.id}:{});
   spawnBeam(serverGrp.position.clone().add(new THREE.Vector3(0,3,0)),ePos);
   G.streak++;G.maxStreak=Math.max(G.maxStreak,G.streak);
+  SFX.setStreak(G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
   G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
-  SFX.advanceChord(); // Progress the chord on each correct answer
+  SFX.advanceChord(); // Queue chord advance (resolves on next bar)
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
   const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,responseTimeMs:responseTime};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
@@ -4498,7 +4544,7 @@ function handleHit(enemy){
 function handleMiss(enemy){
   const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
   SFX.miss();
-  G.streak=0;G.combo=1;G.totalWrong++;
+  G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
   const bktCtx={wasCorrect:false,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null};
