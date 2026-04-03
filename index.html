@@ -4100,7 +4100,7 @@ function moveEnemies(){
   const masteryMult=1.0+(avgMastery/5)*0.5;
   // Streak slowmo: time slows during hot streaks (reward for flow state)
   const streakSlow=G.streak>=10?0.5:G.streak>=5?0.7:G.streak>=3?0.85:1.0;
-  const explainerSlow=EXPLAINER_STATE.open?0.1:1.0;
+  const explainerSlow=EXPLAINER_STATE.open?0.35:1.0;
   const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow*explainerSlow;
   G.enemies.forEach(e=>{
     if(e.pendingCorrectHit)return;
@@ -4329,6 +4329,12 @@ window.addEventListener('keydown',e=>{
       if(QUIZ_ANSWER_FEEDBACK.held&&QUIZ_ANSWER_FEEDBACK.heldCallback){
         QUIZ_ANSWER_FEEDBACK.held=false;
         QUIZ_ANSWER_FEEDBACK.heldCallback();
+        return;
+      }
+      // Space dismisses explainer/video
+      if(EXPLAINER_STATE.open){
+        if(EXPLAINER_STATE.videoUrl)closeAnimationVideo();
+        else closeExplanation();
         return;
       }
       if(!MUSIC_EDITOR.open&&!G.paused&&G.screen==='game'&&G.waveComplete){
