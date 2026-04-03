@@ -55,6 +55,13 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .explain-close{font-family:inherit;font-size:10px;font-weight:700;color:#996622;background:transparent;border:1px solid #5a2800;border-radius:999px;padding:4px 9px;cursor:pointer}
 .explain-close:hover{border-color:#ff8c00;color:#ff8c00}
 .explain-line{font-size:11px;line-height:1.55;color:#d8943d;margin-top:4px}
+.explain-watch{font-family:inherit;font-size:10px;font-weight:700;color:#66ccff;background:transparent;border:1px solid #2266aa;border-radius:999px;padding:4px 9px;cursor:pointer;margin-left:auto}
+.explain-watch:hover{border-color:#66ccff}
+.explain-video-wrap{position:relative;margin-bottom:8px;border-radius:8px;overflow:hidden;background:#000}
+.explain-video{width:100%;display:block;border-radius:8px}
+.explain-video-close{position:absolute;top:4px;right:4px;font-family:inherit;font-size:9px;font-weight:700;color:#fff;background:#0008;border:none;border-radius:999px;padding:3px 8px;cursor:pointer}
+.explain-video-loading{font-size:10px;color:#66ccff88;padding:12px;text-align:center}
+.explain-video-error{font-size:10px;color:#99666688;padding:6px;text-align:center}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
 .enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);opacity:.55;filter:saturate(.82);transition:opacity .18s,filter .18s}
@@ -212,7 +219,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 .hint-mc-btn{min-height:56px;padding:10px 12px;font-size:14px;width:100%;text-align:left}
 .explain-row{gap:5px}
 .explain-chip{min-height:48px;padding:8px 12px}
-.explain-panel{padding:10px;max-height:min(18vh,156px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.explain-panel{padding:10px;max-height:min(28vh,240px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.explain-panel.has-video{max-height:min(45vh,360px)}
+.explain-video-wrap{max-height:30vh}
+.explain-video{max-height:30vh;object-fit:contain}
+.explain-panel.has-video .explain-line{display:none}
 .explain-line{font-size:10px}
 .prompt-text{font-size:clamp(13px,3.5vw,18px)}
 .prompt-label{font-size:8px;letter-spacing:2px}
@@ -1806,7 +1817,7 @@ function buildExplanationBank(commands){
   return{byId,byLabel};
 }
 const EXPLANATION_BANK=buildExplanationBank(apStatsCartridge.commands);
-const EXPLAINER_STATE={open:false,key:'',title:'',lines:[]};
+const EXPLAINER_STATE={open:false,key:'',title:'',lines:[],animationId:null,videoUrl:null,videoLoading:false,videoError:false,videoNonce:0};
 function syncInputPanelScroll(position){
   const body=document.getElementById('ip-body');
   if(!body)return;
@@ -1828,6 +1839,11 @@ function resetExplanationState(){
   EXPLAINER_STATE.key='';
   EXPLAINER_STATE.title='';
   EXPLAINER_STATE.lines=[];
+  EXPLAINER_STATE.animationId=null;
+  EXPLAINER_STATE.videoUrl=null;
+  EXPLAINER_STATE.videoLoading=false;
+  EXPLAINER_STATE.videoError=false;
+  EXPLAINER_STATE.videoNonce++;
   syncInputPanelScroll('top');
 }
 function closeExplanation(){
@@ -1841,6 +1857,11 @@ function openExplanationEntry(entry,key){
   EXPLAINER_STATE.key=key;
   EXPLAINER_STATE.title=entry.title;
   EXPLAINER_STATE.lines=entry.lines.slice(0,3);
+  EXPLAINER_STATE.animationId=entry.id||null;
+  EXPLAINER_STATE.videoUrl=null;
+  EXPLAINER_STATE.videoLoading=false;
+  EXPLAINER_STATE.videoError=false;
+  EXPLAINER_STATE.videoNonce++;
   lastInputState='';
   updateInput();
   syncInputPanelScroll('bottom');
@@ -1879,11 +1900,84 @@ function renderExplanationControls(answerLabels){
   }
   // Render open explainer panel (both platforms)
   if(EXPLAINER_STATE.open){
-    html+='<div class="explain-panel"><div class="explain-panel-top"><div class="explain-title">'+EXPLAINER_STATE.title+'</div><button class="explain-close" onclick="closeExplanation()">CLOSE</button></div>';
+    const hasVideo=!!EXPLAINER_STATE.videoUrl;
+    html+='<div class="explain-panel'+(hasVideo?' has-video':'')+'">';
+    // Video player area
+    if(EXPLAINER_STATE.videoUrl){
+      html+='<div class="explain-video-wrap"><video class="explain-video" src="'+EXPLAINER_STATE.videoUrl+'" autoplay playsinline muted loop preload="metadata" onclick="this.muted=!this.muted"></video><button class="explain-video-close" onclick="closeAnimationVideo()">CLOSE</button></div>';
+    }else if(EXPLAINER_STATE.videoLoading){
+      html+='<div class="explain-video-loading">Loading animation\u2026</div>';
+    }else if(EXPLAINER_STATE.videoError){
+      html+='<div class="explain-video-error">Animation not available yet</div>';
+    }
+    // Title bar with optional WATCH button
+    html+='<div class="explain-panel-top"><div class="explain-title">'+EXPLAINER_STATE.title+'</div>';
+    const avail=getAnimationAvailability(EXPLAINER_STATE.animationId);
+    if(!EXPLAINER_STATE.videoUrl&&!EXPLAINER_STATE.videoLoading&&avail!=='unavailable'&&!EXPLAINER_STATE.videoError){
+      html+='<button class="explain-watch" onclick="loadAnimation(\''+EXPLAINER_STATE.animationId+'\')">WATCH</button>';
+    }
+    html+='<button class="explain-close" onclick="closeExplanation()">CLOSE</button></div>';
     EXPLAINER_STATE.lines.forEach(line=>{html+='<div class="explain-line">'+line+'</div>'});
     html+='</div>';
   }
   return html;
+}
+
+// ── Animation video helpers ──
+function getAnimationAvailability(cmdId){
+  if(!cmdId)return 'unavailable';
+  if(animationManifest===null)return 'unknown';
+  return animationManifest.has(cmdId)?'available':'unavailable';
+}
+function fetchAnimationManifest(){
+  if(animationManifestLoading||animationManifest!==null)return;
+  animationManifestLoading=true;
+  fetch(ANIMATION_BASE+'/manifest.json').then(r=>r.ok?r.json():null).then(data=>{
+    if(data&&Array.isArray(data.animations)){
+      animationManifest=new Set(data.animations);
+    }else{
+      animationManifest=new Set();
+    }
+    animationManifestLoading=false;
+    // If explainer is open, re-render to show/hide WATCH button
+    if(EXPLAINER_STATE.open){lastInputState='';updateInput();}
+  }).catch(()=>{
+    // Keep null so availability stays 'unknown' and try-on-click fallback works
+    animationManifestLoading=false;
+  });
+}
+function loadAnimation(cmdId){
+  if(!cmdId)return;
+  const nonce=++EXPLAINER_STATE.videoNonce;
+  const avail=getAnimationAvailability(cmdId);
+  if(avail==='unavailable')return;
+  EXPLAINER_STATE.videoLoading=true;
+  EXPLAINER_STATE.videoError=false;
+  EXPLAINER_STATE.videoUrl=null;
+  lastInputState='';updateInput();
+  const url=ANIMATION_BASE+'/'+encodeURIComponent(cmdId)+'.mp4';
+  // HEAD check for unknown availability, direct play for known
+  const check=avail==='unknown'?fetch(url,{method:'HEAD'}).then(r=>{if(!r.ok)throw new Error('not found');return url}):Promise.resolve(url);
+  check.then(videoUrl=>{
+    if(EXPLAINER_STATE.videoNonce!==nonce)return;
+    EXPLAINER_STATE.videoUrl=videoUrl;
+    EXPLAINER_STATE.videoLoading=false;
+    lastInputState='';updateInput();
+    syncInputPanelScroll('bottom');
+  }).catch(()=>{
+    if(EXPLAINER_STATE.videoNonce!==nonce)return;
+    EXPLAINER_STATE.videoLoading=false;
+    EXPLAINER_STATE.videoError=true;
+    EXPLAINER_STATE.videoUrl=null;
+    lastInputState='';updateInput();
+  });
+}
+function closeAnimationVideo(){
+  EXPLAINER_STATE.videoUrl=null;
+  EXPLAINER_STATE.videoLoading=false;
+  EXPLAINER_STATE.videoError=false;
+  EXPLAINER_STATE.videoNonce++;
+  lastInputState='';updateInput();
 }
 
 // Utility: shuffle an array (returns new array)
@@ -2547,6 +2641,9 @@ function returnToTitleFromRun(){
 //  CLOUD AUTH + SYNC
 // ═══════════════════════════════════════════════
 const SYNC_SERVER='https://lrsl-driller-production.up.railway.app';
+const ANIMATION_BASE='https://hgvnytaqmuybzbotosyj.supabase.co/storage/v1/object/public/videos/animations/ap-stats-formulas';
+let animationManifest=null; // null=not loaded, Set=loaded IDs
+let animationManifestLoading=false;
 let cloudSyncReady=false;
 let cloudSyncInFlight=false;
 function getIdentity(){
@@ -3542,6 +3639,7 @@ function showTitleScreen(context){
   G.paused=false;
   MUSIC_EDITOR.open=false;
   resetExplanationState();
+  fetchAnimationManifest();
   SFX.stopMusicPreview();
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   G.enemies=[];G.selectedId=null;
@@ -4291,6 +4389,13 @@ window.addEventListener('keydown',e=>{
     e.preventDefault();
     if(EXPLAINER_STATE.open)closeExplanation();
     else openExplanationForSelectedCommand();
+    return;
+  }
+  // Alt+W animation video toggle
+  if(e.key==='w'&&e.altKey){
+    e.preventDefault();
+    if(EXPLAINER_STATE.videoUrl)closeAnimationVideo();
+    else if(EXPLAINER_STATE.open&&EXPLAINER_STATE.animationId)loadAnimation(EXPLAINER_STATE.animationId);
     return;
   }
   // Alt+H hint — works in all modes

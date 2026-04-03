@@ -468,6 +468,13 @@ Verification completed:
   - `saveSRS(immediate)` — debounced per-answer save with read-modify-write merge + cloud push
   - `sanitizeSrsCard()` — range validation for all 16+ fields
   - `syncRunCheckpoint()`, `saveRunState()`, `loadRunState()`, `clearRunState()`
+- `index.html` animation video player:
+  - `ANIMATION_BASE`, `animationManifest`, `animationManifestLoading` constants
+  - `EXPLAINER_STATE` extended: `animationId`, `videoUrl`, `videoLoading`, `videoError`, `videoNonce`
+  - `getAnimationAvailability()`, `fetchAnimationManifest()`, `loadAnimation()`, `closeAnimationVideo()`
+  - `renderExplanationControls()` updated with WATCH button, `<video>` element, loading/error states
+  - `Alt+W` keyboard binding for animation toggle
+  - CSS: `.explain-watch`, `.explain-video-wrap`, `.explain-video`, `.explain-video-close`, `.has-video`
 - `index.html` BKT: `clampProb()`, `bayesPosterior()`, `bktUpdate()`, `pickScore()`, `infoGain()`
 - `index.html` anti-button-mash: `reshuffleQuestionOptions()`, `enemy.missCount`, attempt cap
 - `index.html` MC dedup: identify question generation deduplicates distractor options via Set
@@ -548,8 +555,64 @@ This session shipped 18 commits covering UI polish, audio, persistence hardening
 - Hidden scrollbar on ip-body
 - Desktop input panel max-height 55vh
 
+## Latest Update: Manim Animation Video Player + Generation Pipeline
+
+Implemented a complete pipeline for 3Blue1Brown-style Manim animations embedded in the explainer panel, with Supabase storage and batch generation tooling.
+
+### Video Player in Explainer Panel
+
+- Explainer panel now supports inline video playback of short (10-20s) Manim animations
+- WATCH button appears in the explainer title bar when an animation is available
+- Uses direct public Supabase URLs with `preload="metadata"` — browser handles streaming/caching
+- Tri-state availability model: `unknown` (manifest not loaded, try-on-click) / `available` / `unavailable`
+- Animation availability manifest fetched once from Supabase on title screen load
+- Video autoplays muted with `playsinline` and `loop`; click/tap toggles mute
+- `Alt+W` keyboard shortcut toggles animation video on/off
+- Nonce-based stale response guard prevents wrong-formula video after rapid selection changes
+- Mobile: entire explainer panel capped at 45vh during video; text explanation lines hidden to save space; video capped at 30vh
+- `resetExplanationState()` clears all video state, increments nonce
+- Manifest fetch failure preserves `unknown` state for graceful try-on-click degradation
+
+### Supabase Storage Layout
+
+- Reuses existing `videos` bucket at `hgvnytaqmuybzbotosyj.supabase.co`
+- Path: `animations/ap-stats-formulas/{commandId}.mp4`
+- Availability manifest: `animations/ap-stats-formulas/manifest.json`
+- Convention: filename = command `id` field from the deck (deterministic, no lookup needed)
+
+### Batch Generation Pipeline
+
+- `scripts/animation-manifest.json` — 66-entry manifest mapping each command to:
+  - formula name, LaTeX, domain, tier
+  - generation prompt with curriculum context
+  - learning objectives and common misconceptions from `frameworks.js`
+- `scripts/generate-animations.py` — batch generation via Math-To-Manim six-agent pipeline
+  - Supports `--domain`, `--id`, `--dry-run`, `--render`, `--render-only`
+  - Uses `ReverseKnowledgeTreeOrchestrator` with `max_tree_depth=2` for focused explainers
+  - Renders to MP4 via `manim render -qm` (720p30)
+- `scripts/upload-ap-stats-animations.mjs` — upload rendered MP4s to Supabase
+  - Discovers rendered files in `animations/output/{id}/{id}.mp4`
+  - Uploads to Supabase with upsert
+  - Generates and uploads availability manifest
+  - Loads `.env` from project root or falls back to lrsl-driller `.env`
+
+### Codex Review Findings (all addressed)
+
+- HIGH: Input render memoization — clear `lastInputState` on every video state change
+- HIGH: Blob URL cache conflict — dropped blob fetching, use direct public URLs
+- MEDIUM: Manifest fallback unreachable — tri-state availability with try-on-click
+- MEDIUM: No animationId field — added `EXPLAINER_STATE.animationId`
+- MEDIUM: AbortController missing — simplified to nonce guard (sufficient for direct URLs)
+- LOW: Mobile streaming concerns — direct URL + `preload="metadata"` + panel cap
+
+### Spec Artifact
+
+- `manim-animation-spec.md` with full design, Codex review findings table, and implementation plan
+
 ## Likely Next Tasks
 
+- **Batch-generate all 66 Manim animations** — dispatch parallel Codex agents per domain
+- **Quality review rendered animations** — verify pedagogical accuracy per formula
 - Add server endpoint for batch leaderboard query (currently N sequential requests)
 - Tune SRS decay half-lives based on student feedback
 - Add adaptive BKT params (v2) once enough data collected
