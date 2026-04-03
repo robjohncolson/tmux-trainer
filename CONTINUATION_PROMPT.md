@@ -904,6 +904,40 @@ Replaced fBm shader with 3 recursive 2D fractal trees rendered as Three.js `Line
 
 Trees are IN the game scene so they interact with fog, camera, and depth correctly.
 
+## Latest Update: Growing Forest — Trees Drive Music, Expand Across Waves
+
+### Trees are the source of truth
+
+- `G.treeDepth` (0-10) replaces `musicalHealth` as the primary state variable
+- Main formula kills (splitDepth === 0): treeDepth +1. Subconcepts: no change.
+- Wrong answer: treeDepth -1. Breach: treeDepth -2. Cap at 10, floor at 0.
+- Music reads tree depth via `SFX.setTreeDepth(d)` → clamps to 0-5 for layer gating
+- treeDepth persists across waves. Only resets to 3 on new game.
+- Saved/restored in run state checkpoints (old saves default to 3).
+
+### Progressive forest expansion
+
+- 10-tree pool with `unlockAt` thresholds (1, 3, 3, 5, 5, 7, 7, 9, 9, 10)
+- Pioneer tree always tallest; later trees "catch up" at shorter depth
+- treeDepth 1: lone sapling → treeDepth 10: full fractal forest of 10 trees
+
+### Groove at treeDepth 7+
+
+- `grooveAlways` flag set when treeDepth >= 7
+- Streak groove plays even at streak 0 when forest is lush enough
+
+### Dynamic sky
+
+- Wind drift: UV offset by `time * 0.02, time * 0.008` — clouds flow
+- Brightness driven by treeDepth: 0.15 (barren) → 0.35 (full forest)
+- Horizon fade: `smoothstep(0.15, 0.55, y/resolution.y)` — no hard edge with grid
+
+### API changes
+
+- `SFX.musicalHit()` → `SFX.killMelody()` (melody only, no health change)
+- `SFX.musicalMiss()` / `SFX.musicalBreach()` → deleted (game code sets `G.treeDepth` directly)
+- `SFX.setTreeDepth(d)` → new, replaces all three
+
 ## Likely Next Tasks
 
 - **Quality review rendered animations** — verify pedagogical accuracy per formula

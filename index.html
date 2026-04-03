@@ -848,17 +848,21 @@ const SFX=(()=>{
       playFmNote(ch[2]*2,.3,2,0.8,.06);
     }
   }
-  // Musical hit — health +1, kill melody on current chord
-  function musicalHit(){
+  // Kill melody — plays chord tones on correct answer
+  function killMelody(){
     if(!ctx||!bgmPlaying)return;
-    musicalHealth=Math.min(5,musicalHealth+1);
     const prog=getWaveConfig(currentWaveIdx).chords;
     const ch=prog[currentProgIdx%prog.length];
     playFmNote(ch[2]*2,.4,3,1,.05);
     playFmNote(ch[0]*2,.3,2,0.8,.04,.12);
   }
-  function musicalMiss(){musicalHealth=Math.max(0,musicalHealth-1);}
-  function musicalBreach(){musicalHealth=Math.max(0,musicalHealth-2);}
+  // Tree depth drives music layers (0-10 → clamped to 0-5 for layer gating)
+  let grooveAlways=false;
+  function setTreeDepth(d){
+    const v=Math.max(0,d|0);
+    musicalHealth=Math.min(5,v);
+    grooveAlways=v>=7; // full forest → groove plays even at streak 0
+  }
   function setStreak(n){currentStreak=Math.max(0,n|0);}
 
   // Opens the filter and shifts voicing as the student progresses
@@ -871,7 +875,6 @@ const SFX=(()=>{
     clearBgmAutomation(t);
     bgmPlaying=true;
     currentProgIdx=0;
-    musicalHealth=5;
     const waveCfg=getWaveConfig(currentWaveIdx);
     const pv=(waveCfg.padVol!=null?waveCfg.padVol:.05)*.5;
     const bv=(waveCfg.bassVol!=null?waveCfg.bassVol:.6)*.35;
@@ -940,7 +943,7 @@ const SFX=(()=>{
       if(h>=2){for(let i=0;i<bp.length;i++){if(!snarePattern[i])continue;const snt=startT+i*st;if(snt>now-.01)scheduleFmSnare(snt,snarePeak);}}
       if(h>=1){for(let i=0;i<bp.length;i++){if(!hhPattern[i])continue;const ht=startT+i*st;if(ht>now-.01)scheduleFmHihat(ht,hhPeak,true);}}
       // Streak groove embellishments (only at full health, skip during preview)
-      if(!previewConfig&&h>=5&&currentStreak>=3){
+      if(!previewConfig&&h>=5&&(currentStreak>=3||grooveAlways)){
         // Streak 3+: ghost hihats on odd steps (offbeats)
         for(let i=1;i<8;i+=2){
           if(hhPattern[i])continue;
@@ -994,7 +997,7 @@ const SFX=(()=>{
   // ── Public API ──
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
-    isMuted(){return muted},startBGM,stopBGM,setKey,musicalHit,musicalMiss,musicalBreach,setStreak,
+    isMuted(){return muted},startBGM,stopBGM,setKey,killMelody,setTreeDepth,setStreak,
     getMusicConfig(wave){return cloneWaveConfig(getWaveConfig(typeof wave==='number'?wave:currentWaveIdx))},
     getAllMusicConfig(){return cloneMusicConfig(MUSIC_CONFIG)},
     getDefaultMusicConfig(){return cloneMusicConfig(DEFAULT_MUSIC_CONFIG)},
@@ -2860,6 +2863,7 @@ function buildRunStateSnapshot(){
     enemies:G.enemies,
     selectedId:G.selectedId,
     inputState:G.inputState,
+    treeDepth:G.treeDepth,
     waveCommands:G.waveCommands,
     spawnIdx:G.spawnIdx,
     waveComplete:G.waveComplete,
@@ -3122,7 +3126,7 @@ function handleLogout(){
 const G={
   screen:'title',wave:1,score:0,lives:5,streak:0,maxStreak:0,
   srs:{},enemies:[],selectedId:null,inputState:'idle',
-  waveCommands:[],spawnIdx:0,
+  treeDepth:3,waveCommands:[],spawnIdx:0,
   waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
   unlockedTiers:['core'],nextEnemyId:0,
   attemptsOnCurrent:0,commandStartTime:0,
@@ -3147,11 +3151,12 @@ const skyMaterial=new THREE.ShaderMaterial({
   depthTest:false,depthWrite:false,
   uniforms:{
     time:{value:0.0},
+    brightness:{value:0.25},
     resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)}
   },
   vertexShader:'void main(){gl_Position=vec4(position,1.0);}',
   fragmentShader:[
-    'uniform float time;',
+    'uniform float time,brightness;',
     'uniform vec2 resolution;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'float noise(vec2 p){',
@@ -3161,21 +3166,22 @@ const skyMaterial=new THREE.ShaderMaterial({
     '  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);',
     '}',
     'void main(){',
-    '  vec2 uv=(gl_FragCoord.xy/resolution)*3.0;',
-    '  float t=time*0.08;',
+    '  vec2 uv=(gl_FragCoord.xy/resolution)*3.0+vec2(time*0.02,time*0.008);',
     '  float v=0.0,amp=0.5,freq=1.0;',
-    '  v+=amp*noise(uv*freq+t);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq-t*0.7);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq+t*0.5);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq-t*0.3);amp*=0.5;freq*=2.0;',
-    '  v+=amp*noise(uv*freq+t*0.2);',
+    '  v+=amp*noise(uv*freq);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq+0.5);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq+1.0);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq+1.5);amp*=0.5;freq*=2.0;',
+    '  v+=amp*noise(uv*freq+2.0);',
     '  v=pow(v*0.5+0.5,0.7);',
     '  vec3 dark=vec3(0.05,0.02,0.0);',
     '  vec3 mid=vec3(0.35,0.18,0.02);',
     '  vec3 bright=vec3(1.0,0.55,0.0);',
     '  vec3 col=mix(dark,mix(mid,bright,v),v);',
-    '  col*=0.25;',
+    '  col*=brightness;',
     '  col*=0.9+0.1*sin(time*0.4);',
+    '  float horizon=smoothstep(0.15,0.55,gl_FragCoord.y/resolution.y);',
+    '  col*=horizon;',
     '  gl_FragColor=vec4(col,1.0);',
     '}'
   ].join('\n')
@@ -3184,11 +3190,18 @@ skyScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),skyMaterial));
 
 // ── Fractal trees background (grounded on terrain) ──
 function terrainHeight(x,z){return Math.sin(x*.3)*Math.cos(z*.4)*.4+Math.sin(x*.7+z*.5)*.2;}
-const TREE_MAX_SEGMENTS=63;
-const TREE_CONFIGS=[
-  {x:0,z:-4,angle:0,branchAngle:Math.PI/6,lenScale:0.68,len:3.5},
-  {x:-5,z:-6,angle:0.15,branchAngle:Math.PI/5.5,lenScale:0.65,len:2.8},
-  {x:4.5,z:-5,angle:-0.1,branchAngle:Math.PI/6.5,lenScale:0.7,len:2.6},
+const TREE_MAX_SEGMENTS=1023; // depth 10
+const TREE_POOL=[
+  {x:0,   z:-4,  angle:0,    ba:Math.PI/6,  ls:0.68,len:3.5,unlockAt:1},
+  {x:-4,  z:-5,  angle:0.15, ba:Math.PI/5.5,ls:0.65,len:2.8,unlockAt:3},
+  {x:4,   z:-4.5,angle:-0.1, ba:Math.PI/6.5,ls:0.70,len:2.6,unlockAt:3},
+  {x:-7,  z:-7,  angle:0.08, ba:Math.PI/5,  ls:0.63,len:2.2,unlockAt:5},
+  {x:6,   z:-6.5,angle:-0.12,ba:Math.PI/6.2,ls:0.66,len:2.0,unlockAt:5},
+  {x:-2,  z:-8,  angle:0.05, ba:Math.PI/5.8,ls:0.64,len:2.4,unlockAt:7},
+  {x:2.5, z:-7.5,angle:-0.07,ba:Math.PI/6.3,ls:0.67,len:2.3,unlockAt:7},
+  {x:-8,  z:-9,  angle:0.1,  ba:Math.PI/5.2,ls:0.62,len:1.8,unlockAt:9},
+  {x:7.5, z:-8.5,angle:-0.08,ba:Math.PI/6.8,ls:0.65,len:1.9,unlockAt:9},
+  {x:0,   z:-10, angle:0,    ba:Math.PI/5.5,ls:0.60,len:2.0,unlockAt:10},
 ];
 function generateTree(ox,oy,len,angle,ba,ls,depth,levels,timeSec,omega,swayAmp,pos,col,idx){
   if(depth>=levels)return idx;
@@ -3211,7 +3224,7 @@ function generateTree(ox,oy,len,angle,ba,ls,depth,levels,timeSec,omega,swayAmp,p
   idx=generateTree(ex,ey,cl*0.98,a-ba,ba,ls,depth+1,levels,timeSec,omega,swayAmp,pos,col,idx);
   return idx;
 }
-const treeMeshes=TREE_CONFIGS.map(tc=>{
+const treeMeshes=TREE_POOL.map(tc=>{
   const posArr=new Float32Array(TREE_MAX_SEGMENTS*6);
   const colArr=new Float32Array(TREE_MAX_SEGMENTS*6);
   const geo=new THREE.BufferGeometry();
@@ -3220,6 +3233,7 @@ const treeMeshes=TREE_CONFIGS.map(tc=>{
   const mat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.7,fog:false});
   const mesh=new THREE.LineSegments(geo,mat);
   mesh.position.set(tc.x,terrainHeight(tc.x,tc.z),tc.z);
+  mesh.visible=false;
   return{mesh,geo,posArr,colArr,config:tc};
 });
 let treeDisplayDepth=5;
@@ -4324,10 +4338,11 @@ function startGame(){
   queueBGMStart();
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   Object.assign(G,{screen:'game',wave:1,score:0,lives:BASE_LIVES,streak:0,maxStreak:0,
-    srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',
+    srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',treeDepth:3,
     spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
     unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
   applyTimeDecay(G.srs);
+  SFX.setTreeDepth(G.treeDepth);
   G.waveCommands=genWave(1);
   lastSpawnTime=performance.now();
   lastInputState='';
@@ -4375,6 +4390,7 @@ function continueGame(){
     maxStreak:Math.max(0,Math.round(Number(snapshot.maxStreak)||0)),
     srs:mergedSrs,enemies:restoredEnemies,selectedId:snapshot.selectedId||null,
     inputState:snapshot.inputState||'idle',
+    treeDepth:Math.max(0,Math.min(10,Math.round(Number(snapshot.treeDepth)||3))),
     waveCommands:restoredWaveCommands,spawnIdx:Math.max(0,Math.min(Math.round(Number(snapshot.spawnIdx)||0),restoredWaveCommands.length)),
     waveComplete:!!snapshot.waveComplete,totalCorrect:Math.max(0,Math.round(Number(snapshot.totalCorrect)||0)),
     totalWrong:Math.max(0,Math.round(Number(snapshot.totalWrong)||0)),combo:Math.max(1,Number(snapshot.combo)||1),
@@ -4393,6 +4409,7 @@ function continueGame(){
   showGameUI();
   updateLabels();
   SFX.setKey(G.wave);
+  SFX.setTreeDepth(G.treeDepth);
   queueBGMStart();
 }
 function nextWave(){
@@ -4500,7 +4517,7 @@ function moveEnemies(){
 function checkBreach(){
   const reached=G.enemies.filter(e=>e.t>=1&&!e.pendingCorrectHit);
   if(reached.length===0)return;
-  SFX.breach();SFX.musicalBreach();
+  SFX.breach();G.treeDepth=Math.max(0,G.treeDepth-2);SFX.setTreeDepth(G.treeDepth);
   reached.forEach(e=>{
     spawnExplosion(enemyMeshes[e.id]?.position||pathPts[pathPts.length-1],20,0xff2200);
     removeEnemyMesh(e.id);
@@ -4572,7 +4589,9 @@ function handleHit(enemy){
   SFX.setStreak(G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
   G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
-  SFX.musicalHit(); // health +1, kill melody
+  SFX.killMelody();
+  if(!(enemy.splitDepth>=1))G.treeDepth=Math.min(10,G.treeDepth+1);
+  SFX.setTreeDepth(G.treeDepth);
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
   const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,responseTimeMs:responseTime};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
@@ -4586,7 +4605,7 @@ function handleHit(enemy){
 
 function handleMiss(enemy){
   const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
-  SFX.miss();SFX.musicalMiss();
+  SFX.miss();G.treeDepth=Math.max(0,G.treeDepth-1);SFX.setTreeDepth(G.treeDepth);
   G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
@@ -5043,30 +5062,33 @@ function animate(time){
   }
 
   // fBm amber sky pass
-  skyMaterial.uniforms.time.value=time*0.001;
+  const timeSec=time*0.001;
+  const td=G.treeDepth||0;
+  skyMaterial.uniforms.time.value=timeSec;
+  skyMaterial.uniforms.brightness.value=0.15+Math.min(td,10)*0.02;
   renderer.autoClear=false;
   renderer.clear();
   renderer.render(skyScene,skyCamera);
   renderer.clearDepth();
 
   // Fractal trees (in game scene, grounded on terrain)
-  const mh=SFX.getMusicalHealth();
   const sk=SFX.getStreak();
-  const targetDepth=mh;
-  treeDisplayDepth+=(targetDepth-treeDisplayDepth)*0.05;
-  const displayLevels=Math.round(treeDisplayDepth);
-  const timeSec=time*0.001;
+  treeDisplayDepth+=(td-treeDisplayDepth)*0.05;
   const tempo=SFX.getMusicConfig?SFX.getMusicConfig().tempo||80:80;
   const omega=(tempo/60)*Math.PI*2;
   const swayAmp=0.03+sk*0.005;
   treeMeshes.forEach(t=>{
     const tc=t.config;
-    const levels=Math.max(0,Math.min(6,displayLevels+1));
-    const count=generateTree(0,0,tc.len,tc.angle,tc.branchAngle,tc.lenScale,0,levels,timeSec,omega,swayAmp,t.posArr,t.colArr,0);
+    const active=td>=tc.unlockAt;
+    if(!active){t.mesh.visible=false;t.geo.setDrawRange(0,0);return;}
+    // Per-tree depth: pioneer tree gets full depth, later trees catch up
+    const treeD=Math.max(1,Math.min(10,td-tc.unlockAt+2));
+    const levels=treeD+1;
+    const count=generateTree(0,0,tc.len,tc.angle,tc.ba,tc.ls,0,levels,timeSec,omega,swayAmp,t.posArr,t.colArr,0);
     t.geo.attributes.position.needsUpdate=true;
     t.geo.attributes.color.needsUpdate=true;
     t.geo.setDrawRange(0,count*2);
-    t.mesh.visible=displayLevels>0;
+    t.mesh.visible=true;
   });
   renderer.render(scene,camera);
   renderer.autoClear=true;
