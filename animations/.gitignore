@@ -1,0 +1,4 @@
+# Manim render artifacts (temp files, partial movies)
+output/*/media/
+output/media/
+# Keep .py scripts and final .mp4 files
