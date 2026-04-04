@@ -6507,11 +6507,10 @@ canvas.addEventListener('touchend',function(e){
     camPanX=0;camPanZ=0;camZoomMult=1.0;
     return;
   }
-  // Tap handling: double-tap cycles camera modes, single-tap selects enemy
+  // Double-tap: cycle camera modes (no single-tap selection — use swipe to cycle enemies)
   if(Math.abs(dx)<18&&Math.abs(dy)<18&&dt<280){
     const now=Date.now();
     if(now-lastDoubleTap<350){
-      // Double-tap: cycle camera mode
       lastDoubleTap=0;
       if(camMode==='follow'){camMode='cube';camPanX=0;camPanZ=0;camZoomMult=1.0}
       else if(camMode==='cube'){camMode='flyaround';camPanX=0;camPanZ=0;camZoomMult=1.0}
@@ -6519,21 +6518,6 @@ canvas.addEventListener('touchend',function(e){
       return;
     }
     lastDoubleTap=now;
-    // Single tap: select enemy (after 350ms to distinguish from double-tap)
-    setTimeout(()=>{
-      if(Date.now()-lastDoubleTap<340)return; // double-tap happened
-      const tappedEnemy=pickEnemyAtScreenPoint(touch.clientX,touch.clientY);
-      if(!tappedEnemy||tappedEnemy.id===G.selectedId)return;
-      resetExplanationState();
-      G.selectedId=tappedEnemy.id;
-      const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
-      G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
-      G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
-      SFX.select();lastInputState='';
-      camPanX=0;camPanZ=0;camZoomMult=1.0;camMode='follow';
-      if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
-      else if(im==='typed')focusTypedInput();
-    },360);
   }
 },{passive:true});
 // iOS AudioContext resume
