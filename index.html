@@ -1718,6 +1718,136 @@ const apStatsCartridge={
         {q:'After fitting log(y) = a + bx, how do you predict y?',correct:'Back-transform: y-hat = 10 raised to (a + bx)',wrong:['Just use a + bx directly','Take the log of a + bx']},
         {q:'What should the residual plot of log(y) vs x look like if transformation worked?',correct:'Random scatter with no pattern (linearized relationship)',wrong:['A curved pattern','A positive trend']}
       ]},
+    {id:'variance',action:'Sample Variance (s\u00b2)',tier:'support',dom:'descriptive',
+      hint:'Sum of squared deviations divided by n-1',
+      explain:'The square of the standard deviation \u2014 used in linear combination rules',
+      latex:'s^2 = \\frac{\\sum(x_i - \\bar{x})^2}{n-1}',
+      blanks:[
+        {latex:'s^2 = \\frac{\\sum(x_i - \\bar{x})^2}{\\boxed{\\,?\\,}}',answer:'n-1',choices:['n-1','n','n+1']},
+        {latex:'s^2 = \\frac{\\sum\\boxed{\\,?\\,}}{n-1}',answer:'(x_i - \\bar{x})^2',choices:['(x_i - \\bar{x})^2','|x_i - \\bar{x}|','x_i^2']}
+      ],
+      subconcepts:[
+        {q:'Why square the deviations?',correct:'To emphasize larger deviations and prevent canceling',wrong:['To make computation easier','To normalize values']},
+        {q:'Why use n-1 instead of n?',correct:'Degrees of freedom correction for sample bias',wrong:['To make the result smaller','Because one value is always zero']},
+        {q:'How is variance related to standard deviation?',correct:'SD is the square root of variance',wrong:['They are the same thing','Variance is always larger']}
+      ]},
+    {id:'ten-pct-condition',action:'10% Condition for Independence',tier:'support',dom:'inference',
+      hint:'Sample must be less than 10% of the population',
+      explain:'Ensures sampling without replacement is approximately independent',
+      latex:'n < 0.10 \\cdot N',
+      blanks:[
+        {latex:'n < \\boxed{\\,?\\,} \\cdot N',answer:'0.10',choices:['0.10','0.05','0.50']},
+        {latex:'n < 0.10 \\cdot \\boxed{\\,?\\,}',answer:'N',choices:['N','n','\\mu']}
+      ],
+      subconcepts:[
+        {q:'Why does sampling without replacement matter?',correct:'Each draw changes the remaining pool slightly',wrong:['It doesn\'t matter','It makes the sample biased']},
+        {q:'What does N represent?',correct:'The total population size',wrong:['The sample size','The number of trials']},
+        {q:'If n=50 and N=200, is the condition met?',correct:'No \u2014 50 is 25% of 200, which exceeds 10%',wrong:['Yes \u2014 50 < 200','Cannot determine']}
+      ]},
+    {id:'std-resid-chi',action:'Standardized Residual (Chi-Square)',tier:'support',dom:'chi-square',
+      hint:'Each cell\'s contribution: (O-E)/sqrt(E)',
+      explain:'Shows which cells contribute most to the chi-square statistic',
+      latex:'\\text{std resid} = \\frac{O - E}{\\sqrt{E}}',
+      blanks:[
+        {latex:'\\text{std resid} = \\frac{O - E}{\\boxed{\\,?\\,}}',answer:'\\sqrt{E}',choices:['\\sqrt{E}','E','E^2']},
+        {latex:'\\text{std resid} = \\frac{\\boxed{\\,?\\,}}{\\sqrt{E}}',answer:'O - E',choices:['O - E','E - O','O \\cdot E']}
+      ],
+      subconcepts:[
+        {q:'What does a large standardized residual indicate?',correct:'That cell deviates greatly from what H\u2080 predicted',wrong:['The cell has the most data','The expected count was wrong']},
+        {q:'What does a positive standardized residual mean?',correct:'Observed count exceeds expected count',wrong:['Expected exceeds observed','The test is significant']},
+        {q:'How does this relate to the chi-square statistic?',correct:'Chi-square is the sum of squared standardized residuals',wrong:['They are the same','Chi-square is the average']}
+      ]},
+    {id:'one-prop-ci',action:'Confidence Interval for One Proportion',tier:'regular',dom:'inf-proportions',
+      hint:'p-hat plus or minus z-star times SE of p-hat',
+      explain:'Estimates the range of plausible values for the true population proportion',
+      latex:'\\hat{p} \\pm z^* \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}',
+      blanks:[
+        {latex:'\\hat{p} \\pm z^* \\sqrt{\\frac{\\boxed{\\,?\\,}}{n}}',answer:'\\hat{p}(1-\\hat{p})',choices:['\\hat{p}(1-\\hat{p})','p_0(1-p_0)','\\hat{p}^2']},
+        {latex:'\\hat{p} \\pm \\boxed{\\,?\\,} \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}',answer:'z^*',choices:['z^*','t^*','\\chi^2']}
+      ],
+      subconcepts:[
+        {q:'Why use p-hat instead of p\u2080 in the SE?',correct:'The true p is unknown; we estimate with p-hat',wrong:['p-hat is always more accurate','To match the null hypothesis']},
+        {q:'What does z* depend on?',correct:'The confidence level (e.g., 1.96 for 95%)',wrong:['The sample size','The sample proportion']},
+        {q:'What conditions must be checked?',correct:'Random sample, 10% condition, large counts (np-hat and n(1-p-hat) \u2265 10)',wrong:['Only random sample','n \u2265 30']}
+      ]},
+    {id:'two-prop-ci',action:'CI for Difference of Two Proportions',tier:'power',dom:'inf-proportions',
+      hint:'Difference of p-hats plus or minus z-star times SE',
+      explain:'Estimates the range of plausible values for p\u2081 - p\u2082',
+      latex:'(\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',
+      blanks:[
+        {latex:'(\\hat{p}_1 - \\hat{p}_2) \\pm \\boxed{\\,?\\,} \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'z^*',choices:['z^*','t^*','\\chi^2']},
+        {latex:'(\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\sqrt{\\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} \\boxed{\\,?\\,} \\frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}',answer:'+',choices:['+','-','\\times']}
+      ],
+      subconcepts:[
+        {q:'Why do we add the two variance terms under the square root?',correct:'Independent samples have variances that add',wrong:['To increase sample size','Proportions always add']},
+        {q:'Why use separate p-hat values instead of pooling?',correct:'For CIs we don\'t assume p\u2081=p\u2082 (no null hypothesis)',wrong:['Pooling is always wrong','To make SE larger']},
+        {q:'What does it mean if 0 is in the interval?',correct:'No convincing evidence of a difference between proportions',wrong:['The proportions are equal','The test failed']}
+      ]},
+    {id:'one-mean-ci',action:'Confidence Interval for One Mean',tier:'regular',dom:'inf-means',
+      hint:'x-bar plus or minus t-star times s over root n',
+      explain:'Estimates the range of plausible values for the true population mean',
+      latex:'\\bar{x} \\pm t^* \\frac{s}{\\sqrt{n}}',
+      blanks:[
+        {latex:'\\bar{x} \\pm \\boxed{\\,?\\,} \\frac{s}{\\sqrt{n}}',answer:'t^*',choices:['t^*','z^*','\\chi^2']},
+        {latex:'\\bar{x} \\pm t^* \\frac{\\boxed{\\,?\\,}}{\\sqrt{n}}',answer:'s',choices:['s','\\sigma','\\bar{x}']}
+      ],
+      subconcepts:[
+        {q:'Why use t* instead of z*?',correct:'Because population \u03c3 is unknown; we estimate with s',wrong:['t* is always larger','z* only works for proportions']},
+        {q:'What are the degrees of freedom?',correct:'n - 1',wrong:['n','n - 2']},
+        {q:'What conditions must be checked?',correct:'Random sample, 10% condition, Normal/large sample',wrong:['Only n \u2265 30','Random and independent only']}
+      ]},
+    {id:'two-mean-ci',action:'CI for Difference of Two Means',tier:'power',dom:'inf-means',
+      hint:'Difference of x-bars plus or minus t-star times SE',
+      explain:'Estimates the range of plausible values for \u03bc\u2081 - \u03bc\u2082',
+      latex:'(\\bar{x}_1 - \\bar{x}_2) \\pm t^* \\sqrt{\\frac{s_1^2}{n_1} + \\frac{s_2^2}{n_2}}',
+      blanks:[
+        {latex:'(\\bar{x}_1 - \\bar{x}_2) \\pm \\boxed{\\,?\\,} \\sqrt{\\frac{s_1^2}{n_1} + \\frac{s_2^2}{n_2}}',answer:'t^*',choices:['t^*','z^*','F']},
+        {latex:'(\\bar{x}_1 - \\bar{x}_2) \\pm t^* \\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1} + \\frac{s_2^2}{n_2}}',answer:'s_1^2',choices:['s_1^2','s_1','\\sigma_1']}
+      ],
+      subconcepts:[
+        {q:'Why use s\u00b2 instead of s in the formula?',correct:'Variances add for independent samples; SDs do not',wrong:['s\u00b2 is easier to calculate','To match the t-distribution']},
+        {q:'Why add the two fractions under the square root?',correct:'Independent samples \u2014 variances add',wrong:['To double the sample size','Because means always add']},
+        {q:'What distribution do we use?',correct:'t-distribution with complex (Welch) df',wrong:['Standard Normal z','Chi-square']}
+      ]},
+    {id:'random-condition',action:'Randomization Condition',tier:'support',dom:'inference',
+      hint:'Data must come from a random sample or randomized experiment',
+      explain:'Without randomization, results may be biased and inference invalid',
+      latex:'\\text{Data from random sample or randomized experiment}',
+      blanks:[
+        {latex:'\\text{Data from } \\boxed{\\,?\\,} \\text{ sample or randomized experiment}',answer:'\\text{random}',choices:['\\text{random}','\\text{large}','\\text{normal}']},
+        {latex:'\\text{Supports valid } \\boxed{\\,?\\,} \\text{-based inference}',answer:'\\text{probability}',choices:['\\text{probability}','\\text{sample}','\\text{normal}']}
+      ],
+      subconcepts:[
+        {q:'Why is randomization required for inference?',correct:'It ensures the sample represents the population without systematic bias',wrong:['It makes calculations easier','It guarantees a normal distribution']},
+        {q:'What is the difference between random sampling and random assignment?',correct:'Sampling generalizes to population; assignment establishes causation',wrong:['They are the same thing','Assignment generalizes; sampling establishes causation']},
+        {q:'Can you do inference without randomization?',correct:'Generally no \u2014 results may not generalize beyond the sample',wrong:['Yes, as long as n is large','Only for proportions']}
+      ]},
+    {id:'normal-condition',action:'Normal/Large Sample Condition',tier:'support',dom:'inference',
+      hint:'Check that the sampling distribution is approximately Normal',
+      explain:'Proportions: large counts using p\u0302 (CI) or p\u2080 (test). Means: n\u226530 or population Normal.',
+      latex:'\\text{Proportions: } n\\hat{p},\\; n(1-\\hat{p}) \\geq 10 \\text{ (CI)} \\;|\\; np_0,\\; n(1-p_0) \\geq 10 \\text{ (test)} \\;|\\; \\text{Means: } n \\geq 30',
+      blanks:[
+        {latex:'\\text{Proportions: } np \\geq \\boxed{\\,?\\,}',answer:'10',choices:['10','30','5']},
+        {latex:'\\text{Means: } n \\geq \\boxed{\\,?\\,} \\text{ or population Normal}',answer:'30',choices:['30','10','50']}
+      ],
+      subconcepts:[
+        {q:'Why do proportions and means have different rules?',correct:'Proportions use the binomial (need large counts); means use CLT (need large n)',wrong:['They use the same rule','Means are always Normal']},
+        {q:'What does "large counts" mean for proportions?',correct:'Both np and n(1-p) must be at least 10',wrong:['n must be at least 30','The sample must be larger than the population']},
+        {q:'What if the population is known to be Normal?',correct:'Any sample size works for means (CLT not needed)',wrong:['You still need n \u2265 30','Normal populations can\'t be sampled']}
+      ]},
+    {id:'p-value-interp',action:'P-Value Interpretation',tier:'support',dom:'inference',
+      hint:'Probability of the observed result or more extreme, assuming H\u2080 is true',
+      explain:'NOT the probability that H\u2080 is true \u2014 it is conditional on H\u2080',
+      latex:'P\\text{-value} = P(\\text{observed or more extreme} \\mid H_0 \\text{ true})',
+      blanks:[
+        {latex:'P\\text{-value} = P(\\text{observed or more extreme} \\mid \\boxed{\\,?\\,})',answer:'H_0 \\text{ true}',choices:['H_0 \\text{ true}','H_a \\text{ true}','\\alpha']},
+        {latex:'\\text{Reject } H_0 \\text{ when p-value} \\boxed{\\,?\\,} \\alpha',answer:'<',choices:['<','>','=']}
+      ],
+      subconcepts:[
+        {q:'What is a common misconception about p-values?',correct:'That p-value is the probability H\u2080 is true (it\'s not \u2014 it assumes H\u2080)',wrong:['That p-values are always small','That p-values measure effect size']},
+        {q:'If p-value = 0.03 and \u03b1 = 0.05, what do you conclude?',correct:'Reject H\u2080 \u2014 the result is statistically significant',wrong:['Fail to reject H\u2080','Accept H\u2080']},
+        {q:'What does a large p-value mean?',correct:'The observed data is consistent with H\u2080 (not enough evidence to reject)',wrong:['H\u2080 is definitely true','The sample was too small']}
+      ]},
   ],
 
   // Generate a question for an enemy at spawn time
@@ -1859,6 +1989,16 @@ const VARIABLE_BANK={
   'slope-t':[{s:'b',d:'sample slope'},{s:'\\beta_0',d:'hypothesized slope under H_0'},{s:'s_b',d:'SE of slope'}],
   'slope-ci':[{s:'b',d:'sample slope'},{s:'t^*',d:'critical value'},{s:'SE_b',d:'standard error of slope'}],
   'log-transform':[{s:'\\hat{y}',d:'predicted response'},{s:'a',d:'intercept'},{s:'b',d:'slope of log model'}],
+  'variance':[{s:'s^2',d:'sample variance'},{s:'n-1',d:'degrees of freedom'},{s:'\\bar{x}',d:'sample mean'}],
+  'ten-pct-condition':[{s:'n',d:'sample size'},{s:'N',d:'population size'}],
+  'std-resid-chi':[{s:'O',d:'observed count'},{s:'E',d:'expected count'}],
+  'one-prop-ci':[{s:'\\hat{p}',d:'sample proportion'},{s:'z^*',d:'critical value'},{s:'n',d:'sample size'}],
+  'two-prop-ci':[{s:'\\hat{p}_1',d:'sample proportion group 1'},{s:'\\hat{p}_2',d:'sample proportion group 2'},{s:'z^*',d:'critical value'}],
+  'one-mean-ci':[{s:'\\bar{x}',d:'sample mean'},{s:'t^*',d:'critical value'},{s:'s',d:'sample SD'}],
+  'two-mean-ci':[{s:'\\bar{x}_1',d:'sample mean group 1'},{s:'s_1^2',d:'sample variance group 1'},{s:'t^*',d:'critical value'}],
+  'random-condition':[{s:'\\text{random}',d:'random selection or assignment'}],
+  'normal-condition':[{s:'np',d:'expected successes'},{s:'n(1-p)',d:'expected failures'},{s:'n',d:'sample size'}],
+  'p-value-interp':[{s:'P\\text{-value}',d:'probability of observed or more extreme result, assuming H\u2080 true'},{s:'\\alpha',d:'significance level'}],
 };
 
 const AUTO_BLANK_SPECS=[
@@ -3070,6 +3210,16 @@ function wireL1toL2(){
     [/not.*change.*SD|shift.*equally|spread.*unchanged/i,['variance-to-sd']],
     [/absolute value|non.negative|always positive/i,['squaring-concept']],
     [/\bSE.*unit|statistic.*from.*parameter/i,['se-concept','z-score-concept']],
+    [/variance|s\u00b2|square.*of.*SD|SD.*square/i,['squaring-concept','variance-to-sd']],
+    [/bias|systematic|represent.*population/i,['sample-vs-population','unbiased-estimator']],
+    [/random.*sample|randomiz|without.*bias/i,['sampling-variability','independence-concept']],
+    [/p.value|reject.*H|fail.*reject|statistic.*significant/i,['hypothesis-framework']],
+    [/10%|population size|sampling.*replacement/i,['independence-concept','sample-vs-population']],
+    [/large counts|np.*10|n.*30|condition.*check/i,['clt-concept','proportion-arithmetic']],
+    [/chi.square|cell.*contribut|standardized.*resid/i,['observed-vs-expected','squaring-concept']],
+    [/confidence.*level|1\.96|95%|99%/i,['critical-value-concept','interval-concept']],
+    [/plausible.*value|range.*true|estimate.*parameter/i,['interval-concept','parameter-concept']],
+    [/cause|causation|experiment/i,['independence-concept']],
   ];
   for(const node of Object.values(PREREQ_DAG)){
     if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;
