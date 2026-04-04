@@ -5256,10 +5256,22 @@ function checkBreach(){
   if(G.lives<=0){G.lives=0;SFX.gameOver();showEndScreen(false)}
 }
 
-// ── Wave complete ──
+// ── Wave complete (delayed until score particles land) ──
+let lastEnemyKilledAt=0;
 function checkWaveComplete(){
-  if(G.spawnIdx>=G.waveCommands.length&&G.enemies.length===0&&!G.waveComplete&&G.waveCommands.length>0){
-    G.waveComplete=true;SFX.waveClear();syncRunCheckpoint();
+  if(G.waveComplete||G.waveCommands.length===0)return;
+  if(G.spawnIdx>=G.waveCommands.length&&G.enemies.length===0){
+    // Mark when the field first cleared
+    if(!lastEnemyKilledAt)lastEnemyKilledAt=performance.now();
+    // Wait for rainbow particles to finish OR 3 seconds max
+    const hasRainbow=particles.some(p=>p.funnelToScore);
+    const elapsed=performance.now()-lastEnemyKilledAt;
+    if(!hasRainbow||elapsed>3000){
+      G.waveComplete=true;SFX.waveClear();syncRunCheckpoint();
+      lastEnemyKilledAt=0;
+    }
+  }else{
+    lastEnemyKilledAt=0;
   }
 }
 
