@@ -6503,7 +6503,7 @@ canvas.addEventListener('touchend',function(e){
   }
   // Horizontal swipe: orbit camera around focused cube
   if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)&&dt<500){
-    camOrbitAngle+=(dx>0?-0.4:0.4);
+    camOrbitAngle+=(dx>0?-1.6:1.6);
     return;
   }
   // Double-tap: toggle cube-view
@@ -6543,16 +6543,17 @@ function animate(time){
   // In follow mode, slowly decay orbit back to center. In cube mode, hold the angle.
   if(camMode==='follow')camOrbitAngle*=0.97;
   if(selEnemy&&G.screen==='game'&&camMode==='cube'){
-    // Cube perspective: low angle, close up
+    // Cube perspective: orbit at cube height, always looking ~15° above horizon
     const ep=selEnemy.position;
-    const orbitR=2.5*camZoomMult;
+    const orbitR=3.0*camZoomMult;
     const tx=ep.x+Math.sin(camOrbitAngle)*orbitR;
-    const ty=ep.y+0.8;
-    const tz=ep.z+Math.cos(camOrbitAngle)*orbitR+1.5;
-    camera.position.x+=(tx-camera.position.x)*.1;
-    camera.position.y+=(ty-camera.position.y)*.1;
-    camera.position.z+=(tz-camera.position.z)*.1;
-    camera.lookAt(ep.x,ep.y+0.2,ep.z-1);
+    const ty=ep.y+1.2; // at cube height
+    const tz=ep.z+Math.cos(camOrbitAngle)*orbitR;
+    camera.position.x+=(tx-camera.position.x)*.12;
+    camera.position.y+=(ty-camera.position.y)*.12;
+    camera.position.z+=(tz-camera.position.z)*.12;
+    // Look toward cube but biased upward (~15° above grid)
+    camera.lookAt(ep.x,ep.y+2.5,ep.z);
   }else if(selEnemy&&G.screen==='game'){
     // Follow mode: orbit around cube, slightly off-center
     const sd=selEnemyObj?.splitDepth||0;
