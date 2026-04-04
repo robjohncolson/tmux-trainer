@@ -1190,7 +1190,7 @@ const apStatsCartridge={
       latex:'\\hat{y} = a + bx',
       blanks:[{latex:'\\hat{y} = a + \\boxed{\\,?\\,}\\cdot x',answer:'b',choices:['b','r','a']}],
       subconcepts:[{q:'What does "a" represent?',correct:'The y-intercept (predicted y when x=0)',wrong:['The slope of the line','The correlation coefficient']},{q:'What does "b" represent?',correct:'The slope (change in \u0177 per unit x)',wrong:['The y-intercept','The residual']},{q:'Why use \u0177 instead of y?',correct:'\u0177 is predicted, not observed',wrong:['\u0177 is always larger','It removes outliers']}]},
-    {id:'linreg-mean',action:'LSRL Point of Means Property',tier:'regular',dom:'descriptive',
+    {id:'linreg-mean',action:'y\u0305 from LSRL at Point of Means (x\u0305, y\u0305)',tier:'core',dom:'descriptive',
       hint:'The regression line passes through the point of means',
       explain:'The line must pass through the centroid of the data',
       latex:'\\bar{y} = a + b\\bar{x}',
@@ -1428,7 +1428,7 @@ const apStatsCartridge={
       latex:'t = \\frac{b - \\beta_0}{s_b}',
       blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{s_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}],
       subconcepts:[{q:'What is \u03b2\u2080 typically in AP Stats?',correct:'0 (testing if linear relationship exists)',wrong:['1 (testing if slope=1)','The sample slope b']},{q:'What does s_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
-    {id:'zscore',action:'Z-Score',tier:'support',dom:'descriptive',
+    {id:'zscore',action:'Z-Score (SDs from mean)',tier:'support',dom:'descriptive',
       hint:'How many SDs from the mean',
       explain:'Standardizes any value to a common scale',
       latex:'z = \\frac{x - \\mu}{\\sigma}',
@@ -1438,7 +1438,7 @@ const apStatsCartridge={
         {q:'Why subtract mu?',correct:'To measure distance from the center',wrong:['To normalize the value','To find the variance']},
         {q:'Why divide by sigma?',correct:'To express distance in standard deviation units',wrong:['To make it positive','To find the percentile']}
       ]},
-    {id:'iqr',action:'Interquartile Range',tier:'support',dom:'descriptive',
+    {id:'iqr',action:'Interquartile Range (Q3 \u2212 Q1)',tier:'support',dom:'descriptive',
       hint:'Spread of the middle 50%',
       explain:'Resistant measure of variability based on quartiles',
       latex:'IQR = Q_3 - Q_1',
@@ -1468,7 +1468,7 @@ const apStatsCartridge={
         {q:'What is the mean in the context of this rule?',correct:'The center of the distribution',wrong:['Always zero','The median']},
         {q:'If mean=100 and SD=15, about 95% fall between?',correct:'70 and 130, which is mean ± 2 SD',wrong:['85 and 115','55 and 145']}
       ]},
-    {id:'residual',action:'Residual',tier:'support',dom:'descriptive',
+    {id:'residual',action:'Residual (y \u2212 \u0177)',tier:'support',dom:'descriptive',
       hint:'Observed minus predicted',
       explain:'Measures prediction error for each data point',
       latex:'\\text{residual} = y - \\hat{y}',
@@ -1498,7 +1498,7 @@ const apStatsCartridge={
         {q:'What does a represent in y-hat = a + bx?',correct:'The predicted y when x equals zero',wrong:['The slope','The correlation']},
         {q:'Is the y-intercept always meaningful?',correct:'No, only if x = 0 is within the range of the data',wrong:['Yes, always','Only for positive slopes']}
       ]},
-    {id:'complement',action:'Complement Rule',tier:'support',dom:'probability',
+    {id:'complement',action:'Complement P(not A) = 1 \u2212 P(A)',tier:'support',dom:'probability',
       hint:'P(not E) = 1 minus P(E)',
       explain:'Every event either happens or does not',
       latex:'P(E^C) = 1 - P(E)',
@@ -1548,7 +1548,7 @@ const apStatsCartridge={
         {q:'Why do variances ADD for X minus Y?',correct:'Because (-1) squared = 1, so both terms are positive',wrong:['Variances always subtract for differences','This only works for sums']},
         {q:'Does this require independence?',correct:'Yes, if X and Y are not independent there is a covariance term',wrong:['No, it always works','Only for normal distributions']}
       ]},
-    {id:'lintransform',action:'Linear Transformation',tier:'support',dom:'distributions',
+    {id:'lintransform',action:'Linear Transform of \u03bc and \u03c3 (Y = a + bX)',tier:'support',dom:'distributions',
       hint:'Adding shifts the mean; multiplying scales both mean and SD',
       explain:'Changing units (like C to F) transforms parameters predictably',
       latex:'Y = a+bX: \\; \\mu_Y = a+b\\mu_X, \\; \\sigma_Y = |b|\\sigma_X',
@@ -1598,7 +1598,7 @@ const apStatsCartridge={
         {q:'A 3x4 table has how many df?',correct:'6 = (3-1)(4-1) = 2 times 3',wrong:['12','11']},
         {q:'Does this apply to GOF tests?',correct:'No, GOF uses k-1 (one-dimensional)',wrong:['Yes, same formula','Only if there are 2 rows']}
       ]},
-    {id:'power',action:'Statistical Power',tier:'support',dom:'inference',
+    {id:'power',action:'Power (1 \u2212 \u03b2, prob of rejecting false H\u2080)',tier:'support',dom:'inference',
       hint:'Probability of correctly rejecting a false H0',
       explain:'Higher power means better ability to detect real effects',
       latex:'\\text{Power} = 1 - P(\\text{Type II error}) = 1 - \\beta',
@@ -1608,7 +1608,7 @@ const apStatsCartridge={
         {q:'How can you increase power?',correct:'Increase sample size, increase alpha, or increase effect size',wrong:['Decrease sample size','Use a two-sided test instead of one-sided']},
         {q:'What is the relationship between alpha and power?',correct:'Higher alpha gives higher power (but more Type I error risk)',wrong:['They are the same thing','Higher alpha decreases power']}
       ]},
-    {id:'margin-error',action:'Margin of Error',tier:'support',dom:'inference',
+    {id:'margin-error',action:'Margin of Error (critical value \u00d7 SE)',tier:'support',dom:'inference',
       hint:'Critical value times standard error',
       explain:'Controls the precision of the confidence interval',
       latex:'ME = z^* \\cdot SE \\quad \\text{or} \\quad ME = t^* \\cdot SE',
@@ -1671,7 +1671,7 @@ const apStatsCartridge={
         {q:'Why is the conservative two-sample df the minimum?',correct:'Using the smaller df gives wider intervals, protecting against error',wrong:['Because the larger sample dominates','Because degrees of freedom must be equal']},
         {q:'What happens to the t distribution as df increases?',correct:'It approaches the standard normal (z) distribution',wrong:['It becomes more spread out','It becomes skewed']}
       ]},
-    {id:'large-counts',action:'Large Counts Condition',tier:'support',dom:'inf-proportions',
+    {id:'large-counts',action:'Large Counts (np \u2265 10 and n(1\u2212p) \u2265 10)',tier:'support',dom:'inf-proportions',
       hint:'np and n(1-p) both at least 10',
       explain:'Ensures the sampling distribution of p-hat is approximately Normal',
       latex:'np \\geq 10 \\quad\\text{and}\\quad n(1-p) \\geq 10',
@@ -1710,7 +1710,7 @@ const apStatsCartridge={
         {q:'What is the relationship between Type II error and power?',correct:'Power = 1 \u2212 \u03b2, so lower \u03b2 means higher power',wrong:['Power = \u03b2','Power = \u03b1 + \u03b2']},
         {q:'How can you reduce Type II error?',correct:'Increase sample size, increase \u03b1, or study a larger effect',wrong:['Decrease the significance level','Use a one-tailed test always']}
       ]},
-    {id:'log-transform',action:'Log Transformation for Curved Data',tier:'power',dom:'regression',
+    {id:'log-transform',action:'Log Transform (linearize exponential data)',tier:'power',dom:'regression',
       hint:'Take log of response variable to linearize curved relationships',
       explain:'Used when a scatterplot shows exponential or power-law curvature',
       latex:'\\log(\\hat{y}) = a + bx \\quad\\Rightarrow\\quad \\hat{y} = 10^{a + bx}',
@@ -1814,7 +1814,7 @@ const apStatsCartridge={
         {q:'Why add the two fractions under the square root?',correct:'Independent samples \u2014 variances add',wrong:['To double the sample size','Because means always add']},
         {q:'What distribution do we use?',correct:'t-distribution with complex (Welch) df',wrong:['Standard Normal z','Chi-square']}
       ]},
-    {id:'random-condition',action:'Randomization Condition',tier:'support',dom:'inference',
+    {id:'random-condition',action:'Random Sample or Random Assignment Required',tier:'support',dom:'inference',
       hint:'Data must come from a random sample or randomized experiment',
       explain:'Without randomization, results may be biased and inference invalid',
       latex:'\\text{Data from random sample or randomized experiment}',
@@ -1827,7 +1827,7 @@ const apStatsCartridge={
         {q:'What is the difference between random sampling and random assignment?',correct:'Sampling generalizes to population; assignment establishes causation',wrong:['They are the same thing','Assignment generalizes; sampling establishes causation']},
         {q:'Can you do inference without randomization?',correct:'Generally no \u2014 results may not generalize beyond the sample',wrong:['Yes, as long as n is large','Only for proportions']}
       ]},
-    {id:'normal-condition',action:'Normal/Large Sample Condition',tier:'support',dom:'inference',
+    {id:'normal-condition',action:'Normal/Large Sample (CLT or n \u2265 30)',tier:'support',dom:'inference',
       hint:'Check that the sampling distribution is approximately Normal',
       explain:'Proportions: large counts using p\u0302 (CI) or p\u2080 (test). Means: n\u226530 or population Normal.',
       latex:'\\text{Proportions: } n\\hat{p},\\; n(1-\\hat{p}) \\geq 10 \\text{ (CI)} \\;|\\; np_0,\\; n(1-p_0) \\geq 10 \\text{ (test)} \\;|\\; \\text{Means: } n \\geq 30',
@@ -1840,7 +1840,7 @@ const apStatsCartridge={
         {q:'What does "large counts" mean for proportions?',correct:'Both np and n(1-p) must be at least 10',wrong:['n must be at least 30','The sample must be larger than the population']},
         {q:'What if the population is known to be Normal?',correct:'Any sample size works for means (CLT not needed)',wrong:['You still need n \u2265 30','Normal populations can\'t be sampled']}
       ]},
-    {id:'p-value-interp',action:'P-Value Interpretation',tier:'support',dom:'inference',
+    {id:'p-value-interp',action:'P-Value (prob of data given H\u2080 true)',tier:'support',dom:'inference',
       hint:'Probability of the observed result or more extreme, assuming H\u2080 is true',
       explain:'NOT the probability that H\u2080 is true \u2014 it is conditional on H\u2080',
       latex:'P\\text{-value} = P(\\text{observed or more extreme} \\mid H_0 \\text{ true})',
