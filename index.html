@@ -2750,12 +2750,15 @@ function renderMusicEditor(){
   ov.innerHTML=html;
 }
 
-// Render QR code into a canvas element by id
-function renderQR(canvasId){
+// Render QR code into a container div by id
+function renderQR(containerId){
   if(typeof QRCode==='undefined')return;
-  const el=document.getElementById(canvasId);
+  const el=document.getElementById(containerId);
   if(!el)return;
-  QRCode.toCanvas(el,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(){});
+  el.innerHTML=''; // clear any previous render
+  const canvas=document.createElement('canvas');
+  el.appendChild(canvas);
+  QRCode.toCanvas(canvas,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#0d0500',light:'#ffffff'}},function(){});
 }
 
 // Domain → Unit/Topic label mapping (AP Stats 2026 curriculum)
@@ -4801,7 +4804,7 @@ function showTitleScreen(context){
 
   // QR code (MORE tab only)
   if(activeTab==='settings'&&typeof QRCode!=='undefined'){
-    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;color:#5a3800;margin-top:6px">Scan to play on any device</div><div style="margin-top:8px;font-size:10px"><a href="https://robjohncolson.github.io/tmux-trainer/" target="_blank" style="color:#ff8c00;text-decoration:none;letter-spacing:1px">robjohncolson.github.io/tmux-trainer</a></div><div style="margin-top:4px;font-size:9px"><a href="https://github.com/robjohncolson/tmux-trainer" target="_blank" style="color:#5a3800;text-decoration:none">\u2139 Source on GitHub</a></div></div>';
+    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><div id="qr-target" style="display:inline-block"></div><div style="font-size:9px;color:#5a3800;margin-top:6px">Scan to play on any device</div><div style="margin-top:8px;font-size:10px"><a href="https://robjohncolson.github.io/tmux-trainer/" target="_blank" style="color:#ff8c00;text-decoration:none;letter-spacing:1px">robjohncolson.github.io/tmux-trainer</a></div><div style="margin-top:4px;font-size:9px"><a href="https://github.com/robjohncolson/tmux-trainer" target="_blank" style="color:#5a3800;text-decoration:none">\u2139 Source on GitHub</a></div></div>';
   }
   html+='</div>';
   if(titleHS>0&&emphasizeHighScore){
@@ -4863,7 +4866,7 @@ function showTitleScreen(context){
       }).catch(()=>{lbEl.innerHTML='<div style="color:#ff6644;font-size:10px;text-align:center">\u26a0 Server offline</div>'});
     }
   }
-  renderQR('qr-canvas');
+  if(activeTab==='settings')renderQR('qr-target');
   if(getIdentity()&&!cloudSyncReady)pullFromCloud();
   updateSyncIndicator();
   // Populate user dropdown if on settings tab
