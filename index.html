@@ -2306,7 +2306,16 @@ function renderShortcutBadges(){
     const pulse=!SFX.getMelody()?' compose-pulse':'';
     composeBtn='<button class="shortcut-badge'+pulse+'"'+glow+' onclick="enterComposeMode()"><kbd>`</kbd> compose</button>';
   }
-  return '<div class="shortcut-row"><button class="shortcut-badge" onclick="'+action+'"><kbd>Alt+E</kbd> '+label+'</button>'+composeBtn+'</div>';
+  // Show ? button if selected enemy has prereqs to decompose
+  let decomposeBtn='';
+  if(sel&&!QUIZ_ANSWER_FEEDBACK.locked){
+    const cr=COMMANDS.find(c=>c.id===sel.cmd.id)||sel.cmd;
+    let hasPrereqs=false;
+    if((sel.splitDepth||0)===0&&cr.prereqs&&cr.prereqs.some(id=>PREREQ_DAG[id]))hasPrereqs=true;
+    else if(sel.dagNodeId){const n=PREREQ_DAG[sel.dagNodeId];if(n&&n.prereqs&&n.prereqs.some(id=>PREREQ_DAG[id]))hasPrereqs=true}
+    if(hasPrereqs)decomposeBtn='<button class="shortcut-badge" onclick="voluntarySplit()" title="Break into building blocks"><kbd>?</kbd> break down</button>';
+  }
+  return '<div class="shortcut-row"><button class="shortcut-badge" onclick="'+action+'"><kbd>Alt+E</kbd> '+label+'</button>'+decomposeBtn+composeBtn+'</div>';
 }
 function renderExplanationControls(answerLabels){
   let html='';
@@ -5411,6 +5420,72 @@ function spawnHydraChildren(parentEnemy){
   if(G.selectedId===parentEnemy.id){resetExplanationState();G.selectedId=null;G.inputState='idle'}
   return true;
 }
+// Voluntary split — student requests decomposition via ? button (no penalty)
+function voluntarySplit(){
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
+  const enemy=G.selectedId?G.enemies.find(e=>e.id===G.selectedId):null;
+  if(!enemy)return;
+  const cmd=enemy.cmd;
+  const cmdRef=COMMANDS.find(c=>c.id===cmd.id)||cmd;
+  const depth=(enemy.splitDepth||0)+1;
+  if(depth>5)return;
+  if(G.enemies.length>20)return;
+  // Determine prereq nodes
+  let prereqIds=[];
+  if(depth===1){
+    prereqIds=cmdRef.prereqs||[];
+  }else if(enemy.dagNodeId){
+    const node=PREREQ_DAG[enemy.dagNodeId];
+    if(node&&node.prereqs)prereqIds=node.prereqs;
+  }
+  prereqIds=prereqIds.filter(id=>PREREQ_DAG[id]);
+  if(prereqIds.length===0){flash('No deeper concepts available','#888');return}
+  // Slight BKT signal: "student wasn't confident" — nudge pKnown down gently
+  const card=G.srs[cmd.id];
+  if(card){
+    const nodeId=enemy.dagNodeId||null;
+    if(nodeId){
+      if(!card.dagState)card.dagState={};
+      if(!card.dagState[nodeId])card.dagState[nodeId]={pKnown:getTransferSeed(nodeId,cmd.id),encounters:0,lastEncounterWave:0};
+      const st=card.dagState[nodeId];
+      st.encounters++;st.lastEncounterWave=G.wave;
+      st.pKnown=clampProb(st.pKnown*0.85); // gentle 15% confidence reduction
+    }else{
+      // L0: nudge pKnownDirect down slightly
+      card.pKnownDirect=clampProb((card.pKnownDirect||0.1)*0.9);
+    }
+    recomputeCompositePKnown(card,cmdRef);
+    saveSRS();
+  }
+  // Spawn children at same speed (no penalty multiplier)
+  const ancestorId=enemy.ancestorId||enemy.id;
+  const count=Math.min(3,prereqIds.length); // up to 3 for voluntary (vs 2 for miss)
+  const selected=selectWeakestPrereqs(card||{},prereqIds,count);
+  const parentPos=enemyMeshes[enemy.id]?.position.clone();
+  const depthColors=[0x4488ff,0x4488ff,0x44bbcc,0x44cc66,0xcccccc,0xcccccc];
+  spawnExplosion(parentPos||pathPts[0],Math.max(6,15-depth*2),depthColors[Math.min(depth,5)]);
+  removeEnemyMesh(enemy.id);G.enemies=G.enemies.filter(e=>e.id!==enemy.id);
+  const inheritedSpeed=enemy.speedMult||1; // same speed, no multiplier
+  selected.forEach((nodeId,i)=>{
+    const node=PREREQ_DAG[nodeId];
+    const childT=Math.min(.82,Math.max(0,(enemy.t||0)+0.02*(i+1)));
+    const useTwo=depth>=3;
+    const wrongChoices=useTwo?[node.wrong[Math.floor(Math.random()*node.wrong.length)]]:node.wrong.slice();
+    const options=shuffleArr([node.correct,...wrongChoices]);
+    const correctIdx=options.indexOf(node.correct);
+    const keys=useTwo?['a','b']:['a','b','c'];
+    const labels=['\u26a1 Prereq','\u26a1 Prereq','\u26a1\u26a1 Builder','\u26a1\u26a1\u26a1 Foundation','Basic'];
+    const child={id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
+      speedMult:inheritedSpeed,isChild:true,splitDepth:depth,missCount:0,
+      ancestorId:ancestorId,dagNodeId:nodeId,
+      question:{type:'subconcept',text:node.q,options:options,correctIdx:correctIdx,correctKey:keys[correctIdx]},
+      label:labels[Math.min(depth,4)]};
+    G.enemies.push(child);addChildEnemyMesh(child,i);
+  });
+  SFX.split();
+  flash('BREAK IT DOWN \u2753',depthColors[Math.min(depth,5)]===0xcccccc?'#cccccc':'#'+depthColors[Math.min(depth,5)].toString(16).padStart(6,'0'));
+  resetExplanationState();G.selectedId=null;G.inputState='idle';
+}
 
 // ═══════════════════════════════════════════════
 //  INPUT HANDLER
@@ -5535,6 +5610,9 @@ window.addEventListener('keydown',e=>{
     }
     return;
   }
+
+  // ? key: voluntary DAG decomposition
+  if(e.key==='?'){e.preventDefault();voluntarySplit();return}
 
   if(!enemy)return;
 
