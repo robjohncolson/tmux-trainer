@@ -1175,6 +1175,69 @@ Added UnrealBloomPass from Three.js r128 postprocessing chain, driven by tree he
 - `index.html` resize: `bloomComposer.setSize()` + mobile bloom resolution (~line 6240-6244)
 - `sw.js`: 6 postprocessing CDN URLs in `CDN_URLS`, cache `td-shell-v2`
 
+## Latest Update: Bloom Tuning + Miss Cap + Application/Relationship Questions
+
+### Bloom tuning
+- Max bloom strength reduced from 0.9 to 0.35, radius from 0.6 to 0.25, threshold floor from 0.4 to 0.7
+- Fixes the heavy ghosting at high tree depth — now a subtle warm glow
+
+### Miss cap (anti-button-mash)
+- L0 main formula enemies: 2-miss cap → forced breach (costs a life)
+- L1+ prereq enemies: 3-miss cap → forced breach (slightly gentler)
+- Random guessing on 4-option MC now has only 6.25% chance of surviving a main formula
+- Replaces the old speed-boost-only penalty that allowed brute-forcing through levels
+
+### Application question type (new)
+- Green "APPLICATION" badge
+- 1-2 sentence real-world scenario: "Which formula or concept applies?"
+- 4-option MC with authored `confusionSet` per scenario (deliberate confusion pairs, not random)
+- 101 scenarios across 72 commands, focused on inference and conditions (AP exam core)
+- `APPLICATION_BANK` constant keyed by command id
+
+### Relationship question type (new)
+- Purple "RELATIONSHIP" badge
+- Formula shown with prompt: "In [formula], holding other quantities constant: What happens to [output] when [input] increases?"
+- 3-option MC: Increases / Decreases / Stays the same
+- 61 entries across 34 commands, focused on sample size effects, confidence level, variability
+- `RELATIONSHIP_BANK` constant keyed by command id
+- Wrong-answer feedback shows the relationship explanation
+
+### Question generation mix (renormalized)
+- Base weights by difficulty:
+  - learn: identify 40%, fillblank 25%, variable 15%, application 10%, relationship 10%
+  - practice: identify 15%, fillblank 45%, variable 10%, application 15%, relationship 15%
+  - challenge: identify 5%, fillblank 45%, variable 10%, application 20%, relationship 20%
+- Weights renormalized over available types per command (commands without banks skip those types)
+
+### DAG and BKT integration
+- Application/relationship misses do NOT trigger DAG decomposition (student confused which formula, not its internals)
+- BKT update weight: 0.7x for application/relationship (tests transfer, not recall)
+- `bktWeight` field added to BKT context, applied as scaled posterior move in `bktUpdate()`
+
+### Codex review findings (all addressed)
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| 1 | HIGH | Distractors need authored confusion pairs | `confusionSet` per scenario |
+| 2 | HIGH | Relationship prompts omit ceteris paribus | "holding other quantities constant" in template |
+| 3 | HIGH | Application misses → wrong DAG remediation | Skip DAG split for new types |
+| 4 | MEDIUM | Probability fallback math undefined | Renormalize over available types |
+| 5 | MEDIUM | BKT treats new types same as recall | 0.7x weight for application/relationship |
+| 6 | MEDIUM | UI render contract for long scenarios | Scenario capped to 2 lines, formula in body |
+| 7 | LOW | Inconsistent authoring scope | 76 commands, 101 app scenarios, 61 rel entries |
+
+### Spec artifact
+- `application-relationship-spec.md` — full design + Codex review findings
+
+### Important code areas (new)
+- `index.html` APPLICATION_BANK: 101 scenarios with confusionSets (~line 2010-2094)
+- `index.html` RELATIONSHIP_BANK: 61 entries with direction/explain (~line 2096-2152)
+- `index.html` generateQuestion(): renormalized 5-type weight system (~line 1861-1955)
+- `index.html` setInputPanelContent(): application + relationship rendering (~line 4800-4842)
+- `index.html` handleQuizChoice(): accepts application/relationship types
+- `index.html` keyboard handler: A-D for application, A-C for relationship
+- `index.html` bktUpdate(): `bktWeight` scaling of posterior move
+- `index.html` handleMiss(): `skipDAG` for application/relationship types
+
 ## Likely Next Tasks
 
 - **Application/Relationship question types** — "Which test would you use?" and "What happens when X changes?" (Bloom's taxonomy jump from recall → application/analysis)

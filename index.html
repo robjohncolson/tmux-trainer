@@ -1860,13 +1860,27 @@ const apStatsCartridge={
   // Generate a question for an enemy at spawn time
   generateQuestion(cmd, allCommands){
     const diff=G.difficulty||'learn';
-    const vars=VARIABLE_BANK[cmd.id];
-    const hasVars=vars&&vars.length>0;
-    const varChance=hasVars?0.20:0;
-    const fillChance=diff==='learn'?0.25*(1-varChance):diff==='practice'?0.65*(1-varChance):0.85*(1-varChance);
-    const roll=Math.random();
-    const type=roll<varChance?'variable':roll<varChance+fillChance?'fillblank':'identify';
+    // Base weights by difficulty (renormalized over available types below)
+    const baseW={learn:{identify:0.40,fillblank:0.25,variable:0.15,application:0.10,relationship:0.10},
+      practice:{identify:0.15,fillblank:0.45,variable:0.10,application:0.15,relationship:0.15},
+      challenge:{identify:0.05,fillblank:0.45,variable:0.10,application:0.20,relationship:0.20}};
+    const bw=baseW[diff]||baseW.learn;
+    // Build available weights for this command
+    const w={};
+    w.identify=bw.identify; // always available
+    if(cmd.blanks&&cmd.blanks.length>0)w.fillblank=bw.fillblank;
+    if(VARIABLE_BANK[cmd.id])w.variable=bw.variable;
+    if(APPLICATION_BANK[cmd.id])w.application=bw.application;
+    if(RELATIONSHIP_BANK[cmd.id])w.relationship=bw.relationship;
+    // Renormalize
+    const total=Object.values(w).reduce((a,b)=>a+b,0);
+    let roll=Math.random()*total,type='identify';
+    for(const[k,v]of Object.entries(w)){roll-=v;if(roll<=0){type=k;break}}
+
+    function stripNot(s){return s.replace(/\s*\([^)]*\)\s*$/,'').trim()}
+
     if(type==='variable'){
+      const vars=VARIABLE_BANK[cmd.id];
       const v=vars[Math.floor(Math.random()*vars.length)];
       const allDescs=[];
       for(const id of Object.keys(VARIABLE_BANK)){
@@ -1878,22 +1892,49 @@ const apStatsCartridge={
       const correctIdx=options.indexOf(v.d);
       return{type:'variable',latex:cmd.latex,symbol:v.s,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
     }
+    if(type==='application'){
+      const bank=APPLICATION_BANK[cmd.id];
+      const entry=bank[Math.floor(Math.random()*bank.length)];
+      const correctLabel=stripNot(cmd.action);
+      // Build distractors from confusionSet, then same-domain fallback
+      const picks=[];const usedTexts=new Set([correctLabel.toLowerCase()]);
+      if(entry.confusionSet){
+        for(const cid of shuffleArr([...entry.confusionSet])){
+          if(picks.length>=3)break;
+          const c=allCommands.find(cc=>cc.id===cid);
+          if(c){const text=stripNot(c.action);if(!usedTexts.has(text.toLowerCase())){picks.push(text);usedTexts.add(text.toLowerCase())}}
+        }
+      }
+      // Fallback: same domain then any
+      for(const c of shuffleArr(allCommands.filter(c=>c.id!==cmd.id))){
+        if(picks.length>=3)break;
+        const text=stripNot(c.action);
+        if(!usedTexts.has(text.toLowerCase())){picks.push(text);usedTexts.add(text.toLowerCase())}
+      }
+      const options=shuffleArr([correctLabel,...picks]);
+      const correctIdx=options.indexOf(correctLabel);
+      return{type:'application',scenario:entry.scenario,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    }
+    if(type==='relationship'){
+      const bank=RELATIONSHIP_BANK[cmd.id];
+      const entry=bank[Math.floor(Math.random()*bank.length)];
+      const correct=entry.direction.charAt(0).toUpperCase()+entry.direction.slice(1);
+      const allDirs=['Increases','Decreases','Stays the same'];
+      const options=shuffleArr(allDirs);
+      const correctIdx=options.indexOf(correct);
+      return{type:'relationship',latex:cmd.latex,input:entry.input,output:entry.output,direction:correct,explain:entry.explain,formulaName:stripNot(cmd.action),options,correctIdx,correctKey:['a','b','c'][correctIdx]};
+    }
     if(type==='identify'){
-      // Pick 3 distractors from other commands, prefer same domain
       const sameDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom===cmd.dom);
       const diffDom=allCommands.filter(c=>c.id!==cmd.id&&c.dom!==cmd.dom);
       const pool=[...sameDom,...shuffleArr(diffDom)];
-      // Strip parenthetical notation from answers so formulas don't give away the answer
-      function stripNot(s){return s.replace(/\s*\([^)]*\)\s*$/,'').trim()}
       const correctLabel=stripNot(cmd.action);
-      // Dedup: skip distractors whose stripped text matches correct or an already-picked distractor
       const picks=[];const usedTexts=new Set([correctLabel.toLowerCase()]);
       for(const c of shuffleArr(pool)){
         if(picks.length>=3)break;
         const text=stripNot(c.action);
         if(!usedTexts.has(text.toLowerCase())){picks.push(text);usedTexts.add(text.toLowerCase())}
       }
-      // Fallback if not enough unique distractors
       for(const c of shuffleArr(allCommands)){
         if(picks.length>=3)break;
         const text=stripNot(c.action);
@@ -1902,12 +1943,12 @@ const apStatsCartridge={
       const options=shuffleArr([correctLabel,...picks]);
       const correctIdx=options.indexOf(correctLabel);
       return{type:'identify',latex:cmd.latex,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
-    }else{
-      const blank=cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
-      const shuffledChoices=shuffleArr([...blank.choices]);
-      const correctIdx=shuffledChoices.indexOf(blank.choices[0]);
-      return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffledChoices,correctIdx,fullLatex:cmd.latex};
     }
+    // fillblank
+    const blank=cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
+    const shuffledChoices=shuffleArr([...blank.choices]);
+    const correctIdx=shuffledChoices.indexOf(blank.choices[0]);
+    return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffledChoices,correctIdx,fullLatex:cmd.latex};
   },
 
   formatPrompt(cmd){return cmd.action},
@@ -3427,6 +3468,7 @@ function bktUpdate(card,outcome,cmd){
   const epg=effectivePGuess(card,ctx);
   const pSlip=card.pSlip||0.1;
   const pTransit=card.pTransit||0.03;
+  const bw=outcome.bktWeight||1.0; // 0.7 for application/relationship
   // DAG path: update dagState by nodeId
   if(outcome.dagNodeId){
     if(!card.dagState)card.dagState={};
@@ -3438,16 +3480,20 @@ function bktUpdate(card,outcome,cmd){
     state.encounters++;
     state.lastEncounterWave=outcome.wave||0;
     const post=bayesPosterior(state.pKnown,outcome.wasCorrect,epg,pSlip);
-    state.pKnown=clampProb(post+(1-post)*pTransit);
+    const moved=(post+(1-post)*pTransit)-state.pKnown;
+    state.pKnown=clampProb(state.pKnown+moved*bw);
   }else if(outcome.subconceptIndex!=null){
     // Legacy subPKnown path (fallback)
     if(!card.subPKnown)card.subPKnown={};
     const prev=card.subPKnown[outcome.subconceptIndex]??0.1;
     const post=bayesPosterior(prev,outcome.wasCorrect,epg,pSlip);
-    card.subPKnown[outcome.subconceptIndex]=clampProb(post+(1-post)*pTransit);
+    const moved=(post+(1-post)*pTransit)-prev;
+    card.subPKnown[outcome.subconceptIndex]=clampProb(prev+moved*bw);
   }else{
-    const post=bayesPosterior(card.pKnownDirect||0.1,outcome.wasCorrect,epg,pSlip);
-    card.pKnownDirect=clampProb(post+(1-post)*pTransit);
+    const prev=card.pKnownDirect||0.1;
+    const post=bayesPosterior(prev,outcome.wasCorrect,epg,pSlip);
+    const moved=(post+(1-post)*pTransit)-prev;
+    card.pKnownDirect=clampProb(prev+moved*bw);
   }
   recomputeCompositePKnown(card,cmd);
 }
@@ -4759,6 +4805,32 @@ function updateInput(){
       bodyHtml+='</div>';
       bodyHtml+=renderExplanationControls(q.options);
       bodyHtml+=renderShortcutBadges();
+    }else if(q.type==='application'){
+      headerHtml+='<div class="q-type-badge" style="background:#22884418;border-color:#22884433;color:#228844">APPLICATION</div>'+speedInfo;
+      headerHtml+='<div style="font-size:13px;color:'+AMB.css.bright+';margin:4px 0;line-height:1.4;max-height:2.8em;overflow:hidden">'+q.scenario+'</div>';
+      headerHtml+='<div style="font-size:11px;color:'+AMB.css.mid+';margin-bottom:2px">Which formula or concept applies?</div>';
+      const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
+      bodyHtml+='<div class="mc-grid"'+answerDim+'>';
+      const keys=['A','B','C','D'];
+      q.options.forEach((opt,i)=>{
+        bodyHtml+='<button class="mc-btn" data-choice="'+keys[i].toLowerCase()+'" onclick="handleQuizChoice(\''+keys[i].toLowerCase()+'\')"><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+      });
+      bodyHtml+='</div>';
+      bodyHtml+=renderExplanationControls(q.options);
+      bodyHtml+=renderShortcutBadges();
+    }else if(q.type==='relationship'){
+      headerHtml+='<div class="q-type-badge" style="background:#66448818;border-color:#66448833;color:#664488">RELATIONSHIP</div>'+speedInfo;
+      headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
+      headerHtml+='<div style="font-size:13px;color:'+AMB.css.bright+';margin:4px 0;line-height:1.4">In <b>'+q.formulaName+'</b>, holding other quantities constant:<br>What happens to <b>'+q.output+'</b> when <b>'+q.input+'</b> increases?</div>';
+      const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
+      bodyHtml+='<div class="hint-mc-grid"'+answerDim+'>';
+      const keys3=['A','B','C'];
+      q.options.forEach((opt,i)=>{
+        bodyHtml+='<button class="hint-mc-btn" data-choice="'+keys3[i].toLowerCase()+'" onclick="handleQuizChoice(\''+keys3[i].toLowerCase()+'\')"><span class="mc-key">'+keys3[i]+'</span><span class="mc-text">'+opt+'</span></button>';
+      });
+      bodyHtml+='</div>';
+      bodyHtml+=renderExplanationControls();
+      bodyHtml+=renderShortcutBadges();
     }else if(q.type==='subconcept'){
       // Sub-concept / sub-sub-concept question (from hydra split)
       const scDepth=sel.splitDepth||1;
@@ -4872,11 +4944,16 @@ function clearQuizAnswerFeedback(){
 function reshuffleQuestionOptions(enemy){
   const q=enemy.question;
   if(!q)return;
-  if(q.type==='identify'||q.type==='variable'){
+  if(q.type==='identify'||q.type==='variable'||q.type==='application'){
     const correct=q.options[q.correctIdx];
     q.options=shuffleArr(q.options);
     q.correctIdx=q.options.indexOf(correct);
     q.correctKey=['a','b','c','d'][q.correctIdx];
+  }else if(q.type==='relationship'){
+    const correct=q.options[q.correctIdx];
+    q.options=shuffleArr(q.options);
+    q.correctIdx=q.options.indexOf(correct);
+    q.correctKey=['a','b','c'][q.correctIdx];
   }else if(q.type==='fillblank'){
     const correct=q.choices[q.correctIdx];
     q.choices=shuffleArr(q.choices);
@@ -4908,7 +4985,7 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
     const chosenIdx=['a','b','c','d'].indexOf(key);
     const chosenText=(q.options||q.choices||[])[chosenIdx]||key.toUpperCase();
     const correctText=(q.options||q.choices||[])[q.correctIdx]||'';
-    const explain=enemy.cmd&&enemy.cmd.explain?enemy.cmd.explain:'';
+    const explain=q.type==='relationship'&&q.explain?q.explain:(enemy.cmd&&enemy.cmd.explain?enemy.cmd.explain:'');
     const fb=document.createElement('div');fb.className='wrong-feedback';fb.id='wrong-fb';
     fb.innerHTML='<div class="wf-wrong">\u2717 '+chosenText+'</div><div class="wf-correct">\u2713 '+correctText+'</div>'+(explain?'<div class="wf-explain">'+explain+'</div>':'')+'<button class="btn" style="margin-top:8px;padding:6px 16px;font-size:10px;width:100%" id="wrong-fb-dismiss">GOT IT</button>';
     const body=document.getElementById('ip-body');
@@ -4947,7 +5024,8 @@ function queueQuizChoiceResolution(enemy,key,isCorrect){
 function handleQuizChoice(key){
   if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
-  if(!enemy||!enemy.question||(enemy.question.type!=='identify'&&enemy.question.type!=='variable'))return;
+  const qt=enemy&&enemy.question?enemy.question.type:null;
+  if(!enemy||!enemy.question||!['identify','variable','application','relationship'].includes(qt))return;
   queueQuizChoiceResolution(enemy,key,key===enemy.question.correctKey);
 }
 function handleHintChoice(key){
@@ -5622,7 +5700,9 @@ function handleHit(enemy){
   if(!(enemy.splitDepth>=1))G.treeDepth=Math.min(10,G.treeDepth+1);
   SFX.setTreeDepth(G.treeDepth);
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
-  const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:enemy.dagNodeId||null,wave:G.wave,responseTimeMs:responseTime,_cmd:enemy.cmd};
+  const hitQType=enemy.question?enemy.question.type:'identify';
+  const hitBktWeight=(hitQType==='application'||hitQType==='relationship')?0.7:1.0;
+  const bktCtx={wasCorrect:true,questionType:hitQType,remainingChoices:baseChoices,bktWeight:hitBktWeight,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:enemy.dagNodeId||null,wave:G.wave,responseTimeMs:responseTime,_cmd:enemy.cmd};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
   saveSRS(); // debounced per-answer save
   removeEnemyMesh(enemy.id);
@@ -5645,16 +5725,21 @@ function handleMiss(enemy){
   const nodeId=enemy.dagNodeId||null;
   const card=G.srs[enemy.cmd.id]||{};
   const depth=enemy.splitDepth||0;
+  const qType=enemy.question?enemy.question.type:'identify';
+  // Application/relationship misses: skip DAG decomposition (student confused WHICH formula, not its internals)
+  const skipDAG=qType==='application'||qType==='relationship';
   let nodeCanSplit=false;
-  if(nodeId&&depth>=1){
-    nodeCanSplit=canNodeSplit(card,nodeId);
-  }else if(depth===0){
-    // Look up prereqs from COMMANDS (enemy.cmd may be JSON-parsed without prereqs)
-    const cmdRef=COMMANDS.find(c=>c.id===enemy.cmd.id)||enemy.cmd;
-    if(cmdRef.prereqs&&cmdRef.prereqs.length>0)nodeCanSplit=true;
+  if(!skipDAG){
+    if(nodeId&&depth>=1){
+      nodeCanSplit=canNodeSplit(card,nodeId);
+    }else if(depth===0){
+      const cmdRef=COMMANDS.find(c=>c.id===enemy.cmd.id)||enemy.cmd;
+      if(cmdRef.prereqs&&cmdRef.prereqs.length>0)nodeCanSplit=true;
+    }
   }
-  // Now do BKT update (increments encounters)
-  const bktCtx={wasCorrect:false,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:nodeId,wave:G.wave,_cmd:enemy.cmd};
+  // BKT update — 0.7x weight for application/relationship (tests transfer, not recall)
+  const bktWeight=skipDAG?0.7:1.0;
+  const bktCtx={wasCorrect:false,questionType:qType,remainingChoices:baseChoices,bktWeight,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:nodeId,wave:G.wave,_cmd:enemy.cmd};
   G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave,bktCtx);
   saveSRS();
   G.typedBuffer='';
@@ -6027,9 +6112,15 @@ window.addEventListener('keydown',e=>{
     const q=enemy.question;
     if(!q)return;
 
-    if(q.type==='identify'||q.type==='variable'){
+    if(q.type==='identify'||q.type==='variable'||q.type==='application'){
       const k=e.key.toLowerCase();
       if(['a','b','c','d'].includes(k)){
+        e.preventDefault();
+        handleQuizChoice(k);
+      }
+    }else if(q.type==='relationship'){
+      const k=e.key.toLowerCase();
+      if(['a','b','c'].includes(k)){
         e.preventDefault();
         handleQuizChoice(k);
       }
