@@ -5067,7 +5067,10 @@ function handleHit(enemy){
 
 function handleMiss(enemy){
   const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
-  SFX.miss();G.treeDepth=Math.max(0,G.treeDepth-1);SFX.setTreeDepth(G.treeDepth);
+  SFX.miss();
+  // Tree depth: only penalize for L0 misses — prereq exploration should be free
+  const missDepth=enemy.splitDepth||0;
+  if(missDepth===0){G.treeDepth=Math.max(0,G.treeDepth-1);SFX.setTreeDepth(G.treeDepth)}
   G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
@@ -5090,7 +5093,8 @@ function handleMiss(enemy){
   G.typedBuffer='';
 
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
-  const surge=isQuizMode?(depth===0?0.15:depth<=2?0.22:0.30):0.06;
+  // Surge: inverted — deeper prereqs surge less to encourage exploration
+  const surge=isQuizMode?(depth===0?0.15:depth===1?0.08:depth===2?0.04:0.02):0.06;
   enemy.t=Math.min(PATH_LENGTH_T+.02,(enemy.t||0)+surge);
   // DAG hydra split
   if(isQuizMode&&depth<5&&nodeCanSplit){
@@ -5103,8 +5107,9 @@ function handleMiss(enemy){
       return;
     }
   }
-  // Fallback: speed up
-  enemy.speedMult=Math.min((enemy.speedMult||1)*(isQuizMode?1.85:1.5),4.5);
+  // Fallback: speed up — gentler for prereq enemies to encourage exploration
+  const speedPenalty=isQuizMode?(depth===0?1.85:depth===1?1.4:1.2):1.5;
+  enemy.speedMult=Math.min((enemy.speedMult||1)*speedPenalty,4.5);
   if(isQuizMode&&(enemy.missCount||0)>=3){
     enemy.t=Math.max(enemy.t,0.85);
     enemy.speedMult=Math.max(enemy.speedMult,3.0);
