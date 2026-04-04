@@ -308,6 +308,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js" crossorigin="anonymous"></script>
@@ -4010,6 +4016,22 @@ camera.position.set(0,18,14);
 camera.lookAt(0,0,-1);
 
 treeMeshes.forEach(t=>scene.add(t.mesh));
+
+// ── Bloom post-processing (health-driven) ──
+let bloomComposer=null,bloomPass=null;
+if(typeof THREE.EffectComposer!=='undefined'){
+  const rp=new THREE.RenderPass(scene,camera);
+  rp.clear=false; // sky is pre-rendered into the FBO
+  const isMob=navigator.maxTouchPoints>0;
+  const bRes=isMob
+    ?new THREE.Vector2(window.innerWidth*0.5,window.innerHeight*0.5)
+    :new THREE.Vector2(window.innerWidth,window.innerHeight);
+  bloomPass=new THREE.UnrealBloomPass(bRes,0.5,0.4,0.6);
+  bloomComposer=new THREE.EffectComposer(renderer);
+  bloomComposer.addPass(rp);
+  bloomComposer.addPass(bloomPass);
+}
+
 const ambLight=new THREE.AmbientLight(AMB.dark,.4);scene.add(ambLight);
 const dirLight=new THREE.DirectionalLight(AMB.bright,.6);dirLight.position.set(5,12,8);scene.add(dirLight);
 const serverLight=new THREE.PointLight(AMB.hot,1.5,15);serverLight.position.set(-7,2,5);scene.add(serverLight);
@@ -6152,15 +6174,11 @@ function animate(time){
     if(b.life<=0){scene.remove(b.line);b.line.material.dispose();b.line.geometry.dispose();beams.splice(i,1)}
   }
 
-  // fBm amber sky pass
+  // fBm amber sky + bloom render pipeline
   const timeSec=time*0.001;
   const td=G.treeDepth||0;
   skyMaterial.uniforms.time.value=timeSec;
   skyMaterial.uniforms.brightness.value=0.15+Math.min(td,10)*0.02;
-  renderer.autoClear=false;
-  renderer.clear();
-  renderer.render(skyScene,skyCamera);
-  renderer.clearDepth();
 
   // Fractal trees (in game scene, grounded on terrain)
   const sk=SFX.getStreak();
@@ -6172,7 +6190,6 @@ function animate(time){
     const tc=t.config;
     const active=td>=tc.unlockAt;
     if(!active){t.mesh.visible=false;t.geo.setDrawRange(0,0);return;}
-    // Per-tree depth: pioneer tree gets full depth, later trees catch up
     const treeD=Math.max(1,Math.min(10,td-tc.unlockAt+2));
     const levels=treeD+1;
     const count=generateTree(0,0,tc.len,tc.angle,tc.ba,tc.ls,0,levels,timeSec,omega,swayAmp,t.posArr,t.colArr,0);
@@ -6181,8 +6198,33 @@ function animate(time){
     t.geo.setDrawRange(0,count*2);
     t.mesh.visible=true;
   });
-  renderer.render(scene,camera);
-  renderer.autoClear=true;
+
+  if(bloomComposer){
+    // Bloom parameter lerp — asymmetric: fast decay (0.1), slow growth (0.05)
+    const norm=Math.min(td,10)/10;
+    const tgtS=norm*0.9,tgtR=norm*0.6,tgtT=1.0-norm*0.6;
+    const rate=(tgtS<bloomPass.strength)?0.1:0.05;
+    bloomPass.strength+=(tgtS-bloomPass.strength)*rate;
+    bloomPass.radius+=(tgtR-bloomPass.radius)*rate;
+    bloomPass.threshold+=(tgtT-bloomPass.threshold)*rate;
+    // Pre-render sky into composer's write buffer, then composite game scene + bloom
+    bloomComposer.writeBuffer=bloomComposer.renderTarget1;
+    bloomComposer.readBuffer=bloomComposer.renderTarget2;
+    renderer.setRenderTarget(bloomComposer.renderTarget1);
+    renderer.clear();
+    renderer.render(skyScene,skyCamera);
+    renderer.clearDepth();
+    renderer.setRenderTarget(null);
+    bloomComposer.render();
+  }else{
+    // Fallback: no bloom available (CDN failure)
+    renderer.autoClear=false;
+    renderer.clear();
+    renderer.render(skyScene,skyCamera);
+    renderer.clearDepth();
+    renderer.render(scene,camera);
+    renderer.autoClear=true;
+  }
 }
 requestAnimationFrame(animate);
 
@@ -6197,6 +6239,11 @@ function handleResize(){
   camera.updateProjectionMatrix();
   renderer.setSize(w,h);
   skyMaterial.uniforms.resolution.value.set(w,h);
+  if(bloomComposer){
+    const mobScale=navigator.maxTouchPoints>0?0.5:1.0;
+    bloomPass.resolution.set(w*mobScale,h*mobScale);
+    bloomComposer.setSize(w,h);
+  }
 }
 window.addEventListener('resize',handleResize);
 window.addEventListener('orientationchange',()=>setTimeout(handleResize,150));

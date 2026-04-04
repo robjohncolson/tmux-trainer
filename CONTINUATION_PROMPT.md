@@ -1114,19 +1114,78 @@ Added `GET /api/progress/leaderboard/:cartridgeId` endpoint (commit 664a994 in l
 - `scripts/animation-manifest.json`: 76-entry generation manifest
 - `scripts/upload-ap-stats-animations.mjs`: Supabase upload script (reusable for future animations)
 
+## Latest Update: Bloom Post-Processing — Health-Driven Visual Focus
+
+Added UnrealBloomPass from Three.js r128 postprocessing chain, driven by tree health (0-10).
+
+### How it works
+
+- Tree depth 0: no bloom — flat, dead scene
+- Tree depth 1-4: progressively warmer glow on trees, enemies, terrain
+- Tree depth 5-8: rich vivid bloom, scene feels alive
+- Tree depth 9-10: full triumphant bloom (strength 0.9, radius 0.6, threshold 0.4)
+- Asymmetric lerp: health loss fades bloom fast (0.1 rate), health gain builds slowly (0.05 rate)
+- Sky stays visually soft — bloom only enhances foreground game elements
+
+### Render pipeline
+
+- Sky pre-rendered into EffectComposer's internal FBO (`renderTarget1`)
+- `RenderPass.clear = false` so game scene composites on top of sky in same FBO
+- UnrealBloomPass processes combined sky+game image
+- Buffer state explicitly reset each frame for stability
+- CDN failure fallback: if bloom scripts don't load, `bloomComposer` stays `null` and original dual-pass renderer runs
+
+### CDN dependencies (6 new scripts)
+
+- CopyShader, LuminosityHighPassShader, EffectComposer, ShaderPass, RenderPass, UnrealBloomPass
+- All from `cdn.jsdelivr.net/npm/three@0.128.0/examples/js/`
+- Non-module UMD scripts that register on global `THREE` object (matches existing r128 setup)
+- All tags have `crossorigin="anonymous"` for SW CORS compatibility
+
+### Mobile performance
+
+- Bloom resolution defaults to 0.5x on mobile (`navigator.maxTouchPoints > 0`)
+- Resize handler updates bloom resolution with mobile scale factor
+- `composer.setSize(w, h)` uses CSS pixels only (EffectComposer reads pixel ratio internally)
+
+### Service worker
+
+- 6 new CDN URLs added to `CDN_URLS` in `sw.js`
+- Cache bumped from `td-shell-v1` to `td-shell-v2`
+
+### Review findings (all addressed)
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| 1 | HIGH | Composer FBO would overwrite sky backbuffer | Pre-render sky into FBO, `renderPass.clear=false` |
+| 2 | MEDIUM | Missing ShaderPass.js dependency | Added 6th script tag |
+| 3 | MEDIUM | Mobile bloom fallback was opt-in | Default 0.5x on all mobile |
+| 4 | MEDIUM | CDN failure guard incomplete | `if(bloomComposer)` with fallback branch |
+| 5 | LOW | `setSize(w*pr)` would double-count pixel ratio | CSS pixels only |
+| 6 | LOW | Lerp rate 0.05 sluggish on health loss | Asymmetric: 0.1 decay, 0.05 growth |
+
+### Spec artifact
+
+- `bloom-postprocessing-spec.md` — full design + review findings table
+
+### Important code areas (new)
+
+- `index.html` bloom init: `bloomComposer`, `bloomPass`, CDN guard (~line 4020-4033)
+- `index.html` animate() bloom render: FBO pre-render + `bloomComposer.render()` (~line 6202-6227)
+- `index.html` resize: `bloomComposer.setSize()` + mobile bloom resolution (~line 6240-6244)
+- `sw.js`: 6 postprocessing CDN URLs in `CDN_URLS`, cache `td-shell-v2`
+
 ## Likely Next Tasks
 
-- **Typed input for L4-L5 arithmetic nodes** — leverage existing `typed` input mode for "√25 = ?" style questions
-- **Visual prereq tree on end screen** — show the student their knowledge decomposition after a run
-- **Transfer priors v2** — richer cross-command knowledge sharing beyond the v1 seed (0.3)
-- **Quality review rendered animations** — verify pedagogical accuracy per formula
+- **Application/Relationship question types** — "Which test would you use?" and "What happens when X changes?" (Bloom's taxonomy jump from recall → application/analysis)
+- **Visual prereq tree on end screen** — show the student their DAG node encounters after a run, which nodes they nailed vs struggled with
+- **Transfer priors v2** — richer cross-command knowledge sharing beyond the v1 seed (0.3), full posterior transfer
+- **Cartridge module splitting** — extract AP Stats deck/DAG/variable bank into pluggable cartridge format for multi-course reuse (lrsl-driller, Algebra 2)
+- **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
+- Quality review rendered animations — verify pedagogical accuracy per formula (ongoing over next 3 weeks as students use it)
 - Add adaptive BKT params (v2) once enough telemetry collected
-- Author Application and Relationship question types (spec item 3)
-- Consider splitting `index.html` into modules (now ~5500+ lines)
-- Add teacher dashboard view for class mastery overview
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
-- Accessibility pass: ARIA labels, semantic HTML, WCAG contrast fixes
 
 ## GitNexus Note
 
