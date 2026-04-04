@@ -5484,7 +5484,7 @@ function voluntarySplit(){
   selected.forEach((nodeId,i)=>{
     const node=PREREQ_DAG[nodeId];
     const childDepth=node.level||depth; // use node's actual level for visual treatment
-    const childT=Math.min(.82,Math.max(0,(enemy.t||0)-0.08+0.04*i)); // spawn slightly behind parent
+    const childT=Math.min(.82,Math.max(0,(enemy.t||0)+0.03+0.03*i)); // spawn ahead of parent
     const useTwo=childDepth>=4;
     const wrongChoices=useTwo?[node.wrong[Math.floor(Math.random()*node.wrong.length)]]:node.wrong.slice();
     const options=shuffleArr([node.correct,...wrongChoices]);
@@ -5500,8 +5500,11 @@ function voluntarySplit(){
   });
   SFX.split();
   flash('BREAK IT DOWN \u2753','#44bbcc');
-  // Don't kill parent — just deselect so auto-select picks a child
-  resetExplanationState();G.selectedId=null;G.inputState='idle';
+  // Select the first spawned child (furthest ahead)
+  const lastSpawned=G.enemies[G.enemies.length-selected.length]; // first child added
+  resetExplanationState();
+  G.selectedId=lastSpawned?lastSpawned.id:null;
+  G.inputState='quiz';G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
 }
 
 // ═══════════════════════════════════════════════
