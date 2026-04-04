@@ -7,6 +7,8 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code','Consolas',monospace}
+body.hi-contrast #overlay,body.hi-contrast #input-panel,body.hi-contrast #hud{filter:invert(1) hue-rotate(180deg)}
+body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast #overlay video{filter:invert(1) hue-rotate(180deg)}
 #game-canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
 .hud-item{text-align:center;pointer-events:none}
@@ -226,6 +228,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:
 #h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
 #tier-bar{top:40px;font-size:8px}
 #mute-btn{font-size:16px;padding:6px 8px;top:6px;right:auto;left:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+#contrast-btn{top:6px;right:auto;left:54px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:16px;padding:6px 8px}
 .enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
 .sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
@@ -330,6 +333,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:
 <div id="queue-bar" style="display:none"></div>
 <div id="overlay"></div>
 <button id="mute-btn" title="Mute">🔊</button>
+<button id="contrast-btn" title="Toggle high contrast" style="position:fixed;top:10px;right:48px;z-index:30;font-size:14px;background:transparent;border:1px solid #ff8c0033;border-radius:4px;color:#ff8c00;cursor:pointer;padding:3px 7px;opacity:.7">☀</button>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -1970,7 +1974,7 @@ const VARIABLE_BANK={
   'linreg':[{s:'\\hat{y}',d:'predicted response'},{s:'b',d:'slope'},{s:'a',d:'y-intercept'}],
   'linreg-mean':[{s:'\\bar{x}',d:'mean of x-values'},{s:'\\bar{y}',d:'mean of y-values'}],
   'corr-r':[{s:'r',d:'correlation coefficient'},{s:'z_x',d:'standardized x'},{s:'z_y',d:'standardized y'}],
-  'slope-b':[{s:'b',d:'sample slope'},{s:'x_i',d:'x-values'},{s:'y_i',d:'y-values'}],
+  'slope-b':[{s:'b',d:'sample slope'},{s:'r',d:'correlation coefficient'},{s:'s_y',d:'SD of y-values'},{s:'s_x',d:'SD of x-values'}],
   'zscore':[{s:'z',d:'z-score'},{s:'\\mu',d:'population mean'},{s:'\\sigma',d:'population SD'}],
   'iqr':[{s:'IQR',d:'interquartile range'},{s:'Q_1',d:'25th percentile'},{s:'Q_3',d:'75th percentile'}],
   'outlier-iqr':[{s:'Q_1',d:'25th percentile'},{s:'Q_3',d:'75th percentile'},{s:'IQR',d:'spread of middle 50%'}],
@@ -2010,7 +2014,7 @@ const VARIABLE_BANK={
   'large-counts':[{s:'n',d:'sample size'},{s:'p',d:'proportion'},{s:'np',d:'expected successes'}],
   'phat-mean':[{s:'\\mu_{\\hat{p}}',d:'center of sampling dist'},{s:'p',d:'true population proportion'}],
   'phat-sd':[{s:'\\sigma_{\\hat{p}}',d:'SD of sampling dist'},{s:'p',d:'population proportion'},{s:'n',d:'sample size'}],
-  'phat-se':[{s:'SE_{\\hat{p}}',d:'standard error'},{s:'\\hat{p}',d:'sample proportion'}],
+  'phat-se':[{s:'s_{\\hat{p}}',d:'standard error of p-hat'},{s:'\\hat{p}',d:'sample proportion'},{s:'n',d:'sample size'}],
   'diff-p-sd':[{s:'p_1',d:'population proportion group 1'},{s:'p_2',d:'population proportion group 2'},{s:'n_1',d:'sample size group 1'}],
   'diff-p-se':[{s:'\\hat{p}_1',d:'sample proportion group 1'},{s:'\\hat{p}_2',d:'sample proportion group 2'}],
   'pooled-se':[{s:'\\hat{p}_c',d:'combined sample proportion'},{s:'n_1',d:'sample size group 1'},{s:'n_2',d:'sample size group 2'}],
@@ -2018,7 +2022,7 @@ const VARIABLE_BANK={
   'two-prop-z':[{s:'\\hat{p}_1',d:'sample proportion group 1'},{s:'\\hat{p}_2',d:'sample proportion group 2'},{s:'\\hat{p}_c',d:'pooled proportion'}],
   'xbar-mean':[{s:'\\mu_{\\bar{x}}',d:'center of sampling dist'},{s:'\\mu',d:'population mean'}],
   'xbar-sd':[{s:'\\sigma_{\\bar{x}}',d:'SD of sampling dist'},{s:'\\sigma',d:'population SD'},{s:'n',d:'sample size'}],
-  'xbar-se':[{s:'SE_{\\bar{x}}',d:'standard error'},{s:'s',d:'sample SD'}],
+  'xbar-se':[{s:'s_{\\bar{x}}',d:'standard error of x-bar'},{s:'s',d:'sample SD'},{s:'n',d:'sample size'}],
   'diff-x-sd':[{s:'\\sigma_1',d:'pop SD group 1'},{s:'\\sigma_2',d:'pop SD group 2'}],
   'diff-x-se':[{s:'s_1',d:'sample SD group 1'},{s:'s_2',d:'sample SD group 2'}],
   'one-mean-t':[{s:'\\bar{x}',d:'sample mean'},{s:'\\mu_0',d:'hypothesized mean under H_0'},{s:'s',d:'sample SD'}],
@@ -6248,6 +6252,15 @@ document.getElementById('mute-btn').onclick=()=>{
   document.getElementById('mute-btn').textContent=m?'\ud83d\udd07':'\ud83d\udd0a';
   document.getElementById('mute-btn').style.color=m?'#ff4422':AMB.css.hot;
 };
+// High contrast mode (daytime)
+if(localStorage.getItem('td-hi-contrast')==='1')document.body.classList.add('hi-contrast');
+document.getElementById('contrast-btn').onclick=()=>{
+  document.body.classList.toggle('hi-contrast');
+  const on=document.body.classList.contains('hi-contrast');
+  localStorage.setItem('td-hi-contrast',on?'1':'0');
+  document.getElementById('contrast-btn').textContent=on?'\u263e':'\u2600';
+};
+document.getElementById('contrast-btn').textContent=document.body.classList.contains('hi-contrast')?'\u263e':'\u2600';
 
 // ═══════════════════════════════════════════════
 //  TOUCH SUPPORT
