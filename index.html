@@ -2850,8 +2850,108 @@ const SHARED_PREREQ_NODES={
   'hypothesis-framework':{id:'hypothesis-framework',type:'conceptual',level:2,
     q:'What does a test statistic measure?',correct:'How far the sample is from H0 in SE units',
     wrong:['The probability H0 is true','The effect size'],prereqs:['se-concept','z-score-concept']},
+  // ── Additional L2-L3 nodes for deeper coverage ──
+  'summation-concept':{id:'summation-concept',type:'conceptual',level:3,
+    q:'What does the \u03a3 (sigma) symbol mean?',correct:'Add up all the values',
+    wrong:['Multiply all values','Find the largest value'],prereqs:[]},
+  'critical-value-concept':{id:'critical-value-concept',type:'conceptual',level:2,
+    q:'What is a critical value (z* or t*)?',correct:'The cutoff from the reference distribution for a given confidence level',
+    wrong:['The sample mean','The standard error'],prereqs:['z-score-concept']},
+  'interval-concept':{id:'interval-concept',type:'conceptual',level:3,
+    q:'What does \u00b1 create on a number line?',correct:'A range of values centered on a point',
+    wrong:['A single exact value','Two separate points'],prereqs:[]},
+  'observed-vs-expected':{id:'observed-vs-expected',type:'conceptual',level:2,
+    q:'What is the difference between observed and expected counts?',correct:'Observed = actual data; Expected = what H0 predicts',
+    wrong:['They are the same thing','Observed is always larger'],prereqs:['hypothesis-framework']},
+  'double-counting':{id:'double-counting',type:'conceptual',level:3,
+    q:'If you add P(A) + P(B), what might go wrong?',correct:'Events in both A and B get counted twice',
+    wrong:['The result exceeds 1','You lose independent events'],prereqs:[]},
+  'probability-weight':{id:'probability-weight',type:'conceptual',level:3,
+    q:'Why multiply each outcome by its probability?',correct:'To weight outcomes by how likely they are',
+    wrong:['To normalize values','To convert to percentages'],prereqs:[]},
+  'pooling-concept':{id:'pooling-concept',type:'conceptual',level:2,
+    q:'What does pooling two samples mean?',correct:'Combining data to get a single shared estimate',
+    wrong:['Averaging the sample sizes','Discarding the smaller sample'],prereqs:[]},
+  'sample-vs-population':{id:'sample-vs-population',type:'conceptual',level:3,
+    q:'What is the difference between a sample and a population?',correct:'A sample is a subset; the population is everyone',
+    wrong:['They are the same thing','A sample is always larger'],prereqs:[]},
+  'fraction-concept':{id:'fraction-concept',type:'computational',level:4,
+    q:'What does 12/4 equal?',correct:'3',wrong:['8','48'],prereqs:[]},
+  'exponent-concept':{id:'exponent-concept',type:'conceptual',level:3,
+    q:'What does x\u00b2 mean?',correct:'x multiplied by itself',
+    wrong:['x multiplied by 2','x divided by 2'],prereqs:['perfect-squares']},
+  'slope-concept':{id:'slope-concept',type:'conceptual',level:2,
+    q:'What does the slope of a line measure?',correct:'Change in y per unit change in x',
+    wrong:['The y-intercept','The correlation'],prereqs:[]},
+  'residual-concept':{id:'residual-concept',type:'conceptual',level:2,
+    q:'What is a residual?',correct:'Observed y minus predicted y',
+    wrong:['Predicted y minus mean y','The slope of the line'],prereqs:['slope-concept']},
+  'bins-conditions':{id:'bins-conditions',type:'conceptual',level:2,
+    q:'What are the BINS conditions for a binomial?',correct:'Binary outcomes, Independent trials, fixed N, Same probability',
+    wrong:['Large sample, Normal, Random','Paired, Equal variance, Normal'],prereqs:['independence-concept']},
+  'normal-approx':{id:'normal-approx',type:'conceptual',level:3,
+    q:'When can we approximate a distribution as Normal?',correct:'When certain conditions (like large counts) are met',
+    wrong:['Always','Only for population data'],prereqs:['clt-concept']},
 };
 function installSharedNodes(){Object.assign(PREREQ_DAG,SHARED_PREREQ_NODES)}
+// Wire auto-generated L1 nodes to shared L2+ nodes based on question content
+function wireL1toL2(){
+  const rules=[
+    [/\u03a3|sigma|sum all/i,['summation-concept']],
+    [/divide|divid|denominator|why.*n\b/i,['division-concept']],
+    [/n-1|n minus|degrees of free/i,['df-concept']],
+    [/square root|sqrt|\u221a/i,['sqrt-compute','variance-to-sd']],
+    [/squar|(\^2)|\u00b2/i,['squaring-concept','exponent-concept']],
+    [/mean|average|x.bar|balance point/i,['mean-concept']],
+    [/standard error|SE\b|variab.*across.*sample/i,['se-concept']],
+    [/sampling|sample.*distribut/i,['sampling-variability']],
+    [/independent|independence/i,['independence-concept']],
+    [/given|conditional|P\(A\|/i,['conditional-restrict']],
+    [/expected value|E\(X\)|weight.*prob|multiply.*P\(/i,['expected-value-concept','probability-weight']],
+    [/unbiased|estimat.*true|on average equal/i,['unbiased-estimator']],
+    [/p\(1-p\)|1-p|complement/i,['complement-concept','proportion-arithmetic']],
+    [/Normal|CLT|central limit|approx.*Normal/i,['clt-concept','normal-approx']],
+    [/z.score|standard.*unit|how many SD/i,['z-score-concept']],
+    [/H.?0|null hyp|hypothes.*test/i,['hypothesis-framework']],
+    [/\u221an|sqrt.*n|sample size.*reduc|larger.*sample.*variab/i,['sqrt-n-effect']],
+    [/critical|z\*|t\*/i,['critical-value-concept']],
+    [/\u00b1|margin|interval|range.*plausible/i,['interval-concept']],
+    [/observed|O\s|O\b.*count/i,['observed-vs-expected']],
+    [/expected.*count|E\s.*count/i,['observed-vs-expected']],
+    [/double.count|subtract.*P\(A.*B\)|overlap/i,['double-counting']],
+    [/pool|shared estimate|combine/i,['pooling-concept']],
+    [/population|\u03bc.*estimat|sample.*population/i,['sample-vs-population']],
+    [/slope|change in.*per|b\s.*represent/i,['slope-concept']],
+    [/residual|observed.*predicted/i,['residual-concept']],
+    [/BINS|binary.*independent|binomial.*condition/i,['bins-conditions']],
+    [/p\s*=.*trial|success rate|probability.*success/i,['proportion-arithmetic']],
+    [/fraction|ratio|divide.*by/i,['fraction-concept','division-concept']],
+    [/y.intercept|"a".*represent|predict.*when x|a\b.*represent.*intercept/i,['slope-concept']],
+    [/\br\b.*measure|linear.*assoc|correlation|strength.*direction/i,['slope-concept']],
+    [/P\(A.*B\)|both.*occur|intersect|mutually exclusive/i,['double-counting']],
+    [/P\(xi\)|probability of outcome/i,['probability-weight']],
+    [/geometric|trials until|first success/i,['bins-conditions']],
+    [/\bdf\b|n\s*-\s*1|degrees/i,['df-concept']],
+    [/t.distribut|Welch|t\b.*distribution/i,['df-concept']],
+    [/Q1|percentile|IQR|resistant|quartile/i,['mean-concept']],
+    [/power|alpha|significance|Type I/i,['hypothesis-framework']],
+    [/\bp.hat\b|p\u0302|sample proportion/i,['unbiased-estimator','proportion-arithmetic']],
+    [/\bs\b.*measure|prediction error|typical.*error/i,['variance-to-sd','residual-concept']],
+    [/not.*change.*SD|shift.*equally|spread.*unchanged/i,['variance-to-sd']],
+    [/absolute value|non.negative|always positive/i,['squaring-concept']],
+    [/\bSE.*unit|statistic.*from.*parameter/i,['se-concept','z-score-concept']],
+  ];
+  for(const node of Object.values(PREREQ_DAG)){
+    if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;
+    const matched=new Set();
+    for(const[re,ids] of rules){
+      if(re.test(node.q)||re.test(node.correct)){
+        ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
+      }
+    }
+    if(matched.size>0)node.prereqs=[...matched];
+  }
+}
 function validateDAG(){
   let danglingRefs=0,cycles=0;const visited=new Set(),inStack=new Set();
   function dfs(id){
@@ -5671,6 +5771,7 @@ activeCartridge=apStatsCartridge;
 COMMANDS=activeCartridge.commands;
 buildDAGFromSubconcepts(COMMANDS);
 installSharedNodes();
+wireL1toL2();
 validateDAG();
 showTitleScreen('boot');
 // Service Worker registration
