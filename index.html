@@ -4207,14 +4207,22 @@ treeMeshes.forEach(t=>scene.add(t.mesh));
 
 // ── Fractal ferns (ground-level L-system plants) ──
 const FERN_MAX_SEGS=63; // depth 5
-const FERN_POOL=[
-  {x:-9,z:-9,angle:0.1,len:0.6,unlockAt:2},
-  {x:-6,z:-11,angle:-0.05,len:0.5,unlockAt:2},
-  {x:8,z:-9.5,angle:-0.1,len:0.55,unlockAt:3},
-  {x:5,z:-11,angle:0.08,len:0.45,unlockAt:4},
-  {x:-3,z:-12,angle:0,len:0.5,unlockAt:5},
-  {x:1,z:-11.5,angle:-0.03,len:0.4,unlockAt:6},
-];
+// Poisson disk sampling for natural fern distribution
+const FERN_POOL=(()=>{
+  const minDist=2.5,xMin=-10,xMax=10,zMin=-13,zMax=-7;
+  const pts=[],maxAttempts=200;
+  // Seeded PRNG for deterministic placement across sessions
+  let seed=42;
+  function rng(){seed=(seed*16807+0)%2147483647;return(seed-1)/2147483646}
+  for(let i=0;i<maxAttempts&&pts.length<18;i++){
+    const x=xMin+rng()*(xMax-xMin);
+    const z=zMin+rng()*(zMax-zMin);
+    let ok=true;
+    for(const p of pts){if(Math.hypot(p.x-x,p.z-z)<minDist){ok=false;break}}
+    if(ok)pts.push({x,z,angle:(rng()-0.5)*0.3,len:0.3+rng()*0.35,unlockAt:Math.min(8,1+Math.floor(pts.length*0.5))});
+  }
+  return pts;
+})();
 function generateFern(ox,oy,len,angle,depth,levels,timeSec,omega,pos,col,idx){
   if(depth>=levels||idx>=FERN_MAX_SEGS-2)return idx;
   const sway=Math.sin(timeSec*omega*1.3+depth*0.6)*0.03*(0.3+depth*0.7);
@@ -6740,12 +6748,19 @@ function animate(time){
     f.geo.setDrawRange(0,count*2);
     f.mesh.visible=true;
   });
-  // Fractal constellations (edges connect with health)
-  constellations.forEach(c=>{
+  // Fractal constellations (edges connect with health, stars twinkle + drift)
+  constellations.forEach((c,ci)=>{
     const visEdges=Math.floor(c.totalEdges*td/10);
     c.edges.geometry.setDrawRange(0,visEdges*2);
-    // Star twinkle
-    c.stars.material.opacity=0.5+Math.sin(timeSec*1.5)*0.3;
+    // Per-star twinkle via size oscillation
+    c.stars.material.size=0.25+Math.sin(timeSec*2+ci*2)*0.12;
+    c.stars.material.opacity=0.6+Math.sin(timeSec*1.3+ci*1.7)*0.3;
+    // Slow drift rotation around y-axis
+    c.stars.rotation.y=timeSec*0.015+ci*0.5;
+    c.edges.rotation.y=timeSec*0.015+ci*0.5;
+    // Gentle vertical bob
+    c.stars.position.y=Math.sin(timeSec*0.4+ci)*0.3;
+    c.edges.position.y=Math.sin(timeSec*0.4+ci)*0.3;
   });
   // Lightning lifecycle
   lightningPool.forEach(b=>{
