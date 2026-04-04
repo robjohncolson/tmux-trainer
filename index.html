@@ -71,15 +71,10 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .explain-video-error{font-size:10px;color:#99666688;padding:6px;text-align:center}
 .wave-clear{font-size:22px;font-weight:900;color:#ff8c00;letter-spacing:4px;text-shadow:0 0 14px #ff8c0066}
 #labels{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden}
-.enemy-label{position:absolute;pointer-events:auto;cursor:pointer;text-align:center;transform:translate(-50%,-100%);opacity:.55;filter:saturate(.82);transition:opacity .18s,filter .18s}
-.enemy-label.selected{opacity:1;filter:none}
-.enemy-label-shell{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
-.enemy-label-inner{background:#0d0500d6;border:1px solid transparent;border-radius:4px;padding:3px 6px;font-size:9px;font-weight:700;line-height:1.2;max-width:140px;word-break:break-word;white-space:normal;transition:border-color .18s,background .18s,box-shadow .18s}
-.enemy-label.selected .enemy-label-inner{background:#120800f1;border-color:currentColor;box-shadow:0 0 18px #00000066,0 0 10px currentColor}
 @keyframes bkt-pulse{0%,100%{opacity:1}50%{opacity:.7}}
-.bkt-uncertain .enemy-label-inner{animation:bkt-pulse 2s ease-in-out infinite}
-.enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
-.sel-arrow{text-align:center;color:inherit;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite;text-shadow:0 0 10px currentColor}
+#selected-label{flex:0 0 auto;text-align:center;pointer-events:none;padding:0 0 2px;width:min(760px,100%);margin:0 auto}
+#selected-label .pinned-inner{display:inline-block;background:#120800f1;border:1px solid currentColor;border-bottom:none;border-radius:6px 6px 0 0;padding:4px 10px;font-size:10px;font-weight:700;line-height:1.3;max-width:280px;word-break:break-word;box-shadow:0 -4px 12px #00000044,0 0 10px currentColor}
+#selected-label .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 10px}
 #overlay.hidden{opacity:0;pointer-events:none}
 #overlay h1{font-size:56px;font-weight:900;letter-spacing:14px;color:#ff8c00;text-shadow:0 0 20px #ff8c00,0 0 40px #ff8c0044;margin-bottom:4px}
@@ -225,8 +220,6 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .hud-val{font-size:clamp(12px,3.5vw,16px)}
 #h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
 #tier-bar{top:40px;font-size:8px}
-.enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
-.sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
 .mc-btn{min-height:56px;padding:12px 10px;font-size:clamp(12px,3vw,14px);width:100%}
 .mc-btn .mc-key{width:24px;height:24px;font-size:12px;border-radius:6px}
@@ -249,7 +242,6 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .hud-item.hud-mobile-hide{display:none}
 #h-sync{font-size:8px!important;max-width:20px;overflow:hidden}
 #h-pause-btn{display:none!important}
-.enemy-label{pointer-events:none}
 #queue-bar{bottom:auto;top:55px;font-size:8px}
 #overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
 #overlay h2{font-size:clamp(11px,3vw,16px);letter-spacing:clamp(3px,1.5vw,8px)}
@@ -324,8 +316,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <div id="tier-bar" style="display:none"></div>
 <div id="mute-btn" style="display:none"></div>
 <div id="contrast-btn" style="display:none"></div>
-<div id="labels"></div>
-<div id="input-panel" style="display:none"><div id="ip-header"></div><div id="ip-body"></div></div>
+<div id="input-panel" style="display:none"><div id="selected-label" style="display:none"></div><div id="ip-header"></div><div id="ip-body"></div></div>
 <div id="queue-bar" style="display:none"></div>
 <div id="overlay"></div>
 
@@ -4754,85 +4745,6 @@ function updateEnemyMeshes(){
   });
 }
 
-// ═══════════════════════════════════════════════
-//  LABEL PROJECTION
-// ═══════════════════════════════════════════════
-const labelsDiv=document.getElementById('labels');
-const labelCache=new Map(); // enemy ID → {div, key}
-const _labelVec=new THREE.Vector3(); // reusable projection vector
-function updateLabels(){
-  const hideGhostLabels=isCompactMobileViewport();
-  const activeIds=new Set();
-  G.enemies.forEach(e=>{
-    const m=enemyMeshes[e.id];if(!m)return;
-    _labelVec.copy(m.position);_labelVec.y+=.6;
-    _labelVec.project(camera);
-    const x=(_labelVec.x*.5+.5)*window.innerWidth;
-    const y=(-(_labelVec.y*.5)+.5)*window.innerHeight;
-    if(_labelVec.z>1){
-      // Behind camera — hide if cached
-      const cached=labelCache.get(e.id);
-      if(cached)cached.div.style.display='none';
-      activeIds.add(e.id);
-      return;
-    }
-    const isSel=e.id===G.selectedId;
-    if(hideGhostLabels&&!isSel){
-      const cached=labelCache.get(e.id);
-      if(cached)cached.div.style.display='none';
-      activeIds.add(e.id);
-      return;
-    }
-    const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
-    const cardPK=G.srs[e.cmd.id]?G.srs[e.cmd.id].pKnown:0.1;
-    const dp=e.splitDepth||0;
-    const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
-    const speedTag=e.speedMult>1?'\u26a1'+e.speedMult.toFixed(1)+'x':'';
-    const contentKey=e.cmd.id+'|'+isSel+'|'+mastery+'|'+speedTag+'|'+dp+'|'+(cardPK<0.3?1:0);
-    const textC=isSel?(dp>=2?'#c892ff':dp>=1?'#7eb9ff':'#d0d0d0'):(dp>=2?'#b67adf':dp>=1?'#78a7ea':'#c78234');
-    let cached=labelCache.get(e.id);
-    if(!cached){
-      const div=document.createElement('div');
-      div.onclick=()=>{
-        if(QUIZ_ANSWER_FEEDBACK.locked)return;
-        resetExplanationState();
-        G.selectedId=e.id;
-        const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
-        G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
-        G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
-        SFX.select();
-        if(im==='quiz')setTimeout(focusBlankInput,50);
-        else if(im==='typed')focusTypedInput();
-      };
-      labelsDiv.appendChild(div);
-      cached={div,key:''};
-      labelCache.set(e.id,cached);
-    }
-    cached.div.style.display='';
-    cached.div.style.left=x+'px';
-    cached.div.style.top=y+'px';
-    cached.div.style.color=textC;
-    if(cached.key!==contentKey){
-      cached.key=contentKey;
-      cached.div.className='enemy-label'+(isSel?' selected':'')+(cardPK<0.3?' bkt-uncertain':'');
-      const speedHtml=speedTag?(' <span style="color:#ff4422;font-size:7px">'+speedTag+'</span>'):'';
-      cached.div.innerHTML='<div class="enemy-label-shell"><div class="enemy-label-inner"><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedHtml+'</div></div>'+(isSel?'<div class="sel-arrow">\u25bc</div>':'');
-    }
-    activeIds.add(e.id);
-  });
-  // Remove orphaned labels (dead enemies)
-  for(const [id,cached] of labelCache){
-    if(!activeIds.has(id)){
-      cached.div.remove();
-      labelCache.delete(id);
-    }
-  }
-}
-function clearLabelCache(){
-  for(const [,cached] of labelCache)cached.div.remove();
-  labelCache.clear();
-}
-
 function pickEnemyAtScreenPoint(clientX,clientY){
   const maxDistSq=Math.pow(isCompactMobileViewport()?72:52,2);
   let bestEnemy=null;
@@ -4854,6 +4766,88 @@ function pickEnemyAtScreenPoint(clientX,clientY){
     bestDistSq=distSq;
   });
   return bestEnemy;
+}
+function selectEnemy(id){
+  if(QUIZ_ANSWER_FEEDBACK.locked)return;
+  resetExplanationState();
+  G.selectedId=id;
+  const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+  G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
+  G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+  SFX.select();
+  if(im==='quiz')setTimeout(focusBlankInput,50);
+  else if(im==='typed')focusTypedInput();
+}
+
+// ── Pinned selected label (fixed above input panel) ──
+const selectedLabelDiv=document.getElementById('selected-label');
+let lastPinnedLabelKey='';
+function updateSelectedLabel(){
+  const e=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!e||G.screen!=='game'){
+    if(selectedLabelDiv.style.display!=='none'){selectedLabelDiv.style.display='none';selectedLabelDiv.innerHTML='';lastPinnedLabelKey='';}
+    return;
+  }
+  const mastery=G.srs[e.cmd.id]?G.srs[e.cmd.id].mastery:0;
+  const cardPK=G.srs[e.cmd.id]?G.srs[e.cmd.id].pKnown:0.1;
+  const dp=e.splitDepth||0;
+  const promptText=e.label||(activeCartridge?activeCartridge.formatPrompt(e.cmd):e.cmd.action);
+  const speedTag=e.speedMult>1?'\u26a1'+e.speedMult.toFixed(1)+'x':'';
+  const contentKey=e.cmd.id+'|'+mastery+'|'+speedTag+'|'+dp+'|'+(cardPK<0.3?1:0);
+  if(contentKey===lastPinnedLabelKey){selectedLabelDiv.style.display='';return;}
+  lastPinnedLabelKey=contentKey;
+  const textC=dp>=2?'#c892ff':dp>=1?'#7eb9ff':'#d0d0d0';
+  const speedHtml=speedTag?(' <span style="color:#ff4422;font-size:8px">'+speedTag+'</span>'):'';
+  const uncertain=cardPK<0.3?' style="animation:bkt-pulse 2s ease-in-out infinite"':'';
+  selectedLabelDiv.style.display='';
+  selectedLabelDiv.style.color=textC;
+  selectedLabelDiv.innerHTML='<div class="pinned-inner"'+uncertain+'><span class="dot" style="background:'+MASTERY_COLORS[mastery]+'"></span>'+promptText+speedHtml+'</div>';
+}
+function clearPinnedLabel(){
+  selectedLabelDiv.style.display='none';selectedLabelDiv.innerHTML='';lastPinnedLabelKey='';
+}
+
+// ── 3D Corner-bracket reticle ──
+const selectionReticle=(()=>{
+  // 4 L-shaped corners, each 2 segments = 8 segments = 16 vertices
+  const s=0.55; // half-size of bracket square
+  const L=0.22; // arm length of each L
+  const verts=new Float32Array([
+    // Top-left corner
+    -s,s,0, -s+L,s,0,   -s,s,0, -s,s-L,0,
+    // Top-right corner
+    s,s,0, s-L,s,0,      s,s,0, s,s-L,0,
+    // Bottom-left corner
+    -s,-s,0, -s+L,-s,0,  -s,-s,0, -s,-s+L,0,
+    // Bottom-right corner
+    s,-s,0, s-L,-s,0,    s,-s,0, s,-s+L,0
+  ]);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(verts,3));
+  const mat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.85,fog:false,depthWrite:false,blending:THREE.AdditiveBlending});
+  const mesh=new THREE.LineSegments(geo,mat);
+  mesh.visible=false;
+  mesh.renderOrder=5;
+  scene.add(mesh);
+  return mesh;
+})();
+function updateSelectionReticle(time){
+  const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
+  const selEnemyObj=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!selEnemy||!selEnemyObj||G.screen!=='game'||G.paused){
+    selectionReticle.visible=false;return;
+  }
+  selectionReticle.visible=true;
+  selectionReticle.position.copy(selEnemy.position);
+  // Yaw-only billboard
+  selectionReticle.lookAt(camera.position.x,selectionReticle.position.y,camera.position.z);
+  // Pulse scale
+  const dp=selEnemyObj.splitDepth||0;
+  const baseScale=dp>=2?0.6:dp>=1?0.8:1.0;
+  const pulse=1+Math.sin(time*0.004)*0.08;
+  selectionReticle.scale.setScalar(baseScale*pulse);
+  // Pulse opacity
+  selectionReticle.material.opacity=0.7+Math.sin(time*0.004)*0.15;
 }
 
 // ═══════════════════════════════════════════════
@@ -5306,7 +5300,7 @@ function showTitleScreen(context){
   document.getElementById('tier-bar').style.display='none';
   document.getElementById('input-panel').style.display='none';
   document.getElementById('queue-bar').style.display='none';
-  clearLabelCache();
+  clearPinnedLabel();selectionReticle.visible=false;
   cancelQueuedBGMStart();
   SFX.stopBGM();
   // Collect unique domains from active cartridge
@@ -5709,7 +5703,7 @@ function continueGame(){
   lastSpawnTime=performance.now();
   lastInputState='';
   showGameUI();
-  updateLabels();
+  updateSelectedLabel();
   SFX.setKey(G.wave);
   SFX.setTreeDepth(G.treeDepth);
   // Load persisted melody
@@ -5781,7 +5775,7 @@ function showEndScreen(victory){
   document.getElementById('tier-bar').style.display='none';
   document.getElementById('input-panel').style.display='none';
   document.getElementById('queue-bar').style.display='none';
-  clearLabelCache();
+  clearPinnedLabel();selectionReticle.visible=false;
   const ov=document.getElementById('overlay');ov.classList.remove('hidden');
   const acc=G.totalCorrect+G.totalWrong>0?Math.round(G.totalCorrect/(G.totalCorrect+G.totalWrong)*100):0;
   const seen=Object.entries(G.srs).filter(([,v])=>v.correct+v.wrong>0);
@@ -6531,6 +6525,9 @@ canvas.addEventListener('touchend',function(e){
       return;
     }
     lastDoubleTap=now;
+    // Single tap: select enemy near tap point
+    const picked=pickEnemyAtScreenPoint(touch.clientX,touch.clientY);
+    if(picked&&picked.id!==G.selectedId)selectEnemy(picked.id);
   }
 },{passive:true});
 // iOS AudioContext resume
@@ -6543,6 +6540,13 @@ canvas.addEventListener('wheel',function(e){
   e.preventDefault();
   camZoomMult=Math.max(0.3,Math.min(4.0,camZoomMult+e.deltaY*0.002));
 },{passive:false});
+
+// Desktop click-to-select
+canvas.addEventListener('click',function(e){
+  if(G.screen!=='game'||G.paused||QUIZ_ANSWER_FEEDBACK.locked)return;
+  const picked=pickEnemyAtScreenPoint(e.clientX,e.clientY);
+  if(picked&&picked.id!==G.selectedId)selectEnemy(picked.id);
+});
 
 // ═══════════════════════════════════════════════
 //  SAVE ON UNLOAD
@@ -6605,8 +6609,9 @@ function animate(time){
     camera.lookAt(0,0,-1);
   }
 
-  // Labels projected AFTER camera update so they track cubes accurately
-  if(G.screen==='game'&&!G.paused)updateLabels();
+  // Pinned label + 3D reticle (replaces old floating labels)
+  updateSelectedLabel();
+  updateSelectionReticle(time);
 
   serverLight.intensity=1.5+Math.sin(time*.003)*.3;
   sTop.rotation.y=time*.001;
