@@ -3940,10 +3940,12 @@ function updateHUD(){
   if(HUD.mastery&&COMMANDS.length>0){
     const entries=Object.values(G.srs);
     const seen=entries.filter(s=>s.totalAttempts>0).length;
-    const prof=entries.filter(s=>s.mastery>=4).length;
+    const gold=entries.filter(s=>s.mastery>=4).length;
+    const silver=entries.filter(s=>s.mastery>=3&&s.mastery<4).length;
     const total=COMMANDS.length;
-    HUD.mastery.textContent=prof+'\u2605 '+seen+'/'+total;
-    HUD.mastery.style.color=prof>=total*0.8?'#44ff88':prof>=total*0.4?AMB.css.white:AMB.css.hot;
+    const stars=gold+silver;
+    HUD.mastery.textContent=gold+'\u2605'+silver+'\u2606 '+seen+'/'+total;
+    HUD.mastery.style.color=gold>=total*0.5?'#44ff88':stars>=total*0.3?AMB.css.white:AMB.css.hot;
   }
   if(HUD.saveWarn)HUD.saveWarn.style.display=(G.srsError||G.runStateError)?'block':'none';
 }
@@ -4272,10 +4274,10 @@ function showPauseScreen(){
   let html='<h1 style="font-size:36px">PAUSED</h1>';
   const mc=SFX.getMusicConfig();
   if(mc)html+='<div style="font-size:11px;color:'+AMB.css.glow+';margin:8px 0">\u266b Wave '+G.wave+': '+mc.name+' ('+mc.tempo+' BPM)</div>';
-  html+='<div style="font-size:10px;color:#996622;letter-spacing:2px;margin:0 0 10px">P = RESUME · ESC = SAVE + EXIT</div>';
+  html+='<div style="font-size:10px;color:#996622;letter-spacing:2px;margin:0 0 10px">P/<b>R</b> = RESUME · <b>M</b> = MUSIC · ESC = SAVE + EXIT</div>';
   html+='<div class="menu-actions">';
-  html+='<button class="btn" onclick="resumeFromPause()">[ RESUME ]</button>';
-  html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'pause\')">[ MUSIC EDITOR ]</button>';
+  html+='<button class="btn" onclick="resumeFromPause()">[ <u>R</u>ESUME ]</button>';
+  html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'pause\')">[ <u>M</u>USIC EDITOR ]</button>';
   html+='<button class="btn btn-secondary" onclick="returnToTitleFromRun()">[ MAIN MENU ]</button>';
   html+='</div>';
   ov.innerHTML=html;
@@ -4362,15 +4364,28 @@ function showTitleScreen(context){
       html+='<div class="diff-label">'+d.label+'</div><div class="diff-desc">'+d.desc.replace(/\\n/g,'<br>')+'</div></button>';
     });
     html+='</div>';
-    if(titleHS>0&&!emphasizeHighScore)html+='<div style="margin-top:8px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
+    // Mastery progress
+    const prog=getCartridgeProgress(activeCartridge.id);
+    if(prog.seen>0){
+      const gold=prog.mastered;
+      const silver=Object.values(JSON.parse(localStorage.getItem('td-srs-'+activeCartridge.id)||'{}')).filter(s=>s.mastery>=3&&s.mastery<4).length;
+      html+='<div style="margin-top:8px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">';
+      if(gold>0)html+=gold+'\u2605 ';
+      if(silver>0)html+=silver+'\u2606 ';
+      html+=prog.seen+'/'+prog.total+' seen';
+      if(titleHS>0&&!emphasizeHighScore)html+=' · HIGH <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span>';
+      html+='</div>';
+    }else if(titleHS>0&&!emphasizeHighScore){
+      html+='<div style="margin-top:8px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
+    }
     if(savedRun){
       const lives=Math.max(0,Math.min(BASE_LIVES,Math.round(Number(savedRun.lives)||BASE_LIVES)));
       const hearts='\u2665'.repeat(lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-lives));
       html+='<div style="margin-top:6px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+'</div>';
     }
     html+='<div class="menu-actions">';
-    if(savedRun)html+='<button class="btn" id="btn-continue">[ CONTINUE ]</button>';
-    html+='<button class="btn" id="btn-start">'+activeCartridge.startButton+'</button>';
+    if(savedRun)html+='<button class="btn" id="btn-continue">[ <u>C</u>ONTINUE ]</button>';
+    html+='<button class="btn" id="btn-start">[ <u>D</u>EPLOY ]</button>';
     html+='</div>';
 
   // ═══ LEADERBOARD TAB ═══
@@ -5046,8 +5061,24 @@ window.addEventListener('keydown',e=>{
     return;
   }
 
-  // Block all input while paused
-  if(G.paused)return;
+  // ── Pause menu shortcuts (R=resume, M=music, Escape already handled above) ──
+  if(G.paused&&G.screen==='game'){
+    const k=e.key.toLowerCase();
+    if(k==='r'){e.preventDefault();resumeFromPause();return}
+    if(k==='m'){e.preventDefault();openMusicEditor('pause');return}
+    return;
+  }
+
+  // ── Title screen shortcuts (C=continue, D=deploy) ──
+  if(G.screen==='title'&&!MUSIC_EDITOR.open){
+    const k=e.key.toLowerCase();
+    const tab=G._menuTab||'play';
+    if(tab==='play'&&activeCartridge){
+      if(k==='c'&&loadRunState()){e.preventDefault();continueGame();return}
+      if(k==='d'){e.preventDefault();startGame();return}
+    }
+    return;
+  }
 
   if(MODKEYS.has(e.key))return;
   if(G.screen!=='game')return;
