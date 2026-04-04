@@ -6,8 +6,8 @@
     "domain": "descriptive",
     "tier": "core",
     "hint": "Add all values, divide by count",
-    "explain": "This measures the center — total divided by how many",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sample Mean (x-bar). The formula is: \\bar{x} = \\frac{\\sum x_i}{n}. This measures the center — total divided by how many Add all values, divide by count. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "This measures the center \u00e2\u20ac\u201d total divided by how many",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sample Mean (x-bar). The formula is: \\bar{x} = \\frac{\\sum x_i}{n}. This measures the center \u00e2\u20ac\u201d total divided by how many Add all values, divide by count. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         1
@@ -49,13 +49,13 @@
   },
   {
     "id": "linreg",
-    "name": "Least-Squares Regression Line (ŷ)",
+    "name": "Least-Squares Regression Line (\u00c5\u00b7)",
     "latex": "\\hat{y} = a + bx",
     "domain": "descriptive",
     "tier": "core",
-    "hint": "ŷ = a + bx (intercept + slope·x)",
-    "explain": "Predicted y from x — intercept plus slope times x",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Least-Squares Regression Line (ŷ). The formula is: \\hat{y} = a + bx. Predicted y from x — intercept plus slope times x ŷ = a + bx (intercept + slope·x). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "hint": "\u00c5\u00b7 = a + bx (intercept + slope\u00c2\u00b7x)",
+    "explain": "Predicted y from x \u00e2\u20ac\u201d intercept plus slope times x",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Least-Squares Regression Line (\u00c5\u00b7). The formula is: \\hat{y} = a + bx. Predicted y from x \u00e2\u20ac\u201d intercept plus slope times x \u00c5\u00b7 = a + bx (intercept + slope\u00c2\u00b7x). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         1
@@ -73,13 +73,13 @@
   },
   {
     "id": "linreg-mean",
-    "name": "Regression Line Passes Through (x̅, y̅)",
+    "name": "Regression Line Passes Through (x\u00cc\u2026, y\u00cc\u2026)",
     "latex": "\\bar{y} = a + b\\bar{x}",
     "domain": "descriptive",
     "tier": "core",
     "hint": "The regression line passes through the point of means",
     "explain": "The line must pass through the centroid of the data",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Regression Line Passes Through (x̅, y̅). The formula is: \\bar{y} = a + b\\bar{x}. The line must pass through the centroid of the data The regression line passes through the point of means. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Regression Line Passes Through (x\u00cc\u2026, y\u00cc\u2026). The formula is: \\bar{y} = a + b\\bar{x}. The line must pass through the centroid of the data The regression line passes through the point of means. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         1
@@ -150,8 +150,8 @@
     "domain": "probability",
     "tier": "core",
     "hint": "Add individual, subtract the overlap",
-    "explain": "Events can overlap — subtract what you double-counted",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Addition Rule for Probability. The formula is: P(A \\cup B) = P(A) + P(B) - P(A \\cap B). Events can overlap — subtract what you double-counted Add individual, subtract the overlap. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "Events can overlap \u00e2\u20ac\u201d subtract what you double-counted",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Addition Rule for Probability. The formula is: P(A \\cup B) = P(A) + P(B) - P(A \\cap B). Events can overlap \u00e2\u20ac\u201d subtract what you double-counted Add individual, subtract the overlap. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4
@@ -193,13 +193,13 @@
   },
   {
     "id": "rv-mean",
-    "name": "Expected Value of a Random Variable (μ)",
+    "name": "Expected Value of a Random Variable (\u00ce\u00bc)",
     "latex": "\\mu_X = \\sum x_i \\cdot P(x_i)",
     "domain": "distributions",
     "tier": "core",
     "hint": "Each value times its probability, summed",
-    "explain": "Expected value — each outcome weighted by how likely it is",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Expected Value of a Random Variable (μ). The formula is: \\mu_X = \\sum x_i \\cdot P(x_i). Expected value — each outcome weighted by how likely it is Each value times its probability, summed. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "Expected value \u00e2\u20ac\u201d each outcome weighted by how likely it is",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Expected Value of a Random Variable (\u00ce\u00bc). The formula is: \\mu_X = \\sum x_i \\cdot P(x_i). Expected value \u00e2\u20ac\u201d each outcome weighted by how likely it is Each value times its probability, summed. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -218,13 +218,13 @@
   },
   {
     "id": "rv-sd",
-    "name": "Spread of a Random Variable (σ)",
+    "name": "Spread of a Random Variable (\u00cf\u0192)",
     "latex": "\\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}",
     "domain": "distributions",
     "tier": "regular",
     "hint": "Square root of variance: weighted squared deviations",
     "explain": "How far outcomes typically fall from the expected value, probability-weighted",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Spread of a Random Variable (σ). The formula is: \\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}. How far outcomes typically fall from the expected value, probability-weighted Square root of variance: weighted squared deviations. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Spread of a Random Variable (\u00cf\u0192). The formula is: \\sigma_X = \\sqrt{\\sum(x_i - \\mu)^2 \\cdot P(x_i)}. How far outcomes typically fall from the expected value, probability-weighted Square root of variance: weighted squared deviations. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -247,9 +247,9 @@
     "latex": "P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}",
     "domain": "distributions",
     "tier": "regular",
-    "hint": "n choose x · p^x · (1-p)^(n-x)",
+    "hint": "n choose x \u00c2\u00b7 p^x \u00c2\u00b7 (1-p)^(n-x)",
     "explain": "Exactly x successes: choose which trials succeed, then multiply probabilities",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Binomial Probability Formula. The formula is: P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}. Exactly x successes: choose which trials succeed, then multiply probabilities n choose x · p^x · (1-p)^(n-x). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Binomial Probability Formula. The formula is: P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}. Exactly x successes: choose which trials succeed, then multiply probabilities n choose x \u00c2\u00b7 p^x \u00c2\u00b7 (1-p)^(n-x). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -268,13 +268,13 @@
   },
   {
     "id": "binom-mean",
-    "name": "Mean of Binomial Distribution (μ)",
+    "name": "Mean of Binomial Distribution (\u00ce\u00bc)",
     "latex": "\\mu_X = np",
     "domain": "distributions",
     "tier": "core",
-    "hint": "n times p — expected successes",
+    "hint": "n times p \u00e2\u20ac\u201d expected successes",
     "explain": "Expected successes = trials times success probability",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Mean of Binomial Distribution (μ). The formula is: \\mu_X = np. Expected successes = trials times success probability n times p — expected successes. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Mean of Binomial Distribution (\u00ce\u00bc). The formula is: \\mu_X = np. Expected successes = trials times success probability n times p \u00e2\u20ac\u201d expected successes. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -293,13 +293,13 @@
   },
   {
     "id": "binom-sd",
-    "name": "Standard Deviation of Binomial (σ)",
+    "name": "Standard Deviation of Binomial (\u00cf\u0192)",
     "latex": "\\sigma_X = \\sqrt{np(1-p)}",
     "domain": "distributions",
     "tier": "core",
-    "hint": "Square root of n·p·(1-p)",
+    "hint": "Square root of n\u00c2\u00b7p\u00c2\u00b7(1-p)",
     "explain": "Variability is maximized when p = 0.5 (maximum uncertainty)",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Deviation of Binomial (σ). The formula is: \\sigma_X = \\sqrt{np(1-p)}. Variability is maximized when p = 0.5 (maximum uncertainty) Square root of n·p·(1-p). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Deviation of Binomial (\u00cf\u0192). The formula is: \\sigma_X = \\sqrt{np(1-p)}. Variability is maximized when p = 0.5 (maximum uncertainty) Square root of n\u00c2\u00b7p\u00c2\u00b7(1-p). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -323,8 +323,8 @@
     "domain": "distributions",
     "tier": "regular",
     "hint": "Fail (x-1) times, then succeed once",
-    "explain": "All failures first, then one success — order matters",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Geometric Probability Formula. The formula is: P(X=x) = (1-p)^{x-1} \\cdot p. All failures first, then one success — order matters Fail (x-1) times, then succeed once. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "All failures first, then one success \u00e2\u20ac\u201d order matters",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Geometric Probability Formula. The formula is: P(X=x) = (1-p)^{x-1} \\cdot p. All failures first, then one success \u00e2\u20ac\u201d order matters Fail (x-1) times, then succeed once. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -343,13 +343,13 @@
   },
   {
     "id": "geom-mean",
-    "name": "Mean of Geometric Distribution (μ)",
+    "name": "Mean of Geometric Distribution (\u00ce\u00bc)",
     "latex": "\\mu_X = \\frac{1}{p}",
     "domain": "distributions",
     "tier": "core",
     "hint": "Expected trials until first success",
     "explain": "Lower success probability means more trials needed on average",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Mean of Geometric Distribution (μ). The formula is: \\mu_X = \\frac{1}{p}. Lower success probability means more trials needed on average Expected trials until first success. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Mean of Geometric Distribution (\u00ce\u00bc). The formula is: \\mu_X = \\frac{1}{p}. Lower success probability means more trials needed on average Expected trials until first success. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -368,13 +368,13 @@
   },
   {
     "id": "geom-sd",
-    "name": "Standard Deviation of Geometric (σ)",
+    "name": "Standard Deviation of Geometric (\u00cf\u0192)",
     "latex": "\\sigma_X = \\frac{\\sqrt{1-p}}{p}",
     "domain": "distributions",
     "tier": "regular",
-    "hint": "√(1-p) divided by p",
+    "hint": "\u00e2\u02c6\u0161(1-p) divided by p",
     "explain": "Spread depends on how rare successes are",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Deviation of Geometric (σ). The formula is: \\sigma_X = \\frac{\\sqrt{1-p}}{p}. Spread depends on how rare successes are √(1-p) divided by p. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Deviation of Geometric (\u00cf\u0192). The formula is: \\sigma_X = \\frac{\\sqrt{1-p}}{p}. Spread depends on how rare successes are \u00e2\u02c6\u0161(1-p) divided by p. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         4,
@@ -422,9 +422,9 @@
     "latex": "\\text{statistic} \\pm \\text{critical value} \\times SE",
     "domain": "inference",
     "tier": "core",
-    "hint": "Point estimate ± margin of error",
+    "hint": "Point estimate \u00c2\u00b1 margin of error",
     "explain": "Center your estimate, then extend by the margin of error",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Confidence Interval (general). The formula is: \\text{statistic} \\pm \\text{critical value} \\times SE. Center your estimate, then extend by the margin of error Point estimate ± margin of error. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Confidence Interval (general). The formula is: \\text{statistic} \\pm \\text{critical value} \\times SE. Center your estimate, then extend by the margin of error Point estimate \u00c2\u00b1 margin of error. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6,
@@ -447,9 +447,9 @@
     "latex": "\\chi^2 = \\sum\\frac{(O-E)^2}{E}",
     "domain": "chi-square",
     "tier": "core",
-    "hint": "Sum of (observed - expected)² / expected",
+    "hint": "Sum of (observed - expected)\u00c2\u00b2 / expected",
     "explain": "Compares what you observed to what you expected under H0",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Chi-Square Test Statistic. The formula is: \\chi^2 = \\sum\\frac{(O-E)^2}{E}. Compares what you observed to what you expected under H0 Sum of (observed - expected)² / expected. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Chi-Square Test Statistic. The formula is: \\chi^2 = \\sum\\frac{(O-E)^2}{E}. Compares what you observed to what you expected under H0 Sum of (observed - expected)\u00c2\u00b2 / expected. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         8
@@ -467,13 +467,13 @@
   },
   {
     "id": "phat-mean",
-    "name": "Sampling Distribution Mean of p̂",
+    "name": "Sampling Distribution Mean of p\u00cc\u201a",
     "latex": "\\mu_{\\hat{p}} = p",
     "domain": "inf-proportions",
     "tier": "core",
     "hint": "Mean of sampling dist. equals true proportion",
-    "explain": "An unbiased estimator — the center of all possible sample proportions",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution Mean of p̂. The formula is: \\mu_{\\hat{p}} = p. An unbiased estimator — the center of all possible sample proportions Mean of sampling dist. equals true proportion. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "An unbiased estimator \u00e2\u20ac\u201d the center of all possible sample proportions",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution Mean of p\u00cc\u201a. The formula is: \\mu_{\\hat{p}} = p. An unbiased estimator \u00e2\u20ac\u201d the center of all possible sample proportions Mean of sampling dist. equals true proportion. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6
@@ -491,13 +491,13 @@
   },
   {
     "id": "phat-sd",
-    "name": "Sampling Distribution SD of p̂",
+    "name": "Sampling Distribution SD of p\u00cc\u201a",
     "latex": "\\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}",
     "domain": "inf-proportions",
     "tier": "core",
     "hint": "sqrt of p(1-p) over n",
-    "explain": "Larger samples reduce variability — sample size is in the denominator",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution SD of p̂. The formula is: \\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}. Larger samples reduce variability — sample size is in the denominator sqrt of p(1-p) over n. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "Larger samples reduce variability \u00e2\u20ac\u201d sample size is in the denominator",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution SD of p\u00cc\u201a. The formula is: \\sigma_{\\hat{p}} = \\sqrt{\\frac{p(1-p)}{n}}. Larger samples reduce variability \u00e2\u20ac\u201d sample size is in the denominator sqrt of p(1-p) over n. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6
@@ -515,13 +515,13 @@
   },
   {
     "id": "phat-se",
-    "name": "Standard Error of p̂",
+    "name": "Standard Error of p\u00cc\u201a",
     "latex": "s_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}",
     "domain": "inf-proportions",
     "tier": "regular",
     "hint": "Replace p with p-hat in the SD formula",
     "explain": "Same structure as SD but uses the sample statistic since p is unknown",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of p̂. The formula is: s_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}. Same structure as SD but uses the sample statistic since p is unknown Replace p with p-hat in the SD formula. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of p\u00cc\u201a. The formula is: s_{\\hat{p}} = \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}. Same structure as SD but uses the sample statistic since p is unknown Replace p with p-hat in the SD formula. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6
@@ -544,8 +544,8 @@
     "domain": "inf-proportions",
     "tier": "regular",
     "hint": "Add the variances of each proportion, then sqrt",
-    "explain": "Independent samples — add the variances, then take the square root",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: SD of Difference in Proportions. The formula is: \\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{n_2}}. Independent samples — add the variances, then take the square root Add the variances of each proportion, then sqrt. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "Independent samples \u00e2\u20ac\u201d add the variances, then take the square root",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: SD of Difference in Proportions. The formula is: \\sigma_{\\hat{p}_1-\\hat{p}_2} = \\sqrt{\\frac{p_1(1-p_1)}{n_1}+\\frac{p_2(1-p_2)}{n_2}}. Independent samples \u00e2\u20ac\u201d add the variances, then take the square root Add the variances of each proportion, then sqrt. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6
@@ -611,13 +611,13 @@
   },
   {
     "id": "xbar-mean",
-    "name": "Sampling Distribution Mean of x̅",
+    "name": "Sampling Distribution Mean of x\u00cc\u2026",
     "latex": "\\mu_{\\bar{x}} = \\mu",
     "domain": "inf-means",
     "tier": "core",
     "hint": "Mean of x-bar equals the population mean",
     "explain": "Sample means center on the true population mean",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution Mean of x̅. The formula is: \\mu_{\\bar{x}} = \\mu. Sample means center on the true population mean Mean of x-bar equals the population mean. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution Mean of x\u00cc\u2026. The formula is: \\mu_{\\bar{x}} = \\mu. Sample means center on the true population mean Mean of x-bar equals the population mean. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         7
@@ -635,13 +635,13 @@
   },
   {
     "id": "xbar-sd",
-    "name": "Sampling Distribution SD of x̅",
+    "name": "Sampling Distribution SD of x\u00cc\u2026",
     "latex": "\\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}",
     "domain": "inf-means",
     "tier": "core",
-    "hint": "σ divided by square root of n",
-    "explain": "More data points average out variation — divided by root n",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution SD of x̅. The formula is: \\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}. More data points average out variation — divided by root n σ divided by square root of n. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "hint": "\u00cf\u0192 divided by square root of n",
+    "explain": "More data points average out variation \u00e2\u20ac\u201d divided by root n",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution SD of x\u00cc\u2026. The formula is: \\sigma_{\\bar{x}} = \\frac{\\sigma}{\\sqrt{n}}. More data points average out variation \u00e2\u20ac\u201d divided by root n \u00cf\u0192 divided by square root of n. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         7
@@ -659,13 +659,13 @@
   },
   {
     "id": "xbar-se",
-    "name": "Standard Error of x̅",
+    "name": "Standard Error of x\u00cc\u2026",
     "latex": "s_{\\bar{x}} = \\frac{s}{\\sqrt{n}}",
     "domain": "inf-means",
     "tier": "regular",
-    "hint": "Use s (sample SD) when σ is unknown",
+    "hint": "Use s (sample SD) when \u00cf\u0192 is unknown",
     "explain": "Uses s because population sigma is almost never known in practice",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of x̅. The formula is: s_{\\bar{x}} = \\frac{s}{\\sqrt{n}}. Uses s because population sigma is almost never known in practice Use s (sample SD) when σ is unknown. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of x\u00cc\u2026. The formula is: s_{\\bar{x}} = \\frac{s}{\\sqrt{n}}. Uses s because population sigma is almost never known in practice Use s (sample SD) when \u00cf\u0192 is unknown. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         7
@@ -688,8 +688,8 @@
     "domain": "inf-means",
     "tier": "regular",
     "hint": "Add the variances, then square root",
-    "explain": "Independent samples — variances add, then take the square root",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: SD of Difference in Means. The formula is: \\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\sigma_1^2}{n_1}+\\frac{\\sigma_2^2}{n_2}}. Independent samples — variances add, then take the square root Add the variances, then square root. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "Independent samples \u00e2\u20ac\u201d variances add, then take the square root",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: SD of Difference in Means. The formula is: \\sigma_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{\\sigma_1^2}{n_1}+\\frac{\\sigma_2^2}{n_2}}. Independent samples \u00e2\u20ac\u201d variances add, then take the square root Add the variances, then square root. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         7
@@ -711,9 +711,9 @@
     "latex": "s_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}",
     "domain": "inf-means",
     "tier": "power",
-    "hint": "Use sample variances s² for each group",
+    "hint": "Use sample variances s\u00c2\u00b2 for each group",
     "explain": "Sample variances replace population variances for real-world inference",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of Difference in Means. The formula is: s_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}. Sample variances replace population variances for real-world inference Use sample variances s² for each group. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of Difference in Means. The formula is: s_{\\bar{x}_1-\\bar{x}_2} = \\sqrt{\\frac{s_1^2}{n_1}+\\frac{s_2^2}{n_2}}. Sample variances replace population variances for real-world inference Use sample variances s\u00c2\u00b2 for each group. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         7
@@ -735,9 +735,9 @@
     "latex": "\\mu_b = \\beta",
     "domain": "regression",
     "tier": "regular",
-    "hint": "Mean of slope sampling dist. = true slope β",
+    "hint": "Mean of slope sampling dist. = true slope \u00ce\u00b2",
     "explain": "The sampling distribution of slopes centers on the true population slope",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution Mean of Slope b. The formula is: \\mu_b = \\beta. The sampling distribution of slopes centers on the true population slope Mean of slope sampling dist. = true slope β. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sampling Distribution Mean of Slope b. The formula is: \\mu_b = \\beta. The sampling distribution of slopes centers on the true population slope Mean of slope sampling dist. = true slope \u00ce\u00b2. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         2,
@@ -760,9 +760,9 @@
     "latex": "\\sigma_b = \\frac{\\sigma}{\\sigma_x\\sqrt{n}}",
     "domain": "regression",
     "tier": "power",
-    "hint": "σ over (σₓ · √n), where σₓ uses n not n-1",
+    "hint": "\u00cf\u0192 over (\u00cf\u0192\u00e2\u201a\u201c \u00c2\u00b7 \u00e2\u02c6\u0161n), where \u00cf\u0192\u00e2\u201a\u201c uses n not n-1",
     "explain": "Less residual noise and more x-spread both give more precise slopes",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: SD of Regression Slope b. The formula is: \\sigma_b = \\frac{\\sigma}{\\sigma_x\\sqrt{n}}. Less residual noise and more x-spread both give more precise slopes σ over (σₓ · √n), where σₓ uses n not n-1. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: SD of Regression Slope b. The formula is: \\sigma_b = \\frac{\\sigma}{\\sigma_x\\sqrt{n}}. Less residual noise and more x-spread both give more precise slopes \u00cf\u0192 over (\u00cf\u0192\u00e2\u201a\u201c \u00c2\u00b7 \u00e2\u02c6\u0161n), where \u00cf\u0192\u00e2\u201a\u201c uses n not n-1. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         2,
@@ -785,9 +785,9 @@
     "latex": "s_b = \\frac{s}{s_x\\sqrt{n-1}}",
     "domain": "regression",
     "tier": "power",
-    "hint": "s over (sₓ · √(n-1)), s = residual SD",
+    "hint": "s over (s\u00e2\u201a\u201c \u00c2\u00b7 \u00e2\u02c6\u0161(n-1)), s = residual SD",
     "explain": "Residual SD replaces sigma; df adjusted for estimating the line",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of Regression Slope b. The formula is: s_b = \\frac{s}{s_x\\sqrt{n-1}}. Residual SD replaces sigma; df adjusted for estimating the line s over (sₓ · √(n-1)), s = residual SD. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standard Error of Regression Slope b. The formula is: s_b = \\frac{s}{s_x\\sqrt{n-1}}. Residual SD replaces sigma; df adjusted for estimating the line s over (s\u00e2\u201a\u201c \u00c2\u00b7 \u00e2\u02c6\u0161(n-1)), s = residual SD. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         2,
@@ -835,9 +835,9 @@
     "latex": "z = \\frac{\\hat{p} - p_0}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}",
     "domain": "inf-proportions",
     "tier": "regular",
-    "hint": "Plug p₀ (null value) into SE, not p-hat",
+    "hint": "Plug p\u00e2\u201a\u20ac (null value) into SE, not p-hat",
     "explain": "Compare observed proportion to null value using null SE",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: One-proportion z statistic. The formula is: z = \\frac{\\hat{p} - p_0}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}. Compare observed proportion to null value using null SE Plug p₀ (null value) into SE, not p-hat. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: One-proportion z statistic. The formula is: z = \\frac{\\hat{p} - p_0}{\\sqrt{\\frac{p_0(1-p_0)}{n}}}. Compare observed proportion to null value using null SE Plug p\u00e2\u201a\u20ac (null value) into SE, not p-hat. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6
@@ -1443,8 +1443,8 @@
     "domain": "inf-means",
     "tier": "power",
     "hint": "Mean difference over SE of differences",
-    "explain": "Used when two measurements come from the same subjects (H0: μd = 0)",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Paired t Statistic. The formula is: t = \\frac{\\bar{d} - \\mu_{d_0}}{s_d / \\sqrt{n}}. Used when two measurements come from the same subjects (H0: μd = 0) Mean difference over SE of differences. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "Used when two measurements come from the same subjects (H0: \u00ce\u00bcd = 0)",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Paired t Statistic. The formula is: t = \\frac{\\bar{d} - \\mu_{d_0}}{s_d / \\sqrt{n}}. Used when two measurements come from the same subjects (H0: \u00ce\u00bcd = 0) Mean difference over SE of differences. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         7
@@ -1536,13 +1536,13 @@
   },
   {
     "id": "type-i-error",
-    "name": "Type I Error (α)",
+    "name": "Type I Error (\u00ce\u00b1)",
     "latex": "\\alpha = P(\\text{reject } H_0 \\mid H_0 \\text{ is true})",
     "domain": "inference",
     "tier": "support",
     "hint": "Rejecting a true null hypothesis",
     "explain": "The probability of a false positive, controlled by the significance level",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Type I Error (α). The formula is: \\alpha = P(\\text{reject } H_0 \\mid H_0 \\text{ is true}). The probability of a false positive, controlled by the significance level Rejecting a true null hypothesis. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Type I Error (\u00ce\u00b1). The formula is: \\alpha = P(\\text{reject } H_0 \\mid H_0 \\text{ is true}). The probability of a false positive, controlled by the significance level Rejecting a true null hypothesis. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6,
@@ -1561,13 +1561,13 @@
   },
   {
     "id": "type-ii-error",
-    "name": "Type II Error (β)",
+    "name": "Type II Error (\u00ce\u00b2)",
     "latex": "\\beta = P(\\text{fail to reject } H_0 \\mid H_a \\text{ is true})",
     "domain": "inference",
     "tier": "support",
     "hint": "Failing to reject a false null hypothesis",
-    "explain": "The probability of a false negative; power = 1 − β",
-    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Type II Error (β). The formula is: \\beta = P(\\text{fail to reject } H_0 \\mid H_a \\text{ is true}). The probability of a false negative; power = 1 − β Failing to reject a false null hypothesis. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
+    "explain": "The probability of a false negative; power = 1 \u00e2\u02c6\u2019 \u00ce\u00b2",
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Type II Error (\u00ce\u00b2). The formula is: \\beta = P(\\text{fail to reject } H_0 \\mid H_a \\text{ is true}). The probability of a false negative; power = 1 \u00e2\u02c6\u2019 \u00ce\u00b2 Failing to reject a false null hypothesis. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam.",
     "curriculum_context": {
       "units": [
         6,
@@ -1608,5 +1608,242 @@
         "Using b instead of beta in hypotheses"
       ]
     }
+  },
+  {
+    "id": "variance",
+    "name": "Sample Variance (s2)",
+    "latex": "s^2 = \frac{\\sum(x_i - \bar{x})^2}{n-1}",
+    "domain": "descriptive",
+    "tier": "support",
+    "hint": "Sum of squared deviations divided by n-1",
+    "explain": "The square of the standard deviation, used in linear combination rules",
+    "curriculum_context": {
+      "units": [
+        1
+      ],
+      "learning_objectives": [
+        "UNC-1.J"
+      ],
+      "misconceptions": [
+        "Confusing variance with SD",
+        "Forgetting n-1 for samples"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Sample Variance (s2). The formula is: s^2 = \frac{\\sum(x_i - \bar{x})^2}{n-1}. The square of the standard deviation, used in linear combination rules Sum of squared deviations divided by n-1. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "ten-pct-condition",
+    "name": "10% Condition for Independence",
+    "latex": "n < 0.10 \\cdot N",
+    "domain": "inference",
+    "tier": "support",
+    "hint": "Sample must be less than 10% of the population",
+    "explain": "Ensures sampling without replacement is approximately independent",
+    "curriculum_context": {
+      "units": [
+        5,
+        6,
+        7
+      ],
+      "learning_objectives": [
+        "UNC-4.A"
+      ],
+      "misconceptions": [
+        "Thinking 10% refers to confidence level",
+        "Ignoring this condition entirely"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: 10% Condition for Independence. The formula is: n < 0.10 \\cdot N. Ensures sampling without replacement is approximately independent Sample must be less than 10% of the population. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "std-resid-chi",
+    "name": "Standardized Residual (Chi-Square)",
+    "latex": "\text{std resid} = \frac{O - E}{\\sqrt{E}}",
+    "domain": "chi-square",
+    "tier": "support",
+    "hint": "Each cell contribution: (O-E)/sqrt(E)",
+    "explain": "Shows which cells contribute most to the chi-square statistic",
+    "curriculum_context": {
+      "units": [
+        8
+      ],
+      "learning_objectives": [
+        "VAR-8.A"
+      ],
+      "misconceptions": [
+        "Confusing with the full chi-square statistic",
+        "Not squaring for chi-square"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Standardized Residual (Chi-Square). The formula is: \text{std resid} = \frac{O - E}{\\sqrt{E}}. Shows which cells contribute most to the chi-square statistic Each cell contribution: (O-E)/sqrt(E). Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "one-prop-ci",
+    "name": "Confidence Interval for One Proportion",
+    "latex": "\\hat{p} \\pm z^* \\sqrt{\frac{\\hat{p}(1-\\hat{p})}{n}}",
+    "domain": "inf-proportions",
+    "tier": "regular",
+    "hint": "p-hat plus or minus z-star times SE of p-hat",
+    "explain": "Estimates the range of plausible values for the true population proportion",
+    "curriculum_context": {
+      "units": [
+        6
+      ],
+      "learning_objectives": [
+        "UNC-4.A",
+        "UNC-4.B"
+      ],
+      "misconceptions": [
+        "Using p0 instead of p-hat in CI",
+        "Forgetting large counts condition"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Confidence Interval for One Proportion. The formula is: \\hat{p} \\pm z^* \\sqrt{\frac{\\hat{p}(1-\\hat{p})}{n}}. Estimates the range of plausible values for the true population proportion p-hat plus or minus z-star times SE of p-hat. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "two-prop-ci",
+    "name": "CI for Difference of Two Proportions",
+    "latex": "(\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\sqrt{\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}",
+    "domain": "inf-proportions",
+    "tier": "power",
+    "hint": "Difference of p-hats plus or minus z-star times SE",
+    "explain": "Estimates the range of plausible values for p1 - p2",
+    "curriculum_context": {
+      "units": [
+        6
+      ],
+      "learning_objectives": [
+        "UNC-4.D"
+      ],
+      "misconceptions": [
+        "Pooling proportions for CI",
+        "Subtracting SEs instead of adding variances"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: CI for Difference of Two Proportions. The formula is: (\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\sqrt{\frac{\\hat{p}_1(1-\\hat{p}_1)}{n_1} + \frac{\\hat{p}_2(1-\\hat{p}_2)}{n_2}}. Estimates the range of plausible values for p1 - p2 Difference of p-hats plus or minus z-star times SE. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "one-mean-ci",
+    "name": "Confidence Interval for One Mean",
+    "latex": "\bar{x} \\pm t^* \frac{s}{\\sqrt{n}}",
+    "domain": "inf-means",
+    "tier": "regular",
+    "hint": "x-bar plus or minus t-star times s over root n",
+    "explain": "Estimates the range of plausible values for the true population mean",
+    "curriculum_context": {
+      "units": [
+        7
+      ],
+      "learning_objectives": [
+        "UNC-4.E",
+        "UNC-4.F"
+      ],
+      "misconceptions": [
+        "Using z* instead of t*",
+        "Forgetting sigma is unknown"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Confidence Interval for One Mean. The formula is: \bar{x} \\pm t^* \frac{s}{\\sqrt{n}}. Estimates the range of plausible values for the true population mean x-bar plus or minus t-star times s over root n. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "two-mean-ci",
+    "name": "CI for Difference of Two Means",
+    "latex": "(\bar{x}_1 - \bar{x}_2) \\pm t^* \\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}",
+    "domain": "inf-means",
+    "tier": "power",
+    "hint": "Difference of x-bars plus or minus t-star times SE",
+    "explain": "Estimates the range of plausible values for mu1 - mu2",
+    "curriculum_context": {
+      "units": [
+        7
+      ],
+      "learning_objectives": [
+        "UNC-4.G"
+      ],
+      "misconceptions": [
+        "Using s instead of s-squared",
+        "Subtracting variances instead of adding"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: CI for Difference of Two Means. The formula is: (\bar{x}_1 - \bar{x}_2) \\pm t^* \\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}. Estimates the range of plausible values for mu1 - mu2 Difference of x-bars plus or minus t-star times SE. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "random-condition",
+    "name": "Randomization Condition",
+    "latex": "\text{Data from random sample or randomized experiment}",
+    "domain": "inference",
+    "tier": "support",
+    "hint": "Data must come from a random sample or randomized experiment",
+    "explain": "Without randomization, inference may be invalid",
+    "curriculum_context": {
+      "units": [
+        3,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "learning_objectives": [
+        "DAT-2.A",
+        "DAT-3.A"
+      ],
+      "misconceptions": [
+        "Thinking large n substitutes for randomization",
+        "Confusing random sampling with random assignment"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Randomization Condition. The formula is: \text{Data from random sample or randomized experiment}. Without randomization, inference may be invalid Data must come from a random sample or randomized experiment. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "normal-condition",
+    "name": "Normal/Large Sample Condition",
+    "latex": "n\\hat{p} \\geq 10 \text{ (CI)} | np_0 \\geq 10 \text{ (test)} | n \\geq 30 \text{ (means)}",
+    "domain": "inference",
+    "tier": "support",
+    "hint": "Check that the sampling distribution is approximately Normal",
+    "explain": "Different rules for proportions (large counts) vs means (n>=30 or population Normal)",
+    "curriculum_context": {
+      "units": [
+        5,
+        6,
+        7
+      ],
+      "learning_objectives": [
+        "VAR-6.A",
+        "VAR-6.B"
+      ],
+      "misconceptions": [
+        "Applying n>=30 rule to proportions",
+        "Not distinguishing CI vs test for proportions"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: Normal/Large Sample Condition. The formula is: n\\hat{p} \\geq 10 \text{ (CI)} | np_0 \\geq 10 \text{ (test)} | n \\geq 30 \text{ (means)}. Different rules for proportions (large counts) vs means (n>=30 or population Normal) Check that the sampling distribution is approximately Normal. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
+  },
+  {
+    "id": "p-value-interp",
+    "name": "P-Value Interpretation",
+    "latex": "P\text{-value} = P(\text{observed or more extreme} \\mid H_0 \text{ true})",
+    "domain": "inference",
+    "tier": "support",
+    "hint": "Probability of the observed result or more extreme, assuming H0 is true",
+    "explain": "NOT the probability that H0 is true; it is conditional on H0",
+    "curriculum_context": {
+      "units": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "learning_objectives": [
+        "DAT-3.B",
+        "DAT-3.C"
+      ],
+      "misconceptions": [
+        "P-value is P(H0 is true)",
+        "Small p-value proves the alternative"
+      ]
+    },
+    "prompt": "Create a 15-second 3Blue1Brown-style animation for AP Statistics students explaining: P-Value Interpretation. The formula is: P\text{-value} = P(\text{observed or more extreme} \\mid H_0 \text{ true}). NOT the probability that H0 is true; it is conditional on H0 Probability of the observed result or more extreme, assuming H0 is true. Target audience: high school AP Statistics students. Style: clean, minimal backgrounds, smooth transitions. Show the formula building up step by step, then connect to when students use it on the AP exam."
   }
 ]

@@ -107,6 +107,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:
 50%{opacity:1;transform:scale(1.05)}
 }
 .compose-pulse{animation:compose-pulse-anim 1.5s ease-in-out infinite}
+.piano-key-touch:active div{background:#ff8c0055!important;transform:scale(0.95)}
 .latex-shell{position:relative;max-width:100%}
 .latex-scroll{max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:2px}
 .latex-shell.scrollable::after{content:'';position:absolute;top:0;right:0;bottom:0;width:18px;background:linear-gradient(90deg,rgba(13,5,0,0),rgba(13,5,0,0.92));pointer-events:none}
@@ -4552,30 +4553,36 @@ function updateInput(){
       headerHtml+='<div style="flex:1;height:36px;display:flex;align-items:center;justify-content:center;background:'+bg+';border:1px solid '+border+';border-radius:4px;font-size:'+(isHold?'16px':'10px')+';color:#ff8c00;font-weight:600">'+label+'</div>';
     }
     headerHtml+='</div>';
-    // Key hints
+    // Tappable piano keys (work on mobile + desktop)
     const whiteKeys='A S D F G H J K L ;'.split(' ');
     const whiteNames='C4 D4 E4 F4 G4 A4 B4 C5 D5 E5'.split(' ');
     headerHtml+='<div style="display:flex;gap:2px;margin:4px 0">';
     whiteKeys.forEach((k,i)=>{
-      headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#ff8c0022;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+k+'</div>'+whiteNames[i]+'</div>';
+      headerHtml+='<div onclick="handleComposeKey(\''+k.toLowerCase()+'\')" style="flex:1;text-align:center;font-size:8px;color:#5a3800;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none" class="piano-key-touch"><div style="background:#ff8c0022;border:1px solid #ff8c0033;border-radius:3px;padding:6px 0;margin-bottom:1px;color:#ff8c00;font-size:10px;font-weight:600">'+whiteNames[i]+'</div></div>';
     });
     headerHtml+='</div>';
     {
       const locked=td<9;
-      headerHtml+='<div style="display:flex;gap:2px;margin:2px 0;padding:0 4%;'+(locked?'opacity:0.3':'')+'">';
+      headerHtml+='<div style="display:flex;gap:2px;margin:2px 0;padding:0 4%;'+(locked?'opacity:0.3;pointer-events:none':'')+'">';
       const blackKeys=[{k:'W',n:'C#'},{k:'E',n:'D#'},{k:'',n:''},{k:'T',n:'F#'},{k:'Y',n:'G#'},{k:'U',n:'A#'},{k:'',n:''},{k:'O',n:'C#5'},{k:'P',n:'D#5'}];
       blackKeys.forEach(bk=>{
         if(!bk.k)headerHtml+='<div style="flex:1"></div>';
-        else headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#33220088;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+bk.k+'</div>'+bk.n+(locked?'<div style="font-size:6px">\ud83d\udd12</div>':'')+'</div>';
+        else headerHtml+='<div onclick="handleComposeKey(\''+bk.k.toLowerCase()+'\')" style="flex:1;text-align:center;font-size:8px;color:#5a3800;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none" class="piano-key-touch"><div style="background:#33220088;border:1px solid #ff8c0033;border-radius:3px;padding:6px 0;margin-bottom:1px;color:#ff8c00;font-size:10px;font-weight:600">'+bk.n+'</div></div>';
       });
       headerHtml+='</div>';
     }
+    // Modifier row: rest, hold, undo, preview (tappable for mobile)
+    headerHtml+='<div style="display:flex;gap:3px;margin:6px 0">';
+    headerHtml+='<div onclick="handleComposeKey(\'-\')" style="flex:1;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none"><div style="background:#5a380022;border:1px solid #ff8c0033;border-radius:3px;padding:6px 0;color:#ff8c00;font-size:10px;font-weight:600">\u00b7 rest</div></div>';
+    headerHtml+='<div onclick="handleComposeKey(\'.\')" style="flex:1;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none"><div style="background:#5a380022;border:1px solid #ff8c0033;border-radius:3px;padding:6px 0;color:#ff8c00;font-size:10px;font-weight:600">\u2014 hold</div></div>';
+    headerHtml+='<div onclick="if(MELODY_STATE.notes.length>0){MELODY_STATE.notes.pop();lastInputState=\'\'}" style="flex:1;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none"><div style="background:#5a380022;border:1px solid #ff8c0033;border-radius:3px;padding:6px 0;color:#ff8c00;font-size:10px;font-weight:600">\u232b undo</div></div>';
+    headerHtml+='<div onclick="previewMelodyLoop()" style="flex:1;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none"><div style="background:'+(MELODY_STATE.previewLoop?'#ff8c0044':'#5a380022')+';border:1px solid #ff8c0033;border-radius:3px;padding:6px 0;color:#ff8c00;font-size:10px;font-weight:600">'+(MELODY_STATE.previewLoop?'\u25a0 stop':'\u25b6 play')+'</div></div>';
+    headerHtml+='</div>';
     let bodyHtml='<div style="display:flex;gap:8px;justify-content:center;margin-top:6px">';
     bodyHtml+='<button class="btn" onclick="if(MELODY_STATE.previewLoop){clearInterval(MELODY_STATE.previewLoop);MELODY_STATE.previewLoop=null}MELODY_STATE.notes=[];lastInputState=\'\'" style="font-size:11px;padding:6px 16px;background:transparent;border:1px solid #ff8c0044;color:#ff8c00">REDO</button>';
     bodyHtml+='<button class="btn" onclick="exitComposeMode(true)" style="font-size:11px;padding:6px 16px;background:#ff8c00;color:#0d0500;font-weight:700">KEEP</button>';
     bodyHtml+='<button class="btn" onclick="exitComposeMode(false)" style="font-size:11px;padding:6px 16px;background:transparent;border:1px solid #ff8c0044;color:#ff8c00">BACK</button>';
     bodyHtml+='</div>';
-    bodyHtml+='<div style="text-align:center;font-size:9px;color:#5a3800;margin-top:4px">Space=preview \u00b7 Backspace=undo \u00b7 -=rest \u00b7 .=hold \u00b7 Enter=keep \u00b7 Esc=back</div>';
     setInputPanelContent(headerHtml,bodyHtml);
     return;
   }
