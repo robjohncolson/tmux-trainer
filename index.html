@@ -95,8 +95,6 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .mastery-bar{display:flex;height:14px;border-radius:3px;overflow:hidden;border:1px solid #ff8c0022;margin:4px 0}
 .mastery-legend{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-size:9px;margin-bottom:10px}
 .weak-item{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#996622;margin-bottom:3px;padding:3px 8px;background:#1a0800;border-radius:3px;border:1px solid #ffffff08}
-.hud-btn{font-size:16px;background:#0d050088;border:1px solid #ff8c0033;border-radius:6px;color:#ff8c00;cursor:pointer;padding:6px 10px;opacity:.7;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;pointer-events:auto;-webkit-tap-highlight-color:transparent}
-.hud-btn:active{opacity:1;transform:scale(0.95)}
 #queue-bar{position:fixed;bottom:80px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
 .q-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin:0 2px;opacity:.7}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
@@ -115,9 +113,8 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .latex-scroll{max-width:100%;overflow-x:hidden;overflow-y:hidden;padding-bottom:2px}
 .latex-shell.scrollable::after{content:'';position:absolute;top:0;right:0;bottom:0;width:18px;background:linear-gradient(90deg,rgba(13,5,0,0),rgba(13,5,0,0.92));pointer-events:none}
 .latex-display{margin:2px auto;min-height:24px;display:flex;align-items:center;justify-content:center;max-width:100%}
-.latex-display .katex{font-size:1.15em;color:#ffcc66;white-space:normal;word-wrap:break-word}
+.latex-display .katex{font-size:1.15em;color:#ffcc66}
 .latex-display .katex-display{margin:0}
-.latex-display .katex .base{flex-wrap:wrap}
 .mc-grid{display:flex;flex-wrap:wrap;gap:4px;max-width:100%;margin:4px auto 0;justify-content:center}
 .mc-btn{font-family:inherit;font-size:11px;font-weight:600;color:#ff8c00;background:#1a0800;border:1.5px solid #3d1f00;border-radius:4px;padding:5px 8px;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:4px;max-width:100%;min-width:0}
 .mc-btn:hover{border-color:#ff8c00;background:#2d1200;box-shadow:0 0 8px #ff8c0033}
@@ -228,8 +225,6 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .hud-val{font-size:clamp(12px,3.5vw,16px)}
 #h-mastery{font-size:clamp(9px,2.5vw,13px)!important}
 #tier-bar{top:40px;font-size:8px}
-#hud-btns{top:6px;right:6px}
-.hud-btn{min-width:40px;min-height:40px;font-size:15px;padding:5px 8px}
 .enemy-label-inner{font-size:clamp(10px,2.8vw,13px);padding:5px 8px;max-width:min(200px,60vw);min-height:36px;display:flex;align-items:center}
 .sel-arrow{font-size:11px}
 .mc-grid{flex-direction:column;gap:6px;max-width:100%;padding:0 4px}
@@ -319,18 +314,16 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <body>
 <canvas id="game-canvas"></canvas>
 <div id="hud" style="display:none">
-  <div class="hud-item"><div class="hud-val" id="h-score" style="font-size:22px">0</div><div id="h-sub" style="font-size:9px;color:#5a3800;letter-spacing:1px"><span id="h-wave">W1</span> <span id="h-streak">×0</span></div></div>
-  <div class="hud-item"><div class="hud-val" id="h-lives" style="font-size:20px;letter-spacing:2px"></div></div>
-  <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px;text-shadow:0 0 8px #ff0000">!</div></div>
-  <div class="hud-item" id="h-sync" style="font-size:10px;color:#996622"></div>
+  <div class="hud-item"><div class="hud-val" id="h-score" style="font-size:22px">0</div><div id="h-sub" style="font-size:9px;color:#5a3800;letter-spacing:1px"><span id="h-wave">W1</span> <span id="h-streak"></span></div></div>
+  <div class="hud-item"><div class="hud-val" id="h-lives" style="font-size:18px;letter-spacing:2px"></div></div>
+  <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px">!</div></div>
+  <div class="hud-item" id="h-sync" style="display:none"></div>
   <div class="hud-item" id="h-mastery" style="display:none"></div>
+  <div class="hud-item" style="pointer-events:auto"><button id="pause-btn" onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}" style="background:none;border:none;color:#ff8c0088;font-size:16px;cursor:pointer;padding:4px 8px;font-family:inherit;letter-spacing:2px;-webkit-tap-highlight-color:transparent">PAUSE</button></div>
 </div>
 <div id="tier-bar" style="display:none"></div>
-<div id="hud-btns" style="position:fixed;top:8px;right:8px;z-index:30;display:flex;gap:4px;pointer-events:auto">
-  <button class="hud-btn" id="mute-btn" title="Mute">🔊</button>
-  <button class="hud-btn" id="contrast-btn" title="Contrast">☀</button>
-  <button class="hud-btn" id="pause-btn" onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}">⏸</button>
-</div>
+<div id="mute-btn" style="display:none"></div>
+<div id="contrast-btn" style="display:none"></div>
 <div id="labels"></div>
 <div id="input-panel" style="display:none"><div id="ip-header"></div><div id="ip-body"></div></div>
 <div id="queue-bar" style="display:none"></div>
@@ -2719,10 +2712,18 @@ function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=
 // Render LaTeX safely into an element
 function renderLatex(latex,el){
   try{katex.render(latex,el,{throwOnError:false,displayMode:true})}catch(e){el.textContent=latex}
+  // Auto-scale formula to fit container (no horizontal overflow)
+  el.style.transform='';el.style.transformOrigin='center center';
   requestAnimationFrame(()=>{
-    const wrap=el.closest('.latex-shell');
+    const wrap=el.closest('.latex-shell')||el.parentElement;
     if(!wrap)return;
-    wrap.classList.toggle('scrollable',el.scrollWidth>wrap.clientWidth+8);
+    const cw=wrap.clientWidth;
+    const sw=el.scrollWidth;
+    if(sw>cw+4){
+      const scale=Math.max(0.5,cw/sw);
+      el.style.transform='scale('+scale.toFixed(3)+')';
+      el.style.transformOrigin='center center';
+    }
   });
 }
 function noteFreq(offset){return Number((220*Math.pow(2,offset/12)).toFixed(3))}
@@ -5265,6 +5266,12 @@ function showPauseScreen(){
   const mc=SFX.getMusicConfig();
   if(mc)html+='<div style="font-size:11px;color:'+AMB.css.glow+';margin:8px 0">\u266b Wave '+G.wave+': '+mc.name+' ('+mc.tempo+' BPM)</div>';
   html+='<div style="font-size:10px;color:#996622;letter-spacing:2px;margin:0 0 10px">P/<b>R</b> = RESUME · <b>M</b> = MUSIC · ESC = SAVE + EXIT</div>';
+  const isMuted=SFX.isMuted?SFX.isMuted():false;
+  const isHiC=document.body.classList.contains('hi-contrast');
+  html+='<div style="display:flex;gap:12px;justify-content:center;margin:12px 0">';
+  html+='<button class="btn btn-secondary" onclick="const m=SFX.toggleMute();this.textContent=m?\'\\ud83d\\udd07 MUTED\':\'\\ud83d\\udd0a SOUND\';this.style.color=m?\'#ff4422\':\'#ff8c00\'" style="font-size:11px;padding:6px 14px;color:'+(isMuted?'#ff4422':'#ff8c00')+'">'+(isMuted?'\ud83d\udd07 MUTED':'\ud83d\udd0a SOUND')+'</button>';
+  html+='<button class="btn btn-secondary" onclick="document.body.classList.toggle(\'hi-contrast\');const on=document.body.classList.contains(\'hi-contrast\');localStorage.setItem(\'td-hi-contrast\',on?\'1\':\'0\');lastCssFilter=\'\';this.textContent=on?\'\\u263e LIGHT\':\'\\u2600 DARK\'" style="font-size:11px;padding:6px 14px">'+(isHiC?'\u263e LIGHT':'\u2600 DARK')+'</button>';
+  html+='</div>';
   html+='<div class="menu-actions">';
   html+='<button class="btn" onclick="resumeFromPause()">[ <u>R</u>ESUME ]</button>';
   html+='<button class="btn btn-secondary" onclick="openMusicEditor(\'pause\')">[ <u>M</u>USIC EDITOR ]</button>';
@@ -6424,21 +6431,9 @@ window.addEventListener('keydown',e=>{
 // ═══════════════════════════════════════════════
 //  MUTE BUTTON
 // ═══════════════════════════════════════════════
-document.getElementById('mute-btn').onclick=()=>{
-  const m=SFX.toggleMute();
-  document.getElementById('mute-btn').textContent=m?'\ud83d\udd07':'\ud83d\udd0a';
-  document.getElementById('mute-btn').style.color=m?'#ff4422':AMB.css.hot;
-};
-// High contrast mode (daytime)
+// High contrast mode (daytime) — persisted, toggled from pause menu
+// High contrast + mute: persisted in localStorage, toggled from pause menu
 if(localStorage.getItem('td-hi-contrast')==='1')document.body.classList.add('hi-contrast');
-document.getElementById('contrast-btn').onclick=()=>{
-  document.body.classList.toggle('hi-contrast');
-  const on=document.body.classList.contains('hi-contrast');
-  localStorage.setItem('td-hi-contrast',on?'1':'0');
-  document.getElementById('contrast-btn').textContent=on?'\u263e':'\u2600';
-  lastCssFilter=''; // force canvas filter re-apply with/without invert
-};
-document.getElementById('contrast-btn').textContent=document.body.classList.contains('hi-contrast')?'\u263e':'\u2600';
 
 // ═══════════════════════════════════════════════
 //  TOUCH SUPPORT
