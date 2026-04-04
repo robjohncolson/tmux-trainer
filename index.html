@@ -4287,13 +4287,13 @@ function generateFractalStar(cx,cy,len,depth,maxDepth,pos,idx,maxIdx){
   return idx;
 }
 const STAR_POOL=[
-  {x:-4,y:8,z:-10,len:0.6,phase:0,unlockAt:2},
-  {x:3,y:9,z:-11,len:0.5,phase:1.5,unlockAt:3},
-  {x:-7,y:7,z:-9,len:0.45,phase:3.0,unlockAt:4},
-  {x:6,y:8.5,z:-10.5,len:0.55,phase:4.5,unlockAt:5},
-  {x:0,y:10,z:-12,len:0.5,phase:2.2,unlockAt:6},
-  {x:-2,y:7.5,z:-8.5,len:0.4,phase:5.1,unlockAt:7},
-  {x:5,y:10.5,z:-13,len:0.45,phase:0.8,unlockAt:8},
+  {x:-4,y:4,z:-14,len:0.6,phase:0,unlockAt:2},
+  {x:3,y:4.5,z:-15,len:0.5,phase:1.5,unlockAt:3},
+  {x:-7,y:3.5,z:-13,len:0.45,phase:3.0,unlockAt:4},
+  {x:6,y:4.2,z:-14.5,len:0.55,phase:4.5,unlockAt:5},
+  {x:0,y:5,z:-16,len:0.5,phase:2.2,unlockAt:6},
+  {x:-2,y:3.8,z:-12.5,len:0.4,phase:5.1,unlockAt:7},
+  {x:5,y:5.2,z:-17,len:0.45,phase:0.8,unlockAt:8},
 ];
 const starMeshes=STAR_POOL.map(sc=>{
   const posArr=new Float32Array(FRACTAL_STAR_MAX*6);
@@ -6571,8 +6571,8 @@ function animate(time){
     const sd=selEnemyObj?.splitDepth||0;
     const port=isPortrait();
     const pY=port?1.4:1,pZ=port?1.3:1;
-    const dist=(sd>=2?4:sd>=1?5.5:6.5)*pZ*camZoomMult;
-    const height=(sd>=2?3:sd>=1?4:5)*pY*camZoomMult;
+    const dist=(sd>=2?5:sd>=1?6.5:8)*pZ*camZoomMult;
+    const height=(sd>=2?2.5:sd>=1?3.2:4)*pY*camZoomMult;
     const ep=selEnemy.position;
     // Orbit offset from camOrbitAngle
     const tx=ep.x+Math.sin(camOrbitAngle)*dist*0.3;
@@ -6581,8 +6581,8 @@ function animate(time){
     camera.position.x+=(tx-camera.position.x)*.10;
     camera.position.y+=(ty-camera.position.y)*.10;
     camera.position.z+=(tz-camera.position.z)*.10;
-    // Look slightly ahead of the cube (not dead center)
-    const lookBiasY=port?1.5:0.3;
+    // Look slightly ahead of the cube — raised to catch sky/stars
+    const lookBiasY=port?1.5:1.5;
     camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
   }else{
     // Default orbit (title screen, no enemies)
