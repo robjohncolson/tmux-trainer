@@ -102,6 +102,11 @@ canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
 35%{transform:scale(1.16);color:#fff1bf;text-shadow:0 0 18px #ffcc66aa}
 100%{transform:scale(1);color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 }
+@keyframes compose-pulse-anim{
+0%,100%{opacity:.7;transform:scale(1)}
+50%{opacity:1;transform:scale(1.05)}
+}
+.compose-pulse{animation:compose-pulse-anim 1.5s ease-in-out infinite}
 .latex-shell{position:relative;max-width:100%}
 .latex-scroll{max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:2px}
 .latex-shell.scrollable::after{content:'';position:absolute;top:0;right:0;bottom:0;width:18px;background:linear-gradient(90deg,rgba(13,5,0,0),rgba(13,5,0,0.92));pointer-events:none}
@@ -342,10 +347,12 @@ const MASTERY_LABELS=['New','Learning','Familiar','Practiced','Proficient','Mast
 // ═══════════════════════════════════════════════
 const SFX=(()=>{
   // ── FM Synthesis polyphonic engine ──
-  // 14 voices: 0-2 FM pad, 3 FM bass, 4 FM kick, 5 FM snare, 6 FM hihat, 7-13 FM SFX pool
+  // 15 voices: 0-2 FM pad, 3 FM bass, 4 FM kick, 5 FM snare, 6 FM hihat, 7-13 FM SFX pool, 14 FM melody
   let ctx=null,muted=false,masterGain=null,bgmPlaying=false;
   let voices=[],noiseGate=null,noiseLP=null,noiseBP=null;
-  let padBus=null,bassBus=null,sfxBus=null,drumBus=null;
+  let padBus=null,bassBus=null,sfxBus=null,drumBus=null,melodyBus=null;
+  let savedMelody=null; // array of 8 entries: MIDI note number or null (rest)
+  let melodyMuted=false; // true during compose mode to prevent seq() contention on voice 14
   let bgmSeqTimer=null,currentWaveIdx=0,previewTimer=null,previewConfig=null;
   let currentStreak=0,musicalHealth=5;
   const MUSIC_STORAGE_KEY='td-music-config-v1';
@@ -576,6 +583,16 @@ const SFX=(()=>{
     // ── Voices 7-13: FM SFX pool ──
     for(let i=7;i<14;i++){
       const v=createFmVoice('sine',sfxBus);
+      v.carrier.frequency.value=440;
+      v.modulator.frequency.value=440*2;
+      v.modGain.gain.value=0;
+      voices.push(v);
+    }
+
+    // ── Voice 14: FM melody (student compose) ──
+    melodyBus=ctx.createGain();melodyBus.gain.value=0;melodyBus.connect(masterGain);
+    {
+      const v=createFmVoice('sine',melodyBus);
       v.carrier.frequency.value=440;
       v.modulator.frequency.value=440*2;
       v.modGain.gain.value=0;
@@ -862,6 +879,28 @@ const SFX=(()=>{
     const v=Math.max(0,d|0);
     musicalHealth=Math.min(5,v);
     grooveAlways=v>=7; // full forest → groove plays even at streak 0
+    // Melody volume: audible at depth 7+, louder at 8-10
+    if(melodyBus&&ctx){
+      const melVol=v>=10?0.045:v>=9?0.04:v>=8?0.035:v>=7?0.025:0;
+      melodyBus.gain.setTargetAtTime(melVol,ctx.currentTime,.3);
+    }
+  }
+  // ── Student melody helpers ──
+  function midiToFreq(midi){return 440*Math.pow(2,(midi-69)/12)}
+  function setMelody(notes){savedMelody=Array.isArray(notes)&&notes.length?notes.slice(0,8):null}
+  function clearMelody(){savedMelody=null}
+  function getMelody(){return savedMelody?savedMelody.slice():null}
+  function playMelodyNote(midi,dur,del){
+    // One-shot FM note on voice 14 for compose preview / live playback
+    if(muted||!ctx||!voices[14])return;ensure();
+    const v=voices[14],t=ctx.currentTime+(del||0);
+    const freq=midiToFreq(midi);
+    v.carrier.frequency.setValueAtTime(freq,t);
+    v.modulator.frequency.setValueAtTime(freq*2,t);
+    v.modGain.gain.setValueAtTime(freq*1.5,t); // modIndex 1.5 → bright bell
+    v.modGain.gain.setTargetAtTime(freq*0.4,t+(dur||.2)*0.4,.02);
+    v.outputGain.gain.setTargetAtTime(.7,t,.005);
+    v.outputGain.gain.setTargetAtTime(0,t+(dur||.2),.03);
   }
   function setStreak(n){currentStreak=Math.max(0,n|0);}
 
@@ -980,6 +1019,20 @@ const SFX=(()=>{
           }
         });
       }
+      // ── Student melody layer (plays when treeDepth >= 7 and melody exists, muted during compose) ──
+      if(!previewConfig&&!melodyMuted&&savedMelody&&musicalHealth>=5){
+        const melodyRoot=ch[0]; // current chord root frequency
+        const baseRoot=261.63; // C4 reference
+        const semitoneShift=12*Math.log2(melodyRoot/baseRoot);
+        savedMelody.forEach((midi,i)=>{
+          if(midi==null)return;
+          const mt=startT+i*st;
+          if(mt>now-.01){
+            const transposedMidi=midi+Math.round(semitoneShift);
+            playMelodyNote(transposedMidi,st*.8,mt-ctx.currentTime);
+          }
+        });
+      }
       startT+=ll;
       // Auto-advance chord for next bar (song plays itself)
       currentProgIdx=(currentProgIdx+1)%prog.length;
@@ -998,6 +1051,7 @@ const SFX=(()=>{
   return{
     toggleMute(){muted=!muted;if(muted)stopBGM();return muted},
     isMuted(){return muted},startBGM,stopBGM,setKey,killMelody,setTreeDepth,setStreak,
+    setMelody,clearMelody,getMelody,playMelodyNote,setMelodyMuted(m){melodyMuted=!!m},
     getMusicConfig(wave){return cloneWaveConfig(getWaveConfig(typeof wave==='number'?wave:currentWaveIdx))},
     getAllMusicConfig(){return cloneMusicConfig(MUSIC_CONFIG)},
     getDefaultMusicConfig(){return cloneMusicConfig(DEFAULT_MUSIC_CONFIG)},
@@ -2246,7 +2300,13 @@ function renderShortcutBadges(){
   }else{
     label='explain';action='openExplanationForSelectedCommand()';
   }
-  return '<div class="shortcut-row"><button class="shortcut-badge" onclick="'+action+'"><kbd>Alt+E</kbd> '+label+'</button></div>';
+  let composeBtn='';
+  if(G.treeDepth>=7&&!G.waveComplete){
+    const glow=G.treeDepth>=10?' style="color:#ffd700;text-shadow:0 0 6px #ffd70066"':'';
+    const pulse=!SFX.getMelody()?' compose-pulse':'';
+    composeBtn='<button class="shortcut-badge'+pulse+'"'+glow+' onclick="enterComposeMode()"><kbd>`</kbd> compose</button>';
+  }
+  return '<div class="shortcut-row"><button class="shortcut-badge" onclick="'+action+'"><kbd>Alt+E</kbd> '+label+'</button>'+composeBtn+'</div>';
 }
 function renderExplanationControls(answerLabels){
   let html='';
@@ -2962,6 +3022,7 @@ function buildRunStateSnapshot(){
     typedBuffer:G.typedBuffer,
     domainFilter:G.domainFilter,
     difficulty:G.difficulty,
+    melody:SFX.getMelody(),
   };
 }
 function saveRunState(){
@@ -3218,7 +3279,72 @@ const G={
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
   srsError:false,runStateError:false,sessionStartTime:0,resetRev:0,
+  composing:false,
 };
+const MELODY_STATE={
+  notes:[],        // current recording buffer (0-8 entries: MIDI number or null for rest)
+  previewLoop:null, // interval ID for preview playback
+};
+// Piano key → MIDI note mapping (compose mode)
+const PIANO_WHITE={a:60,s:62,d:64,f:65,g:67,h:69,j:71,k:72,l:74,';':76};
+const PIANO_BLACK={w:61,e:63,t:66,y:68,u:70,o:73,p:75};
+const MIDI_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function midiNoteName(m){return MIDI_NAMES[m%12]+(Math.floor(m/12)-1)}
+function getMelodyStorageKey(){return activeCartridge?'td-melody-'+activeCartridge.id:''}
+function enterComposeMode(){
+  if(G.composing||G.treeDepth<7)return;
+  G.composing=true;
+  SFX.setMelodyMuted(true); // prevent seq() from fighting voice 14
+  MELODY_STATE.notes=[];
+  MELODY_STATE.previewLoop=null;
+  lastInputState=''; // bust cache so updateInput() renders compose UI
+}
+function exitComposeMode(save){
+  if(MELODY_STATE.previewLoop){clearInterval(MELODY_STATE.previewLoop);MELODY_STATE.previewLoop=null}
+  SFX.setMelodyMuted(false);
+  if(save&&MELODY_STATE.notes.length>0){
+    // Pad to 8 with nulls (rests)
+    while(MELODY_STATE.notes.length<8)MELODY_STATE.notes.push(null);
+    SFX.setMelody(MELODY_STATE.notes);
+    const key=getMelodyStorageKey();
+    if(key)try{localStorage.setItem(key,JSON.stringify(MELODY_STATE.notes))}catch(e){}
+  }
+  G.composing=false;
+  lastInputState='';
+}
+function handleComposeKey(key){
+  const k=key.toLowerCase();
+  const td=G.treeDepth||0;
+  // Rest key
+  if(k==='-'||k==='0'){
+    if(MELODY_STATE.notes.length<8){MELODY_STATE.notes.push(null);lastInputState=''}
+    return;
+  }
+  // White keys always available at depth 7+
+  let midi=PIANO_WHITE[k];
+  // Black keys only at depth 9+
+  if(!midi&&td>=9)midi=PIANO_BLACK[k];
+  if(midi!=null&&MELODY_STATE.notes.length<8){
+    MELODY_STATE.notes.push(midi);
+    SFX.playMelodyNote(midi,.25);
+    lastInputState='';
+  }
+}
+function previewMelodyLoop(){
+  if(MELODY_STATE.previewLoop){clearInterval(MELODY_STATE.previewLoop);MELODY_STATE.previewLoop=null;return}
+  if(MELODY_STATE.notes.length===0)return;
+  const cfg=SFX.getMusicConfig();
+  const stepDur=60/(cfg.tempo||80)/2*1000;
+  let idx=0;
+  function playStep(){
+    if(idx>=MELODY_STATE.notes.length){idx=0}
+    const m=MELODY_STATE.notes[idx];
+    if(m!=null)SFX.playMelodyNote(m,stepDur/1000*.8);
+    idx++;
+  }
+  playStep();
+  MELODY_STATE.previewLoop=setInterval(playStep,stepDur);
+}
 const BASE_LIVES=5,PATH_LENGTH_T=1.0,MOVE_SPEED_BASE=0.0002,SPAWN_DELAY_BASE=8000;
 
 // ═══════════════════════════════════════════════
@@ -3824,6 +3950,50 @@ function updateHUD(){
 
 let lastInputState='';
 function updateInput(){
+  // ── Compose mode UI ──
+  if(G.composing){
+    const compKey='compose-'+MELODY_STATE.notes.length+'-'+(MELODY_STATE.previewLoop?'p':'s');
+    if(compKey===lastInputState)return;
+    lastInputState=compKey;
+    const td=G.treeDepth||0;
+    let headerHtml='<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;letter-spacing:2px;color:#ff8c00;font-weight:700">YOUR MELODY</div><div style="font-size:10px;color:#5a3800">'+MELODY_STATE.notes.length+'/8 slots</div></div>';
+    // Beat grid
+    headerHtml+='<div style="display:flex;gap:3px;margin:8px 0">';
+    for(let i=0;i<8;i++){
+      const note=MELODY_STATE.notes[i];
+      const filled=i<MELODY_STATE.notes.length;
+      const label=filled?(note!=null?midiNoteName(note):'\u00b7'):'';
+      const bg=filled?(note!=null?'#ff8c0033':'#5a380022'):'#0d050088';
+      const border=filled?'#ff8c0066':'#5a380033';
+      headerHtml+='<div style="flex:1;height:36px;display:flex;align-items:center;justify-content:center;background:'+bg+';border:1px solid '+border+';border-radius:4px;font-size:10px;color:#ff8c00;font-weight:600">'+label+'</div>';
+    }
+    headerHtml+='</div>';
+    // Key hints
+    const whiteKeys='A S D F G H J K L ;'.split(' ');
+    const whiteNames='C4 D4 E4 F4 G4 A4 B4 C5 D5 E5'.split(' ');
+    headerHtml+='<div style="display:flex;gap:2px;margin:4px 0">';
+    whiteKeys.forEach((k,i)=>{
+      headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#ff8c0022;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+k+'</div>'+whiteNames[i]+'</div>';
+    });
+    headerHtml+='</div>';
+    if(td>=9){
+      headerHtml+='<div style="display:flex;gap:2px;margin:2px 0;padding:0 4%">';
+      const blackKeys=[{k:'W',n:'C#'},{k:'E',n:'D#'},{k:'',n:''},{k:'T',n:'F#'},{k:'Y',n:'G#'},{k:'U',n:'A#'},{k:'',n:''},{k:'O',n:'C#5'},{k:'P',n:'D#5'}];
+      blackKeys.forEach(bk=>{
+        if(!bk.k)headerHtml+='<div style="flex:1"></div>';
+        else headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#33220088;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+bk.k+'</div>'+bk.n+'</div>';
+      });
+      headerHtml+='</div>';
+    }
+    let bodyHtml='<div style="display:flex;gap:8px;justify-content:center;margin-top:6px">';
+    bodyHtml+='<button class="btn" onclick="if(MELODY_STATE.previewLoop){clearInterval(MELODY_STATE.previewLoop);MELODY_STATE.previewLoop=null}MELODY_STATE.notes=[];lastInputState=\'\'" style="font-size:11px;padding:6px 16px;background:transparent;border:1px solid #ff8c0044;color:#ff8c00">REDO</button>';
+    bodyHtml+='<button class="btn" onclick="exitComposeMode(true)" style="font-size:11px;padding:6px 16px;background:#ff8c00;color:#0d0500;font-weight:700">KEEP</button>';
+    bodyHtml+='<button class="btn" onclick="exitComposeMode(false)" style="font-size:11px;padding:6px 16px;background:transparent;border:1px solid #ff8c0044;color:#ff8c00">BACK</button>';
+    bodyHtml+='</div>';
+    bodyHtml+='<div style="text-align:center;font-size:9px;color:#5a3800;margin-top:4px">Space=preview \u00b7 Backspace=undo \u00b7 -/0=rest \u00b7 Enter=keep \u00b7 Esc=back</div>';
+    setInputPanelContent(headerHtml,bodyHtml);
+    return;
+  }
   if(G.waveComplete){
     resetExplanationState();
     if(lastInputState==='wave-clear')return;
@@ -4443,6 +4613,9 @@ function startGame(){
     unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
   applyTimeDecay(G.srs);
   SFX.setTreeDepth(G.treeDepth);
+  // Load persisted melody
+  const melKey=getMelodyStorageKey();
+  if(melKey){try{const ml=JSON.parse(localStorage.getItem(melKey));if(Array.isArray(ml))SFX.setMelody(ml)}catch(e){}}
   G.waveCommands=genWave(1);
   lastSpawnTime=performance.now();
   lastInputState='';
@@ -4510,6 +4683,9 @@ function continueGame(){
   updateLabels();
   SFX.setKey(G.wave);
   SFX.setTreeDepth(G.treeDepth);
+  // Load persisted melody
+  const melKey2=getMelodyStorageKey();
+  if(melKey2){try{const ml=JSON.parse(localStorage.getItem(melKey2));if(Array.isArray(ml))SFX.setMelody(ml)}catch(e){}}
   queueBGMStart();
 }
 function nextWave(){
@@ -4809,6 +4985,17 @@ function spawnHydraChildren(parentEnemy){
 //  INPUT HANDLER
 // ═══════════════════════════════════════════════
 window.addEventListener('keydown',e=>{
+  // ── Compose mode guard (top priority when composing) ──
+  if(G.composing){
+    e.preventDefault();
+    const k=e.key;
+    if(k==='Escape'){exitComposeMode(false);return}
+    if(k==='Enter'){exitComposeMode(true);return}
+    if(k==='Backspace'){if(MELODY_STATE.notes.length>0){MELODY_STATE.notes.pop();lastInputState=''}return}
+    if(k===' '){previewMelodyLoop();return}
+    handleComposeKey(k);
+    return;
+  }
   if(e.key==='Escape'&&MUSIC_EDITOR.open){
     e.preventDefault();
     closeMusicEditor();
@@ -4849,6 +5036,13 @@ window.addEventListener('keydown',e=>{
         if(btn){btn.click();return}
       }
     }
+    return;
+  }
+
+  // Backtick shortcut to enter compose mode
+  if(e.key==='`'&&G.screen==='game'&&!G.paused&&G.treeDepth>=7&&!G.waveComplete){
+    e.preventDefault();
+    enterComposeMode();
     return;
   }
 
@@ -5086,7 +5280,7 @@ function animate(time){
   spawnMark.rotation.y=time*.002;
 
   if(G.screen==='game'&&!G.paused){
-    trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();
+    if(!G.composing){trySpawn(time);moveEnemies();checkBreach();checkWaveComplete();autoSelect();}
     updateEnemyMeshes();updateLabels();updateHUD();updateInput();updateQueue();
     SFX.setKey(G.wave);
     // Evolve pad: only count main formula enemies (not sub/deep children)
