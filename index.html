@@ -6510,9 +6510,12 @@ function animate(time){
     camera.position.x+=(tx-camera.position.x)*.055;
     camera.position.y+=(ty-camera.position.y)*.055;
     camera.position.z+=(tz-camera.position.z)*.055;
+    // On mobile, bias lookAt upward so the target cube is in the top half
+    // (input panel covers bottom ~45% of screen)
+    const lookBiasY=port?1.5:0.3;
     const lx=selEnemy.position.x*(trackX+.1);
     const lz=selEnemy.position.z*(trackZ+.1)-1;
-    camera.lookAt(lx,0,lz);
+    camera.lookAt(lx,lookBiasY,lz);
   }else{
     // Default orbit
     const orbY=isPortrait()?22:18;
