@@ -4240,7 +4240,7 @@ const fernMeshes=FERN_POOL.map(fc=>{
   geo.setAttribute('color',new THREE.BufferAttribute(colArr,3).setUsage(THREE.DynamicDrawUsage));
   const mat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.6,fog:false});
   const mesh=new THREE.LineSegments(geo,mat);
-  mesh.position.set(fc.x,terrainHeight(fc.x,fc.z),fc.z);
+  mesh.position.set(fc.x,terrainHeight(fc.x,fc.z)+0.05,fc.z); // slight y-offset to avoid z-fighting with terrain
   mesh.visible=false;
   return{mesh,geo,posArr,colArr,config:fc};
 });
@@ -6537,8 +6537,8 @@ function animate(time){
       if(p.ageMs<p.burstMs){
         p.vel.multiplyScalar(1.012);
         p.vel.y-=.0035*frameScale;
-        // Fractal branching: 30% chance mid-burst, max depth 2
-        if(!p.branched&&(p.branchDepth||0)<2&&p.ageMs>p.burstMs*0.4&&Math.random()<0.006){
+        // Fractal branching: 30% chance mid-burst, max depth 2, cap total particles
+        if(!p.branched&&(p.branchDepth||0)<2&&particles.length<80&&p.ageMs>p.burstMs*0.4&&Math.random()<0.006){
           p.branched=true;
           const bc=p.mesh.material.color.getHex();
           const bm=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color:bc,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));
