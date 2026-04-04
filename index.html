@@ -6717,9 +6717,14 @@ function animate(time){
   const td=G.treeDepth||0;
   skyMaterial.uniforms.time.value=timeSec;
   skyMaterial.uniforms.brightness.value=0.15+Math.min(td,10)*0.02;
-  // Mandelbrot terrain: iterations grow with tree depth
-  terrMat.uniforms.maxIter.value=8+td*7; // 8 → 78 iterations
+  // Mandelbrot terrain: zoom deeper into boundary as tree depth grows
+  const mdNorm=Math.min(td,10)/10;
+  terrMat.uniforms.maxIter.value=8+td*7;
   terrMat.uniforms.time.value=timeSec;
+  // Zoom from overview (1.5) into a detailed boundary region (0.15)
+  terrMat.uniforms.zoom.value=1.5*Math.pow(0.1,mdNorm); // 1.5 → 0.15
+  // Pan toward the interesting Seahorse Valley region as we zoom
+  terrMat.uniforms.center.value.set(-0.75+mdNorm*0.005,0.1-mdNorm*0.1);
 
   // Fractal trees (in game scene, grounded on terrain)
   const sk=SFX.getStreak();
