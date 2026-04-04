@@ -2008,6 +2008,120 @@ const VARIABLE_BANK={
   'p-value-interp':[{s:'P\\text{-value}',d:'probability of observed or more extreme result, assuming H\u2080 true'},{s:'\\alpha',d:'significance level'}],
 };
 
+// ── Application Bank: scenario-based "which formula?" questions ──
+const APPLICATION_BANK={
+  'mean':[{scenario:'A teacher records 30 test scores and wants to find the typical score for the class.',confusionSet:['rv-mean','xbar-mean','linreg-mean']}],
+  'std-dev':[{scenario:'A quality engineer measures the spread of fill volumes in 50 bottles from a production line.',confusionSet:['variance','rv-sd','iqr']}],
+  'linreg':[{scenario:'A biologist collects height and weight data for 40 birds and wants to predict weight from height.',confusionSet:['corr-r','slope-b','linreg-mean']}],
+  'linreg-mean':[{scenario:'A student is asked what known point the least-squares regression line must always pass through.',confusionSet:['linreg','y-intercept','slope-b']}],
+  'corr-r':[{scenario:'A researcher wants a single number summarizing the strength and direction of a linear relationship between study hours and GPA.',confusionSet:['r-squared','slope-b','linreg']}],
+  'slope-b':[{scenario:'A student needs to calculate the slope of the LSRL given r, sy, and sx.',confusionSet:['corr-r','linreg','y-intercept']}],
+  'zscore':[{scenario:'An admissions officer wants to compare an SAT score of 1350 to an ACT score of 30 on a common scale.',confusionSet:['mean','std-dev','empirical-rule']}],
+  'iqr':[{scenario:'A teacher wants a resistant measure of spread for test scores that has several extreme outliers.',confusionSet:['std-dev','variance','outlier-iqr']}],
+  'outlier-iqr':[{scenario:'A student must determine whether a home price of $1.2M is an outlier in a dataset with Q1=200K and Q3=400K.',confusionSet:['iqr','zscore','empirical-rule']}],
+  'empirical-rule':[{scenario:'Heights are roughly Normal with mean 64 in. and SD 2.5 in. About what percent fall between 59 and 69 inches?',confusionSet:['zscore','std-dev','normal-condition']}],
+  'residual':[{scenario:'A model predicts a car gets 28 mpg, but the actual value is 31 mpg. What is the prediction error?',confusionSet:['linreg','r-squared','resid-s']}],
+  'r-squared':[{scenario:'A researcher reports r = 0.90 and is asked what proportion of variation in y is explained by the model.',confusionSet:['corr-r','slope-b','resid-s']}],
+  'y-intercept':[{scenario:'Given the LSRL passes through (x-bar, y-bar), a student must find the intercept a.',confusionSet:['linreg','linreg-mean','slope-b']}],
+  'variance':[{scenario:'A student needs s-squared to use in the linear combination variance formula.',confusionSet:['std-dev','lincomb-var','rv-sd']}],
+  'add-rule':[{scenario:'In a class of 30, 18 play sports and 12 are in band; 5 do both. Find P(sports or band).',confusionSet:['mult-rule','complement','cond-prob']}],
+  'cond-prob':[{scenario:'Of 200 patients, 60 have condition A and 30 have both A and B. Find the probability of B given A.',confusionSet:['mult-rule','add-rule','mult-independent']}],
+  'complement':[{scenario:'The probability of rain on any given day is 0.35. A student needs P(no rain).',confusionSet:['add-rule','cond-prob','mult-independent']}],
+  'mult-rule':[{scenario:'Two cards are drawn without replacement. Find the probability both are aces.',confusionSet:['mult-independent','cond-prob','add-rule']}],
+  'mult-independent':[{scenario:'A fair coin is flipped and a fair die is rolled. Find P(heads and 6).',confusionSet:['mult-rule','add-rule','cond-prob']}],
+  'rv-mean':[{scenario:'A charity raffle has prizes of $0, $10, and $100 with known probabilities. Find the expected payout per ticket.',confusionSet:['mean','binom-mean','lincomb-mean']}],
+  'rv-sd':[{scenario:'Given a probability distribution for random variable X, find the standard deviation of X.',confusionSet:['std-dev','binom-sd','lincomb-var']}],
+  'binom-pmf':[{scenario:'A quiz has 10 questions with 4 choices each. Find P(exactly 7 correct) by guessing.',confusionSet:['geom-pmf','binom-mean','binom-sd']}],
+  'binom-mean':[{scenario:'A manufacturer knows 3% of items are defective. In a batch of 500, how many defects are expected?',confusionSet:['rv-mean','geom-mean','binom-sd']}],
+  'binom-sd':[{scenario:'A poll contacts 400 voters where 55% support candidate A. Find the SD of the number who support A.',confusionSet:['binom-mean','rv-sd','std-dev']}],
+  'geom-pmf':[{scenario:'A basketball player makes 80% of free throws. Find P(first miss is on the 5th attempt).',confusionSet:['binom-pmf','geom-mean','binom-mean']}],
+  'geom-mean':[{scenario:'A telemarketer has a 5% success rate per call. On average, how many calls until the first sale?',confusionSet:['binom-mean','rv-mean','geom-sd']}],
+  'geom-sd':[{scenario:'A rare disease test has a 2% positive rate. Find the SD of the number of tests until the first positive.',confusionSet:['geom-mean','binom-sd','rv-sd']}],
+  'lincomb-mean':[{scenario:'A store sells phones (mean profit $120) and cases (mean profit $15). Find expected total profit from one of each.',confusionSet:['rv-mean','binom-mean','lintransform']}],
+  'lincomb-var':[{scenario:'X and Y are independent. A student needs the variance of X minus Y and is tempted to subtract variances.',confusionSet:['lincomb-mean','rv-sd','lintransform']}],
+  'lintransform':[{scenario:'Temperatures are converted from Celsius to Fahrenheit (F = 1.8C + 32). How does the SD change?',confusionSet:['lincomb-mean','lincomb-var','std-dev']}],
+  'z-test-stat':[{scenario:'A student has a sample statistic, a hypothesized parameter, and an SE. Which formula gives the test statistic?',confusionSet:['ci-formula','one-prop-z','one-mean-t']}],
+  'ci-formula':[{scenario:'A student knows the point estimate and the margin of error and needs to build an interval.',confusionSet:['z-test-stat','margin-error','one-prop-ci']},{scenario:'After computing SE and finding z*, a student wants a range of plausible values for the parameter.',confusionSet:['z-test-stat','margin-error','one-mean-ci']}],
+  'power':[{scenario:'A researcher wants to know the probability that her study will detect a real difference if one truly exists.',confusionSet:['type-ii-error','type-i-error','p-value-interp']}],
+  'margin-error':[{scenario:'A poll reports 52% support with a margin of error of 3%. A student is asked how ME was computed.',confusionSet:['ci-formula','width-ci','phat-se']}],
+  'width-ci':[{scenario:'A researcher wants to cut the margin of error in half. By what factor must the sample size increase?',confusionSet:['margin-error','ci-formula','power']}],
+  'type-i-error':[{scenario:'A drug trial rejects H0 and approves a drug that is actually ineffective. What type of error was made?',confusionSet:['type-ii-error','p-value-interp','power']}],
+  'type-ii-error':[{scenario:'A screening test fails to detect a disease that is actually present. What type of error occurred?',confusionSet:['type-i-error','power','p-value-interp']}],
+  'p-value-interp':[{scenario:'A student gets p = 0.03 and says "there is a 3% chance H0 is true." Is this correct?',confusionSet:['type-i-error','type-ii-error','power']},{scenario:'A test yields p = 0.12 at alpha = 0.05. The student must state the correct conclusion.',confusionSet:['type-i-error','type-ii-error','power']}],
+  'random-condition':[{scenario:'A student surveys every 5th person entering the cafeteria. Is the randomization condition met?',confusionSet:['normal-condition','ten-pct-condition','large-counts']},{scenario:'Volunteers sign up for a study on sleep and grades. Can the results generalize to all students?',confusionSet:['normal-condition','ten-pct-condition','large-counts']},{scenario:'Subjects are randomly assigned to treatment and control groups. What condition does this satisfy?',confusionSet:['normal-condition','ten-pct-condition','large-counts']}],
+  'normal-condition':[{scenario:'A sample of n=15 from a strongly skewed population. Is the Normal condition satisfied for a t-test?',confusionSet:['random-condition','large-counts','ten-pct-condition']},{scenario:'With n=200 and p-hat=0.04, check whether a z-procedure for proportions is valid.',confusionSet:['large-counts','random-condition','ten-pct-condition']},{scenario:'A sample of size 45 from unknown population shape. Is CLT applicable for means?',confusionSet:['random-condition','ten-pct-condition','large-counts']}],
+  'ten-pct-condition':[{scenario:'A school surveys 80 of its 400 students. Is the independence assumption reasonable?',confusionSet:['random-condition','normal-condition','large-counts']},{scenario:'A researcher samples 500 from a city of 50,000. Does the 10% condition hold?',confusionSet:['random-condition','normal-condition','large-counts']},{scenario:'A biologist captures 30 fish from a pond of 150. Should she worry about dependence?',confusionSet:['random-condition','normal-condition','large-counts']}],
+  'large-counts':[{scenario:'With n=40 and p0=0.08, a student checks np0=3.2 before a one-proportion z-test. Is the condition met?',confusionSet:['normal-condition','ten-pct-condition','random-condition']},{scenario:'A survey of 500 finds p-hat=0.92. Check whether a one-proportion CI is valid.',confusionSet:['normal-condition','ten-pct-condition','random-condition']},{scenario:'For a two-proportion z-test, verify large counts using the pooled proportion.',confusionSet:['normal-condition','ten-pct-condition','random-condition']}],
+  'phat-mean':[{scenario:'If you take many samples of size 100 from a population with p=0.6, what will the average of all p-hats be?',confusionSet:['xbar-mean','phat-sd','binom-mean']}],
+  'phat-sd':[{scenario:'A pollster wants to know how much p-hat varies from sample to sample when p=0.5 and n=400.',confusionSet:['phat-se','phat-mean','xbar-sd']}],
+  'phat-se':[{scenario:'A researcher computes p-hat=0.45 from n=200 and needs the standard error for a confidence interval.',confusionSet:['phat-sd','xbar-se','pooled-se']}],
+  'diff-p-sd':[{scenario:'Two populations have known p1=0.6 and p2=0.5. Find the SD of p-hat1 minus p-hat2.',confusionSet:['diff-p-se','diff-x-sd','phat-sd']}],
+  'diff-p-se':[{scenario:'Build a CI for p1-p2 and must estimate the SE using the two sample proportions separately.',confusionSet:['pooled-se','diff-p-sd','diff-x-se']}],
+  'pooled-se':[{scenario:'In a two-proportion z-test (H0: p1=p2), compute SE by pooling the two samples.',confusionSet:['diff-p-se','phat-se','diff-x-se']}],
+  'one-prop-z':[{scenario:'A company claims 90% of orders ship on time. A consumer group surveys 200 orders and finds 84%.',confusionSet:['one-prop-ci','two-prop-z','one-mean-t']},{scenario:'A coin is flipped 100 times and lands heads 62 times. Test whether the coin is fair.',confusionSet:['one-prop-ci','two-prop-z','chi-sq']},{scenario:'A school claims 75% graduate. A sample of 150 finds 70%. Is there evidence the rate is lower?',confusionSet:['one-prop-ci','two-prop-z','one-mean-t']}],
+  'one-prop-ci':[{scenario:'A survey of 600 voters finds 54% support a ballot measure. Estimate the true proportion with 95% confidence.',confusionSet:['one-prop-z','two-prop-ci','ci-formula']},{scenario:'In a sample of 300 adults, 42% exercise daily. Construct a CI for the true proportion.',confusionSet:['one-prop-z','two-prop-ci','one-mean-ci']}],
+  'two-prop-z':[{scenario:'Compare proportion of patients cured by Drug A vs Drug B using independent random samples.',confusionSet:['one-prop-z','two-prop-ci','two-mean-t']},{scenario:'An experiment assigns 100 students to tutoring and 100 to none, comparing pass rates.',confusionSet:['one-prop-z','paired-t','two-mean-t']},{scenario:'Two factories: defect rates 12/200 vs 18/250. Test whether the rates differ.',confusionSet:['one-prop-z','chi-sq','two-prop-ci']}],
+  'two-prop-ci':[{scenario:'Estimate how much higher the vaccination rate is in City A than City B.',confusionSet:['two-prop-z','one-prop-ci','two-mean-ci']},{scenario:'After finding different satisfaction rates at two stores, build a 95% CI for the difference.',confusionSet:['two-prop-z','one-prop-ci','two-mean-ci']}],
+  'xbar-mean':[{scenario:'If the population mean is 72, what is the mean of all possible sample means?',confusionSet:['phat-mean','mean','binom-mean']}],
+  'xbar-sd':[{scenario:'Population SD is 12. For samples of size 36, find the SD of the sampling distribution of x-bar.',confusionSet:['xbar-se','phat-sd','std-dev']}],
+  'xbar-se':[{scenario:'A sample of 50 has s=8. Compute the standard error of x-bar for a confidence interval.',confusionSet:['xbar-sd','phat-se','diff-x-se']}],
+  'diff-x-sd':[{scenario:'Two populations have known SDs. Find the SD of x-bar1 minus x-bar2 for independent samples.',confusionSet:['diff-x-se','diff-p-sd','xbar-sd']}],
+  'diff-x-se':[{scenario:'Given s1, s2, n1, and n2, compute the SE of the difference in sample means.',confusionSet:['diff-x-sd','diff-p-se','xbar-se']}],
+  'one-mean-t':[{scenario:'A nutritionist tests whether mean sodium in a soup brand differs from the labeled 800 mg, using 25 cans.',confusionSet:['one-mean-ci','paired-t','two-mean-t']},{scenario:'A school claims mean SAT is 1100. A sample of 40 has mean 1065 and s=120.',confusionSet:['one-mean-ci','one-prop-z','two-mean-t']},{scenario:'A farmer tests whether mean apple weight differs from 150g using 30 apples.',confusionSet:['one-mean-ci','paired-t','two-mean-t']}],
+  'one-mean-ci':[{scenario:'A biologist catches 35 fish and measures their lengths. Estimate the true mean length with 90% confidence.',confusionSet:['one-mean-t','two-mean-ci','one-prop-ci']},{scenario:'A sample of 20 light bulbs has mean life 1200 hrs with s=80. Build a 95% CI for the mean.',confusionSet:['one-mean-t','two-mean-ci','ci-formula']}],
+  'two-mean-t':[{scenario:'Compare mean reaction times for caffeine vs placebo groups with independent random samples.',confusionSet:['paired-t','two-mean-ci','one-mean-t']},{scenario:'Compare mean test scores of students taught with two different methods, using separate classes.',confusionSet:['paired-t','two-prop-z','one-mean-t']},{scenario:'Compare mean recovery times for two surgical techniques using independent patient groups.',confusionSet:['paired-t','two-mean-ci','two-prop-z']}],
+  'two-mean-ci':[{scenario:'Build a 95% CI for how much faster Assembly Line A is than Line B, using independent samples.',confusionSet:['two-mean-t','one-mean-ci','two-prop-ci']},{scenario:'Estimate the difference in mean reading scores between two school districts.',confusionSet:['two-mean-t','paired-t','one-mean-ci']}],
+  'paired-t':[{scenario:'Each of 20 runners is timed before and after a training program. Test whether times improved.',confusionSet:['two-mean-t','one-mean-t','two-mean-ci']},{scenario:'Students take a pre-test and post-test. Did scores increase on average?',confusionSet:['two-mean-t','one-mean-t','two-prop-z']},{scenario:'Blood pressure measured before and after a medication for 30 patients.',confusionSet:['two-mean-t','one-mean-t','two-mean-ci']}],
+  'chi-sq':[{scenario:'A die is rolled 300 times. Test whether outcomes fit a uniform distribution across all six faces.',confusionSet:['expected-gof','one-prop-z','two-prop-z']},{scenario:'A survey asks gender and political party. Test whether preference is independent of gender.',confusionSet:['expected-twoway','two-prop-z','cond-prob']},{scenario:'A geneticist compares observed flower-color ratios to a 9:3:3:1 Mendelian prediction.',confusionSet:['expected-gof','binom-pmf','one-prop-z']}],
+  'expected-twoway':[{scenario:'In a two-way table of gender by major, compute the expected count for one cell.',confusionSet:['expected-gof','chi-sq','cond-prob']}],
+  'expected-gof':[{scenario:'Under H0 the four blood types occur with proportions 0.44, 0.42, 0.10, 0.04 in a sample of 500.',confusionSet:['expected-twoway','chi-sq','binom-mean']}],
+  'std-resid-chi':[{scenario:'After a significant chi-square result, identify which cells contributed most to the statistic.',confusionSet:['chi-sq','residual','expected-twoway']}],
+  'slope-mean':[{scenario:'What is the sampling distribution of slopes b centered on?',confusionSet:['xbar-mean','phat-mean','slope-b']}],
+  'slope-se':[{scenario:'Computer output shows s=4.2, s_x=3.1, n=30. Calculate the SE of the slope.',confusionSet:['slope-sd','xbar-se','phat-se']}],
+  'resid-s':[{scenario:'Compute the residual standard deviation s from the sum of squared residuals and n=25.',confusionSet:['std-dev','residual','slope-se']}],
+  'slope-t':[{scenario:'Test H0: beta=0 for the relationship between hours studied and exam score.',confusionSet:['one-mean-t','slope-ci','two-mean-t']},{scenario:'Computer output gives b=2.4 and SE_b=0.8. Test whether the slope is significantly nonzero.',confusionSet:['one-mean-t','slope-ci','z-test-stat']},{scenario:'Test whether tree age is a significant linear predictor of trunk diameter.',confusionSet:['corr-r','slope-ci','one-mean-t']}],
+  'slope-ci':[{scenario:'After confirming LINE conditions, construct a 95% CI for the true population slope.',confusionSet:['slope-t','one-mean-ci','ci-formula']},{scenario:'Build an interval estimate for how much each additional year of education changes income.',confusionSet:['slope-t','two-mean-ci','one-mean-ci']}],
+  'log-transform':[{scenario:'A scatterplot of population vs year shows exponential growth. Linearize the relationship.',confusionSet:['linreg','corr-r','residual']}]
+};
+
+// ── Relationship Bank: "what happens when X changes?" questions ──
+const RELATIONSHIP_BANK={
+  'margin-error':[{input:'n (sample size)',output:'margin of error',direction:'decreases',explain:'n is under a square root in the denominator of SE — larger samples shrink ME'},{input:'confidence level',output:'margin of error',direction:'increases',explain:'Higher confidence requires a larger critical value z* or t*'},{input:'s (sample SD)',output:'margin of error',direction:'increases',explain:'s is in the numerator of SE — more variability widens the interval'}],
+  'width-ci':[{input:'n (sample size)',output:'interval width',direction:'decreases',explain:'Width is proportional to 1/\u221an — quadrupling n halves the width'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger critical value, widening the interval'}],
+  'power':[{input:'n (sample size)',output:'power',direction:'increases',explain:'Larger n reduces SE, making it easier to detect a real effect'},{input:'alpha (significance level)',output:'power',direction:'increases',explain:'Larger alpha makes rejection easier, so power increases'},{input:'true effect size',output:'power',direction:'increases',explain:'Bigger true difference from H0 is easier to detect'}],
+  'ci-formula':[{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence means larger critical value, so wider interval'},{input:'n (sample size)',output:'interval width',direction:'decreases',explain:'Larger n shrinks SE, narrowing the interval'}],
+  'phat-sd':[{input:'n (sample size)',output:'SD of p-hat',direction:'decreases',explain:'n is in the denominator under the square root — larger n reduces spread'}],
+  'phat-se':[{input:'n (sample size)',output:'SE of p-hat',direction:'decreases',explain:'n is in the denominator — more data gives a more precise estimate'}],
+  'diff-p-sd':[{input:'n1 or n2 (sample sizes)',output:'SD of difference',direction:'decreases',explain:'Each n is in a denominator — larger samples reduce variability'}],
+  'diff-p-se':[{input:'n1 or n2 (sample sizes)',output:'SE of difference',direction:'decreases',explain:'Larger samples in either group shrink the standard error'}],
+  'one-prop-z':[{input:'n (sample size)',output:'z statistic (magnitude)',direction:'increases',explain:'Larger n shrinks SE in the denominator, amplifying any difference'},{input:'difference (p-hat minus p0)',output:'z statistic (magnitude)',direction:'increases',explain:'Larger gap between observed and null means bigger numerator'}],
+  'one-prop-ci':[{input:'n (sample size)',output:'interval width',direction:'decreases',explain:'Larger n reduces SE, narrowing the confidence interval'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger z*, widening the interval'}],
+  'two-prop-z':[{input:'n1 and n2 (sample sizes)',output:'z statistic (magnitude)',direction:'increases',explain:'Larger samples reduce pooled SE, making z larger for the same difference'}],
+  'two-prop-ci':[{input:'n1 and n2 (sample sizes)',output:'interval width',direction:'decreases',explain:'Larger samples in each group reduce SE, tightening the interval'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger z*, widening the interval'}],
+  'xbar-sd':[{input:'n (sample size)',output:'SD of x-bar',direction:'decreases',explain:'sigma/sqrt(n) — larger n reduces the spread of sample means'},{input:'sigma (population SD)',output:'SD of x-bar',direction:'increases',explain:'sigma is in the numerator — more variable populations produce more variable means'}],
+  'xbar-se':[{input:'n (sample size)',output:'SE of x-bar',direction:'decreases',explain:'s/sqrt(n) — larger n reduces the standard error'},{input:'s (sample SD)',output:'SE of x-bar',direction:'increases',explain:'s is in the numerator — more spread means less precise estimates'}],
+  'diff-x-sd':[{input:'n1 or n2 (sample sizes)',output:'SD of difference',direction:'decreases',explain:'Each n is in a denominator under the root — larger samples reduce variability'}],
+  'diff-x-se':[{input:'n1 or n2 (sample sizes)',output:'SE of difference',direction:'decreases',explain:'Larger samples in either group shrink the combined SE'}],
+  'one-mean-t':[{input:'n (sample size)',output:'t statistic (magnitude)',direction:'increases',explain:'Larger n shrinks s/sqrt(n) in the denominator, increasing |t|'},{input:'s (sample SD)',output:'t statistic (magnitude)',direction:'decreases',explain:'Larger s inflates the denominator SE, reducing |t|'}],
+  'one-mean-ci':[{input:'n (sample size)',output:'interval width',direction:'decreases',explain:'Larger n reduces SE and slightly reduces t* (more df)'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger t*, widening the interval'},{input:'s (sample SD)',output:'interval width',direction:'increases',explain:'s is in the numerator of SE — more spread means wider interval'}],
+  'two-mean-t':[{input:'n1 and n2 (sample sizes)',output:'t statistic (magnitude)',direction:'increases',explain:'Larger samples reduce SE in the denominator, making t larger'},{input:'s1 or s2 (sample SDs)',output:'t statistic (magnitude)',direction:'decreases',explain:'Larger SDs inflate the denominator SE, reducing |t|'}],
+  'two-mean-ci':[{input:'n1 and n2 (sample sizes)',output:'interval width',direction:'decreases',explain:'Larger samples reduce SE, narrowing the interval'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger t*, widening the interval'}],
+  'paired-t':[{input:'n (number of pairs)',output:'t statistic (magnitude)',direction:'increases',explain:'More pairs reduce s_d/sqrt(n), increasing |t|'},{input:'s_d (SD of differences)',output:'t statistic (magnitude)',direction:'decreases',explain:'More variability in differences inflates the denominator'}],
+  'chi-sq':[{input:'n (sample size)',output:'chi-square statistic',direction:'increases',explain:'Larger n increases expected counts, amplifying (O-E)\u00b2/E terms'},{input:'difference (O minus E)',output:'chi-square statistic',direction:'increases',explain:'Each (O-E)\u00b2/E term grows with larger discrepancies from expected'}],
+  'slope-sd':[{input:'n (sample size)',output:'SD of slope b',direction:'decreases',explain:'sqrt(n) is in the denominator — more data gives more precise slopes'},{input:'sigma (residual SD)',output:'SD of slope b',direction:'increases',explain:'sigma in numerator — more noise means less precise slopes'},{input:'sigma_x (spread of x)',output:'SD of slope b',direction:'decreases',explain:'sigma_x in denominator — more spread in x anchors the slope'}],
+  'slope-se':[{input:'n (sample size)',output:'SE of slope b',direction:'decreases',explain:'sqrt(n-1) in denominator — more data reduces slope uncertainty'},{input:'s (residual SD)',output:'SE of slope b',direction:'increases',explain:'s in numerator — noisier data gives a less precise slope'},{input:'s_x (spread of x)',output:'SE of slope b',direction:'decreases',explain:'s_x in denominator — wider x range pins down the slope better'}],
+  'slope-t':[{input:'n (sample size)',output:'t statistic (magnitude)',direction:'increases',explain:'Larger n reduces SE_b in the denominator, making t larger'},{input:'s (residual SD)',output:'t statistic (magnitude)',direction:'decreases',explain:'More residual noise inflates SE_b, reducing |t|'}],
+  'slope-ci':[{input:'n (sample size)',output:'interval width',direction:'decreases',explain:'Larger n reduces SE_b, narrowing the CI for the slope'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger t*, widening the interval'}],
+  'resid-s':[{input:'sum of squared residuals',output:'residual SD (s)',direction:'increases',explain:'Larger residuals mean worse fit, so s increases'},{input:'n (sample size)',output:'residual SD (s)',direction:'decreases',explain:'Dividing by n-2 means more data dilutes the sum of squares'}],
+  'std-dev':[{input:'distance of values from the mean',output:'standard deviation',direction:'increases',explain:'SD measures average distance from the mean — farther values increase it'}],
+  'corr-r':[{input:'spread around the line',output:'r (magnitude)',direction:'decreases',explain:'More scatter reduces the consistency of z-score products'}],
+  'slope-b':[{input:'r (correlation)',output:'slope b',direction:'increases',explain:'b = r * sy/sx — stronger correlation means steeper slope'},{input:'sy/sx (ratio of SDs)',output:'slope b',direction:'increases',explain:'Larger y-variability relative to x makes the slope steeper'}],
+  'binom-mean':[{input:'n (number of trials)',output:'mean (mu)',direction:'increases',explain:'mu = np — more trials means more expected successes'},{input:'p (success probability)',output:'mean (mu)',direction:'increases',explain:'mu = np — higher p means more expected successes per trial'}],
+  'binom-sd':[{input:'n (number of trials)',output:'sigma',direction:'increases',explain:'sigma = sqrt(np(1-p)) — more trials add variability'}],
+  'geom-mean':[{input:'p (success probability)',output:'mean (mu)',direction:'decreases',explain:'mu = 1/p — higher p means fewer trials needed on average'}],
+  'geom-sd':[{input:'p (success probability)',output:'sigma',direction:'decreases',explain:'Both sqrt(1-p) and 1/p decrease as p increases'}]
+};
+
 const AUTO_BLANK_SPECS=[
   {match:'\\sigma_{\\hat{p}_1-\\hat{p}_2}',choices:['\\sigma_{\\hat{p}_1-\\hat{p}_2}','s_{\\hat{p}_1-\\hat{p}_2}','\\sigma_{\\bar{x}_1-\\bar{x}_2}']},
   {match:'s_{\\hat{p}_1-\\hat{p}_2}',choices:['s_{\\hat{p}_1-\\hat{p}_2}','\\sigma_{\\hat{p}_1-\\hat{p}_2}','s_{\\bar{x}_1-\\bar{x}_2}']},
@@ -5563,10 +5677,13 @@ function handleMiss(enemy){
   // Fallback: speed up — gentler for prereq enemies to encourage exploration
   const speedPenalty=isQuizMode?(depth===0?1.85:depth===1?1.4:1.2):1.5;
   enemy.speedMult=Math.min((enemy.speedMult||1)*speedPenalty,4.5);
-  if(isQuizMode&&(enemy.missCount||0)>=3){
-    enemy.t=Math.max(enemy.t,0.85);
-    enemy.speedMult=Math.max(enemy.speedMult,3.0);
-    flash('MAX MISS! BREACHING \u26a0','#ff0000');
+  const mc=enemy.missCount||0;
+  // L0 main formulas: 2-miss cap → forced breach (punishes random guessing)
+  // L1+ prereqs: 3-miss cap → forced breach (gentler, learning mode)
+  const missCap=depth===0?2:3;
+  if(isQuizMode&&mc>=missCap){
+    enemy.t=1.01; // force immediate breach on next checkBreach
+    flash('TOO MANY MISSES! LOST A LIFE \u26a0','#ff0000');
     SFX.miss();
   }else{
     flash(isQuizMode?'MISS! PUSHED FORWARD \u26a0':'MISS! \u26a1FASTER','#ff4422');
@@ -6202,7 +6319,7 @@ function animate(time){
   if(bloomComposer){
     // Bloom parameter lerp — asymmetric: fast decay (0.1), slow growth (0.05)
     const norm=Math.min(td,10)/10;
-    const tgtS=norm*0.9,tgtR=norm*0.6,tgtT=1.0-norm*0.6;
+    const tgtS=norm*0.35,tgtR=norm*0.25,tgtT=1.0-norm*0.3;
     const rate=(tgtS<bloomPass.strength)?0.1:0.05;
     bloomPass.strength+=(tgtS-bloomPass.strength)*rate;
     bloomPass.radius+=(tgtR-bloomPass.radius)*rate;
