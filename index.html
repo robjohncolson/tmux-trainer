@@ -9,7 +9,7 @@
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code','Consolas',monospace}
 body.hi-contrast #game-canvas,body.hi-contrast #overlay,body.hi-contrast #input-panel,body.hi-contrast #hud{filter:invert(1) hue-rotate(180deg)}
 body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast #overlay video{filter:invert(1) hue-rotate(180deg)}
-#game-canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none}
+#game-canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none;transition:transform 0.3s ease}
 #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
 .hud-item{text-align:center;pointer-events:none}
 #h-pause-btn{display:none}
@@ -5289,6 +5289,7 @@ function showTitleScreen(context){
   G.paused=false;
   MUSIC_EDITOR.open=false;
   resetExplanationState();
+  canvas.style.transform='';ipMinimized=false;
   fetchAnimationManifest();
   SFX.stopMusicPreview();
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
@@ -5606,6 +5607,9 @@ function showGameUI(){
   clearQuizAnswerFeedback();
   document.getElementById('input-panel').style.display='flex';
   document.getElementById('queue-bar').style.display='block';
+  // Shift canvas up so cubes visible above question panel
+  ipMinimized=false;
+  canvas.style.transform='translateY(-20vh)';
   updateTierBar();
   updateHUD();
   updateInput();
@@ -5758,6 +5762,7 @@ function buildKnowledgeMapHtml(weakCmds,maxWidth){
 function showEndScreen(victory){
   G.screen=victory?'victory':'gameover';
   resetExplanationState();
+  canvas.style.transform='';ipMinimized=false;
   const recordState=syncRunCheckpoint();
   clearRunState();
   cancelQueuedBGMStart();
@@ -6504,13 +6509,19 @@ canvas.addEventListener('touchend',function(e){
   if(Math.abs(dy)>50&&Math.abs(dy)>Math.abs(dx)&&dt<500){
     const ip=document.getElementById('input-panel');
     if(dy>0&&!ipMinimized){
+      // Swipe down: minimize panel, canvas back to normal
       ipMinimized=true;
       ip.style.transform='translateY(calc(100% - 28px))';
       ip.style.transition='transform 0.3s ease';
+      canvas.style.transform='';
+      canvas.style.transition='transform 0.3s ease';
     }else if(dy<0&&ipMinimized){
+      // Swipe up: restore panel, shift canvas up so cubes stay visible
       ipMinimized=false;
       ip.style.transform='';
       ip.style.transition='transform 0.3s ease';
+      canvas.style.transform='translateY(-20vh)';
+      canvas.style.transition='transform 0.3s ease';
     }
     return;
   }
