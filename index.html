@@ -5548,6 +5548,40 @@ function showEndScreen(victory){
       return'<div class="weak-item"><span><span style="color:#ff6b35;font-weight:700">'+answerDisplay+'</span> \u2192 '+promptDisplay+'</span><span style="font-size:9px;color:'+MASTERY_COLORS[G.srs[c.id].mastery]+'">'+MASTERY_LABELS[G.srs[c.id].mastery]+(G.srs[c.id].avgTimeMs>0?' \u00b7 '+Math.round(G.srs[c.id].avgTimeMs/1000*10)/10+'s':'')+'</span></div>';
     }).join('')+'</div>';
   }
+  // ── Knowledge Map: visual prereq tree for weak commands ──
+  if(weak.length>0){
+    const pkColor=pk=>pk>=0.8?'#44ff88':pk>=0.5?'#ffcc00':pk>=0.2?'#ff8c00':'#ff4422';
+    const pkDots=(pk,n=5)=>{const filled=Math.round(pk*n);return Array.from({length:n},(_,i)=>'<span style="color:'+(i<filled?pkColor(pk):'#3d1f00')+'">\u25cf</span>').join('')};
+    let mapHtml='<div style="width:100%;max-width:360px;margin-bottom:12px"><div class="sl" style="text-align:center;color:#4488ff;margin-bottom:6px">KNOWLEDGE MAP</div>';
+    weak.forEach(c=>{
+      if(!c)return;
+      const card=G.srs[c.id];
+      if(!card||!card.dagState)return;
+      // Get encountered nodes (encounters > 0)
+      const nodes=Object.entries(card.dagState).filter(([,s])=>s.encounters>0).map(([nid,s])=>{
+        const dag=PREREQ_DAG[nid];
+        return dag?{id:nid,level:dag.level||1,q:dag.q||nid,pKnown:s.pKnown||0.1,encounters:s.encounters}:null;
+      }).filter(Boolean).sort((a,b)=>a.level-b.level||a.pKnown-b.pKnown);
+      if(nodes.length===0)return;
+      const cmdName=activeCartridge.formatPrompt(c);
+      mapHtml+='<div style="margin-bottom:8px;padding:6px 8px;background:#1a0d0033;border:1px solid #ff8c0022;border-radius:4px">';
+      mapHtml+='<div style="font-size:11px;font-weight:700;color:#ff8c00;margin-bottom:4px">'+cmdName+' '+pkDots(card.pKnown||0.1)+'</div>';
+      nodes.forEach(n=>{
+        const indent=Math.max(0,(n.level-1)*12);
+        const levelColors=['#4488ff','#44bbcc','#44cc66','#cccccc','#cccccc'];
+        const lc=levelColors[Math.min(n.level-1,4)];
+        const label=n.q.length>40?n.q.slice(0,38)+'\u2026':n.q;
+        mapHtml+='<div style="padding-left:'+indent+'px;margin:2px 0;font-size:10px;line-height:1.3;border-left:2px solid '+lc+'33;padding:1px 0 1px 6px">';
+        mapHtml+='<span style="color:'+lc+';font-size:8px">L'+n.level+'</span> ';
+        mapHtml+='<span style="color:#ccc">'+label+'</span> ';
+        mapHtml+=pkDots(n.pKnown,4);
+        mapHtml+='</div>';
+      });
+      mapHtml+='</div>';
+    });
+    mapHtml+='</div>';
+    html+=mapHtml;
+  }
   html+='<button class="btn" onclick="startGame()">[ REDEPLOY ]</button>';
   html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showTitleScreen(\'game\')" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
   ov.innerHTML=html;
