@@ -4826,18 +4826,16 @@ function showTitleScreen(context){
           const br=await fetch(SYNC_SERVER+'/api/progress/leaderboard/'+cartId);
           if(br.ok){const data=await br.json();if(Array.isArray(data))return data.map(d=>({username:d.username,realName:d.real_name||'',mastered:parseInt(d.gold_stars)||0,seen:parseInt(d.silver_stars)||0,highScore:d.highScore||d.high_score||0}))}
         }catch(e){}
-        // Fallback: sequential per-user fetch
+        // Fallback: parallel per-user fetch (not sequential)
         const ur=await fetch(SYNC_SERVER+'/api/users');const users=await ur.json();
         if(!Array.isArray(users))return[];
-        const rows=[];
-        for(const u of users.slice(0,30)){
-          try{
-            const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
-            const d=await r.json();
-            if(d.found&&d.data){const mp=d.data.mode_progress||{};rows.push({username:u.username,realName:u.real_name||'',mastered:parseInt(d.data.gold_stars)||0,seen:parseInt(d.data.silver_stars)||0,highScore:mp.highScore||0})}
-          }catch(e){}
-        }
-        return rows;
+        const results=await Promise.allSettled(users.slice(0,30).map(async u=>{
+          const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
+          const d=await r.json();
+          if(d.found&&d.data){const mp=d.data.mode_progress||{};return{username:u.username,realName:u.real_name||'',mastered:parseInt(d.data.gold_stars)||0,seen:parseInt(d.data.silver_stars)||0,highScore:mp.highScore||0}}
+          return null;
+        }));
+        return results.filter(r=>r.status==='fulfilled'&&r.value).map(r=>r.value);
       }
       fetchLeaderboardRows(cartId).then(rows=>{
         // Filter out users with no activity and sort by score
