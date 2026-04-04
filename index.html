@@ -6259,6 +6259,7 @@ document.getElementById('contrast-btn').onclick=()=>{
   const on=document.body.classList.contains('hi-contrast');
   localStorage.setItem('td-hi-contrast',on?'1':'0');
   document.getElementById('contrast-btn').textContent=on?'\u263e':'\u2600';
+  lastCssFilter=''; // force canvas filter re-apply with/without invert
 };
 document.getElementById('contrast-btn').textContent=document.body.classList.contains('hi-contrast')?'\u263e':'\u2600';
 
@@ -6488,7 +6489,8 @@ function animate(time){
   vigInt+=(tgtVig-vigInt)*vRate;
   vigMaterial.uniforms.intensity.value=vigInt;
   // CSS filter (quantized to 2 decimal places to reduce DOM writes on mobile)
-  const fStr='saturate('+vigSat.toFixed(2)+') contrast('+vigCon.toFixed(2)+')';
+  const hiC=document.body.classList.contains('hi-contrast');
+  const fStr=(hiC?'invert(1) hue-rotate(180deg) ':'')+'saturate('+vigSat.toFixed(2)+') contrast('+vigCon.toFixed(2)+')';
   if(fStr!==lastCssFilter){canvas.style.filter=fStr;lastCssFilter=fStr}
 
   renderer.autoClear=false;
