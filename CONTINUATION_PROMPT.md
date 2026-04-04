@@ -1039,17 +1039,90 @@ Replaced the flat `subconcepts[]` system with a recursive prerequisite DAG. Wron
   - Boot: `buildDAGFromSubconcepts` + `installSharedNodes` + `wireL1toL2` + `validateDAG`
 - `prerequisite-dag-spec.md` — full spec with review findings incorporated
 
+## Latest Update: 10 New AP Stats Commands + Animations + Mobile Melody Composer (April 4, 2026)
+
+### 10 New AP Stats Commands (76 total)
+
+Added end-to-end curriculum coverage with 10 new commands:
+
+| ID | Formula | Tier | Domain |
+|----|---------|------|--------|
+| `variance` | s² = Σ(xi - x̄)² / (n-1) | support | descriptive |
+| `ten-pct-condition` | n < 0.10 · N | support | inference |
+| `std-resid-chi` | (O - E) / √E | support | chi-square |
+| `one-prop-ci` | p̂ ± z* √(p̂(1-p̂)/n) | regular | inf-proportions |
+| `two-prop-ci` | (p̂₁-p̂₂) ± z* √(...) | power | inf-proportions |
+| `one-mean-ci` | x̄ ± t* s/√n | regular | inf-means |
+| `two-mean-ci` | (x̄₁-x̄₂) ± t* √(...) | power | inf-means |
+| `random-condition` | Random sample/experiment | support | inference |
+| `normal-condition` | Large counts / n≥30 | support | inference |
+| `p-value-interp` | P(observed \| H₀ true) | support | inference |
+
+Each has: 3 subconcepts, 2+ blanks, variable bank entries, Codex-reviewed. All wired into DAG via wireL1toL2 (0 unwired subconcepts, 53 regex rules, 73 shared L2+ nodes).
+
+### 10 Manim Animations (76 total)
+
+Wrote 3Blue1Brown-style Manim scripts directly (no LLM pipeline — Claude writes them), rendered at 720p30, uploaded to Supabase. Each ~260-390 KB, ~15 seconds.
+
+Animation style: dark background (#1e1e1e), color-coded formula parts (blue=statistic, gold=±/result, red=critical value, green=SE), step-by-step reveals, numerical examples, number-line intervals for CIs.
+
+Files: `animations/output/{id}/{id}.py` + `{id}.mp4`
+Manifest: `scripts/animation-manifest.json` (76 entries), `scripts/animation-availability.json` (76 IDs)
+Supabase: `videos/animations/ap-stats-formulas/{id}.mp4` + `manifest.json`
+
+### Mobile Melody Composer
+
+The compose mode (unlocked at tree depth 7+) was entirely keyboard-driven. Now works on mobile:
+
+- **Tappable piano keys**: white keys show note names (C4, D4, ..., E5), each with `onclick` → `handleComposeKey()`
+- **Tappable black keys**: show note names (C#, D#, ...), `pointer-events:none` when locked (td<9) + handler `td>=9` double guard
+- **Modifier row**: 4 tappable buttons — `· rest`, `— hold`, `⌫ undo`, `▶ play`/`■ stop`
+- **Touch feedback**: `.piano-key-touch:active div` scales + highlights
+- REDO / KEEP / BACK action buttons already worked (onclick)
+- Keyboard handler untouched — desktop still uses A-L keys
+
+### Server-Side Batch Leaderboard (lrsl-driller)
+
+Added `GET /api/progress/leaderboard/:cartridgeId` endpoint (commit 664a994 in lrsl-driller):
+- Single Supabase query for all progress rows + batched user metadata
+- Returns `[{username, real_name, gold_stars, silver_stars, high_score}]`
+- Client-side updated from 30+ sequential fetches to `Promise.allSettled` → batch endpoint
+
+### Voluntary Decomposition (? button)
+
+- Press `?` on any enemy with DAG prereqs to spawn 3 sub-concept children
+- Parent stays alive, children spawn ahead at `t + 0.03 + 0.03*i`
+- BFS fill (`collectPrereqs()`) ensures exactly 3 children from deeper DAG levels
+- Slight BKT nudge (15%) — counts as learning signal
+- Auto-select always picks highest `t` (closest to castle)
+
+### Gameplay Tuning
+
+- Inverted surge curve: L0=0.15, L1=0.08, L2=0.04, L3+=0.02 (was flat 0.30)
+- No tree loss for prereq enemies
+- `canNodeSplit` checked BEFORE `bktUpdate` (encounter gate fix)
+- Trees wave at quarter speed
+- `[N]`/`[S]` keyboard shortcuts on wave clear screen
+- `[P]`/`[R]`/`[M]` shortcuts for PLAY/RANKS/MORE tabs
+
+### Important Code Areas (new)
+
+- `index.html` compose UI: tappable piano keys, modifier row (lines ~4555-4580)
+- `index.html` `handleComposeKey()`: PIANO_WHITE/PIANO_BLACK maps, rest/hold/undo (lines ~3854-3878)
+- `index.html` `voluntarySplit()`: BFS prereq fill, parent preservation (near `spawnHydraChildren`)
+- `index.html` `collectPrereqs()`: BFS to fill exactly 3 children from DAG
+- `scripts/animation-manifest.json`: 76-entry generation manifest
+- `scripts/upload-ap-stats-animations.mjs`: Supabase upload script (reusable for future animations)
+
 ## Likely Next Tasks
 
-- **Improve wireL1toL2 coverage** — 5% of L1 nodes still unmatched; add regex rules or hand-wire
 - **Typed input for L4-L5 arithmetic nodes** — leverage existing `typed` input mode for "√25 = ?" style questions
 - **Visual prereq tree on end screen** — show the student their knowledge decomposition after a run
 - **Transfer priors v2** — richer cross-command knowledge sharing beyond the v1 seed (0.3)
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
-- Add server-side `/api/progress/leaderboard/:cartId` endpoint to lrsl-driller
 - Add adaptive BKT params (v2) once enough telemetry collected
 - Author Application and Relationship question types (spec item 3)
-- Consider splitting `index.html` into modules (now ~5400 lines)
+- Consider splitting `index.html` into modules (now ~5500+ lines)
 - Add teacher dashboard view for class mastery overview
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
