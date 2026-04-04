@@ -4703,9 +4703,9 @@ function showTitleScreen(context){
   // ── TAB BAR ──
   const activeTab=G._menuTab||'play';
   html+='<div class="menu-tabs">';
-  html+='<button class="menu-tab'+(activeTab==='play'?' active':'')+'" onclick="G._menuTab=\'play\';showTitleScreen(\''+context+'\')">PLAY</button>';
-  html+='<button class="menu-tab'+(activeTab==='leaderboard'?' active':'')+'" onclick="G._menuTab=\'leaderboard\';showTitleScreen(\''+context+'\')">RANKS</button>';
-  html+='<button class="menu-tab'+(activeTab==='settings'?' active':'')+'" onclick="G._menuTab=\'settings\';showTitleScreen(\''+context+'\')">MORE</button>';
+  html+='<button class="menu-tab'+(activeTab==='play'?' active':'')+'" onclick="G._menuTab=\'play\';showTitleScreen(\''+context+'\')"><kbd style="font-size:9px;opacity:.5;margin-right:3px">P</kbd>PLAY</button>';
+  html+='<button class="menu-tab'+(activeTab==='leaderboard'?' active':'')+'" onclick="G._menuTab=\'leaderboard\';showTitleScreen(\''+context+'\')"><kbd style="font-size:9px;opacity:.5;margin-right:3px">R</kbd>RANKS</button>';
+  html+='<button class="menu-tab'+(activeTab==='settings'?' active':'')+'" onclick="G._menuTab=\'settings\';showTitleScreen(\''+context+'\')"><kbd style="font-size:9px;opacity:.5;margin-right:3px">M</kbd>MORE</button>';
   html+='</div>';
 
   // ═══ PLAY TAB ═══
@@ -4801,7 +4801,7 @@ function showTitleScreen(context){
 
   // QR code (MORE tab only)
   if(activeTab==='settings'&&typeof QRCode!=='undefined'){
-    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;letter-spacing:2px;color:#5a3800;margin-top:6px">SCAN OR SHARE</div></div>';
+    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><canvas id="qr-canvas"></canvas><div style="font-size:9px;color:#5a3800;margin-top:6px">Scan to play on any device</div><div style="margin-top:8px;font-size:10px"><a href="https://robjohncolson.github.io/tmux-trainer/" target="_blank" style="color:#ff8c00;text-decoration:none;letter-spacing:1px">robjohncolson.github.io/tmux-trainer</a></div><div style="margin-top:4px;font-size:9px"><a href="https://github.com/robjohncolson/tmux-trainer" target="_blank" style="color:#5a3800;text-decoration:none">\u2139 Source on GitHub</a></div></div>';
   }
   html+='</div>';
   if(titleHS>0&&emphasizeHighScore){
@@ -5588,10 +5588,14 @@ window.addEventListener('keydown',e=>{
     return;
   }
 
-  // ── Title screen shortcuts (C=continue, D=deploy) ──
+  // ── Title screen shortcuts ──
   if(G.screen==='title'&&!MUSIC_EDITOR.open){
     const k=e.key.toLowerCase();
     const tab=G._menuTab||'play';
+    // Tab switching: P=play, R=ranks, M=more
+    if(k==='p'&&tab!=='play'){e.preventDefault();G._menuTab='play';showTitleScreen();return}
+    if(k==='r'&&tab!=='leaderboard'){e.preventDefault();G._menuTab='leaderboard';showTitleScreen();return}
+    if(k==='m'&&tab!=='settings'){e.preventDefault();G._menuTab='settings';showTitleScreen();return}
     if(tab==='play'&&activeCartridge){
       if(k==='c'&&loadRunState()){e.preventDefault();continueGame();return}
       if(k==='d'){e.preventDefault();startGame();return}
