@@ -3062,7 +3062,7 @@ function renderQR(containerId){
   el.innerHTML=''; // clear any previous render
   const canvas=document.createElement('canvas');
   el.appendChild(canvas);
-  QRCode.toCanvas(canvas,'https://robjohncolson.github.io/tmux-trainer/',{width:120,margin:2,color:{dark:'#ff8c00',light:'#0d0500'}},function(){});
+  QRCode.toCanvas(canvas,'https://tmux-trainer-p8nimqu2f-roberts-projects-19fe2013.vercel.app/',{width:120,margin:2,color:{dark:'#ff8c00',light:'#0d0500'}},function(){});
 }
 
 // Domain → Unit/Topic label mapping (AP Stats 2026 curriculum)
@@ -4781,11 +4781,18 @@ function updateInput(){
     resetExplanationState();
     if(lastInputState==='wave-clear')return;
     lastInputState='wave-clear';
-    // Build weak commands for knowledge map
+    // Show wave-clear as full overlay (scrollable, not crammed in input panel)
+    document.getElementById('input-panel').style.display='none';
+    const ov=document.getElementById('overlay');ov.classList.remove('hidden');
     const wcSeen=Object.entries(G.srs).filter(([,v])=>v.correct+v.wrong>0);
     const wcWeak=wcSeen.sort(([,a],[,b])=>(a.mastery-b.mastery)||(b.wrong-a.wrong)).slice(0,4).filter(([,v])=>v.mastery<4).map(([id])=>COMMANDS.find(c=>c.id===id));
-    const mapHtml=buildKnowledgeMapHtml(wcWeak,'100%');
-    setInputPanelContent('<div class="wave-clear">WAVE '+G.wave+' CLEARED</div>',mapHtml+'<button class="btn" onclick="nextWave()" style="margin-top:4px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700"><kbd style="background:#3d1f00;color:#ff8c00;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px">N</kbd>NEXT WAVE</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px"><kbd style="background:#3d1f00;color:#ff8c00;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px">S</kbd>SAVE + EXIT</button>');
+    const mapHtml=buildKnowledgeMapHtml(wcWeak,'360px');
+    let html='<h1 style="font-size:28px;color:'+AMB.css.hot+'">WAVE '+G.wave+' CLEARED</h1>';
+    html+='<div style="font-size:12px;color:'+AMB.css.mid+';margin-bottom:12px">Score: '+G.score.toLocaleString()+' \u00b7 Lives: '+G.lives+' \u00b7 Streak: '+G.maxStreak+'</div>';
+    html+=mapHtml;
+    html+='<button class="btn" onclick="document.getElementById(\'overlay\').classList.add(\'hidden\');document.getElementById(\'input-panel\').style.display=\'flex\';nextWave()" style="margin-top:8px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700"><kbd style="background:#3d1f00;color:#ff8c00;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px">N</kbd>NEXT WAVE</button>';
+    html+='<button class="btn btn-secondary" onclick="document.getElementById(\'overlay\').classList.add(\'hidden\');returnToTitleFromRun()" style="margin-top:10px"><kbd style="background:#3d1f00;color:#ff8c00;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px">S</kbd>SAVE + EXIT</button>';
+    ov.innerHTML=html;
     return;
   }
   const sel=G.enemies.find(e=>e.id===G.selectedId);
@@ -6045,8 +6052,8 @@ window.addEventListener('keydown',e=>{
     return;
   }
   // N = next wave, S = save+exit (wave clear screen only)
-  if((e.key==='n'||e.key==='N')&&G.screen==='game'&&G.waveComplete){e.preventDefault();nextWave();return}
-  if((e.key==='s'||e.key==='S')&&G.screen==='game'&&G.waveComplete){e.preventDefault();returnToTitleFromRun();return}
+  if((e.key==='n'||e.key==='N')&&G.screen==='game'&&G.waveComplete){e.preventDefault();document.getElementById('overlay').classList.add('hidden');document.getElementById('input-panel').style.display='flex';nextWave();return}
+  if((e.key==='s'||e.key==='S')&&G.screen==='game'&&G.waveComplete){e.preventDefault();document.getElementById('overlay').classList.add('hidden');returnToTitleFromRun();return}
   // P to pause/unpause during gameplay
   if((e.key==='p'||e.key==='P')&&G.screen==='game'&&!G.waveComplete){
     e.preventDefault();
@@ -6459,9 +6466,9 @@ function animate(time){
 
   // Health-driven visual atmosphere
   const norm=Math.min(td,10)/10;
-  const tgtSat=0.85+norm*0.25; // 0.85 → 1.10
-  const tgtCon=0.92+norm*0.08; // 0.92 → 1.00
-  const tgtVig=0.60-norm*0.45; // 0.60 → 0.15
+  const tgtSat=0.65+norm*0.55; // 0.65 → 1.20 (more dramatic range)
+  const tgtCon=0.85+norm*0.15; // 0.85 → 1.00
+  const tgtVig=0.70-norm*0.55; // 0.70 → 0.15
   const vRate=0.04;
   vigSat+=(tgtSat-vigSat)*vRate;
   vigCon+=(tgtCon-vigCon)*vRate;
