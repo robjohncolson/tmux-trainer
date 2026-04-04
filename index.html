@@ -3404,11 +3404,15 @@ function validateDAG(){
   if(!danglingRefs&&!cycles)console.log('[DAG] validation passed');
 }
 function getTransferSeed(nodeId,excludeCmdId){
+  // Transfer priors v2: use best observed pKnown across commands, discounted by 0.6
+  // (mastering z-score under one-prop-z should substantially help two-prop-z)
+  let bestPK=0;
   for(const cmdId of Object.keys(G.srs||{})){
     if(cmdId===excludeCmdId)continue;
     const pk=G.srs[cmdId]?.dagState?.[nodeId]?.pKnown;
-    if(pk!=null&&pk>0.5)return 0.3;
+    if(pk!=null&&pk>bestPK)bestPK=pk;
   }
+  if(bestPK>0.2)return Math.max(0.1,bestPK*0.6); // discount: 0.8 mastery → 0.48 seed
   return 0.1;
 }
 function canNodeSplit(card,nodeId){
