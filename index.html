@@ -2877,7 +2877,7 @@ const SHARED_PREREQ_NODES={
     wrong:['The result exceeds 1','You lose independent events'],prereqs:['venn-overlap']},
   'probability-weight':{id:'probability-weight',type:'conceptual',level:3,
     q:'Why multiply each outcome by its probability?',correct:'To weight outcomes by how likely they are',
-    wrong:['To normalize values','To convert to percentages'],prereqs:['part-of-whole','multiply-numbers']},
+    wrong:['To normalize values','To convert to percentages'],prereqs:['part-of-whole','self-multiply']},
   'pooling-concept':{id:'pooling-concept',type:'conceptual',level:2,
     q:'What does pooling two samples mean?',correct:'Combining data to get a single shared estimate',
     wrong:['Averaging the sample sizes','Discarding the smaller sample'],prereqs:['weighted-average']},
@@ -2916,22 +2916,22 @@ const SHARED_PREREQ_NODES={
     wrong:['A number from a sample','A variable that changes'],prereqs:['whole-vs-part']},
   'basic-probability':{id:'basic-probability',type:'conceptual',level:3,
     q:'What does a probability of 0.5 mean?',correct:'The event happens about half the time in the long run',
-    wrong:['The event will happen next','Exactly 50 out of 100'],prereqs:['part-of-whole','percent-to-decimal']},
+    wrong:['The event will happen next','Exactly 50 out of 100'],prereqs:['part-of-whole','decimal-to-fraction']},
   'subset-concept':{id:'subset-concept',type:'conceptual',level:3,
     q:'If a class has 30 students and you pick 5, the 5 are a ___ of the class',correct:'Subset',
     wrong:['Replacement','Complement'],prereqs:['whole-vs-part']},
   'distribution-shape':{id:'distribution-shape',type:'conceptual',level:3,
     q:'What does it mean for a distribution to be symmetric?',correct:'The left and right sides are mirror images',
-    wrong:['All values are equal','The mean equals zero'],prereqs:['compare-numbers','number-line-concept']},
+    wrong:['All values are equal','The mean equals zero'],prereqs:['left-right-balance','number-line-concept']},
   'sample-size-effect':{id:'sample-size-effect',type:'conceptual',level:3,
     q:'What happens to the spread of sample means as n increases?',correct:'The spread decreases — estimates become more precise',
-    wrong:['The spread increases','The spread stays the same'],prereqs:['bigger-smaller','divide-numbers']},
+    wrong:['The spread increases','The spread stays the same'],prereqs:['bigger-smaller','spread-shrinks']},
   'weighted-average':{id:'weighted-average',type:'conceptual',level:3,
     q:'If group A (n=60) has mean 70 and group B (n=40) has mean 80, the combined mean is closer to:',correct:'70, because group A is larger',
     wrong:['80, because it is higher','75, exactly halfway'],prereqs:['part-of-whole','bigger-smaller']},
   'rate-of-change':{id:'rate-of-change',type:'conceptual',level:3,
     q:'A car travels 150 miles in 3 hours. What is the rate?',correct:'50 miles per hour',
-    wrong:['150 miles per hour','3 miles per hour'],prereqs:['rise-over-run','divide-numbers']},
+    wrong:['150 miles per hour','3 miles per hour'],prereqs:['rise-over-run','equal-sharing']},
   'coordinate-pairs':{id:'coordinate-pairs',type:'conceptual',level:3,
     q:'In the point (4, 7), what does the 7 represent?',correct:'The vertical (y) position',
     wrong:['The horizontal (x) position','The distance from the origin'],prereqs:['xy-plot']},
@@ -2968,6 +2968,15 @@ const SHARED_PREREQ_NODES={
     wrong:['Right 5, up 3','Right 8, up 0'],prereqs:['count-items','compare-numbers']},
   'bigger-smaller':{id:'bigger-smaller',type:'computational',level:4,
     q:'Which is larger: n = 10 or n = 100?',correct:'n = 100',wrong:['n = 10','They are equal'],prereqs:['compare-numbers']},
+  // ═══ L4 intermediate nodes — bridge L3 concepts to L5 arithmetic ═══
+  'decimal-to-fraction':{id:'decimal-to-fraction',type:'computational',level:4,
+    q:'0.5 is the same as what fraction?',correct:'1/2',wrong:['1/5','5/10 only'],prereqs:['fraction-of-group','percent-to-decimal']},
+  'left-right-balance':{id:'left-right-balance',type:'conceptual',level:4,
+    q:'If a seesaw has equal weight on both sides, it is:',correct:'Balanced (symmetric)',
+    wrong:['Tilted right','Broken'],prereqs:['compare-numbers']},
+  'spread-shrinks':{id:'spread-shrinks',type:'conceptual',level:4,
+    q:'You average 4 dice rolls vs 100 dice rolls. Which average is more predictable?',correct:'100 rolls — more data, less variation',
+    wrong:['4 rolls — fewer numbers to track','Both are equally predictable'],prereqs:['bigger-smaller','count-items']},
   // ═══ L5 nodes — arithmetic floor (shared across many branches) ═══
   'add-numbers':{id:'add-numbers',type:'computational',level:5,
     q:'3 + 4 = ?',correct:'7',wrong:['6','12'],prereqs:[]},
@@ -4361,7 +4370,7 @@ function updateInput(){
     resetExplanationState();
     if(lastInputState==='wave-clear')return;
     lastInputState='wave-clear';
-    setInputPanelContent('<div class="wave-clear">WAVE '+G.wave+' CLEARED</div>','<button class="btn" onclick="nextWave()" style="margin-top:4px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700">[ NEXT WAVE ]</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px">[ SAVE + EXIT ]</button><div class="input-help" style="color:'+AMB.css.mid+';opacity:.5">Progress is checkpointed here. Press Escape to return to the main screen.</div>');
+    setInputPanelContent('<div class="wave-clear">WAVE '+G.wave+' CLEARED</div>','<button class="btn" onclick="nextWave()" style="margin-top:4px;font-family:inherit;font-size:13px;padding:8px 24px;background:'+AMB.css.hot+';color:'+AMB.css.black+';border:none;cursor:pointer;letter-spacing:2px;font-weight:700"><kbd style="background:#3d1f00;color:#ff8c00;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px">N</kbd>NEXT WAVE</button><button class="btn btn-secondary" onclick="returnToTitleFromRun()" style="margin-top:10px"><kbd style="background:#3d1f00;color:#ff8c00;padding:1px 6px;border-radius:3px;font-size:10px;margin-right:6px">S</kbd>SAVE + EXIT</button>');
     return;
   }
   const sel=G.enemies.find(e=>e.id===G.selectedId);
@@ -5196,11 +5205,8 @@ function checkWaveComplete(){
 // ── Auto-select ──
 function autoSelect(){
   if(G.enemies.length>0&&(!G.selectedId||!G.enemies.find(e=>e.id===G.selectedId))){
-    // Prioritize deepest split level, then closest to breach
-    const deep=G.enemies.filter(en=>en.splitDepth>=2);
-    const subs=G.enemies.filter(en=>en.splitDepth===1);
-    const pool=deep.length>0?deep:subs.length>0?subs:G.enemies;
-    const sorted=[...pool].sort((a,b)=>b.t-a.t);
+    // Always pick closest to breach (highest t) — most urgent threat first
+    const sorted=[...G.enemies].sort((a,b)=>b.t-a.t);
     resetExplanationState();
     G.selectedId=sorted[0].id;
     const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
@@ -5500,8 +5506,9 @@ function voluntarySplit(){
   });
   SFX.split();
   flash('BREAK IT DOWN \u2753','#44bbcc');
-  // Select the first spawned child (furthest ahead)
-  const lastSpawned=G.enemies[G.enemies.length-selected.length]; // first child added
+  // Select the child closest to breach (highest t)
+  const children=G.enemies.slice(-selected.length);
+  const lastSpawned=children.sort((a,b)=>b.t-a.t)[0];
   resetExplanationState();
   G.selectedId=lastSpawned?lastSpawned.id:null;
   G.inputState='quiz';G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
@@ -5533,6 +5540,9 @@ window.addEventListener('keydown',e=>{
     returnToTitleFromRun();
     return;
   }
+  // N = next wave, S = save+exit (wave clear screen only)
+  if((e.key==='n'||e.key==='N')&&G.screen==='game'&&G.waveComplete){e.preventDefault();nextWave();return}
+  if((e.key==='s'||e.key==='S')&&G.screen==='game'&&G.waveComplete){e.preventDefault();returnToTitleFromRun();return}
   // P to pause/unpause during gameplay
   if((e.key==='p'||e.key==='P')&&G.screen==='game'&&!G.waveComplete){
     e.preventDefault();
@@ -5914,7 +5924,7 @@ function animate(time){
   const sk=SFX.getStreak();
   treeDisplayDepth+=(td-treeDisplayDepth)*0.05;
   const tempo=SFX.getMusicConfig?SFX.getMusicConfig().tempo||80:80;
-  const omega=(tempo/60)*Math.PI*2;
+  const omega=(tempo/60)*Math.PI*2*0.25; // quarter speed sway
   const swayAmp=0.03+sk*0.005;
   treeMeshes.forEach(t=>{
     const tc=t.config;
