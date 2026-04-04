@@ -3914,7 +3914,28 @@ spawnMark.position.copy(pathPts[0]);spawnMark.position.y=.5;scene.add(spawnMark)
 
 // Particles
 const particles=[];
-const particleGeo=new THREE.BoxGeometry(.08,.08,.08);
+// Plus-shaped particle geometry (two crossed boxes)
+const particleGeo=(()=>{
+  const a=new THREE.BoxGeometry(.12,.03,.03);
+  const b=new THREE.BoxGeometry(.03,.12,.03);
+  const merged=new THREE.BufferGeometry();
+  // Merge two box geometries into one plus shape
+  const posA=a.attributes.position.array;
+  const posB=b.attributes.position.array;
+  const idxA=a.index.array;
+  const idxB=b.index.array;
+  const pos=new Float32Array(posA.length+posB.length);
+  pos.set(posA,0);pos.set(posB,posA.length);
+  const idx=new Uint16Array(idxA.length+idxB.length);
+  idx.set(idxA,0);
+  const offsetB=posA.length/3;
+  for(let i=0;i<idxB.length;i++)idx[idxA.length+i]=idxB[i]+offsetB;
+  merged.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  merged.setIndex(new THREE.BufferAttribute(idx,1));
+  merged.computeVertexNormals();
+  a.dispose();b.dispose();
+  return merged;
+})();
 const RAINBOW=[0xff4444,0xff8844,0xffcc44,0x44ff88,0x4488ff,0xaa44ff,0xff44aa];
 const trailGhosts=[];
 const trailGhostPool=[];
@@ -4110,8 +4131,8 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
     const spread=rainbow?.2:.15;
     const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
     particles.push({
-      mesh:m,vel:v,life:rainbow?2.85:1,decay:rainbow?.009+Math.random()*.007:.015+Math.random()*.015,
-      ageMs:0,burstMs:rainbow?170+Math.random()*110:0,
+      mesh:m,vel:v,life:rainbow?4.5:1,decay:rainbow?.006+Math.random()*.004:.015+Math.random()*.015,
+      ageMs:0,burstMs:rainbow?250+Math.random()*150:0,
       funnelToScore:rainbow,
       awardId:options.awardId??null,
       trailTicker:0,
@@ -5907,10 +5928,12 @@ function animate(time){
           const tangent=new THREE.Vector3(-dir.z,0,dir.x);
           if(tangent.lengthSq()<.0001)tangent.set(1,0,0);
           else tangent.normalize();
-          const pull=dir.multiplyScalar(.16+Math.min(.26,dist*.025));
+          // Tempo-driven funnel speed (halved base, scales with BPM)
+          const tempoScale=(SFX.getMusicConfig?SFX.getMusicConfig().tempo||80:80)/160; // 80bpm = 0.5x, 120bpm = 0.75x
+          const pull=dir.multiplyScalar((.08+Math.min(.13,dist*.012))*tempoScale);
           pull.addScaledVector(tangent,p.swirl*(1+Math.min(2.2,dist*.08)));
           pull.y+=Math.sin(p.ageMs*.018+p.twinkle)*.003;
-          p.vel.lerp(pull,Math.min(.28*frameScale,.48));
+          p.vel.lerp(pull,Math.min(.14*frameScale*tempoScale,.24));
         }
         p.vel.multiplyScalar(Math.pow(.955,frameScale));
         p.trailTicker=(p.trailTicker||0)+dt;
@@ -5930,10 +5953,16 @@ function animate(time){
     }
     p.mesh.position.addScaledVector(p.vel,frameScale);
     p.life-=p.decay*frameScale*(p.funnelToScore&&p.ageMs>p.burstMs?.35:1);
-    p.mesh.material.opacity=Math.max(0,p.life*(p.funnelToScore?1.08:1));
-    const twinkleScale=p.funnelToScore?(.86+Math.sin(p.ageMs*.02+p.twinkle)*.16):1;
+    // Starlike twinkle: tempo-synced pulsing opacity + scale
+    const tempoHz=(SFX.getMusicConfig?SFX.getMusicConfig().tempo||80:80)/60;
+    const twinklePhase=p.ageMs*.001*tempoHz*Math.PI*4+p.twinkle;
+    const twinkleOpacity=p.funnelToScore?(.55+Math.sin(twinklePhase)*.45):1;
+    p.mesh.material.opacity=Math.max(0,p.life*twinkleOpacity);
+    const twinkleScale=p.funnelToScore?(.6+Math.sin(twinklePhase*.7+1.2)*.4):1;
     const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.16,p.life*.82):Math.max(.18,p.life))*twinkleScale;
     p.mesh.scale.setScalar(particleScale);
+    // Spin plus symbols for star effect
+    if(p.funnelToScore){p.mesh.rotation.z+=.04*frameScale*(1+Math.sin(p.twinkle)*.5)}
     if(p.life<=0){scene.remove(p.mesh);p.mesh.material.dispose();particles.splice(i,1)}
   }
   for(let i=trailGhosts.length-1;i>=0;i--){
