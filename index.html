@@ -4216,20 +4216,33 @@ const FERN_POOL=[
   {x:1,z:-11.5,angle:-0.03,len:0.4,unlockAt:6},
 ];
 function generateFern(ox,oy,len,angle,depth,levels,timeSec,omega,pos,col,idx){
-  if(depth>=levels)return idx;
-  const sway=Math.sin(timeSec*omega*1.3+depth*0.6)*0.04*(0.3+depth*0.7);
+  if(depth>=levels||idx>=FERN_MAX_SEGS-2)return idx;
+  const sway=Math.sin(timeSec*omega*1.3+depth*0.6)*0.03*(0.3+depth*0.7);
   const a=angle+sway;
+  // Fern: main stem continues mostly straight, frondlets branch off one side with curl
   const ex=ox+Math.sin(a)*len;
   const ey=oy+Math.cos(a)*len;
   pos[idx*6]=ox;pos[idx*6+1]=oy;pos[idx*6+2]=0;
   pos[idx*6+3]=ex;pos[idx*6+4]=ey;pos[idx*6+5]=0;
   const t=depth/Math.max(levels-1,1);
-  col[idx*6]=0.18+t*0.22;col[idx*6+1]=0.27+t*0.40;col[idx*6+2]=0.0;
-  col[idx*6+3]=0.18+t*0.22;col[idx*6+4]=0.27+t*0.40;col[idx*6+5]=0.0;
+  col[idx*6]=0.12+t*0.28;col[idx*6+1]=0.30+t*0.35;col[idx*6+2]=0.02;
+  col[idx*6+3]=0.12+t*0.28;col[idx*6+4]=0.30+t*0.35;col[idx*6+5]=0.02;
   idx++;
-  const cl=len*0.7;
-  idx=generateFern(ex,ey,cl,a+0.7,depth+1,levels,timeSec,omega,pos,col,idx);
-  idx=generateFern(ex,ey,cl*0.85,a-0.5,depth+1,levels,timeSec,omega,pos,col,idx);
+  // Main stem continues with slight curve
+  idx=generateFern(ex,ey,len*0.85,a+0.12,depth+1,levels,timeSec,omega,pos,col,idx);
+  // Alternating frondlets: curl outward with progressive angle
+  if(depth>0&&idx<FERN_MAX_SEGS-1){
+    const side=depth%2===0?1:-1;
+    const curl=0.8+depth*0.15;
+    const frondLen=len*0.5;
+    const fx=ex+Math.sin(a+side*curl)*frondLen;
+    const fy=ey+Math.cos(a+side*curl)*frondLen;
+    pos[idx*6]=ex;pos[idx*6+1]=ey;pos[idx*6+2]=0;
+    pos[idx*6+3]=fx;pos[idx*6+4]=fy;pos[idx*6+5]=0;
+    col[idx*6]=0.20+t*0.30;col[idx*6+1]=0.40+t*0.25;col[idx*6+2]=0.05;
+    col[idx*6+3]=0.20+t*0.30;col[idx*6+4]=0.40+t*0.25;col[idx*6+5]=0.05;
+    idx++;
+  }
   return idx;
 }
 const fernMeshes=FERN_POOL.map(fc=>{
@@ -6487,10 +6500,10 @@ function animate(time){
     const sd=selEnemyObj?.splitDepth||0;
     const port=isPortrait();
     const pY=port?1.4:1,pZ=port?1.3:1,pT=port?.6:1;
-    const zoomY=(sd>=2?4.5:sd>=1?6:7.5)*pY;
-    const zoomZ=(sd>=2?5.5:sd>=1?7:8.5)*pZ;
-    const trackX=(sd>=2?.7:sd>=1?.6:.5)*pT;
-    const trackZ=(sd>=2?.6:sd>=1?.5:.4)*pT;
+    const zoomY=(sd>=2?3:sd>=1?4:5)*pY;
+    const zoomZ=(sd>=2?4:sd>=1?5.5:6.5)*pZ;
+    const trackX=(sd>=2?.8:sd>=1?.7:.6)*pT;
+    const trackZ=(sd>=2?.7:sd>=1?.6:.5)*pT;
     const tx=selEnemy.position.x*trackX+Math.sin(time*.0002)*.1;
     const tz=selEnemy.position.z*trackZ+zoomZ;
     const ty=zoomY+Math.sin(time*.0003)*.1;
