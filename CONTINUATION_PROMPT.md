@@ -480,7 +480,7 @@ Verification completed:
   - `renderExplanationControls()` updated with WATCH button, `<video>` element, loading/error states
   - `Alt+W` keyboard binding for animation toggle
   - CSS: `.explain-watch`, `.explain-video-wrap`, `.explain-video`, `.explain-video-close`, `.has-video`
-- `index.html` BKT: `clampProb()`, `bayesPosterior()`, `bktUpdate()`, `pickScore()`, `infoGain()`
+- `index.html` BKT + DAG: `clampProb()`, `bayesPosterior()`, `bktUpdate()`, `pickScore()`, `infoGain()`, `PREREQ_DAG`, `SHARED_PREREQ_NODES`, `buildDAGFromSubconcepts()`, `wireL1toL2()`, `validateDAG()`, `canNodeSplit()`, `selectWeakestPrereqs()`, `getTransferSeed()`, `spawnHydraChildren()` (recursive DAG traversal)
 - `index.html` anti-button-mash: `reshuffleQuestionOptions()`, `enemy.missCount`, attempt cap
 - `index.html` MC dedup: identify question generation deduplicates distractor options via Set
 
@@ -981,14 +981,16 @@ Replaced the flat `subconcepts[]` system with a recursive prerequisite DAG. Wron
 ### PREREQ_DAG system
 - `PREREQ_DAG` flat lookup table of prerequisite knowledge nodes
 - L1 nodes auto-generated from existing subconcepts via `buildDAGFromSubconcepts()`
-- 18 hand-authored shared L2-L4 nodes (SE, z-scores, CLT, sqrt, division, etc.)
+- 66 hand-authored shared L2-L5 nodes across all AP Stats domains
+- `wireL1toL2()` pattern-matches 198 L1 subconcept questions to L2 prereqs via 43 regex rules (95% coverage)
 - `validateDAG()` runs at startup: cycle detection + dangling ref check
 - Commands gain `prereqs: [nodeId, ...]` pointing into the DAG
+- Curriculum-grounded: L2-L5 node hierarchy cross-referenced against AP Stats framework from `../school/follows-along`
 
 ### Recursive hydra (replaces fixed 2-level system)
 - Miss L0 → spawns weakest 2 L1 prereq enemies (always, if prereqs exist)
 - Miss L1 → first encounter = speed-boost only (no split). Second+ encounter with pKnown < 0.3 → splits into L2 prereqs
-- Fractal unfolding continues to L4 (Algebra 1 arithmetic) via same one-level-at-a-time gate
+- Fractal unfolding continues to L5 (arithmetic floor) via same one-level-at-a-time gate
 - Ancestor spawn budget: max 4 living descendants per L0 ancestor
 - Legacy subconcept fallback if command has no DAG prereqs
 
@@ -1003,9 +1005,21 @@ Replaced the flat `subconcepts[]` system with a recursive prerequisite DAG. Wron
 - L1 Prereq: blue #4488ff, 0.30 box
 - L2 Builder: cyan #44bbcc, 0.18 box
 - L3 Foundation: green #44cc66, 0.15 box
-- L4 Basic: gray #cccccc, 0.12 box
+- L4-L5 Basic: gray #cccccc, 0.12 box
 - Depth-specific flash messages: "SPLIT! PREREQS INCOMING" → "BACK TO BASICS"
-- L1-L2: 3-option MC, L3-L4: 2-option MC
+- L1-L2: 3-option MC, L3+: 2-option MC
+
+### Miss penalty tuning (encourages deep exploration)
+- Tree depth: only penalized on L0 misses; prereq misses (L1+) are free
+- Surge: inverted curve — L0=0.15, L1=0.08, L2=0.04, L3+=0.02
+- Speed fallback: gentler for prereqs — L0=1.85x, L1=1.4x, L2+=1.2x
+
+### DAG node inventory (66 shared nodes across L2-L5)
+- L2 (19 nodes): SE, z-score, hypothesis, critical value, slope, mean, independence, CLT, pooling, df, observed-vs-expected, unbiased-estimator, etc.
+- L3 (12 nodes): deviation, ratio, constraint, probability, subset, distribution shape, rate of change, weighted average, coordinate pairs, etc.
+- L4 (12 nodes): equal sharing, part-of-whole, number line, self-multiply, Venn overlap, rise/run, bigger-smaller, etc.
+- L5 (9 leaf nodes): add, subtract, multiply, divide, percent-to-decimal, fraction-of-group, compare-numbers, square-number, count-items
+- Every branch reaches L5 (verified by Codex: no dangling refs, no cycles)
 
 ### Migration
 - `dagState: {}` added to SRS card schema
@@ -1015,28 +1029,28 @@ Replaced the flat `subconcepts[]` system with a recursive prerequisite DAG. Wron
 
 ### Files
 - `index.html` — all changes in inline `<script>`:
-  - New section: PREREQ_DAG + shared nodes + utility functions (~lines 2779-2893)
+  - New section: PREREQ_DAG + 66 shared L2-L5 nodes + wireL1toL2 + utility functions (~lines 2779-2970)
   - Modified: `recomputeCompositePKnown`, `bktUpdate`, `initSRS`, `sanitizeSrsCard`, `srsHit`, `srsMiss`, `loadSRS`
   - Modified: `handleHit`, `handleMiss` (DAG-aware BKT context + split gate)
   - Rewritten: `spawnHydraChildren` (recursive DAG traversal)
   - Renamed: `handleSubconceptChoice` → `handlePrereqChoice` (alias preserved)
   - New meshes: `builderGeo/Mat`, `foundationGeo/Mat`, `basicGeo/Mat`
   - Modified: `addChildEnemyMesh`, `updateEnemyMeshes` (5-depth color support)
-  - Boot: `buildDAGFromSubconcepts` + `installSharedNodes` + `validateDAG`
+  - Boot: `buildDAGFromSubconcepts` + `installSharedNodes` + `wireL1toL2` + `validateDAG`
 - `prerequisite-dag-spec.md` — full spec with review findings incorporated
 
 ## Likely Next Tasks
 
-- **Author L2-L4 DAG nodes** — currently 18 shared nodes; target ~85 more for full coverage of the 15-20 most-missed commands
-- **Wire shared L2 nodes into L1 prereqs** — connect auto-generated L1 nodes to hand-authored L2+ nodes
+- **Improve wireL1toL2 coverage** — 5% of L1 nodes still unmatched; add regex rules or hand-wire
+- **Typed input for L4-L5 arithmetic nodes** — leverage existing `typed` input mode for "√25 = ?" style questions
+- **Visual prereq tree on end screen** — show the student their knowledge decomposition after a run
+- **Transfer priors v2** — richer cross-command knowledge sharing beyond the v1 seed (0.3)
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
 - Add server-side `/api/progress/leaderboard/:cartId` endpoint to lrsl-driller
 - Add adaptive BKT params (v2) once enough telemetry collected
 - Author Application and Relationship question types (spec item 3)
-- Consider splitting `index.html` into modules (now ~5200 lines)
+- Consider splitting `index.html` into modules (now ~5400 lines)
 - Add teacher dashboard view for class mastery overview
-- Typed input for L4 arithmetic nodes (leverage existing typed input mode)
-- Visual prereq tree on end screen
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
 - Accessibility pass: ARIA labels, semantic HTML, WCAG contrast fixes
