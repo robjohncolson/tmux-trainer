@@ -6458,6 +6458,7 @@ let camZoomMult=1.0,camOrbitAngle=0; // orbit angle around focused cube
 let pinchStartDist=0,pinchStartZoom=1.0,isTwoFinger=false;
 let camMode='follow',lastDoubleTap=0; // 'follow' or 'cube'
 let ipMinimized=false; // question panel swiped down
+let lastDragX=0,isDragging=false;
 canvas.addEventListener('touchstart',function(e){
   if(G.screen!=='game'||G.paused)return;
   if(e.touches.length===2){
@@ -6467,6 +6468,8 @@ canvas.addEventListener('touchstart',function(e){
     pinchStartZoom=camZoomMult;
   }else{
     isTwoFinger=false;
+    isDragging=false;
+    lastDragX=e.touches[0].clientX;
     touchStartX=e.touches[0].clientX;
     touchStartY=e.touches[0].clientY;
     touchStartTime=Date.now();
@@ -6478,6 +6481,15 @@ canvas.addEventListener('touchmove',function(e){
     const t0=e.touches[0],t1=e.touches[1];
     const dist=Math.hypot(t1.clientX-t0.clientX,t1.clientY-t0.clientY);
     if(pinchStartDist>0)camZoomMult=Math.max(0.4,Math.min(3.0,pinchStartZoom*(pinchStartDist/dist)));
+  }else if(e.touches.length===1&&!isTwoFinger){
+    // Single-finger drag: smooth orbit rotation
+    const cx=e.touches[0].clientX;
+    if(isDragging){
+      const delta=(cx-lastDragX)/window.innerWidth*Math.PI*2; // full screen width = full rotation
+      camOrbitAngle-=delta;
+    }
+    lastDragX=cx;
+    isDragging=true;
   }
 },{passive:true});
 canvas.addEventListener('touchend',function(e){
@@ -6487,6 +6499,7 @@ canvas.addEventListener('touchend',function(e){
   const dx=touch.clientX-touchStartX;
   const dy=touch.clientY-touchStartY;
   const dt=Date.now()-touchStartTime;
+  isDragging=false;
   // Vertical swipe: show/hide question panel
   if(Math.abs(dy)>50&&Math.abs(dy)>Math.abs(dx)&&dt<500){
     const ip=document.getElementById('input-panel');
@@ -6501,11 +6514,7 @@ canvas.addEventListener('touchend',function(e){
     }
     return;
   }
-  // Horizontal swipe: orbit camera around focused cube
-  if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)&&dt<500){
-    camOrbitAngle+=(dx>0?-1.6:1.6);
-    return;
-  }
+  // Horizontal drag already handled in touchmove (smooth orbit)
   // Double-tap: toggle cube-view
   if(Math.abs(dx)<18&&Math.abs(dy)<18&&dt<280){
     const now=Date.now();
@@ -6552,8 +6561,8 @@ function animate(time){
     camera.position.x+=(tx-camera.position.x)*.12;
     camera.position.y+=(ty-camera.position.y)*.12;
     camera.position.z+=(tz-camera.position.z)*.12;
-    // Look toward cube but biased upward (~15° above grid)
-    camera.lookAt(ep.x,ep.y+2.5,ep.z);
+    // Look toward cube, slightly above grid (~3° above horizon)
+    camera.lookAt(ep.x,ep.y+0.5,ep.z);
   }else if(selEnemy&&G.screen==='game'){
     // Follow mode: orbit around cube, slightly off-center
     const sd=selEnemyObj?.splitDepth||0;
