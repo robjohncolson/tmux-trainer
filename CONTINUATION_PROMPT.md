@@ -1274,17 +1274,74 @@ Replaced the removed bloom with two lightweight, zero-ghosting visual layers.
 ### Spec artifact
 - `css-filter-vignette-spec.md` — design + Codex/CC review findings
 
+## Latest Update: April 4 Session — Massive UI/UX + Visual + Pedagogy Pass
+
+### Shipped this session
+- **Application/Relationship question types** — 101 application scenarios + 61 relationship entries, authored confusionSets, 0.7x BKT weight, no DAG split on miss
+- **Visual prereq tree → Knowledge Review** — shows all encountered commands with pKnown bars on wave-clear overlay + end screen
+- **Transfer priors v2** — 0.6x discount posterior transfer across shared DAG nodes
+- **CSS filter + vignette** — health-driven saturation/contrast + edge darkening, zero ghosting
+- **Fractal ferns** — Poisson-distributed L-system plants along terrain edges (15 ferns)
+- **Fractal stars** — recursive plus/cross patterns (Vicsek fractal) in sky, depth grows with health
+- **Fractal lightning** — midpoint displacement bolts on breach (red) and streak 5+ (amber)
+- **Fractal particle branches** — kill particles fork mid-burst (3% chance, depth 2 max)
+- **High contrast mode** — ☀ toggle inverts all UI + canvas for daytime classroom use, persisted in localStorage
+- **Mobile camera overhaul** — smooth orbit drag, pinch zoom, double-tap cube-view, swipeable question panel
+- **Desktop mouse wheel zoom** — 0.3x to 4.0x
+- **Minimal HUD** — score + hearts + PAUSE text; volume/contrast in pause menu
+- **2-miss cap** — main formula enemies breach after 2 wrong answers (anti-button-mash)
+- **18 answer giveaways fixed** — scenarios rewritten to not contain answer keywords
+- **13 vague MC labels made specific** — answers now explain what the formula does
+- **Mobile explainer close button** — both "watch" and "close" when video available
+- **Formula auto-scaling** — renderLatex() scales wide formulas to fit container
+- **Word-wrap on MC buttons** — no more horizontal overflow
+- **5-second feedback lock safety valve** — auto-clears stuck input state
+- **QR code → Vercel** — tmux-trainer.vercel.app
+- **SW updateViaCache:'none'** — fixes stale service worker caching
+- **Vercel deployment** added alongside GitHub Pages
+
+### Attempted and reverted
+- **Bloom post-processing (UnrealBloomPass)** — caused severe ghosting on moving objects. Removed entirely. Lesson: spatial blur post-processing doesn't work with moving 3D objects; use color grading + vignette instead.
+- **Mandelbrot terrain** — replaced the wireframe grid with a Mandelbrot set shader. Visually interesting but degraded overall aesthetics: path didn't integrate with the fractal boundary, camera angles suffered, trees/ferns lost their grounding context. Reverted to original terrain. Lesson: the Mandelbrot needs proper path integration (cubes walking along the actual boundary, computed on CPU) and a more top-down camera design. Not a quick swap — needs its own dedicated sprint.
+- **Constellation star clusters** — Points + LineSegments in the sky. Too far from camera to see, overwhelmed by fog, underwhelming even when repositioned. Removed in favor of fractal stars (Vicsek plus-signs). Lesson: distant sky decorations need to be fog-immune AND camera-angle-aware.
+
+### Lessons learned (visual effects)
+- **Bloom/blur = ghosting**: Any post-processing that spatially blurs a scene with fast-moving objects will ghost. Stick to per-pixel color grading (CSS filter, shader color remap) or non-blurring overlays (vignette).
+- **CSS `canvas.style.filter` works well**: Cheap, GPU-composited, no render targets. Quantize writes to avoid mobile jank. Per-frame is fine if cached.
+- **Vignette overlay is trivial**: One transparent fullscreen quad after the game scene. Negligible cost, big atmospheric impact.
+- **Mandelbrot as terrain needs path-first design**: Don't overlay a static path on top of a dynamic fractal. The path must be computed FROM the fractal boundary (binary search along rays), regenerated per wave, and the camera must be designed for the resulting geometry.
+- **Top-down vs chase camera**: The game plays best with a slightly elevated chase camera (y=5-7, following the selected cube). Pure top-down loses immersion. Cube-eye-level is cinematic but impractical for gameplay on mobile where the input panel covers half the screen.
+- **Touch gesture priority**: Camera control (orbit, zoom, pan) must take priority over enemy selection on mobile. Auto-select handles targeting; the player's fingers should control the view, not compete with it.
+
+### Important code areas (new/updated this session)
+- `index.html` APPLICATION_BANK: 101 scenarios with confusionSets
+- `index.html` RELATIONSHIP_BANK: 61 entries with direction/explain
+- `index.html` generateQuestion(): renormalized 5-type weight system
+- `index.html` setInputPanelContent(): application + relationship rendering
+- `index.html` bktUpdate(): `bktWeight` scaling of posterior move
+- `index.html` handleMiss(): `skipDAG` for application/relationship types
+- `index.html` buildKnowledgeMapHtml(): reusable progress visualization
+- `index.html` wave-clear overlay: full-screen knowledge review
+- `index.html` vignette: `vigScene`, `vigCamera`, `vigMaterial`
+- `index.html` animate(): CSS filter + vignette health lerp
+- `index.html` fractal ferns: Poisson FERN_POOL, generateFern()
+- `index.html` fractal stars: STAR_POOL, generateFractalStar()
+- `index.html` fractal lightning: lightningPool, spawnLightning(), generateBolt()
+- `index.html` camera: camMode, camOrbitAngle, camZoomMult, smooth drag orbit
+- `index.html` touch: continuous orbit in touchmove, pinch zoom, swipeable panel
+- `index.html` high contrast: body.hi-contrast CSS + inline filter prepend
+- `index.html` renderLatex(): auto-scale with transform:scale()
+
 ## Likely Next Tasks
 
-- **Application/Relationship question types** — "Which test would you use?" and "What happens when X changes?" (Bloom's taxonomy jump from recall → application/analysis)
-- **Visual prereq tree on end screen** — show the student their DAG node encounters after a run, which nodes they nailed vs struggled with
-- **Transfer priors v2** — richer cross-command knowledge sharing beyond the v1 seed (0.3), full posterior transfer
+- **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
 - **Cartridge module splitting** — extract AP Stats deck/DAG/variable bank into pluggable cartridge format for multi-course reuse (lrsl-driller, Algebra 2)
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
-- Quality review rendered animations — verify pedagogical accuracy per formula (ongoing over next 3 weeks as students use it)
+- Quality review rendered animations — verify pedagogical accuracy per formula (ongoing as students use it)
 - Add adaptive BKT params (v2) once enough telemetry collected
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
+- Mobile input panel UX refinement — the swipe up/down + canvas shift needs more polish
 
 ## GitNexus Note
 
