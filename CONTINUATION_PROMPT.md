@@ -1238,6 +1238,42 @@ Added UnrealBloomPass from Three.js r128 postprocessing chain, driven by tree he
 - `index.html` bktUpdate(): `bktWeight` scaling of posterior move
 - `index.html` handleMiss(): `skipDAG` for application/relationship types
 
+## Latest Update: CSS Filter + Vignette — Health-Driven Visual Atmosphere
+
+Replaced the removed bloom with two lightweight, zero-ghosting visual layers.
+
+### CSS Filter (color warmth)
+- `canvas.style.filter` driven by tree health via smooth lerp
+- Health 0: `saturate(0.85) contrast(0.92)` — washed out
+- Health 10: `saturate(1.10) contrast(1.00)` — vivid warm
+- Quantized to 2dp with string cache to minimize DOM writes on mobile
+
+### Vignette Shader (cinematic edges)
+- Fullscreen quad in dedicated `vigScene` rendered after game scene
+- `smoothstep(0.35, 0.95, distance)` darkens screen edges
+- Health 0: intensity 0.60 (heavy tunnel vision), Health 10: intensity 0.15 (subtle)
+- `transparent:true, depthTest:false, depthWrite:false`
+- Black vignette: premultiplied alpha works correctly for `vec4(0,0,0,a)`
+
+### Render pipeline
+```
+1. autoClear=false → clear()
+2. render(skyScene)   // fBm amber sky
+3. clearDepth()
+4. render(scene)      // game scene
+5. render(vigScene)   // vignette overlay
+6. autoClear=true
+7. CSS filter applied (if changed)
+```
+
+### Important code areas (new)
+- `index.html` vignette init: `vigScene`, `vigCamera`, `vigMaterial` (~after skyScene)
+- `index.html` animate(): health-driven lerp for `vigSat`, `vigCon`, `vigInt` + CSS filter
+- `index.html` handleResize(): `vigMaterial.uniforms.resolution`
+
+### Spec artifact
+- `css-filter-vignette-spec.md` — design + Codex/CC review findings
+
 ## Likely Next Tasks
 
 - **Application/Relationship question types** — "Which test would you use?" and "What happens when X changes?" (Bloom's taxonomy jump from recall → application/analysis)

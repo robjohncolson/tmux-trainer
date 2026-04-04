@@ -55,6 +55,17 @@ Fullscreen quad rendered AFTER game scene (same pattern as skyScene):
 - `handleResize()`: update vignette resolution uniform
 - No changes to game logic, enemies, SRS, DAG, or music
 
+## Review Findings (all addressed)
+
+| # | Severity | Source | Issue | Resolution |
+|---|----------|--------|-------|------------|
+| 1 | HIGH | Codex | autoClear ordering underspecified | Implementation uses explicit autoClear=false → clear → sky → clearDepth → game → vignette → autoClear=true |
+| 2 | MEDIUM | Codex | CSS filter not free on mobile | Quantized to 2dp, cached string comparison avoids unnecessary DOM writes |
+| 3 | MEDIUM | Codex | depthWrite missing, CSS remaps vignette | depthWrite:false set; CSS contrast on black vignette effect is negligible |
+| 4 | MEDIUM | CC | Alpha blending only correct for black vignette | Documented; premultiplied alpha works by accident for vec4(0,0,0,a) |
+| 5 | LOW | CC | depthWrite not in spec | Added to implementation |
+| 6 | LOW | CC | autoClear toggled per-frame unnecessarily | Kept for clarity matching existing codebase pattern |
+
 ## Deferred upgrades (not this pass)
 - **Color grading shader (#1)**: replace CSS filter with a render-to-texture + tone map shader for finer control
 - **Selective static blur (#5)**: render trees/terrain to separate FBO with single Gaussian pass, composite sharp enemies on top
