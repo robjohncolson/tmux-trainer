@@ -974,14 +974,69 @@ Trees are IN the game scene so they interact with fog, camera, and depth correct
 - Falls back to sequential per-user fetch if batch endpoint returns non-200
 - Server-side batch endpoint in lrsl-driller is a follow-up task
 
+## Latest Update: Prerequisite DAG — Fractal Knowledge Decomposition
+
+Replaced the flat `subconcepts[]` system with a recursive prerequisite DAG. Wrong answers now fractal-unfold into builder concepts down to Algebra 1 foundations.
+
+### PREREQ_DAG system
+- `PREREQ_DAG` flat lookup table of prerequisite knowledge nodes
+- L1 nodes auto-generated from existing subconcepts via `buildDAGFromSubconcepts()`
+- 18 hand-authored shared L2-L4 nodes (SE, z-scores, CLT, sqrt, division, etc.)
+- `validateDAG()` runs at startup: cycle detection + dangling ref check
+- Commands gain `prereqs: [nodeId, ...]` pointing into the DAG
+
+### Recursive hydra (replaces fixed 2-level system)
+- Miss L0 → spawns weakest 2 L1 prereq enemies (always, if prereqs exist)
+- Miss L1 → first encounter = speed-boost only (no split). Second+ encounter with pKnown < 0.3 → splits into L2 prereqs
+- Fractal unfolding continues to L4 (Algebra 1 arithmetic) via same one-level-at-a-time gate
+- Ancestor spawn budget: max 4 living descendants per L0 ancestor
+- Legacy subconcept fallback if command has no DAG prereqs
+
+### DAG-aware BKT
+- `dagState` map on each SRS card: `{ nodeId: { pKnown, encounters, lastEncounterWave } }`
+- `bktUpdate()` routes to `dagState` when `dagNodeId` is present, legacy `subPKnown` fallback
+- `recomputeCompositePKnown()` only averages L1 (direct prereq) nodes — deeper nodes influence indirectly
+- `getTransferSeed()` seeds shared nodes at 0.3 (instead of 0.1) if mastered under another command
+- Critical timing: `canNodeSplit()` checked BEFORE `bktUpdate()` to avoid encounter-gate bypass
+
+### Depth-based visuals
+- L1 Prereq: blue #4488ff, 0.30 box
+- L2 Builder: cyan #44bbcc, 0.18 box
+- L3 Foundation: green #44cc66, 0.15 box
+- L4 Basic: gray #cccccc, 0.12 box
+- Depth-specific flash messages: "SPLIT! PREREQS INCOMING" → "BACK TO BASICS"
+- L1-L2: 3-option MC, L3-L4: 2-option MC
+
+### Migration
+- `dagState: {}` added to SRS card schema
+- `sanitizeSrsCard()` validates dagState entries
+- `loadSRS()` auto-migrates old `subPKnown` to `dagState` keyed by prereq node IDs
+- `srsHit`/`srsMiss` deep-clone dagState
+
+### Files
+- `index.html` — all changes in inline `<script>`:
+  - New section: PREREQ_DAG + shared nodes + utility functions (~lines 2779-2893)
+  - Modified: `recomputeCompositePKnown`, `bktUpdate`, `initSRS`, `sanitizeSrsCard`, `srsHit`, `srsMiss`, `loadSRS`
+  - Modified: `handleHit`, `handleMiss` (DAG-aware BKT context + split gate)
+  - Rewritten: `spawnHydraChildren` (recursive DAG traversal)
+  - Renamed: `handleSubconceptChoice` → `handlePrereqChoice` (alias preserved)
+  - New meshes: `builderGeo/Mat`, `foundationGeo/Mat`, `basicGeo/Mat`
+  - Modified: `addChildEnemyMesh`, `updateEnemyMeshes` (5-depth color support)
+  - Boot: `buildDAGFromSubconcepts` + `installSharedNodes` + `validateDAG`
+- `prerequisite-dag-spec.md` — full spec with review findings incorporated
+
 ## Likely Next Tasks
 
+- **Author L2-L4 DAG nodes** — currently 18 shared nodes; target ~85 more for full coverage of the 15-20 most-missed commands
+- **Wire shared L2 nodes into L1 prereqs** — connect auto-generated L1 nodes to hand-authored L2+ nodes
 - **Quality review rendered animations** — verify pedagogical accuracy per formula
 - Add server-side `/api/progress/leaderboard/:cartId` endpoint to lrsl-driller
 - Add adaptive BKT params (v2) once enough telemetry collected
 - Author Application and Relationship question types (spec item 3)
-- Consider splitting `index.html` into modules (now ~4500 lines)
+- Consider splitting `index.html` into modules (now ~5200 lines)
 - Add teacher dashboard view for class mastery overview
+- Typed input for L4 arithmetic nodes (leverage existing typed input mode)
+- Visual prereq tree on end screen
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
 - Accessibility pass: ARIA labels, semantic HTML, WCAG contrast fixes

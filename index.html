@@ -2777,6 +2777,122 @@ let activeCartridge=null;
 let COMMANDS=[];
 
 // ═══════════════════════════════════════════════
+//  PREREQ DAG — Fractal Knowledge Decomposition
+// ═══════════════════════════════════════════════
+const PREREQ_DAG={};
+// Auto-populate L1 nodes from existing subconcepts at cartridge load
+function buildDAGFromSubconcepts(cmds){
+  Object.keys(PREREQ_DAG).forEach(k=>{if(PREREQ_DAG[k].level===1&&PREREQ_DAG[k].autoGen)delete PREREQ_DAG[k]});
+  cmds.forEach(cmd=>{
+    if(!cmd.subconcepts||cmd.subconcepts.length===0)return;
+    cmd.prereqs=[];
+    cmd.subconcepts.forEach((sc,i)=>{
+      const nodeId=cmd.id+'-sub-'+i;
+      PREREQ_DAG[nodeId]={id:nodeId,type:'conceptual',level:1,autoGen:true,
+        q:sc.q,correct:sc.correct,wrong:sc.wrong.slice(),prereqs:[]};
+      cmd.prereqs.push(nodeId);
+    });
+  });
+}
+// Shared L2+ nodes — hand-authored, added to PREREQ_DAG
+// These will be wired into L1 nodes' prereqs arrays incrementally
+const SHARED_PREREQ_NODES={
+  'se-concept':{id:'se-concept',type:'conceptual',level:2,
+    q:'What does Standard Error measure?',correct:'How much a statistic varies across repeated samples',
+    wrong:['The average error in each measurement','The distance between sample and population'],prereqs:['sampling-variability']},
+  'sampling-variability':{id:'sampling-variability',type:'conceptual',level:3,
+    q:'Why do different random samples give different statistics?',correct:'Random selection creates natural variation',
+    wrong:['Measurement error','Biased sampling methods'],prereqs:[]},
+  'sqrt-n-effect':{id:'sqrt-n-effect',type:'computational',level:2,
+    q:'If SD=10 and n=25, what is SD/\u221an?',correct:'2',
+    wrong:['0.4','5'],prereqs:['sqrt-compute','division-concept']},
+  'sqrt-compute':{id:'sqrt-compute',type:'computational',level:3,
+    q:'\u221a25 = ?',correct:'5',wrong:['12.5','25'],prereqs:['perfect-squares']},
+  'perfect-squares':{id:'perfect-squares',type:'computational',level:4,
+    q:'5 \u00d7 5 = ?',correct:'25',wrong:['10','20'],prereqs:[]},
+  'division-concept':{id:'division-concept',type:'conceptual',level:3,
+    q:'What does dividing by a number do?',correct:'Splits a total into equal parts',
+    wrong:['Multiplies by the reciprocal always','Removes the number'],prereqs:[]},
+  'df-concept':{id:'df-concept',type:'conceptual',level:2,
+    q:'What does degrees of freedom measure?',correct:'Number of values free to vary',
+    wrong:['The sample size','The number of variables'],prereqs:[]},
+  'proportion-arithmetic':{id:'proportion-arithmetic',type:'computational',level:2,
+    q:'If p=0.4, what is p(1-p)?',correct:'0.24',wrong:['0.6','0.16'],prereqs:['complement-concept']},
+  'complement-concept':{id:'complement-concept',type:'conceptual',level:3,
+    q:'What is the complement of probability p?',correct:'1 - p',wrong:['p\u00b2','1/p'],prereqs:[]},
+  'z-score-concept':{id:'z-score-concept',type:'conceptual',level:2,
+    q:'What does a z-score measure?',correct:'How many SDs a value is from the mean',
+    wrong:['The percentile rank','The raw deviation'],prereqs:[]},
+  'variance-to-sd':{id:'variance-to-sd',type:'conceptual',level:2,
+    q:'Why take the square root of variance?',correct:'To convert back to original units',
+    wrong:['To make the value smaller','To normalize the distribution'],prereqs:['sqrt-compute']},
+  'squaring-concept':{id:'squaring-concept',type:'conceptual',level:3,
+    q:'Why square deviations before averaging?',correct:'Prevents positive and negative canceling',
+    wrong:['To make all values integers','To amplify outliers'],prereqs:[]},
+  'mean-concept':{id:'mean-concept',type:'conceptual',level:2,
+    q:'What does the mean (average) represent?',correct:'The balance point of a distribution',
+    wrong:['The most common value','The middle value when sorted'],prereqs:[]},
+  'unbiased-estimator':{id:'unbiased-estimator',type:'conceptual',level:2,
+    q:'What does "unbiased estimator" mean?',correct:'On average equals the true parameter',
+    wrong:['Always exactly correct','Has no variance'],prereqs:[]},
+  'independence-concept':{id:'independence-concept',type:'conceptual',level:2,
+    q:'What does independence of events mean?',correct:'One event does not affect the other\'s probability',
+    wrong:['Events never happen together','Events have equal probability'],prereqs:[]},
+  'conditional-restrict':{id:'conditional-restrict',type:'conceptual',level:2,
+    q:'What does "given B" mean in P(A|B)?',correct:'Restrict to only outcomes where B occurred',
+    wrong:['B happens after A','B causes A'],prereqs:[]},
+  'expected-value-concept':{id:'expected-value-concept',type:'conceptual',level:2,
+    q:'What is expected value?',correct:'The long-run average of a random variable',
+    wrong:['The most likely outcome','The median outcome'],prereqs:['mean-concept']},
+  'clt-concept':{id:'clt-concept',type:'conceptual',level:2,
+    q:'What does the Central Limit Theorem guarantee?',correct:'Sample means are approximately Normal for large n',
+    wrong:['All populations are Normal','Samples are always representative'],prereqs:[]},
+  'hypothesis-framework':{id:'hypothesis-framework',type:'conceptual',level:2,
+    q:'What does a test statistic measure?',correct:'How far the sample is from H0 in SE units',
+    wrong:['The probability H0 is true','The effect size'],prereqs:['se-concept','z-score-concept']},
+};
+function installSharedNodes(){Object.assign(PREREQ_DAG,SHARED_PREREQ_NODES)}
+function validateDAG(){
+  let danglingRefs=0,cycles=0;const visited=new Set(),inStack=new Set();
+  function dfs(id){
+    if(inStack.has(id)){cycles++;return}if(visited.has(id))return;
+    visited.add(id);inStack.add(id);
+    const node=PREREQ_DAG[id];
+    if(!node){danglingRefs++;inStack.delete(id);return}
+    (node.prereqs||[]).forEach(pid=>dfs(pid));inStack.delete(id);
+  }
+  (typeof COMMANDS!=='undefined'?COMMANDS:[]).forEach(cmd=>(cmd.prereqs||[]).forEach(id=>dfs(id)));
+  Object.values(PREREQ_DAG).forEach(n=>(n.prereqs||[]).forEach(id=>dfs(id)));
+  if(danglingRefs)console.warn('[DAG] '+danglingRefs+' dangling prereq refs');
+  if(cycles)console.error('[DAG] '+cycles+' cycles detected!');
+  if(!danglingRefs&&!cycles)console.log('[DAG] validation passed');
+}
+function getTransferSeed(nodeId,excludeCmdId){
+  for(const cmdId of Object.keys(G.srs||{})){
+    if(cmdId===excludeCmdId)continue;
+    const pk=G.srs[cmdId]?.dagState?.[nodeId]?.pKnown;
+    if(pk!=null&&pk>0.5)return 0.3;
+  }
+  return 0.1;
+}
+function canNodeSplit(card,nodeId){
+  const node=PREREQ_DAG[nodeId];
+  if(!node||!node.prereqs||node.prereqs.length===0)return false;
+  const state=card.dagState?.[nodeId];
+  if(!state||state.encounters<1)return false;
+  if(state.pKnown>=0.3)return false;
+  return true;
+}
+function selectWeakestPrereqs(card,prereqIds,count){
+  const ranked=prereqIds.map(id=>({id,pKnown:card.dagState?.[id]?.pKnown??0.1})).sort((a,b)=>a.pKnown-b.pKnown);
+  return ranked.slice(0,count).map(r=>r.id);
+}
+function findNodeId(enemy){
+  if(!enemy.dagNodeId)return null;
+  return enemy.dagNodeId;
+}
+
+// ═══════════════════════════════════════════════
 //  BKT — Bayesian Knowledge Tracing
 // ═══════════════════════════════════════════════
 function clampProb(v,min,max){min=min??0.001;max=max??0.999;return Math.min(max,Math.max(min,v))}
@@ -2791,17 +2907,39 @@ function effectivePGuess(card,ctx){
   const choices=Math.max(1,Math.min(10,ctx.remainingChoices||4));
   return clampProb(1/choices,0.05,0.50);
 }
-function recomputeCompositePKnown(card){
+function recomputeCompositePKnown(card,cmd){
+  // DAG path: only average L1 (direct prereq) nodes
+  if(cmd&&cmd.prereqs&&cmd.prereqs.length>0&&card.dagState){
+    const directVals=cmd.prereqs.map(id=>card.dagState[id]?.pKnown).filter(v=>v!=null);
+    if(directVals.length>0){
+      const avg=directVals.reduce((s,v)=>s+v,0)/directVals.length;
+      card.pKnown=clampProb(0.7*(card.pKnownDirect||0.1)+0.3*avg);return;
+    }
+  }
+  // Fallback: old subPKnown path
   const childVals=Object.values(card.subPKnown||{});
   if(childVals.length===0){card.pKnown=card.pKnownDirect}
   else{const avg=childVals.reduce((s,v)=>s+v,0)/childVals.length;card.pKnown=clampProb(0.7*card.pKnownDirect+0.3*avg)}
 }
-function bktUpdate(card,outcome){
+function bktUpdate(card,outcome,cmd){
   const ctx={questionType:outcome.questionType||'identify',remainingChoices:outcome.remainingChoices||4};
   const epg=effectivePGuess(card,ctx);
   const pSlip=card.pSlip||0.1;
   const pTransit=card.pTransit||0.03;
-  if(outcome.subconceptIndex!=null){
+  // DAG path: update dagState by nodeId
+  if(outcome.dagNodeId){
+    if(!card.dagState)card.dagState={};
+    if(!card.dagState[outcome.dagNodeId]){
+      const seed=getTransferSeed(outcome.dagNodeId,cmd?.id);
+      card.dagState[outcome.dagNodeId]={pKnown:seed,encounters:0,lastEncounterWave:0};
+    }
+    const state=card.dagState[outcome.dagNodeId];
+    state.encounters++;
+    state.lastEncounterWave=outcome.wave||0;
+    const post=bayesPosterior(state.pKnown,outcome.wasCorrect,epg,pSlip);
+    state.pKnown=clampProb(post+(1-post)*pTransit);
+  }else if(outcome.subconceptIndex!=null){
+    // Legacy subPKnown path (fallback)
     if(!card.subPKnown)card.subPKnown={};
     const prev=card.subPKnown[outcome.subconceptIndex]??0.1;
     const post=bayesPosterior(prev,outcome.wasCorrect,epg,pSlip);
@@ -2810,7 +2948,7 @@ function bktUpdate(card,outcome){
     const post=bayesPosterior(card.pKnownDirect||0.1,outcome.wasCorrect,epg,pSlip);
     card.pKnownDirect=clampProb(post+(1-post)*pTransit);
   }
-  recomputeCompositePKnown(card);
+  recomputeCompositePKnown(card,cmd);
 }
 function infoGain(pKnown){const p=clampProb(pKnown);return-p*Math.log2(p)-(1-p)*Math.log2(1-p)}
 function pickScore(srsCard,wave){
@@ -2824,7 +2962,7 @@ function pickScore(srsCard,wave){
 //  SRS — Enhanced with time + attempts
 // ═══════════════════════════════════════════════
 const EXAM_DATE=new Date('2026-05-07T23:59:59');
-function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},lastUpdated:0,rev:0}});return s}
+function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0}});return s}
 // Time-based knowledge decay — mastery fades if not reviewed
 function applyTimeDecay(srs){
   const now=Date.now();
@@ -2858,7 +2996,7 @@ function getExamUrgency(){
   return{urgency:1.0,daysLeft:Math.round(daysLeft),mode:'cram'};
 }
 function sanitizeSrsCard(card,defaults){
-  const d=defaults||{ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},lastUpdated:0,rev:0};
+  const d=defaults||{ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0};
   const c={...d,...card};
   c.ease=Number.isFinite(c.ease)?Math.max(1.3,Math.min(5,c.ease)):d.ease;
   c.interval=Number.isFinite(c.interval)?Math.max(0,Math.min(20,Math.floor(c.interval))):d.interval;
@@ -2881,12 +3019,21 @@ function sanitizeSrsCard(card,defaults){
     }
     c.subPKnown=clean;
   }else c.subPKnown={};
+  // Sanitize dagState
+  if(c.dagState&&typeof c.dagState==='object'){
+    for(const[nid,st] of Object.entries(c.dagState)){
+      if(!st||typeof st!=='object'){delete c.dagState[nid];continue}
+      st.pKnown=Number.isFinite(Number(st.pKnown))?Math.max(.001,Math.min(.999,Number(st.pKnown))):0.1;
+      st.encounters=Number.isFinite(Number(st.encounters))?Math.max(0,Math.floor(Number(st.encounters))):0;
+      st.lastEncounterWave=Number.isFinite(Number(st.lastEncounterWave))?Math.max(0,Math.floor(Number(st.lastEncounterWave))):0;
+    }
+  }else c.dagState={};
   c.lastUpdated=Number.isFinite(c.lastUpdated)?Math.max(0,c.lastUpdated):0;
   c.rev=Number.isFinite(c.rev)?Math.max(0,Math.floor(c.rev)):0;
   return c;
 }
 function srsHit(card,wave,timeMs,attempts,bktOutcome){
-  const c={...card,subPKnown:{...(card.subPKnown||{})}};c.correct++;c.streak++;c.lastSeen=wave;
+  const c={...card,subPKnown:{...(card.subPKnown||{})},dagState:JSON.parse(JSON.stringify(card.dagState||{}))};c.correct++;c.streak++;c.lastSeen=wave;
   c.avgTimeMs=c.totalAttempts>0?(c.avgTimeMs*c.totalAttempts+timeMs)/(c.totalAttempts+1):timeMs;
   c.totalAttempts++;
   let q=5;
@@ -2906,14 +3053,14 @@ function srsHit(card,wave,timeMs,attempts,bktOutcome){
   else if(c.streak>=3&&c.ease>=1.8)c.mastery=3;
   else if(c.streak>=2)c.mastery=2;
   else if(c.streak>=1)c.mastery=Math.max(c.mastery,1);
-  if(bktOutcome)bktUpdate(c,bktOutcome);
+  if(bktOutcome)bktUpdate(c,bktOutcome,bktOutcome._cmd);
   c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;
   return c;
 }
 function srsMiss(card,wave,bktOutcome){
-  const c={...card,subPKnown:{...(card.subPKnown||{})}};c.wrong++;c.streak=0;c.lastSeen=wave;c.interval=0;
+  const c={...card,subPKnown:{...(card.subPKnown||{})},dagState:JSON.parse(JSON.stringify(card.dagState||{}))};c.wrong++;c.streak=0;c.lastSeen=wave;c.interval=0;
   c.ease=Math.max(1.3,card.ease-.2);c.mastery=Math.max(0,card.mastery-1);
-  c.totalAttempts++;if(bktOutcome)bktUpdate(c,bktOutcome);
+  c.totalAttempts++;if(bktOutcome)bktUpdate(c,bktOutcome,bktOutcome._cmd);
   c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;return c;
 }
 function pickCommands(pool,srs,count,wave){
@@ -3079,6 +3226,18 @@ function loadSRS(cartridge){
         if(parsed[id].pKnownDirect==null){
           const boot=bktBootstrapFromMastery(fresh[id].mastery||0);
           fresh[id].pKnownDirect=boot;fresh[id].pKnown=boot;
+        }
+        // Migrate subPKnown → dagState for DAG system
+        if(!parsed[id].dagState&&parsed[id].subPKnown){
+          const cmd=(typeof COMMANDS!=='undefined'?COMMANDS:[]).find(c=>c.id===id);
+          if(cmd&&cmd.prereqs){
+            fresh[id].dagState={};
+            cmd.prereqs.forEach((nodeId,i)=>{
+              if(parsed[id].subPKnown[i]!=null){
+                fresh[id].dagState[nodeId]={pKnown:parsed[id].subPKnown[i],encounters:parsed[id].subPKnown[i]>0.1?1:0,lastEncounterWave:0};
+              }
+            });
+          }
         }
       }
       fresh[id]=sanitizeSrsCard(fresh[id]);
@@ -3771,6 +3930,12 @@ const childGeo=new THREE.BoxGeometry(.30,.30,.30);
 const childMat=new THREE.MeshPhongMaterial({color:0x4488ff,emissive:0x2255aa,emissiveIntensity:.3,flatShading:true});
 const grandGeo=new THREE.BoxGeometry(.20,.20,.20);
 const grandMat=new THREE.MeshPhongMaterial({color:0xaa44ff,emissive:0x6622aa,emissiveIntensity:.35,flatShading:true});
+const builderGeo=new THREE.BoxGeometry(.18,.18,.18);
+const builderMat=new THREE.MeshPhongMaterial({color:0x44bbcc,emissive:0x227766,emissiveIntensity:.3,flatShading:true});
+const foundationGeo=new THREE.BoxGeometry(.15,.15,.15);
+const foundationMat=new THREE.MeshPhongMaterial({color:0x44cc66,emissive:0x226633,emissiveIntensity:.3,flatShading:true});
+const basicGeo=new THREE.BoxGeometry(.12,.12,.12);
+const basicMat=new THREE.MeshPhongMaterial({color:0xcccccc,emissive:0x666666,emissiveIntensity:.25,flatShading:true});
 
 function addEnemyMesh(enemy){
   const m=new THREE.Mesh(eGeo,eMat.clone());
@@ -3785,12 +3950,13 @@ function removeEnemyMesh(id){
   delete enemyMeshes[id];
 }
 function addChildEnemyMesh(enemy,offsetIdx){
-  const geo=enemy.splitDepth>=2?grandGeo:childGeo;
-  const mat=enemy.splitDepth>=2?grandMat:childMat;
-  const m=new THREE.Mesh(geo,mat.clone());
+  const d=enemy.splitDepth||1;
+  const geo=d>=4?basicGeo:d>=3?foundationGeo:d>=2?builderGeo:childGeo;
+  const mat=(d>=4?basicMat:d>=3?foundationMat:d>=2?builderMat:childMat).clone();
+  const m=new THREE.Mesh(geo,mat);
   const t=Math.min(enemy.t,1);
   const p=pathCurve.getPointAt(t);
-  const offsets=enemy.splitDepth>=2?[-.25,.25]:[-.4,0,.4];
+  const offsets=d>=3?[-.2,.2]:[-.4,0,.4].slice(0,2);
   m.position.set(p.x+offsets[offsetIdx%offsets.length],p.y+.4,p.z);
   scene.add(m);
   enemyMeshes[enemy.id]=m;
@@ -3805,10 +3971,10 @@ function updateEnemyMeshes(){
     m.position.set(p.x,p.y+.3+Math.sin(Date.now()*.003+e.id)*bobAmp,p.z);
     m.rotation.y+=depth>=2?.06:depth>=1?.04:.02;
     if(e.id===G.selectedId){
-      const selC=depth>=2?0xcc88ff:depth>=1?0x88bbff:AMB.white;
-      m.material.color.setHex(selC);m.material.emissive.setHex(depth>=2?0xaa44ff:depth>=1?0x4488ff:AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
+      const selC=depth>=4?0xeeeeee:depth>=3?0x88ee99:depth>=2?0x88ddee:depth>=1?0x88bbff:AMB.white;
+      m.material.color.setHex(selC);m.material.emissive.setHex(depth>=4?0x999999:depth>=3?0x44cc66:depth>=2?0x44bbcc:depth>=1?0x4488ff:AMB.glow);m.material.emissiveIntensity=.5+Math.sin(Date.now()*.005)*.2;
     }else{
-      const baseC=depth>=2?0xaa44ff:depth>=1?0x4488ff:AMB.hot;
+      const baseC=depth>=4?0xcccccc:depth>=3?0x44cc66:depth>=2?0x44bbcc:depth>=1?0x4488ff:AMB.hot;
       const emC=depth>=2?0x6622aa:depth>=1?0x2255aa:AMB.bright;
       m.material.color.setHex(baseC);m.material.emissive.setHex(emC);m.material.emissiveIntensity=depth>=2?.35:depth>=1?.3:.2;
     }
@@ -4233,7 +4399,7 @@ function handleHintChoice(key){
   const chosen=enemy.question.choices[idx];
   queueQuizChoiceResolution(enemy,key,activeCartridge.validateBlank(chosen,enemy.question.answer));
 }
-function handleSubconceptChoice(key){
+function handlePrereqChoice(key){
   if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
   const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
   if(!enemy||!enemy.question||enemy.question.type!=='subconcept')return;
@@ -4241,6 +4407,7 @@ function handleSubconceptChoice(key){
   if(idx===-1)return;
   queueQuizChoiceResolution(enemy,key,key===enemy.question.correctKey);
 }
+const handleSubconceptChoice=handlePrereqChoice;
 
 function updateQueue(){
   const bar=document.getElementById('queue-bar');
@@ -4884,7 +5051,7 @@ function handleHit(enemy){
   if(!(enemy.splitDepth>=1))G.treeDepth=Math.min(10,G.treeDepth+1);
   SFX.setTreeDepth(G.treeDepth);
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
-  const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,responseTimeMs:responseTime};
+  const bktCtx={wasCorrect:true,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:enemy.dagNodeId||null,wave:G.wave,responseTimeMs:responseTime,_cmd:enemy.cmd};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
   saveSRS(); // debounced per-answer save
   removeEnemyMesh(enemy.id);
@@ -4900,23 +5067,38 @@ function handleMiss(enemy){
   G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
-  const bktCtx={wasCorrect:false,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null};
+  // Check canNodeSplit BEFORE bktUpdate (critical: encounters must be read before increment)
+  const nodeId=enemy.dagNodeId||null;
+  const card=G.srs[enemy.cmd.id]||{};
+  const depth=enemy.splitDepth||0;
+  let nodeCanSplit=false;
+  if(nodeId&&depth>=1){
+    nodeCanSplit=canNodeSplit(card,nodeId);
+  }else if(depth===0&&enemy.cmd.prereqs&&enemy.cmd.prereqs.length>0){
+    nodeCanSplit=true; // L0 can always split if it has prereqs
+  }
+  // Now do BKT update (increments encounters)
+  const bktCtx={wasCorrect:false,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:nodeId,wave:G.wave,_cmd:enemy.cmd};
   G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave,bktCtx);
-  saveSRS(); // debounced per-answer save
+  saveSRS();
   G.typedBuffer='';
 
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
-  const depth=enemy.splitDepth||0;
-  const surge=isQuizMode?(depth===0?0.15:depth===1?0.22:0.30):0.06;
+  const surge=isQuizMode?(depth===0?0.15:depth<=2?0.22:0.30):0.06;
   enemy.t=Math.min(PATH_LENGTH_T+.02,(enemy.t||0)+surge);
-  // Hydra split: depth 0 → subconcepts (depth 1), depth 1 → sub-subconcepts (depth 2)
-  if(isQuizMode&&depth<2){
+  // DAG hydra split
+  if(isQuizMode&&depth<5&&nodeCanSplit){
     const didSplit=spawnHydraChildren(enemy);
-    if(didSplit){SFX.split();flash(depth===0?'SPLIT! SURGING \u26a1':'FRACTURE! SURGING \u26a1\u26a1',depth===0?'#4488ff':'#aa44ff');return}
+    if(didSplit){
+      SFX.split();
+      const msgs=['SPLIT! PREREQS INCOMING','DEEPER! BUILDER CONCEPTS','FOUNDATIONS EXPOSED','BACK TO BASICS','BACK TO BASICS'];
+      const cols=['#4488ff','#44bbcc','#44cc66','#cccccc','#cccccc'];
+      flash(msgs[Math.min(depth,4)],cols[Math.min(depth,4)]);
+      return;
+    }
   }
-  // Fallback: speed up (depth 2 grandchildren, non-quiz, or split failed)
+  // Fallback: speed up
   enemy.speedMult=Math.min((enemy.speedMult||1)*(isQuizMode?1.85:1.5),4.5);
-  // Attempt cap: after 3 misses on the same enemy, auto-surge near breach
   if(isQuizMode&&(enemy.missCount||0)>=3){
     enemy.t=Math.max(enemy.t,0.85);
     enemy.speedMult=Math.max(enemy.speedMult,3.0);
@@ -4936,62 +5118,95 @@ function spawnHydraChildren(parentEnemy){
   const cmd=parentEnemy.cmd;
   const depth=(parentEnemy.splitDepth||0)+1;
   if(G.enemies.length>20)return false;
+  // Ancestor spawn budget: max 4 living descendants per L0 ancestor
+  const ancestorId=parentEnemy.ancestorId||parentEnemy.id;
+  const descendantCount=G.enemies.filter(e=>e.ancestorId===ancestorId).length;
+  if(descendantCount>=4)return false;
+  const budget=4-descendantCount;
 
   const parentPos=enemyMeshes[parentEnemy.id]?.position.clone();
-  const explColor=depth>=2?0xaa44ff:0x4488ff;
-  spawnExplosion(parentPos||pathPts[0],depth>=2?10:15,explColor);
-  removeEnemyMesh(parentEnemy.id);
-  G.enemies=G.enemies.filter(e=>e.id!==parentEnemy.id);
-
+  // Determine which prereq nodes to spawn
+  let prereqIds=[];
+  const card=G.srs[cmd.id]||{};
   if(depth===1){
-    // Depth 1: subconcept children (blue)
-    const subs=cmd.subconcepts;
-    if(!subs||subs.length===0)return false;
-    const count=Math.min(3,subs.length);
-    const parentCard=G.srs[cmd.id]||{};
-    const ranked=subs.map((sc,i)=>({sc,i,pk:(parentCard.subPKnown&&parentCard.subPKnown[i]!=null)?parentCard.subPKnown[i]:0.1})).sort((a,b)=>a.pk-b.pk);
-    const picked=ranked.slice(0,count).map(r=>r.sc);
-    const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1)*1.35;
-    picked.forEach((sc,i)=>{
-      if(parentEnemy.t>0.82)return; // too close to breach — skip spawning children
-      const childT=Math.min(.82,Math.max(0,parentEnemy.t+0.02*(i+1)));
-      const options=shuffleArr([sc.correct,...sc.wrong]);
-      const correctIdx=options.indexOf(sc.correct);
-      const child={
-        id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-        speedMult:inheritedSpeed,isChild:true,splitDepth:1,missCount:0,
-        subconcept:sc,
-        question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
-        label:'\u26a1 Sub-concept'
-      };
-      G.enemies.push(child);
-      addChildEnemyMesh(child,i);
-    });
-  }else if(depth===2){
-    // Depth 2: sub-subconcept grandchildren (purple) — binary A/B choice
-    // Auto-generated from the parent subconcept's correct answer
-    const sc=parentEnemy.subconcept;
-    if(!sc)return false;
-    const count=2;
-    const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1.15)*1.6;
-    for(let i=0;i<count;i++){
-      if(parentEnemy.t>0.85)continue; // too close to breach — skip grandchild
-      const childT=Math.min(.85,Math.max(0,parentEnemy.t+0.025*(i+1)));
-      // Binary question: "Is this true about [topic]?"
-      const wrongPick=sc.wrong[i%sc.wrong.length];
-      const statements=shuffleArr([sc.correct,wrongPick]);
-      const correctIdx=statements.indexOf(sc.correct);
-      const child={
-        id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
-        speedMult:inheritedSpeed,isChild:true,splitDepth:2,missCount:0,
-        subconcept:sc,
-        question:{type:'subconcept',text:sc.q+' (True or false?)',options:statements,correctIdx:correctIdx,correctKey:['a','b'][correctIdx]},
-        label:'\u26a1\u26a1 Deep concept'
-      };
-      G.enemies.push(child);
-      addChildEnemyMesh(child,i);
+    // Splitting L0 → L1: use command's prereqs
+    prereqIds=cmd.prereqs||[];
+    if(prereqIds.length===0){
+      // Fallback to old subconcepts if no prereqs
+      const subs=cmd.subconcepts;
+      if(!subs||subs.length===0)return false;
+      const count=Math.min(2,subs.length,budget);
+      const parentCard=G.srs[cmd.id]||{};
+      const ranked=subs.map((sc,i)=>({sc,i,pk:(parentCard.subPKnown&&parentCard.subPKnown[i]!=null)?parentCard.subPKnown[i]:0.1})).sort((a,b)=>a.pk-b.pk);
+      const picked=ranked.slice(0,count).map(r=>r.sc);
+      // Old-style subconcept spawn
+      const explColor=0x4488ff;
+      spawnExplosion(parentPos||pathPts[0],15,explColor);
+      removeEnemyMesh(parentEnemy.id);G.enemies=G.enemies.filter(e=>e.id!==parentEnemy.id);
+      const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1)*1.35;
+      picked.forEach((sc,i)=>{
+        if(parentEnemy.t>0.82)return;
+        const childT=Math.min(.82,Math.max(0,parentEnemy.t+0.02*(i+1)));
+        const options=shuffleArr([sc.correct,...sc.wrong]);
+        const correctIdx=options.indexOf(sc.correct);
+        const child={id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
+          speedMult:inheritedSpeed,isChild:true,splitDepth:1,missCount:0,
+          ancestorId:ancestorId,subconcept:sc,
+          question:{type:'subconcept',text:sc.q,options:options,correctIdx:correctIdx,correctKey:['a','b','c'][correctIdx]},
+          label:'\u26a1 Sub-concept'};
+        G.enemies.push(child);addChildEnemyMesh(child,i);
+      });
+      if(G.selectedId===parentEnemy.id){resetExplanationState();G.selectedId=null;G.inputState='idle'}
+      return true;
     }
+  }else{
+    // Splitting L1+ → L2+: use the DAG node's prereqs
+    const nodeId=parentEnemy.dagNodeId;
+    if(!nodeId)return false;
+    const node=PREREQ_DAG[nodeId];
+    if(!node||!node.prereqs||node.prereqs.length===0)return false;
+    prereqIds=node.prereqs;
   }
+
+  // Filter to only valid DAG nodes
+  prereqIds=prereqIds.filter(id=>PREREQ_DAG[id]);
+  if(prereqIds.length===0)return false;
+
+  // Select weakest prereqs (max 2, bounded by budget)
+  const count=Math.min(2,prereqIds.length,budget);
+  const selected=selectWeakestPrereqs(card,prereqIds,count);
+
+  // Visual: depth-based colors
+  const depthColors=[0x4488ff,0x4488ff,0x44bbcc,0x44cc66,0xcccccc,0xcccccc];
+  const explColor=depthColors[Math.min(depth,5)];
+  spawnExplosion(parentPos||pathPts[0],Math.max(6,15-depth*2),explColor);
+  removeEnemyMesh(parentEnemy.id);G.enemies=G.enemies.filter(e=>e.id!==parentEnemy.id);
+
+  // Speed multipliers by depth
+  const speedMults=[1.35,1.35,1.25,1.15,1.10,1.10];
+  const inheritedSpeed=Math.max(parentEnemy.speedMult||1,1)*speedMults[Math.min(depth,5)];
+
+  // Spawn prereq enemies
+  selected.forEach((nodeId,i)=>{
+    if(parentEnemy.t>0.80)return;
+    const node=PREREQ_DAG[nodeId];
+    const childT=Math.min(.82,Math.max(0,parentEnemy.t+0.02*(i+1)));
+    // Build MC options: splitDepth 1-2 = 3 options, 3-4 = 2 options
+    const useTwo=depth>=3;
+    const wrongChoices=useTwo?[node.wrong[Math.floor(Math.random()*node.wrong.length)]]:node.wrong.slice();
+    const options=shuffleArr([node.correct,...wrongChoices]);
+    const correctIdx=options.indexOf(node.correct);
+    const keys=useTwo?['a','b']:['a','b','c'];
+    const labels=['\u26a1 Prereq','\u26a1 Prereq','\u26a1\u26a1 Builder','\u26a1\u26a1\u26a1 Foundation','Basic'];
+    const child={
+      id:++G.nextEnemyId,cmd:cmd,t:childT,spawned:Date.now(),
+      speedMult:inheritedSpeed,isChild:true,splitDepth:depth,missCount:0,
+      ancestorId:ancestorId,dagNodeId:nodeId,
+      question:{type:'subconcept',text:node.q,options:options,correctIdx:correctIdx,correctKey:keys[correctIdx]},
+      label:labels[Math.min(depth,4)]
+    };
+    G.enemies.push(child);addChildEnemyMesh(child,i);
+  });
   if(G.selectedId===parentEnemy.id){resetExplanationState();G.selectedId=null;G.inputState='idle'}
   return true;
 }
@@ -5441,6 +5656,9 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
 // ═══════════════════════════════════════════════
 activeCartridge=apStatsCartridge;
 COMMANDS=activeCartridge.commands;
+buildDAGFromSubconcepts(COMMANDS);
+installSharedNodes();
+validateDAG();
 showTitleScreen('boot');
 // Service Worker registration
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
