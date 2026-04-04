@@ -1024,14 +1024,21 @@ const SFX=(()=>{
         const melodyRoot=ch[0]; // current chord root frequency
         const baseRoot=261.63; // C4 reference
         const semitoneShift=12*Math.log2(melodyRoot/baseRoot);
-        savedMelody.forEach((midi,i)=>{
-          if(midi==null)return;
+        // Process holds: a note followed by 'hold' slots gets extended duration
+        let i=0;
+        while(i<savedMelody.length){
+          const midi=savedMelody[i];
+          if(midi==null||midi==='hold'){i++;continue}
+          // Count consecutive holds after this note
+          let dur=1;
+          while(i+dur<savedMelody.length&&savedMelody[i+dur]==='hold')dur++;
           const mt=startT+i*st;
           if(mt>now-.01){
             const transposedMidi=midi+Math.round(semitoneShift);
-            playMelodyNote(transposedMidi,st*.8,mt-ctx.currentTime);
+            playMelodyNote(transposedMidi,st*dur*.8,mt-ctx.currentTime);
           }
-        });
+          i+=dur;
+        }
       }
       startT+=ll;
       // Auto-advance chord for next bar (song plays itself)
@@ -3702,9 +3709,16 @@ function handleComposeKey(key){
     if(MELODY_STATE.notes.length<8){MELODY_STATE.notes.push(null);lastInputState=''}
     return;
   }
+  // Hold/tie key — extend previous note through this slot
+  if(k==='.'||k==='='){
+    if(MELODY_STATE.notes.length>0&&MELODY_STATE.notes.length<8){
+      MELODY_STATE.notes.push('hold');lastInputState='';
+    }
+    return;
+  }
   // White keys always available at depth 7+
   let midi=PIANO_WHITE[k];
-  // Black keys only at depth 9+
+  // Black keys at depth 9+
   if(!midi&&td>=9)midi=PIANO_BLACK[k];
   if(midi!=null&&MELODY_STATE.notes.length<8){
     MELODY_STATE.notes.push(midi);
@@ -3721,7 +3735,12 @@ function previewMelodyLoop(){
   function playStep(){
     if(idx>=MELODY_STATE.notes.length){idx=0}
     const m=MELODY_STATE.notes[idx];
-    if(m!=null)SFX.playMelodyNote(m,stepDur/1000*.8);
+    if(m!=null&&m!=='hold'){
+      // Count holds after this note for duration
+      let dur=1;
+      while(idx+dur<MELODY_STATE.notes.length&&MELODY_STATE.notes[idx+dur]==='hold')dur++;
+      SFX.playMelodyNote(m,stepDur*dur/1000*.8);
+    }
     idx++;
   }
   playStep();
@@ -4353,10 +4372,13 @@ function updateInput(){
     for(let i=0;i<8;i++){
       const note=MELODY_STATE.notes[i];
       const filled=i<MELODY_STATE.notes.length;
-      const label=filled?(note!=null?midiNoteName(note):'\u00b7'):'';
-      const bg=filled?(note!=null?'#ff8c0033':'#5a380022'):'#0d050088';
-      const border=filled?'#ff8c0066':'#5a380033';
-      headerHtml+='<div style="flex:1;height:36px;display:flex;align-items:center;justify-content:center;background:'+bg+';border:1px solid '+border+';border-radius:4px;font-size:10px;color:#ff8c00;font-weight:600">'+label+'</div>';
+      const isHold=note==='hold';
+      const isRest=filled&&note==null;
+      const isNote=filled&&note!=null&&!isHold;
+      const label=isHold?'\u2014':isNote?midiNoteName(note):isRest?'\u00b7':filled?'':'';
+      const bg=isHold?'#ff8c0020':isNote?'#ff8c0033':isRest?'#5a380022':'#0d050088';
+      const border=isHold?'#ff8c0044':filled?'#ff8c0066':'#5a380033';
+      headerHtml+='<div style="flex:1;height:36px;display:flex;align-items:center;justify-content:center;background:'+bg+';border:1px solid '+border+';border-radius:4px;font-size:'+(isHold?'16px':'10px')+';color:#ff8c00;font-weight:600">'+label+'</div>';
     }
     headerHtml+='</div>';
     // Key hints
@@ -4367,12 +4389,13 @@ function updateInput(){
       headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#ff8c0022;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+k+'</div>'+whiteNames[i]+'</div>';
     });
     headerHtml+='</div>';
-    if(td>=9){
-      headerHtml+='<div style="display:flex;gap:2px;margin:2px 0;padding:0 4%">';
+    {
+      const locked=td<9;
+      headerHtml+='<div style="display:flex;gap:2px;margin:2px 0;padding:0 4%;'+(locked?'opacity:0.3':'')+'">';
       const blackKeys=[{k:'W',n:'C#'},{k:'E',n:'D#'},{k:'',n:''},{k:'T',n:'F#'},{k:'Y',n:'G#'},{k:'U',n:'A#'},{k:'',n:''},{k:'O',n:'C#5'},{k:'P',n:'D#5'}];
       blackKeys.forEach(bk=>{
         if(!bk.k)headerHtml+='<div style="flex:1"></div>';
-        else headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#33220088;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+bk.k+'</div>'+bk.n+'</div>';
+        else headerHtml+='<div style="flex:1;text-align:center;font-size:8px;color:#5a3800"><div style="background:#33220088;border:1px solid #ff8c0033;border-radius:3px;padding:2px 0;margin-bottom:1px;color:#ff8c00">'+bk.k+'</div>'+bk.n+(locked?'<div style="font-size:6px">\ud83d\udd12</div>':'')+'</div>';
       });
       headerHtml+='</div>';
     }
@@ -4381,7 +4404,7 @@ function updateInput(){
     bodyHtml+='<button class="btn" onclick="exitComposeMode(true)" style="font-size:11px;padding:6px 16px;background:#ff8c00;color:#0d0500;font-weight:700">KEEP</button>';
     bodyHtml+='<button class="btn" onclick="exitComposeMode(false)" style="font-size:11px;padding:6px 16px;background:transparent;border:1px solid #ff8c0044;color:#ff8c00">BACK</button>';
     bodyHtml+='</div>';
-    bodyHtml+='<div style="text-align:center;font-size:9px;color:#5a3800;margin-top:4px">Space=preview \u00b7 Backspace=undo \u00b7 -/0=rest \u00b7 Enter=keep \u00b7 Esc=back</div>';
+    bodyHtml+='<div style="text-align:center;font-size:9px;color:#5a3800;margin-top:4px">Space=preview \u00b7 Backspace=undo \u00b7 -=rest \u00b7 .=hold \u00b7 Enter=keep \u00b7 Esc=back</div>';
     setInputPanelContent(headerHtml,bodyHtml);
     return;
   }
