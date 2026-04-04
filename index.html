@@ -5375,6 +5375,9 @@ function spawnHydraChildren(parentEnemy){
   const count=Math.min(2,prereqIds.length,budget);
   const selected=selectWeakestPrereqs(card,prereqIds,count);
 
+  // Abort split if parent is too close to breach (prevents ghost split: parent removed but no children)
+  if(parentEnemy.t>0.80)return false;
+
   // Visual: depth-based colors
   const depthColors=[0x4488ff,0x4488ff,0x44bbcc,0x44cc66,0xcccccc,0xcccccc];
   const explColor=depthColors[Math.min(depth,5)];
@@ -5387,7 +5390,6 @@ function spawnHydraChildren(parentEnemy){
 
   // Spawn prereq enemies
   selected.forEach((nodeId,i)=>{
-    if(parentEnemy.t>0.80)return;
     const node=PREREQ_DAG[nodeId];
     const childT=Math.min(.82,Math.max(0,parentEnemy.t+0.02*(i+1)));
     // Build MC options: splitDepth 1-2 = 3 options, 3-4 = 2 options
