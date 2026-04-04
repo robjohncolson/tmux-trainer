@@ -4854,6 +4854,10 @@ function continueGame(){
     attemptsOnCurrent:Math.max(0,Math.round(Number(snapshot.attemptsOnCurrent)||0)),
     commandStartTime:Date.now(),typedBuffer:typeof snapshot.typedBuffer==='string'?snapshot.typedBuffer:'',
     domainFilter:safeDomains.slice(),difficulty:safeDifficulty,paused:false});
+  // Re-link cmd references to COMMANDS entries (JSON parse breaks prereqs/subconcepts refs)
+  const cmdLookup={};COMMANDS.forEach(c=>{cmdLookup[c.id]=c});
+  G.enemies.forEach(e=>{if(e.cmd&&e.cmd.id&&cmdLookup[e.cmd.id])e.cmd=cmdLookup[e.cmd.id]});
+  G.waveCommands=G.waveCommands.map(c=>cmdLookup[c.id]||c);
   if(!G.enemies.find(e=>e.id===G.selectedId)){G.selectedId=null}
   G.enemies.forEach((enemy,idx)=>{
     if((enemy.splitDepth||0)>=1)addChildEnemyMesh(enemy,idx);
@@ -5074,8 +5078,10 @@ function handleMiss(enemy){
   let nodeCanSplit=false;
   if(nodeId&&depth>=1){
     nodeCanSplit=canNodeSplit(card,nodeId);
-  }else if(depth===0&&enemy.cmd.prereqs&&enemy.cmd.prereqs.length>0){
-    nodeCanSplit=true; // L0 can always split if it has prereqs
+  }else if(depth===0){
+    // Look up prereqs from COMMANDS (enemy.cmd may be JSON-parsed without prereqs)
+    const cmdRef=COMMANDS.find(c=>c.id===enemy.cmd.id)||enemy.cmd;
+    if(cmdRef.prereqs&&cmdRef.prereqs.length>0)nodeCanSplit=true;
   }
   // Now do BKT update (increments encounters)
   const bktCtx={wasCorrect:false,questionType:enemy.question?enemy.question.type:'identify',remainingChoices:baseChoices,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:nodeId,wave:G.wave,_cmd:enemy.cmd};
@@ -5128,12 +5134,14 @@ function spawnHydraChildren(parentEnemy){
   // Determine which prereq nodes to spawn
   let prereqIds=[];
   const card=G.srs[cmd.id]||{};
+  // Look up canonical command for prereqs (enemy.cmd may be JSON-parsed without prereqs)
+  const cmdRef=COMMANDS.find(c=>c.id===cmd.id)||cmd;
   if(depth===1){
     // Splitting L0 → L1: use command's prereqs
-    prereqIds=cmd.prereqs||[];
+    prereqIds=cmdRef.prereqs||[];
     if(prereqIds.length===0){
       // Fallback to old subconcepts if no prereqs
-      const subs=cmd.subconcepts;
+      const subs=cmdRef.subconcepts||cmd.subconcepts;
       if(!subs||subs.length===0)return false;
       const count=Math.min(2,subs.length,budget);
       const parentCard=G.srs[cmd.id]||{};
