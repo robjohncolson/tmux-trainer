@@ -80,7 +80,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .bkt-uncertain .enemy-label-inner{animation:bkt-pulse 2s ease-in-out infinite}
 .enemy-label .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
 .sel-arrow{text-align:center;color:inherit;font-size:9px;margin-top:1px;animation:blink 1s step-end infinite;text-shadow:0 0 10px currentColor}
-#overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s}
+#overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 10px}
 #overlay.hidden{opacity:0;pointer-events:none}
 #overlay h1{font-size:56px;font-weight:900;letter-spacing:14px;color:#ff8c00;text-shadow:0 0 20px #ff8c00,0 0 40px #ff8c0044;margin-bottom:4px}
 #overlay h2{font-size:16px;font-weight:400;letter-spacing:8px;color:#cc6600;margin-bottom:20px}
@@ -4205,6 +4205,127 @@ camera.lookAt(0,0,-1);
 
 treeMeshes.forEach(t=>scene.add(t.mesh));
 
+// ── Fractal ferns (ground-level L-system plants) ──
+const FERN_MAX_SEGS=63; // depth 5
+const FERN_POOL=[
+  {x:-9,z:-9,angle:0.1,len:0.6,unlockAt:2},
+  {x:-6,z:-11,angle:-0.05,len:0.5,unlockAt:2},
+  {x:8,z:-9.5,angle:-0.1,len:0.55,unlockAt:3},
+  {x:5,z:-11,angle:0.08,len:0.45,unlockAt:4},
+  {x:-3,z:-12,angle:0,len:0.5,unlockAt:5},
+  {x:1,z:-11.5,angle:-0.03,len:0.4,unlockAt:6},
+];
+function generateFern(ox,oy,len,angle,depth,levels,timeSec,omega,pos,col,idx){
+  if(depth>=levels)return idx;
+  const sway=Math.sin(timeSec*omega*1.3+depth*0.6)*0.04*(0.3+depth*0.7);
+  const a=angle+sway;
+  const ex=ox+Math.sin(a)*len;
+  const ey=oy+Math.cos(a)*len;
+  pos[idx*6]=ox;pos[idx*6+1]=oy;pos[idx*6+2]=0;
+  pos[idx*6+3]=ex;pos[idx*6+4]=ey;pos[idx*6+5]=0;
+  const t=depth/Math.max(levels-1,1);
+  col[idx*6]=0.18+t*0.22;col[idx*6+1]=0.27+t*0.40;col[idx*6+2]=0.0;
+  col[idx*6+3]=0.18+t*0.22;col[idx*6+4]=0.27+t*0.40;col[idx*6+5]=0.0;
+  idx++;
+  const cl=len*0.7;
+  idx=generateFern(ex,ey,cl,a+0.7,depth+1,levels,timeSec,omega,pos,col,idx);
+  idx=generateFern(ex,ey,cl*0.85,a-0.5,depth+1,levels,timeSec,omega,pos,col,idx);
+  return idx;
+}
+const fernMeshes=FERN_POOL.map(fc=>{
+  const posArr=new Float32Array(FERN_MAX_SEGS*6);
+  const colArr=new Float32Array(FERN_MAX_SEGS*6);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(posArr,3).setUsage(THREE.DynamicDrawUsage));
+  geo.setAttribute('color',new THREE.BufferAttribute(colArr,3).setUsage(THREE.DynamicDrawUsage));
+  const mat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.6,fog:false});
+  const mesh=new THREE.LineSegments(geo,mat);
+  mesh.position.set(fc.x,terrainHeight(fc.x,fc.z),fc.z);
+  mesh.visible=false;
+  return{mesh,geo,posArr,colArr,config:fc};
+});
+fernMeshes.forEach(f=>scene.add(f.mesh));
+
+// ── Fractal constellations (sky star clusters) ──
+const CONSTELLATION_CLUSTERS=[
+  {stars:[[-6,10,-18],[-5,11.5,-19],[-4.5,9.5,-17],[-3.5,11,-18.5]],edges:[[0,1],[1,2],[2,3],[3,0]]},
+  {stars:[[0,12,-20],[1.5,10.5,-19],[-1,11,-18.5],[2,12.5,-20],[0.5,9.5,-17.5],[-1.5,10,-19]],edges:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]]},
+  {stars:[[5,11,-18],[6.5,10,-17],[4,9.5,-19],[6,12,-19.5],[7,11.5,-18]],edges:[[0,1],[0,2],[0,3],[3,4],[1,4]]},
+];
+const constellations=CONSTELLATION_CLUSTERS.map(cl=>{
+  // Stars (Points)
+  const starPos=new Float32Array(cl.stars.length*3);
+  cl.stars.forEach((s,i)=>{starPos[i*3]=s[0];starPos[i*3+1]=s[1];starPos[i*3+2]=s[2]});
+  const starGeo=new THREE.BufferGeometry();
+  starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+  const starMat=new THREE.PointsMaterial({color:0xffcc88,size:0.15,sizeAttenuation:true,transparent:true,opacity:0.8,fog:false});
+  const stars=new THREE.Points(starGeo,starMat);
+  // Edges (LineSegments)
+  const edgePos=new Float32Array(cl.edges.length*6);
+  cl.edges.forEach((e,i)=>{
+    const a=cl.stars[e[0]],b=cl.stars[e[1]];
+    edgePos[i*6]=a[0];edgePos[i*6+1]=a[1];edgePos[i*6+2]=a[2];
+    edgePos[i*6+3]=b[0];edgePos[i*6+4]=b[1];edgePos[i*6+5]=b[2];
+  });
+  const edgeGeo=new THREE.BufferGeometry();
+  edgeGeo.setAttribute('position',new THREE.BufferAttribute(edgePos,3));
+  const edgeMat=new THREE.LineBasicMaterial({color:0xff8c00,transparent:true,opacity:0.25,fog:false});
+  const edges=new THREE.LineSegments(edgeGeo,edgeMat);
+  edges.geometry.setDrawRange(0,0);
+  return{stars,edges,totalEdges:cl.edges.length,phases:cl.stars.map(()=>Math.random()*Math.PI*2)};
+});
+constellations.forEach(c=>{scene.add(c.stars);scene.add(c.edges)});
+
+// ── Fractal lightning pool ──
+const LIGHTNING_MAX=6;
+const LIGHTNING_SEGS=64; // max segments per bolt
+const lightningPool=[];
+function generateBolt(ax,ay,az,bx,by,bz,levels,spread,pos,idx,maxIdx){
+  if(levels<=0||idx>=maxIdx){
+    pos[idx*6]=ax;pos[idx*6+1]=ay;pos[idx*6+2]=az;
+    pos[idx*6+3]=bx;pos[idx*6+4]=by;pos[idx*6+5]=bz;
+    return idx+1;
+  }
+  const mx=(ax+bx)/2+(Math.random()-0.5)*spread;
+  const my=(ay+by)/2+(Math.random()-0.5)*spread;
+  const mz=(az+bz)/2+(Math.random()-0.5)*spread*0.3;
+  idx=generateBolt(ax,ay,az,mx,my,mz,levels-1,spread*0.5,pos,idx,maxIdx);
+  idx=generateBolt(mx,my,mz,bx,by,bz,levels-1,spread*0.5,pos,idx,maxIdx);
+  // Side branch (30% chance)
+  if(Math.random()<0.3&&idx<maxIdx-1){
+    const blen=spread*0.6;
+    const sx=mx+(Math.random()-0.5)*blen;
+    const sy=my+Math.random()*blen*0.5;
+    const sz=mz+(Math.random()-0.5)*blen*0.3;
+    pos[idx*6]=mx;pos[idx*6+1]=my;pos[idx*6+2]=mz;
+    pos[idx*6+3]=sx;pos[idx*6+4]=sy;pos[idx*6+5]=sz;
+    idx++;
+  }
+  return idx;
+}
+function spawnLightning(from,to,color,duration){
+  // Recycle or create
+  let bolt=lightningPool.find(b=>b.life<=0);
+  if(!bolt){
+    if(lightningPool.length>=LIGHTNING_MAX)return;
+    const posArr=new Float32Array(LIGHTNING_SEGS*6);
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(posArr,3).setUsage(THREE.DynamicDrawUsage));
+    const mat=new THREE.LineBasicMaterial({color,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+    const mesh=new THREE.LineSegments(geo,mat);
+    scene.add(mesh);
+    bolt={mesh,geo,posArr,mat,life:0,decay:0};
+    lightningPool.push(bolt);
+  }
+  bolt.mat.color.set(color);
+  const count=generateBolt(from.x,from.y,from.z,to.x,to.y,to.z,4,2.0,bolt.posArr,0,LIGHTNING_SEGS);
+  bolt.geo.attributes.position.needsUpdate=true;
+  bolt.geo.setDrawRange(0,count*2);
+  bolt.life=1;
+  bolt.decay=1/(duration*60); // ~60fps
+  bolt.mesh.visible=true;
+}
+
 const ambLight=new THREE.AmbientLight(AMB.dark,.4);scene.add(ambLight);
 const dirLight=new THREE.DirectionalLight(AMB.bright,.6);dirLight.position.set(5,12,8);scene.add(dirLight);
 const serverLight=new THREE.PointLight(AMB.hot,1.5,15);serverLight.position.set(-7,2,5);scene.add(serverLight);
@@ -4483,7 +4604,8 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
       awardId:options.awardId??null,
       trailTicker:0,
       swirl:(Math.random()-.5)*(rainbow?.024:.01),
-      twinkle:Math.random()*Math.PI*2
+      twinkle:Math.random()*Math.PI*2,
+      branchDepth:0,branched:false
     });
     scene.add(m);
   }
@@ -5693,7 +5815,12 @@ function checkBreach(){
   if(reached.length===0)return;
   SFX.breach();G.treeDepth=Math.max(0,G.treeDepth-2);SFX.setTreeDepth(G.treeDepth);
   reached.forEach(e=>{
-    spawnExplosion(enemyMeshes[e.id]?.position||pathPts[pathPts.length-1],20,0xff2200);
+    const bPos=enemyMeshes[e.id]?.position||pathPts[pathPts.length-1];
+    spawnExplosion(bPos,20,0xff2200);
+    // Breach lightning — 2 red bolts upward
+    for(let li=0;li<2;li++){
+      spawnLightning(bPos,new THREE.Vector3(bPos.x+(Math.random()-0.5)*4,10+Math.random()*3,bPos.z+(Math.random()-0.5)*2),0xff4422,0.4);
+    }
     removeEnemyMesh(e.id);
     G.srs[e.cmd.id]=srsMiss(G.srs[e.cmd.id],G.wave,null); // Breach: no BKT update (no student response to observe), SRS penalty only
     saveSRS(); // debounced per-answer save
@@ -5771,6 +5898,12 @@ function handleHit(enemy){
   G.streak++;G.maxStreak=Math.max(G.maxStreak,G.streak);
   SFX.setStreak(G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
+  // Streak lightning at 10+
+  if(G.streak>=10){
+    const scoreEl=document.getElementById('h-score');
+    const sTarget=scoreEl?new THREE.Vector3(0,12,8):new THREE.Vector3(0,10,5);
+    spawnLightning(ePos,sTarget,0xffcc00,0.3);
+  }
   G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
   SFX.killMelody();
   if(!(enemy.splitDepth>=1))G.treeDepth=Math.min(10,G.treeDepth+1);
@@ -6404,6 +6537,17 @@ function animate(time){
       if(p.ageMs<p.burstMs){
         p.vel.multiplyScalar(1.012);
         p.vel.y-=.0035*frameScale;
+        // Fractal branching: 30% chance mid-burst, max depth 2
+        if(!p.branched&&(p.branchDepth||0)<2&&p.ageMs>p.burstMs*0.4&&Math.random()<0.006){
+          p.branched=true;
+          const bc=p.mesh.material.color.getHex();
+          const bm=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color:bc,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));
+          bm.position.copy(p.mesh.position);
+          bm.scale.setScalar(p.mesh.scale.x*0.7);
+          const bv=p.vel.clone().applyAxisAngle(new THREE.Vector3(0,1,0),(Math.random()-0.5)*1.0);
+          particles.push({mesh:bm,vel:bv,life:p.life*0.7,decay:p.decay*1.3,ageMs:p.ageMs,burstMs:p.burstMs,funnelToScore:true,awardId:p.awardId,trailTicker:0,swirl:p.swirl*(Math.random()>0.5?1:-1),twinkle:Math.random()*Math.PI*2,branchDepth:(p.branchDepth||0)+1,branched:false});
+          scene.add(bm);
+        }
       }else{
         const target=getScoreFunnelTarget(p.mesh.position);
         const toScore=target.clone().sub(p.mesh.position);
@@ -6491,6 +6635,33 @@ function animate(time){
     t.geo.attributes.color.needsUpdate=true;
     t.geo.setDrawRange(0,count*2);
     t.mesh.visible=true;
+  });
+
+  // Fractal ferns
+  fernMeshes.forEach(f=>{
+    const fc=f.config;
+    const active=td>=fc.unlockAt;
+    if(!active){f.mesh.visible=false;f.geo.setDrawRange(0,0);return}
+    const fernD=Math.min(5,Math.floor(td*0.6));
+    const count=generateFern(0,0,fc.len,fc.angle,0,fernD+1,timeSec,omega,f.posArr,f.colArr,0);
+    f.geo.attributes.position.needsUpdate=true;
+    f.geo.attributes.color.needsUpdate=true;
+    f.geo.setDrawRange(0,count*2);
+    f.mesh.visible=true;
+  });
+  // Fractal constellations (edges connect with health)
+  constellations.forEach(c=>{
+    const visEdges=Math.floor(c.totalEdges*td/10);
+    c.edges.geometry.setDrawRange(0,visEdges*2);
+    // Star twinkle
+    c.stars.material.opacity=0.5+Math.sin(timeSec*1.5)*0.3;
+  });
+  // Lightning lifecycle
+  lightningPool.forEach(b=>{
+    if(b.life<=0){b.mesh.visible=false;return}
+    b.life-=b.decay*frameScale;
+    b.mat.opacity=Math.max(0,b.life);
+    if(b.life<=0)b.mesh.visible=false;
   });
 
   // Health-driven visual atmosphere
