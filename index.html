@@ -4286,14 +4286,17 @@ function generateFractalStar(cx,cy,len,depth,maxDepth,pos,idx,maxIdx){
   });
   return idx;
 }
+// Stars positioned in the Mandelbrot void (black interior), hovering just above ground
 const STAR_POOL=[
-  {x:-4,y:8,z:-10,len:0.6,phase:0,unlockAt:2},
-  {x:3,y:9,z:-11,len:0.5,phase:1.5,unlockAt:3},
-  {x:-7,y:7,z:-9,len:0.45,phase:3.0,unlockAt:4},
-  {x:6,y:8.5,z:-10.5,len:0.55,phase:4.5,unlockAt:5},
-  {x:0,y:10,z:-12,len:0.5,phase:2.2,unlockAt:6},
-  {x:-2,y:7.5,z:-8.5,len:0.4,phase:5.1,unlockAt:7},
-  {x:5,y:10.5,z:-13,len:0.45,phase:0.8,unlockAt:8},
+  {x:-3,y:0.4,z:-1,len:0.5,phase:0,unlockAt:2},
+  {x:-5,y:0.3,z:0,len:0.4,phase:1.5,unlockAt:2},
+  {x:-2,y:0.5,z:1,len:0.45,phase:3.0,unlockAt:3},
+  {x:-6,y:0.35,z:-2,len:0.35,phase:4.5,unlockAt:4},
+  {x:-4,y:0.45,z:2,len:0.4,phase:2.2,unlockAt:5},
+  {x:-1,y:0.3,z:-3,len:0.35,phase:5.1,unlockAt:6},
+  {x:-7,y:0.4,z:1.5,len:0.3,phase:0.8,unlockAt:7},
+  {x:-3.5,y:0.5,z:3,len:0.45,phase:3.8,unlockAt:8},
+  {x:-5.5,y:0.35,z:-0.5,len:0.3,phase:1.2,unlockAt:9},
 ];
 const starMeshes=STAR_POOL.map(sc=>{
   const posArr=new Float32Array(FRACTAL_STAR_MAX*6);
@@ -4400,60 +4403,18 @@ const terrMat=new THREE.ShaderMaterial({
 });
 const terrain=new THREE.Mesh(terrGeo,terrMat);scene.add(terrain);
 
-// Path: traces the Mandelbrot boundary, regenerated when zoom/center changes
-function mandelbrotIter(cx,cy,maxIter){
-  let zx=0,zy=0;
-  for(let i=0;i<maxIter;i++){
-    if(zx*zx+zy*zy>4)return i;
-    const tmp=zx*zx-zy*zy+cx;
-    zy=2*zx*zy+cy;zx=tmp;
-  }
-  return maxIter;
-}
-function computeBoundaryPath(centerX,centerY,zoom,maxIter,numPts){
-  // Trace boundary by sampling radially from inside the set
-  const pts=[];
-  const seedX=centerX-0.1*zoom,seedY=centerY; // start inside cardioid
-  for(let i=0;i<numPts;i++){
-    const angle=(i/numPts)*Math.PI*2;
-    // Binary search along ray from seed to find boundary
-    let rMin=0,rMax=zoom*1.5;
-    for(let b=0;b<16;b++){
-      const rMid=(rMin+rMax)/2;
-      const cx=seedX+Math.cos(angle)*rMid;
-      const cy=seedY+Math.sin(angle)*rMid;
-      if(mandelbrotIter(cx,cy,maxIter)>=maxIter)rMin=rMid;else rMax=rMid;
-    }
-    const r=(rMin+rMax)/2;
-    const cx=seedX+Math.cos(angle)*r;
-    const cy=seedY+Math.sin(angle)*r;
-    // Map from Mandelbrot c-space to world XZ (terrain is 30x30, UV 0-1)
-    const uvX=(cx-centerX)/(zoom*2)+0.5;
-    const uvZ=(cy-centerY)/(zoom*2)+0.5;
-    const wx=(uvX-0.5)*30;
-    const wz=(uvZ-0.5)*30;
-    pts.push(new THREE.Vector3(wx,0.15,wz));
-  }
-  return pts;
-}
-let pathPts=computeBoundaryPath(-0.75,0.0,1.5,20,12);
-let pathCurve=new THREE.CatmullRomCurve3(pathPts,true,'catmullrom',.5);
-const pathLineMat=new THREE.LineBasicMaterial({color:AMB.mid,transparent:true,opacity:.5});
-const pathLineGeo=new THREE.BufferGeometry().setFromPoints(pathCurve.getPoints(80));
-const pathLine=new THREE.Line(pathLineGeo,pathLineMat);scene.add(pathLine);
-let lastPathTd=-1;
-function regeneratePath(td){
-  if(td===lastPathTd)return;
-  lastPathTd=td;
-  const mdNorm=Math.min(td,10)/10;
-  const zoom=1.5*Math.pow(0.1,mdNorm);
-  const cx=-0.75+mdNorm*0.005,cy=0.1-mdNorm*0.1;
-  const maxI=8+td*7;
-  pathPts=computeBoundaryPath(cx,cy,zoom,maxI,12);
-  pathCurve=new THREE.CatmullRomCurve3(pathPts,true,'catmullrom',.5);
-  const newPts=pathCurve.getPoints(80);
-  pathLineGeo.setFromPoints(newPts);
-}
+// Path (static — cubes walk from entrance to tower)
+const pathPts=[
+  new THREE.Vector3(10,.15,-7),new THREE.Vector3(6,.15,-4),
+  new THREE.Vector3(2,.15,-6),new THREE.Vector3(-2,.15,-2),
+  new THREE.Vector3(1,.15,1),new THREE.Vector3(4,.15,3),
+  new THREE.Vector3(0,.15,5),new THREE.Vector3(-7,.15,4.5),
+];
+const pathCurve=new THREE.CatmullRomCurve3(pathPts,false,'catmullrom',.5);
+const pathLine=new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints(pathCurve.getPoints(80)),
+  new THREE.LineBasicMaterial({color:AMB.mid,transparent:true,opacity:.5})
+);scene.add(pathLine);
 
 // Server Tower
 const serverGrp=new THREE.Group();
@@ -5775,7 +5736,6 @@ function nextWave(){
   Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
     waveComplete:false,attemptsOnCurrent:0,typedBuffer:''});
   G.waveCommands=genWave(nw);
-  regeneratePath(G.treeDepth||0);
   lastSpawnTime=performance.now();
   lastInputState='';
   updateTierBar();
@@ -6616,35 +6576,29 @@ function animate(time){
   // In follow mode, slowly decay orbit back to center. In cube mode, hold the angle.
   if(camMode==='follow')camOrbitAngle*=0.97;
   if(selEnemy&&G.screen==='game'&&camMode==='cube'){
-    // Cube perspective: orbit at cube height, always looking ~15° above horizon
+    // Cube perspective: low orbit, looking along the ground
     const ep=selEnemy.position;
     const orbitR=3.0*camZoomMult;
     const tx=ep.x+Math.sin(camOrbitAngle)*orbitR;
-    const ty=ep.y+1.2; // at cube height
+    const ty=ep.y+1.0;
     const tz=ep.z+Math.cos(camOrbitAngle)*orbitR;
     camera.position.x+=(tx-camera.position.x)*.12;
     camera.position.y+=(ty-camera.position.y)*.12;
     camera.position.z+=(tz-camera.position.z)*.12;
-    // Look toward cube, slightly above grid (~3° above horizon)
-    camera.lookAt(ep.x,ep.y+0.5,ep.z);
+    camera.lookAt(ep.x,ep.y+0.3,ep.z);
   }else if(selEnemy&&G.screen==='game'){
-    // Follow mode: orbit around cube, slightly off-center
-    const sd=selEnemyObj?.splitDepth||0;
+    // Follow mode: elevated top-down-ish view to see the Mandelbrot map
     const port=isPortrait();
-    const pY=port?1.4:1,pZ=port?1.3:1;
-    const dist=(sd>=2?4:sd>=1?5.5:6.5)*pZ*camZoomMult;
-    const height=(sd>=2?3:sd>=1?4:5)*pY*camZoomMult;
+    const height=(port?12:10)*camZoomMult;
+    const dist=(port?6:4)*camZoomMult;
     const ep=selEnemy.position;
-    // Orbit offset from camOrbitAngle
-    const tx=ep.x+Math.sin(camOrbitAngle)*dist*0.3;
-    const tz=ep.z+Math.cos(camOrbitAngle)*dist*0.15+dist;
+    const tx=ep.x+Math.sin(camOrbitAngle)*dist*0.2;
+    const tz=ep.z+dist+Math.cos(camOrbitAngle)*dist*0.1;
     const ty=height;
-    camera.position.x+=(tx-camera.position.x)*.10;
-    camera.position.y+=(ty-camera.position.y)*.10;
-    camera.position.z+=(tz-camera.position.z)*.10;
-    // Look slightly ahead of the cube (not dead center)
-    const lookBiasY=port?1.5:0.3;
-    camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
+    camera.position.x+=(tx-camera.position.x)*.08;
+    camera.position.y+=(ty-camera.position.y)*.08;
+    camera.position.z+=(tz-camera.position.z)*.08;
+    camera.lookAt(ep.x,0,ep.z-1);
   }else{
     // Default orbit (title screen, no enemies)
     const orbY=isPortrait()?22:18;
