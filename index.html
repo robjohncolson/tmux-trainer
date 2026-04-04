@@ -6432,18 +6432,48 @@ let lastTouchEnd=0;
 document.addEventListener('touchend',function(e){const now=Date.now();if(now-lastTouchEnd<300)e.preventDefault();lastTouchEnd=now},{passive:false});
 // Swipe to cycle enemies
 let touchStartX=0,touchStartY=0,touchStartTime=0;
+// Camera pan/zoom state (mobile two-finger gestures)
+let camPanX=0,camPanZ=0,camZoomMult=1.0;
+let pinchStartDist=0,pinchStartZoom=1.0,panStartCamX=0,panStartCamZ=0,isTwoFinger=false;
 canvas.addEventListener('touchstart',function(e){
   if(G.screen!=='game'||G.paused)return;
-  touchStartX=e.touches[0].clientX;
-  touchStartY=e.touches[0].clientY;
-  touchStartTime=Date.now();
+  if(e.touches.length===2){
+    // Two-finger: start pan/pinch
+    isTwoFinger=true;
+    const t0=e.touches[0],t1=e.touches[1];
+    pinchStartDist=Math.hypot(t1.clientX-t0.clientX,t1.clientY-t0.clientY);
+    pinchStartZoom=camZoomMult;
+    panStartCamX=camPanX;panStartCamZ=camPanZ;
+    touchStartX=(t0.clientX+t1.clientX)/2;
+    touchStartY=(t0.clientY+t1.clientY)/2;
+  }else{
+    isTwoFinger=false;
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
+    touchStartTime=Date.now();
+  }
+},{passive:true});
+canvas.addEventListener('touchmove',function(e){
+  if(G.screen!=='game'||G.paused||e.touches.length<2)return;
+  const t0=e.touches[0],t1=e.touches[1];
+  // Pinch zoom
+  const dist=Math.hypot(t1.clientX-t0.clientX,t1.clientY-t0.clientY);
+  if(pinchStartDist>0)camZoomMult=Math.max(0.5,Math.min(2.5,pinchStartZoom*(pinchStartDist/dist)));
+  // Two-finger pan
+  const mx=(t0.clientX+t1.clientX)/2;
+  const my=(t0.clientY+t1.clientY)/2;
+  camPanX=panStartCamX+(mx-touchStartX)*-0.02;
+  camPanZ=panStartCamZ+(my-touchStartY)*-0.02;
 },{passive:true});
 canvas.addEventListener('touchend',function(e){
   if(G.screen!=='game'||G.paused||QUIZ_ANSWER_FEEDBACK.locked)return;
+  // If two-finger gesture just ended, don't process as tap/swipe
+  if(isTwoFinger){isTwoFinger=false;return}
   const touch=e.changedTouches[0];
   const dx=touch.clientX-touchStartX;
   const dy=touch.clientY-touchStartY;
   const dt=Date.now()-touchStartTime;
+  // Swipe to cycle enemies
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)&&dt<400&&G.enemies.length>=2){
     const deep=G.enemies.filter(en=>en.splitDepth>=2);
     const subs=G.enemies.filter(en=>en.splitDepth===1);
@@ -6458,8 +6488,11 @@ canvas.addEventListener('touchend',function(e){
     SFX.select();lastInputState='';
     if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
     else if(im==='typed')focusTypedInput();
+    // Reset camera pan on target switch
+    camPanX=0;camPanZ=0;camZoomMult=1.0;
     return;
   }
+  // Tap to select enemy (short tap, no movement)
   if(Math.abs(dx)<18&&Math.abs(dy)<18&&dt<280){
     const tappedEnemy=pickEnemyAtScreenPoint(touch.clientX,touch.clientY);
     if(!tappedEnemy||tappedEnemy.id===G.selectedId)return;
@@ -6469,6 +6502,7 @@ canvas.addEventListener('touchend',function(e){
     G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
     G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
     SFX.select();lastInputState='';
+    camPanX=0;camPanZ=0;camZoomMult=1.0;
     if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
     else if(im==='typed')focusTypedInput();
   }
@@ -6500,21 +6534,19 @@ function animate(time){
     const sd=selEnemyObj?.splitDepth||0;
     const port=isPortrait();
     const pY=port?1.4:1,pZ=port?1.3:1,pT=port?.6:1;
-    const zoomY=(sd>=2?3:sd>=1?4:5)*pY;
-    const zoomZ=(sd>=2?4:sd>=1?5.5:6.5)*pZ;
-    const trackX=(sd>=2?.8:sd>=1?.7:.6)*pT;
-    const trackZ=(sd>=2?.7:sd>=1?.6:.5)*pT;
-    const tx=selEnemy.position.x*trackX+Math.sin(time*.0002)*.1;
-    const tz=selEnemy.position.z*trackZ+zoomZ;
-    const ty=zoomY+Math.sin(time*.0003)*.1;
-    camera.position.x+=(tx-camera.position.x)*.055;
-    camera.position.y+=(ty-camera.position.y)*.055;
-    camera.position.z+=(tz-camera.position.z)*.055;
-    // On mobile, bias lookAt upward so the target cube is in the top half
-    // (input panel covers bottom ~45% of screen)
+    const zoomY=(sd>=2?3:sd>=1?4:5)*pY*camZoomMult;
+    const zoomZ=(sd>=2?4:sd>=1?5.5:6.5)*pZ*camZoomMult;
+    const trackX=(sd>=2?.9:sd>=1?.8:.75)*pT;
+    const trackZ=(sd>=2?.8:sd>=1?.7:.6)*pT;
+    const tx=selEnemy.position.x*trackX+camPanX;
+    const tz=selEnemy.position.z*trackZ+zoomZ+camPanZ;
+    const ty=zoomY;
+    camera.position.x+=(tx-camera.position.x)*.12;
+    camera.position.y+=(ty-camera.position.y)*.12;
+    camera.position.z+=(tz-camera.position.z)*.12;
     const lookBiasY=port?1.5:0.3;
-    const lx=selEnemy.position.x*(trackX+.1);
-    const lz=selEnemy.position.z*(trackZ+.1)-1;
+    const lx=selEnemy.position.x*trackX+camPanX;
+    const lz=selEnemy.position.z*trackZ-1+camPanZ;
     camera.lookAt(lx,lookBiasY,lz);
   }else{
     // Default orbit
