@@ -5912,10 +5912,10 @@ function handleHit(enemy){
   SFX.setStreak(G.streak);
   if(G.streak===5||G.streak===10||G.streak===15)SFX.combo();
   // Streak lightning at 10+
-  if(G.streak>=10){
+  if(G.streak>=5){
     const scoreEl=document.getElementById('h-score');
     const sTarget=scoreEl?new THREE.Vector3(0,12,8):new THREE.Vector3(0,10,5);
-    spawnLightning(ePos,sTarget,0xffcc00,0.3);
+    spawnLightning(ePos,sTarget,G.streak>=10?0xffcc00:0xff8c0088,G.streak>=10?0.4:0.25);
   }
   G.combo=Math.min(G.combo+.25,3);G.totalCorrect++;
   SFX.killMelody();
@@ -6554,7 +6554,7 @@ function animate(time){
         p.vel.multiplyScalar(1.012);
         p.vel.y-=.0035*frameScale;
         // Fractal branching: 30% chance mid-burst, max depth 2, cap total particles
-        if(!p.branched&&(p.branchDepth||0)<2&&particles.length<80&&p.ageMs>p.burstMs*0.4&&Math.random()<0.006){
+        if(!p.branched&&(p.branchDepth||0)<2&&particles.length<80&&p.ageMs>p.burstMs*0.4&&Math.random()<0.03){
           p.branched=true;
           const bc=p.mesh.material.color.getHex();
           const bm=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color:bc,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));
