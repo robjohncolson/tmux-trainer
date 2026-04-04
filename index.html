@@ -6440,6 +6440,8 @@ let touchStartX=0,touchStartY=0,touchStartTime=0;
 // Camera pan/zoom state (mobile two-finger gestures)
 let camPanX=0,camPanZ=0,camZoomMult=1.0;
 let pinchStartDist=0,pinchStartZoom=1.0,panStartCamX=0,panStartCamZ=0,isTwoFinger=false;
+// Camera mode: 'follow' (default), 'cube' (close-up), 'flyaround' (cinematic orbit)
+let camMode='follow',lastDoubleTap=0;
 canvas.addEventListener('touchstart',function(e){
   if(G.screen!=='game'||G.paused)return;
   if(e.touches.length===2){
@@ -6497,19 +6499,33 @@ canvas.addEventListener('touchend',function(e){
     camPanX=0;camPanZ=0;camZoomMult=1.0;
     return;
   }
-  // Tap to select enemy (short tap, no movement)
+  // Tap handling: double-tap cycles camera modes, single-tap selects enemy
   if(Math.abs(dx)<18&&Math.abs(dy)<18&&dt<280){
-    const tappedEnemy=pickEnemyAtScreenPoint(touch.clientX,touch.clientY);
-    if(!tappedEnemy||tappedEnemy.id===G.selectedId)return;
-    resetExplanationState();
-    G.selectedId=tappedEnemy.id;
-    const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
-    G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
-    G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
-    SFX.select();lastInputState='';
-    camPanX=0;camPanZ=0;camZoomMult=1.0;
-    if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
-    else if(im==='typed')focusTypedInput();
+    const now=Date.now();
+    if(now-lastDoubleTap<350){
+      // Double-tap: cycle camera mode
+      lastDoubleTap=0;
+      if(camMode==='follow'){camMode='cube';camPanX=0;camPanZ=0;camZoomMult=1.0}
+      else if(camMode==='cube'){camMode='flyaround';camPanX=0;camPanZ=0;camZoomMult=1.0}
+      else{camMode='follow';camPanX=0;camPanZ=0;camZoomMult=1.0}
+      return;
+    }
+    lastDoubleTap=now;
+    // Single tap: select enemy (after 350ms to distinguish from double-tap)
+    setTimeout(()=>{
+      if(Date.now()-lastDoubleTap<340)return; // double-tap happened
+      const tappedEnemy=pickEnemyAtScreenPoint(touch.clientX,touch.clientY);
+      if(!tappedEnemy||tappedEnemy.id===G.selectedId)return;
+      resetExplanationState();
+      G.selectedId=tappedEnemy.id;
+      const im=activeCartridge?activeCartridge.inputMode:'prefix-key';
+      G.inputState=im==='prefix-key'?'await_prefix':im==='quiz'?'quiz':'typing';
+      G.attemptsOnCurrent=0;G.commandStartTime=Date.now();G.typedBuffer='';
+      SFX.select();lastInputState='';
+      camPanX=0;camPanZ=0;camZoomMult=1.0;camMode='follow';
+      if(im==='quiz')setTimeout(()=>focusBlankInput(),50);
+      else if(im==='typed')focusTypedInput();
+    },360);
   }
 },{passive:true});
 // iOS AudioContext resume
@@ -6535,7 +6551,29 @@ function animate(time){
   // Camera: follow selected enemy with smooth lerp
   const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
   const selEnemyObj=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
-  if(selEnemy&&G.screen==='game'){
+  if(selEnemy&&G.screen==='game'&&camMode==='cube'){
+    // Cube perspective: nearly at cube height, looking along its path direction
+    const ep=selEnemy.position;
+    const tx=ep.x+1.5+camPanX;
+    const ty=ep.y+0.8;
+    const tz=ep.z+2.5+camPanZ;
+    camera.position.x+=(tx-camera.position.x)*.1;
+    camera.position.y+=(ty-camera.position.y)*.1;
+    camera.position.z+=(tz-camera.position.z)*.1;
+    camera.lookAt(ep.x,ep.y+0.2,ep.z-2);
+  }else if(G.screen==='game'&&camMode==='flyaround'){
+    // Cinematic fly-around: slow orbit of the whole scene
+    const r=16*camZoomMult;
+    const speed=time*0.0001;
+    const tx=Math.sin(speed)*r+camPanX;
+    const ty=8+Math.sin(time*0.0003)*2;
+    const tz=Math.cos(speed)*r+camPanZ;
+    camera.position.x+=(tx-camera.position.x)*.03;
+    camera.position.y+=(ty-camera.position.y)*.03;
+    camera.position.z+=(tz-camera.position.z)*.03;
+    camera.lookAt(0,1,-3);
+  }else if(selEnemy&&G.screen==='game'){
+    // Normal follow mode
     const sd=selEnemyObj?.splitDepth||0;
     const port=isPortrait();
     const pY=port?1.4:1,pZ=port?1.3:1,pT=port?.6:1;
@@ -6554,7 +6592,7 @@ function animate(time){
     const lz=selEnemy.position.z*trackZ-1+camPanZ;
     camera.lookAt(lx,lookBiasY,lz);
   }else{
-    // Default orbit
+    // Default orbit (title screen, no enemies)
     const orbY=isPortrait()?22:18;
     const orbZ=isPortrait()?18:14;
     camera.position.x+=(Math.sin(time*.0002)*.3-camera.position.x)*.05;
