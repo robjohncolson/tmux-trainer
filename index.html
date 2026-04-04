@@ -4267,6 +4267,44 @@ const fernMeshes=FERN_POOL.map(fc=>{
 });
 fernMeshes.forEach(f=>scene.add(f.mesh));
 
+// ── Fractal stars (recursive plus/cross pattern in the sky) ──
+const FRACTAL_STAR_MAX=127; // depth 3
+function generateFractalStar(cx,cy,len,depth,maxDepth,pos,idx,maxIdx){
+  if(depth>maxDepth||idx>=maxIdx-4)return idx;
+  // Draw a + shape: 4 arms from center
+  const dirs=[[0,1],[0,-1],[1,0],[-1,0]];
+  dirs.forEach(d=>{
+    if(idx>=maxIdx)return;
+    const ex=cx+d[0]*len,ey=cy+d[1]*len;
+    pos[idx*6]=cx;pos[idx*6+1]=cy;pos[idx*6+2]=0;
+    pos[idx*6+3]=ex;pos[idx*6+4]=ey;pos[idx*6+5]=0;
+    idx++;
+    // Recurse at each tip
+    if(depth<maxDepth)idx=generateFractalStar(ex,ey,len*0.45,depth+1,maxDepth,pos,idx,maxIdx);
+  });
+  return idx;
+}
+const STAR_POOL=[
+  {x:-4,y:8,z:-10,len:0.6,phase:0,unlockAt:2},
+  {x:3,y:9,z:-11,len:0.5,phase:1.5,unlockAt:3},
+  {x:-7,y:7,z:-9,len:0.45,phase:3.0,unlockAt:4},
+  {x:6,y:8.5,z:-10.5,len:0.55,phase:4.5,unlockAt:5},
+  {x:0,y:10,z:-12,len:0.5,phase:2.2,unlockAt:6},
+  {x:-2,y:7.5,z:-8.5,len:0.4,phase:5.1,unlockAt:7},
+  {x:5,y:10.5,z:-13,len:0.45,phase:0.8,unlockAt:8},
+];
+const starMeshes=STAR_POOL.map(sc=>{
+  const posArr=new Float32Array(FRACTAL_STAR_MAX*6);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(posArr,3).setUsage(THREE.DynamicDrawUsage));
+  const mat=new THREE.LineBasicMaterial({color:0xffcc88,transparent:true,opacity:0.7,fog:false,blending:THREE.AdditiveBlending,depthWrite:false});
+  const mesh=new THREE.LineSegments(geo,mat);
+  mesh.position.set(sc.x,sc.y,sc.z);
+  mesh.visible=false;
+  return{mesh,geo,posArr,config:sc};
+});
+starMeshes.forEach(s=>scene.add(s.mesh));
+
 // ── Fractal lightning pool ──
 const LIGHTNING_MAX=6;
 const LIGHTNING_SEGS=64; // max segments per bolt
@@ -6449,6 +6487,20 @@ canvas.addEventListener('touchend',function(e){
   const dx=touch.clientX-touchStartX;
   const dy=touch.clientY-touchStartY;
   const dt=Date.now()-touchStartTime;
+  // Vertical swipe: show/hide question panel
+  if(Math.abs(dy)>50&&Math.abs(dy)>Math.abs(dx)&&dt<500){
+    const ip=document.getElementById('input-panel');
+    if(dy>0&&!ipMinimized){
+      ipMinimized=true;
+      ip.style.transform='translateY(calc(100% - 28px))';
+      ip.style.transition='transform 0.3s ease';
+    }else if(dy<0&&ipMinimized){
+      ipMinimized=false;
+      ip.style.transform='';
+      ip.style.transition='transform 0.3s ease';
+    }
+    return;
+  }
   // Horizontal swipe: orbit camera around focused cube
   if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)&&dt<500){
     camOrbitAngle+=(dx>0?-0.4:0.4);
@@ -6463,25 +6515,6 @@ canvas.addEventListener('touchend',function(e){
       return;
     }
     lastDoubleTap=now;
-  }
-},{passive:true});
-// Input panel swipe-down to minimize / tap to restore
-let ipTouchStartY=0;
-document.getElementById('input-panel').addEventListener('touchstart',function(e){
-  ipTouchStartY=e.touches[0].clientY;
-},{passive:true});
-document.getElementById('input-panel').addEventListener('touchend',function(e){
-  const dy=e.changedTouches[0].clientY-ipTouchStartY;
-  if(dy>60){
-    // Swipe down: minimize panel
-    ipMinimized=true;
-    this.style.transform='translateY(calc(100% - 32px))';
-    this.style.transition='transform 0.3s ease';
-  }else if(dy<-40&&ipMinimized){
-    // Swipe up: restore panel
-    ipMinimized=false;
-    this.style.transform='';
-    this.style.transition='transform 0.3s ease';
   }
 },{passive:true});
 // iOS AudioContext resume
@@ -6507,8 +6540,8 @@ function animate(time){
   // Camera: follow selected enemy with smooth lerp
   const selEnemy=G.selectedId?enemyMeshes[G.selectedId]:null;
   const selEnemyObj=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
-  // Slowly decay orbit angle back toward 0
-  camOrbitAngle*=0.98;
+  // In follow mode, slowly decay orbit back to center. In cube mode, hold the angle.
+  if(camMode==='follow')camOrbitAngle*=0.97;
   if(selEnemy&&G.screen==='game'&&camMode==='cube'){
     // Cube perspective: low angle, close up
     const ep=selEnemy.position;
@@ -6686,6 +6719,20 @@ function animate(time){
     f.geo.attributes.color.needsUpdate=true;
     f.geo.setDrawRange(0,count*2);
     f.mesh.visible=true;
+  });
+  // Fractal stars (sky)
+  starMeshes.forEach(s=>{
+    const sc=s.config;
+    const active=td>=sc.unlockAt;
+    if(!active){s.mesh.visible=false;s.geo.setDrawRange(0,0);return}
+    const starD=Math.min(3,Math.max(1,Math.floor((td-sc.unlockAt)*0.5)+1));
+    const count=generateFractalStar(0,0,sc.len,0,starD,s.posArr,0,FRACTAL_STAR_MAX);
+    s.geo.attributes.position.needsUpdate=true;
+    s.geo.setDrawRange(0,count*2);
+    // Twinkle: opacity pulse + slow rotation
+    s.mesh.material.opacity=0.4+Math.sin(timeSec*2.5+sc.phase)*0.3;
+    s.mesh.rotation.z=timeSec*0.3+sc.phase;
+    s.mesh.visible=true;
   });
   // Lightning lifecycle
   lightningPool.forEach(b=>{
