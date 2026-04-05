@@ -1242,7 +1242,7 @@ const apStatsCartridge={
       hint:'Add individual, subtract the overlap',
       explain:'Events can overlap — subtract what you double-counted',
       latex:'P(A \\cup B) = P(A) + P(B) - P(A \\cap B)',
-      blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A∩B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}],
+      blanks:[{latex:'P(A \\cup B) = P(A) + P(B) - \\boxed{\\,?\\,}',answer:'P(A\\cap B)',choices:['P(A\\cap B)','P(A\\cup B)','P(A)P(B)']}],
       subconcepts:[{q:'What does P(A\u2229B) represent?',correct:'Probability both A and B occur',wrong:['Probability either occurs','Probability A causes B']},{q:'Why subtract P(A\u2229B)?',correct:'To avoid double-counting the overlap',wrong:['Because A and B are independent','To make result less than 1']},{q:'When does P(A\u222aB) = P(A)+P(B)?',correct:'When A and B are mutually exclusive',wrong:['When A and B are independent','Always']}]},
     {id:'cond-prob',action:'Conditional Probability P(A|B)',tier:'core',dom:'probability',
       hint:'Joint probability divided by the condition',
