@@ -4716,7 +4716,7 @@ function removeEnemyMesh(id){
 
 // ── Death Animation: shrink→white, expand white→yellow→red→fade ──
 const DEATH_EXPAND_COLORS=[0xffffff,0xffee66,0xffaa22,0xcc3300,0x880000];
-const SHRINK_MS=350,EXPAND_MS=300;
+const SHRINK_MS=350,EXPAND_MS=600;
 const dyingEnemies=[];
 function lerpColor(a,b,t){
   const ar=(a>>16)&0xff,ag=(a>>8)&0xff,ab=a&0xff;
@@ -4765,15 +4765,16 @@ function updateDyingEnemies(dt){
       }
     }else if(d.phase==='expand'){
       const t=Math.min(1,d.elapsedMs/EXPAND_MS);
-      const ease=1-(1-t)*(1-t); // easeOutQuad — fast start, slow end
-      // Scale up from tiny to ~2x original
-      const s=0.04+ease*(d.originalScale*2.2);
+      const ease=1-(1-t)*(1-t); // easeOutQuad — fast expand
+      // Scale up from tiny to ~3x original
+      const s=0.04+ease*(d.originalScale*3.0);
       d.mesh.scale.setScalar(s);
       // Color: white → yellow → red → deep red
       const col=sampleColorArray(DEATH_EXPAND_COLORS,t);
       d.mesh.material.color.setHex(col);
-      // Fade out
-      d.mesh.material.opacity=1.0-ease;
+      // Late fade: stays mostly opaque until the back half
+      const fadeT=Math.max(0,t-0.3)/0.7; // 0 until 30%, then 0→1
+      d.mesh.material.opacity=1.0-fadeT*fadeT; // easeIn fade — slow start, fast end
       d.mesh.rotation.y+=0.08;
       // Spawn score particles once at ~50% expansion
       if(!d.explosionSpawned&&t>=0.5){
