@@ -3768,6 +3768,14 @@ function buildRunStateSnapshot(){
     domainFilter:G.domainFilter,
     difficulty:G.difficulty,
     melody:SFX.getMelody(),
+    mbrot:{
+      intensity:MBROT.intensity,
+      targetIntensity:MBROT.targetIntensity,
+      iterations:MBROT.iterations,
+      impacts:MBROT.impacts,
+      zoom:MBROT.zoom,
+      targetZoom:MBROT.targetZoom,
+    },
   };
 }
 function saveRunState(){
@@ -4417,7 +4425,7 @@ function spawnLightning(from,to,color,duration){
 
 // ── Mandelbrot craters (spawn where falling stars land) ──
 // ── Mandelbrot state (computed per-pixel in terrain fragment shader) ──
-const MBROT={intensity:0,targetIntensity:0,iterations:8,impacts:0};
+const MBROT={intensity:0,targetIntensity:0,iterations:8,impacts:0,zoom:3.5,targetZoom:3.5};
 
 // ── Falling stars (miss → star descends → crater spawns) ──
 const fallingStars=[];
@@ -4464,17 +4472,22 @@ function spawnFallingStar(targetPos){
 }
 function growMandelbrot(){
   MBROT.impacts++;
-  MBROT.iterations=Math.min(isReducedParticleMode()?48:96,8+MBROT.impacts*12);
-  MBROT.targetIntensity=Math.min(1.4,0.2+MBROT.impacts*0.25);
-  console.log('[MBROT] impact #'+MBROT.impacts+', iter:'+MBROT.iterations+', intensity:'+MBROT.targetIntensity.toFixed(2));
+  const expandT=Math.min(1,Math.max(0,MBROT.impacts-1)/6);
+  MBROT.targetZoom=3.5-2.0*expandT; // first impact: central bulb only, ~7 impacts: fills the terrain
+  MBROT.targetIntensity=Math.min(1.25,0.28+MBROT.impacts*0.14);
+  console.log('[MBROT] impact #'+MBROT.impacts+', zoom:'+MBROT.targetZoom.toFixed(2)+', iter:'+MBROT.iterations+', intensity:'+MBROT.targetIntensity.toFixed(2));
 }
-function shrinkMandelbrot(){
-  if(MBROT.targetIntensity<=0)return;
-  MBROT.iterations=Math.max(4,MBROT.iterations-3);
-  MBROT.targetIntensity=Math.max(0,MBROT.targetIntensity-0.06);
+function mbrotScoreBoost(){
+  MBROT.iterations=Math.min(isReducedParticleMode()?48:96,MBROT.iterations+0.5);
 }
 function clearMandelbrot(){
   MBROT.intensity=0;MBROT.targetIntensity=0;MBROT.iterations=8;MBROT.impacts=0;
+  MBROT.zoom=3.5;MBROT.targetZoom=3.5;
+  if(typeof terrMat!=='undefined'&&terrMat.uniforms){
+    terrMat.uniforms.mbrotIntensity.value=0.0;
+    terrMat.uniforms.mbrotIter.value=MBROT.iterations;
+    terrMat.uniforms.mbrotZoom.value=MBROT.zoom;
+  }
 }
 
 // ── Born stars (success streaks birth new stars) ──
@@ -4519,7 +4532,7 @@ const terrMat=new THREE.ShaderMaterial({
     ambientColor:{value:new THREE.Color(AMB.dark)},
     mbrotIntensity:{value:0.0},
     mbrotIter:{value:8.0},
-    mbrotZoom:{value:1.5},
+    mbrotZoom:{value:3.5},
     mbrotCenter:{value:new THREE.Vector2(-0.5,0.0)},
     fogColor:{value:new THREE.Color(AMB.black)},
     fogDensity:{value:0.035}
@@ -4539,6 +4552,11 @@ const terrMat=new THREE.ShaderMaterial({
     'uniform vec3 baseColor,lightDir,lightColor,ambientColor,fogColor;',
     'uniform float mbrotIntensity,mbrotIter,mbrotZoom,fogDensity;',
     'uniform vec2 mbrotCenter;',
+    'vec3 hsv2rgb(vec3 c){',
+    '  vec4 K=vec4(1.0,2.0/3.0,1.0/3.0,3.0);',
+    '  vec3 p=abs(fract(c.xxx+K.xyz)*6.0-K.www);',
+    '  return c.z*mix(K.xxx,clamp(p-K.xxx,0.0,1.0),c.y);',
+    '}',
     'void main(){',
     '  float diff=max(dot(vNormal,lightDir),0.0)*0.6;',
     '  vec3 terrain=baseColor*(ambientColor*0.4+lightColor*diff);',
@@ -4555,8 +4573,15 @@ const terrMat=new THREE.ShaderMaterial({
     '    if(i<mbrotIter-1.0){',
     '      float mu=i+1.0-log2(log2(dot(z,z))*0.5);',
     '      float t=clamp(mu/mbrotIter,0.0,1.0);',
-    '      float b=pow(t,0.3);',
-    '      mbrot=vec3(b,0.47*b+0.16*pow(t,0.8),0.06*b);',
+    '      float detail=clamp((mbrotIter-8.0)/40.0,0.0,1.0);',
+    '      float hue=0.78*detail;',
+    '      vec3 rainbow=hsv2rgb(vec3(hue,0.88,1.0));',
+    '      float shell=pow(t,0.35);',
+    '      float outer=max(0.0,1.0-abs(t-0.78)*6.0);',
+    '      outer=outer*outer*outer;',
+    '      float edgeBand=max(0.0,1.0-abs(t-0.93)*(16.0+detail*12.0));',
+    '      edgeBand=edgeBand*edgeBand;',
+    '      mbrot=min(vec3(1.35),rainbow*(0.22+0.78*shell)+rainbow*0.35*outer+vec3(1.0)*edgeBand*(0.45+0.45*detail));',
     '    }',
     '  }',
     '  vec3 col=terrain+mbrot*mbrotIntensity;',
@@ -5951,6 +5976,20 @@ function continueGame(){
   G.enemies.forEach(e=>{if(e.cmd&&e.cmd.id&&cmdLookup[e.cmd.id])e.cmd=cmdLookup[e.cmd.id]});
   G.waveCommands=G.waveCommands.map(c=>cmdLookup[c.id]||c);
   if(!G.enemies.find(e=>e.id===G.selectedId)){G.selectedId=null}
+  const savedMbrot=snapshot.mbrot&&typeof snapshot.mbrot==='object'?snapshot.mbrot:null;
+  if(savedMbrot){
+    MBROT.intensity=Math.max(0,Number(savedMbrot.intensity)||0);
+    MBROT.targetIntensity=Math.max(0,Number(savedMbrot.targetIntensity)||0);
+    MBROT.iterations=Math.max(8,Math.min(isReducedParticleMode()?48:96,Number(savedMbrot.iterations)||8));
+    MBROT.impacts=Math.max(0,Math.round(Number(savedMbrot.impacts)||0));
+    MBROT.zoom=Math.max(1.5,Math.min(3.5,Number(savedMbrot.zoom)||3.5));
+    MBROT.targetZoom=Math.max(1.5,Math.min(3.5,Number(savedMbrot.targetZoom)||MBROT.zoom));
+  }else{
+    clearMandelbrot();
+  }
+  terrMat.uniforms.mbrotIntensity.value=MBROT.intensity;
+  terrMat.uniforms.mbrotIter.value=MBROT.iterations;
+  terrMat.uniforms.mbrotZoom.value=MBROT.zoom;
   G.enemies.forEach((enemy,idx)=>{
     if((enemy.splitDepth||0)>=1)addChildEnemyMesh(enemy,idx);
     else addEnemyMesh(enemy);
@@ -5974,7 +6013,7 @@ function nextWave(){
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
     waveComplete:false,attemptsOnCurrent:0,typedBuffer:'',missStarCounter:0});
-  clearMandelbrot();clearBornStars();
+  clearBornStars(); // Mandelbrot persists across waves — permanent scar
   fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   G.waveCommands=genWave(nw);
   lastSpawnTime=performance.now();
@@ -6221,8 +6260,8 @@ function handleHit(enemy){
   // Don't null selectedId — autoSelect will pick the next target smoothly
   // so camera never has a frame with no target (prevents snap to default orbit)
   G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
-  // Mandelbrot heals on hit: reduce detail
-  shrinkMandelbrot();
+  // Correct answers permanently sharpen the Mandelbrot boundary.
+  mbrotScoreBoost();
   // Born star at streak milestones (5, 10, 15, 20, 25)
   if(G.streak>=5&&G.streak%5===0)spawnBornStar();
   flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
@@ -7084,11 +7123,10 @@ function animate(time){
 
   // Mandelbrot per-pixel — update terrain shader uniforms
   MBROT.intensity+=(MBROT.targetIntensity-MBROT.intensity)*0.06;
+  MBROT.zoom+=(MBROT.targetZoom-MBROT.zoom)*0.04;
   terrMat.uniforms.mbrotIntensity.value=MBROT.intensity;
   terrMat.uniforms.mbrotIter.value=MBROT.iterations;
-  // Slow zoom drift into the boundary — deeper with each impact
-  const driftZoom=1.5-MBROT.impacts*0.06*Math.sin(timeSec*0.05);
-  terrMat.uniforms.mbrotZoom.value=Math.max(0.3,driftZoom);
+  terrMat.uniforms.mbrotZoom.value=MBROT.zoom;
 
   // Born stars animation
   bornStars.forEach(s=>{
