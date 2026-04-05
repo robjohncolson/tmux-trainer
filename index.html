@@ -4763,17 +4763,24 @@ function updateDyingEnemies(dt){
       // Scale up from tiny to massive (eclipses the plane)
       const s=0.04+ease*(d.originalScale*18);
       d.mesh.scale.setScalar(s);
-      // Solid red the whole time
+      // Solid red, no rotation — just still expansion
       d.mesh.material.color.setHex(0xcc2200);
-      // Late fade: stays mostly opaque until the back 40%
-      const fadeT=Math.max(0,t-0.35)/0.65;
-      d.mesh.material.opacity=(1.0-fadeT*fadeT)*0.7; // peak 0.7, easeIn fade
-      d.mesh.rotation.y+=0.08;
-      // Spawn score particles once at ~50% expansion
-      if(!d.explosionSpawned&&t>=0.5){
+      // Fade: starts immediately, smooth linear
+      d.mesh.material.opacity=Math.max(0,(1.0-t*t)*0.7);
+      // Spawn score particles immediately at expand start
+      if(!d.explosionSpawned){
         d.explosionSpawned=true;
         spawnExplosion(d.position,d.particleCount,AMB.glow,true,d.award?{awardId:d.award.id}:{});
       }
+      // Keep expanding past opacity 0 for a beat, then clean up
+      if(t>=1){
+        d.phase='linger';d.elapsedMs=0;
+      }
+    }else if(d.phase==='linger'){
+      // Continue expanding invisibly for 200ms then remove
+      const t=Math.min(1,d.elapsedMs/200);
+      d.mesh.material.opacity=0;
+      d.mesh.scale.setScalar(d.mesh.scale.x*1.02);
       if(t>=1){
         scene.remove(d.mesh);d.mesh.geometry.dispose();d.mesh.material.dispose();
         dyingEnemies.splice(i,1);
@@ -6678,14 +6685,14 @@ function animate(time){
     const tx=ep.x+Math.sin(camOrbitAngle)*dist*0.3;
     const tz=ep.z+Math.cos(camOrbitAngle)*dist*0.15+dist;
     const ty=height;
-    // Hold camera during death animation — very slow lerp
-    const camRate=deathCamHold?0.01:0.10;
-    camera.position.x+=(tx-camera.position.x)*camRate;
-    camera.position.y+=(ty-camera.position.y)*camRate;
-    camera.position.z+=(tz-camera.position.z)*camRate;
-    // Look slightly ahead of the cube — raised to catch sky/stars
-    const lookBiasY=port?1.5:1.5;
-    if(!deathCamHold)camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
+    // Freeze camera completely during death animation
+    if(!deathCamHold){
+      camera.position.x+=(tx-camera.position.x)*.10;
+      camera.position.y+=(ty-camera.position.y)*.10;
+      camera.position.z+=(tz-camera.position.z)*.10;
+      const lookBiasY=port?1.5:1.5;
+      camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
+    }
   }else{
     // Default orbit (title screen, no enemies)
     const orbY=isPortrait()?22:18;
@@ -6778,7 +6785,9 @@ function animate(time){
     const twinkleOpacity=p.funnelToScore?(.55+Math.sin(twinklePhase)*.45):1;
     p.mesh.material.opacity=Math.max(0,p.life*twinkleOpacity);
     const twinkleScale=p.funnelToScore?(.6+Math.sin(twinklePhase*.7+1.2)*.4):1;
-    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.16,p.life*.82):Math.max(.18,p.life))*twinkleScale;
+    // Funnel particles grow bigger as they approach score (illusion of coming toward camera)
+    const funnelGrow=p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.3,0.2+((1-p.life)*1.2)):1;
+    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.2,funnelGrow):Math.max(.18,p.life))*twinkleScale;
     p.mesh.scale.setScalar(particleScale);
     // Spin plus symbols for star effect
     if(p.funnelToScore){p.mesh.rotation.z+=.04*frameScale*(1+Math.sin(p.twinkle)*.5)}
