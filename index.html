@@ -5574,7 +5574,22 @@ function animate(time){
     const twinkleOpacity=p.funnelToScore?(.55+Math.sin(twinklePhase)*.45):1;
     p.mesh.material.opacity=Math.max(0,p.life*twinkleOpacity);
     const twinkleScale=p.funnelToScore?(.6+Math.sin(twinklePhase*.7+1.2)*.4):1;
-    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.35,p.life*1.2):Math.max(.20,p.life))*twinkleScale;
+    let particleScale;
+    if(p.funnelToScore){
+      if(p.ageMs<=p.burstMs){
+        // Burst: start tiny (compressed), grow slightly during expansion
+        const burstT=Math.min(1,p.ageMs/Math.max(1,p.burstMs));
+        particleScale=(.08+burstT*.12)*twinkleScale;
+      }else{
+        // Funnel: shrink as particles approach the score HUD (depth illusion)
+        const target=getScoreFunnelTarget(p.mesh.position);
+        const dist=p.mesh.position.distanceTo(target);
+        const distScale=Math.min(1,dist/8); // 1.0 far away, ~0 at scoreboard
+        particleScale=Math.max(.06,.25*distScale)*twinkleScale;
+      }
+    }else{
+      particleScale=Math.max(.12,p.life)*twinkleScale;
+    }
     p.mesh.scale.setScalar(particleScale);
     // Spin plus symbols for star effect
     if(p.funnelToScore){p.mesh.rotation.z+=.04*frameScale*(1+Math.sin(p.twinkle)*.5)}
