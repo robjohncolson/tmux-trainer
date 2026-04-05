@@ -4547,7 +4547,7 @@ function spawnCrater(pos){
 }
 function clearCraters(){
   craters.length=0;craterPosIdx=0;
-  craterMeshPool.forEach(c=>{c.mesh.visible=false;c.mat.uniforms.opacity.value=0});
+  craterMeshPool.forEach(c=>{c.mesh.visible=false;c.mat.opacity=0});
 }
 
 // ── Born stars (success streaks birth new stars) ──
