@@ -7,7 +7,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#0d0500;font-family:'SF Mono','Fira Code','JetBrains Mono','Cascadia Code','Consolas',monospace}
-body.hi-contrast #game-canvas,body.hi-contrast #overlay,body.hi-contrast #input-panel,body.hi-contrast #hud{filter:invert(1) hue-rotate(180deg)}
+body.hi-contrast #overlay,body.hi-contrast #input-panel,body.hi-contrast #hud{filter:invert(1) hue-rotate(180deg)}
 body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast #overlay video{filter:invert(1) hue-rotate(180deg)}
 #game-canvas{position:fixed;top:0;left:0;z-index:0;touch-action:none;transition:transform 0.3s ease}
 #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
@@ -331,6 +331,51 @@ const AMB={
 };
 const MASTERY_COLORS=['#ff4422','#ff6b35','#ffaa22','#66aaff','#44ff88','#44ff88'];
 const MASTERY_LABELS=['New','Learning','Familiar','Practiced','Proficient','Mastered'];
+
+// ── Light mode palette (native Three.js theme swap) ──
+const AMB_DARK={
+  black:0x0d0500,darkest:0x1a0800,dark:0x2d1200,mid:0x5a2800,
+  bright:0xcc6600,hot:0xff8c00,glow:0xffaa22,white:0xffcc66,
+  css:{black:'#0d0500',dark:'#2d1200',mid:'#5a2800',bright:'#cc6600',hot:'#ff8c00',glow:'#ffaa22',white:'#ffcc66'},
+  sky:{dark:[0.05,0.02,0.0],mid:[0.35,0.18,0.02],bright:[1.0,0.55,0.0]}
+};
+const AMB_LIGHT={
+  black:0xd8e4f0,darkest:0xc8d4e0,dark:0x8899aa,mid:0x556677,
+  bright:0x884400,hot:0xcc5500,glow:0xff7700,white:0x443322,
+  css:{black:'#d8e4f0',dark:'#8899aa',mid:'#556677',bright:'#884400',hot:'#cc5500',glow:'#ff7700',white:'#443322'},
+  sky:{dark:[0.75,0.82,0.92],mid:[0.85,0.90,0.95],bright:[0.95,0.97,1.0]}
+};
+let hiContrastActive=localStorage.getItem('td-hi-contrast')==='1';
+function applyThemeToScene(){
+  const p=hiContrastActive?AMB_LIGHT:AMB_DARK;
+  // Update AMB references used by JS-generated markup
+  AMB.black=p.black;AMB.darkest=p.darkest;AMB.dark=p.dark;AMB.mid=p.mid;
+  AMB.bright=p.bright;AMB.hot=p.hot;AMB.glow=p.glow;AMB.white=p.white;
+  Object.assign(AMB.css,p.css);
+  // Scene (deferred — called after scene construction)
+  if(typeof scene!=='undefined'&&scene.fog)scene.fog.color.setHex(p.black);
+  if(typeof renderer!=='undefined')renderer.setClearColor(p.black);
+  if(typeof ambLight!=='undefined')ambLight.color.setHex(p.dark);
+  if(typeof dirLight!=='undefined')dirLight.color.setHex(p.bright);
+  if(typeof serverLight!=='undefined')serverLight.color.setHex(p.hot);
+  if(typeof terrMat!=='undefined')terrMat.color.setHex(p.darkest);
+  if(typeof wireMat!=='undefined')wireMat.color.setHex(p.dark);
+  if(typeof smat!=='undefined'){smat.color.setHex(p.hot);smat.emissive.setHex(p.bright)}
+  // Sky shader color uniforms
+  if(typeof skyMaterial!=='undefined'){
+    const s=p.sky||AMB_DARK.sky;
+    skyMaterial.uniforms.darkCol.value.set(s.dark[0],s.dark[1],s.dark[2]);
+    skyMaterial.uniforms.midCol.value.set(s.mid[0],s.mid[1],s.mid[2]);
+    skyMaterial.uniforms.brightCol.value.set(s.bright[0],s.bright[1],s.bright[2]);
+  }
+}
+function toggleHighContrast(){
+  hiContrastActive=!hiContrastActive;
+  document.body.classList.toggle('hi-contrast',hiContrastActive);
+  localStorage.setItem('td-hi-contrast',hiContrastActive?'1':'0');
+  applyThemeToScene();
+  lastCssFilter=''; // force CSS filter refresh
+}
 
 // ═══════════════════════════════════════════════
 //  SOUND ENGINE
@@ -2755,7 +2800,7 @@ const PAD_OPTIONS=[
   {value:.55,label:'FULL'},
   {value:.85,label:'ACCENT'}
 ];
-const MUSIC_EDITOR={open:false,returnScreen:'title',selectedWave:0,draft:null,status:''};
+const MUSIC_EDITOR={open:false,returnScreen:'title',selectedWave:0,draft:null,status:'',activeTab:'seq'};
 function matchChordOption(chord){
   let best=CHORD_OPTIONS[0],bestDist=Infinity;
   CHORD_OPTIONS.forEach(opt=>{
@@ -2789,6 +2834,7 @@ function openMusicEditor(origin){
   MUSIC_EDITOR.selectedWave=MUSIC_EDITOR.returnScreen==='pause'?Math.max(0,Math.min(11,G.wave-1)):0;
   MUSIC_EDITOR.draft=SFX.getAllMusicConfig();
   MUSIC_EDITOR.status='';
+  MUSIC_EDITOR.activeTab='seq';
   renderMusicEditor();
 }
 function closeMusicEditor(){
@@ -2803,6 +2849,7 @@ function closeMusicEditor(){
   }
   showTitleScreen('title');
 }
+function selectMusicTab(tab){MUSIC_EDITOR.activeTab=tab;renderMusicEditor()}
 function selectMusicWave(idx){
   SFX.stopMusicPreview();
   MUSIC_EDITOR.selectedWave=Math.max(0,Math.min(11,idx));
@@ -2954,6 +3001,7 @@ function resetMusicDraft(){
 function renderMusicEditor(){
   const ov=document.getElementById('overlay');
   const wave=currentMusicDraft();
+  const tab=MUSIC_EDITOR.activeTab||'seq';
   ov.classList.remove('hidden');
   let html='<div class="music-editor">';
   html+='<div class="music-editor-top">';
@@ -2969,18 +3017,17 @@ function renderMusicEditor(){
     html+='<button class="wave-btn'+(idx===MUSIC_EDITOR.selectedWave?' active':'')+'" onclick="selectMusicWave('+idx+')">W'+(idx+1)+'</button>';
   });
   html+='</div>';
+  // ── Tab navigation ──
+  html+='<div class="menu-tabs" style="max-width:none;margin:8px 0 12px">';
+  html+='<button class="menu-tab'+(tab==='seq'?' active':'')+'" onclick="selectMusicTab(\'seq\')">[ SEQ ]</button>';
+  html+='<button class="menu-tab'+(tab==='mix'?' active':'')+'" onclick="selectMusicTab(\'mix\')">[ MIX ]</button>';
+  html+='<button class="menu-tab'+(tab==='sys'?' active':'')+'" onclick="selectMusicTab(\'sys\')">[ SYS ]</button>';
+  html+='</div>';
   html+='<div class="music-layout">';
-  html+='<div class="music-card"><div class="music-card-title">CHORD PICKER</div><div class="music-card-subtitle">'+wave.name+'</div><div class="chord-grid">';
-  wave.chords.forEach((chord,idx)=>{
-    html+='<label class="music-field"><span class="music-field-label">CHORD '+(idx+1)+'</span><select class="music-select" onchange="updateMusicChord('+idx+',this.value)">'+renderChordOptions(matchChordOption(chord))+'</select></label>';
-  });
-  html+='</div></div>';
-  html+='<div class="music-card"><div class="music-card-title">TEMPO</div><div class="music-card-subtitle">Preview plays the selected wave using the current draft settings.</div><div class="tempo-shell"><input type="range" min="50" max="160" step="1" value="'+wave.tempo+'" oninput="updateMusicTempo(this.value)" onchange="updateMusicTempo(this.value)"/><div class="tempo-value" id="music-tempo-value">'+wave.tempo+' BPM</div></div></div>';
-  // ── STEP SEQUENCER ──
+  // ── SEQ tab: step sequencer ──
+  if(tab==='seq'){
   html+='<div class="music-card" style="grid-column:1/-1"><div class="music-card-title">STEP SEQUENCER</div><div class="music-card-subtitle">Click to cycle values. Right-click to cycle backward. 8-step loop per wave.</div><div class="seq-grid">';
-  // DRUMS section header (visible on mobile for clarity)
   html+='<div class="seq-section-header">DRUMS</div>';
-  // KICK ROW
   const kk=Array.isArray(wave.kick)&&wave.kick.length===8?wave.kick:[1,0,0,0,1,0,0,0];
   html+='<div class="seq-row"><div class="seq-label" style="color:#ff4444">\u25cf KICK</div><div class="seq-cells">';
   kk.forEach((step,idx)=>{
@@ -2989,7 +3036,6 @@ function renderMusicEditor(){
   });
   html+='</div></div>';
   html+='<div class="seq-divider"></div>';
-  // SNARE ROW
   const sn=Array.isArray(wave.snare)&&wave.snare.length===8?wave.snare:[0,0,0,0,0,0,1,0];
   html+='<div class="seq-row"><div class="seq-label" style="color:#ffaa22">\u25cb SNARE</div><div class="seq-cells">';
   sn.forEach((step,idx)=>{
@@ -2998,7 +3044,6 @@ function renderMusicEditor(){
   });
   html+='</div></div>';
   html+='<div class="seq-divider"></div>';
-  // HI-HAT ROW
   const hh=Array.isArray(wave.hihat)&&wave.hihat.length===8?wave.hihat:[1,0,1,0,1,0,1,0];
   html+='<div class="seq-row"><div class="seq-label" style="color:#aaaaaa">\u2662 HAT</div><div class="seq-cells">';
   hh.forEach((step,idx)=>{
@@ -3007,9 +3052,7 @@ function renderMusicEditor(){
   });
   html+='</div></div>';
   html+='<div class="seq-divider"></div>';
-  // MELODY section header
   html+='<div class="seq-section-header">MELODY</div>';
-  // PAD ROW
   html+='<div class="seq-row"><div class="seq-label" style="color:#ff8c00">\u266b PADS</div><div class="seq-cells">';
   wave.pad.forEach((step,idx)=>{
     const lv=Number(step)||0;
@@ -3019,7 +3062,6 @@ function renderMusicEditor(){
   });
   html+='</div></div>';
   html+='<div class="seq-divider"></div>';
-  // BASS ROW
   const BASS_LABELS={0:'',0.75:'L5',1:'R',1.189:'m3',1.26:'M3',1.335:'4',1.5:'5'};
   html+='<div class="seq-row"><div class="seq-label" style="color:#4488ff">\u266c BASS</div><div class="seq-cells">';
   wave.bass.forEach((step,idx)=>{
@@ -3030,11 +3072,13 @@ function renderMusicEditor(){
     html+='<div class="seq-cell '+cls+'" onclick="cycleBassStep('+idx+')" oncontextmenu="event.preventDefault();cycleBassStepBack('+idx+')"><div class="seq-bar"></div><span class="seq-note" style="color:#88bbff">'+label+'</span></div>';
   });
   html+='</div></div>';
-  // STEP NUMBERS
   html+='<div class="seq-nums">';
   for(let i=1;i<=8;i++)html+='<div class="seq-num">'+i+'</div>';
   html+='</div>';
   html+='</div></div>';
+  }
+  // ── MIX tab: volume + tempo ──
+  if(tab==='mix'){
   html+='<div class="music-card"><div class="music-card-title">VOLUME MIX</div><div class="music-card-subtitle">Adjust the loudness of each part independently.</div>';
   html+='<label class="music-field"><span class="music-field-label">PADS '+Math.round((wave.padVol!=null?wave.padVol:.05)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.padVol!=null?wave.padVol:.05)*100)+'" oninput="updatePadVol(this.value)" onchange="updatePadVol(this.value)"/></label>';
   html+='<label class="music-field"><span class="music-field-label">BASS '+Math.round((wave.bassVol!=null?wave.bassVol:.6)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.bassVol!=null?wave.bassVol:.6)*100)+'" oninput="updateBassVol(this.value)" onchange="updateBassVol(this.value)"/></label>';
@@ -3042,12 +3086,25 @@ function renderMusicEditor(){
   html+='<label class="music-field"><span class="music-field-label">SNARE '+Math.round((wave.snareVol!=null?wave.snareVol:.25)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.snareVol!=null?wave.snareVol:.25)*100)+'" oninput="updateSnareVol(this.value)" onchange="updateSnareVol(this.value)"/></label>';
   html+='<label class="music-field"><span class="music-field-label">HI-HAT '+Math.round((wave.hihatVol!=null?wave.hihatVol:.11)*100)+'%</span><input type="range" min="0" max="100" step="1" value="'+Math.round((wave.hihatVol!=null?wave.hihatVol:.11)*100)+'" oninput="updateHihatVol(this.value)" onchange="updateHihatVol(this.value)"/></label>';
   html+='</div>';
-  html+='<div class="music-card"><div class="music-card-title">ACTIONS</div><div class="music-card-subtitle">Preview now runs the whole progression so you can hear chords 1 through 4 before saving. Save writes the full 12-wave draft to localStorage. Reset restores the draft to stock music until you save.</div><div class="editor-actions">';
+  html+='<div class="music-card"><div class="music-card-title">TEMPO</div><div class="tempo-shell"><input type="range" min="50" max="160" step="1" value="'+wave.tempo+'" oninput="updateMusicTempo(this.value)" onchange="updateMusicTempo(this.value)"/><div class="tempo-value" id="music-tempo-value">'+wave.tempo+' BPM</div></div></div>';
+  }
+  // ── SYS tab: chords ──
+  if(tab==='sys'){
+  html+='<div class="music-card"><div class="music-card-title">CHORD PICKER</div><div class="music-card-subtitle">'+wave.name+'</div><div class="chord-grid">';
+  wave.chords.forEach((chord,idx)=>{
+    html+='<label class="music-field"><span class="music-field-label">CHORD '+(idx+1)+'</span><select class="music-select" onchange="updateMusicChord('+idx+',this.value)">'+renderChordOptions(matchChordOption(chord))+'</select></label>';
+  });
+  html+='</div></div>';
+  }
+  html+='</div>';
+  // ── Persistent action footer (all tabs) ──
+  html+='<div class="editor-actions" style="margin-top:16px">';
   html+='<button class="btn" onclick="previewMusicWave()">[ PREVIEW ]</button>';
   html+='<button class="btn btn-secondary" onclick="saveMusicDraft()">[ SAVE ]</button>';
   html+='<button class="btn btn-secondary" onclick="resetMusicDraft()">[ RESET DEFAULTS ]</button>';
-  html+='</div><div class="music-editor-note">Wave selection edits the draft only. Resume or start the game to hear saved changes in normal play.</div></div>';
-  html+='</div></div>';
+  html+='</div>';
+  html+='<div class="music-editor-note">Wave selection edits the draft only. Resume or start the game to hear saved changes in normal play.</div>';
+  html+='</div>';
   ov.innerHTML=html;
 }
 
@@ -4078,12 +4135,16 @@ const skyMaterial=new THREE.ShaderMaterial({
   uniforms:{
     time:{value:0.0},
     brightness:{value:0.25},
-    resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)}
+    resolution:{value:new THREE.Vector2(window.innerWidth,window.innerHeight)},
+    darkCol:{value:new THREE.Vector3(0.05,0.02,0.0)},
+    midCol:{value:new THREE.Vector3(0.35,0.18,0.02)},
+    brightCol:{value:new THREE.Vector3(1.0,0.55,0.0)}
   },
   vertexShader:'void main(){gl_Position=vec4(position,1.0);}',
   fragmentShader:[
     'uniform float time,brightness;',
     'uniform vec2 resolution;',
+    'uniform vec3 darkCol,midCol,brightCol;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'float noise(vec2 p){',
     '  vec2 i=floor(p),f=fract(p);',
@@ -4100,10 +4161,7 @@ const skyMaterial=new THREE.ShaderMaterial({
     '  v+=amp*noise(uv*freq+1.5);amp*=0.5;freq*=2.0;',
     '  v+=amp*noise(uv*freq+2.0);',
     '  v=pow(v*0.5+0.5,0.7);',
-    '  vec3 dark=vec3(0.05,0.02,0.0);',
-    '  vec3 mid=vec3(0.35,0.18,0.02);',
-    '  vec3 bright=vec3(1.0,0.55,0.0);',
-    '  vec3 col=mix(dark,mix(mid,bright,v),v);',
+    '  vec3 col=mix(darkCol,mix(midCol,brightCol,v),v);',
     '  col*=brightness;',
     '  col*=0.9+0.1*sin(time*0.4);',
     '  float horizon=smoothstep(0.15,0.55,gl_FragCoord.y/resolution.y);',
@@ -5333,7 +5391,7 @@ function showPauseScreen(){
   const isHiC=document.body.classList.contains('hi-contrast');
   html+='<div style="display:flex;gap:12px;justify-content:center;margin:12px 0">';
   html+='<button class="btn btn-secondary" onclick="const m=SFX.toggleMute();this.textContent=m?\'\\ud83d\\udd07 MUTED\':\'\\ud83d\\udd0a SOUND\';this.style.color=m?\'#ff4422\':\'#ff8c00\'" style="font-size:11px;padding:6px 14px;color:'+(isMuted?'#ff4422':'#ff8c00')+'">'+(isMuted?'\ud83d\udd07 MUTED':'\ud83d\udd0a SOUND')+'</button>';
-  html+='<button class="btn btn-secondary" onclick="document.body.classList.toggle(\'hi-contrast\');const on=document.body.classList.contains(\'hi-contrast\');localStorage.setItem(\'td-hi-contrast\',on?\'1\':\'0\');lastCssFilter=\'\';this.textContent=on?\'\\u263e LIGHT\':\'\\u2600 DARK\'" style="font-size:11px;padding:6px 14px">'+(isHiC?'\u263e LIGHT':'\u2600 DARK')+'</button>';
+  html+='<button class="btn btn-secondary" onclick="toggleHighContrast();this.textContent=hiContrastActive?\'\\u263e LIGHT\':\'\\u2600 DARK\'" style="font-size:11px;padding:6px 14px">'+(isHiC?'\u263e LIGHT':'\u2600 DARK')+'</button>';
   html+='</div>';
   html+='<div class="menu-actions">';
   html+='<button class="btn" onclick="resumeFromPause()">[ <u>R</u>ESUME ]</button>';
@@ -6501,7 +6559,7 @@ window.addEventListener('keydown',e=>{
 // ═══════════════════════════════════════════════
 // High contrast mode (daytime) — persisted, toggled from pause menu
 // High contrast + mute: persisted in localStorage, toggled from pause menu
-if(localStorage.getItem('td-hi-contrast')==='1')document.body.classList.add('hi-contrast');
+if(hiContrastActive){document.body.classList.add('hi-contrast');applyThemeToScene()}
 
 // ═══════════════════════════════════════════════
 //  TOUCH SUPPORT
@@ -6866,8 +6924,7 @@ function animate(time){
   vigInt+=(tgtVig-vigInt)*vRate;
   vigMaterial.uniforms.intensity.value=vigInt;
   // CSS filter (quantized to 2 decimal places to reduce DOM writes on mobile)
-  const hiC=document.body.classList.contains('hi-contrast');
-  const fStr=(hiC?'invert(1) hue-rotate(180deg) ':'')+'saturate('+vigSat.toFixed(2)+') contrast('+vigCon.toFixed(2)+')';
+  const fStr='saturate('+vigSat.toFixed(2)+') contrast('+vigCon.toFixed(2)+')';
   if(fStr!==lastCssFilter){canvas.style.filter=fStr;lastCssFilter=fStr}
 
   renderer.autoClear=false;
