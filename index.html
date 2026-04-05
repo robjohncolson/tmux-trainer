@@ -6512,7 +6512,7 @@ document.addEventListener('touchend',function(e){const now=Date.now();if(now-las
 // Swipe to cycle enemies
 let touchStartX=0,touchStartY=0,touchStartTime=0;
 // Camera state
-let camZoomMult=1.0,camOrbitAngle=0; // orbit angle around focused cube
+let camZoomMult=2.0,camOrbitAngle=0; // orbit angle around focused cube
 let camLookX=0,camLookY=1.5,camLookZ=-1; // smoothed lookAt target
 let pinchStartDist=0,pinchStartZoom=1.0,isTwoFinger=false;
 let camMode='follow',lastDoubleTap=0; // 'follow' or 'cube'
@@ -6647,25 +6647,24 @@ function animate(time){
     camera.lookAt(ep.x,ep.y+0.5,ep.z);
   }else if(selEnemy&&G.screen==='game'){
     // Follow mode: orbit around cube, slightly off-center
-    const sd=selEnemyObj?.splitDepth||0;
     const port=isPortrait();
     const pY=port?1.4:1,pZ=port?1.3:1;
-    const dist=(sd>=2?5:sd>=1?6.5:8)*pZ*camZoomMult;
-    const height=(sd>=2?2.5:sd>=1?3.2:4)*pY*camZoomMult;
+    const dist=8*pZ*camZoomMult;
+    const height=4*pY*camZoomMult;
     const ep=selEnemy.position;
     // Orbit offset from camOrbitAngle
     const tx=ep.x+Math.sin(camOrbitAngle)*dist*0.3;
     const tz=ep.z+Math.cos(camOrbitAngle)*dist*0.15+dist;
     const ty=height;
-    camera.position.x+=(tx-camera.position.x)*.04;
-    camera.position.y+=(ty-camera.position.y)*.04;
-    camera.position.z+=(tz-camera.position.z)*.04;
+    camera.position.x+=(tx-camera.position.x)*.02;
+    camera.position.y+=(ty-camera.position.y)*.02;
+    camera.position.z+=(tz-camera.position.z)*.02;
     // Smooth lookAt — lerp the target so camera doesn't snap on target switch
     const lookBiasY=port?1.5:1.5;
     const wantLookX=ep.x*0.8,wantLookY=lookBiasY,wantLookZ=ep.z*0.7-1;
-    camLookX+=(wantLookX-camLookX)*.04;
-    camLookY+=(wantLookY-camLookY)*.04;
-    camLookZ+=(wantLookZ-camLookZ)*.04;
+    camLookX+=(wantLookX-camLookX)*.02;
+    camLookY+=(wantLookY-camLookY)*.02;
+    camLookZ+=(wantLookZ-camLookZ)*.02;
     camera.lookAt(camLookX,camLookY,camLookZ);
   }else{
     // Default orbit (title screen, no enemies)
