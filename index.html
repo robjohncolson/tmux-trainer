@@ -3211,7 +3211,7 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
       m.position.y+=(Math.random()-.5)*sv;
       m.position.z+=(Math.random()-.5)*sv;
     }
-    const spread=options.spawnVolume ? 0.06 : (rainbow ? 0.2 : 0.15);
+    const spread=options.spawnVolume ? 0.18 : (rainbow ? 0.2 : 0.15);
     const v=options.spawnVolume
       ?new THREE.Vector3((Math.random()-.5)*spread,(Math.random()-.5)*spread,(Math.random()-.5)*spread)
       :new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
@@ -3222,7 +3222,7 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
       funnelToScore:rainbow,
       awardId:options.awardId??null,
       trailTicker:0,
-      swirl:(Math.random()-.5)*(rainbow ? 0.024 : 0.01),
+      swirl:(Math.random()-.5)*(rainbow ? 0.06 : 0.01),
       twinkle:Math.random()*Math.PI*2,
       branchDepth:0,branched:false,
       compressedBurst:!!options.spawnVolume,
@@ -5537,6 +5537,10 @@ function animate(time){
           const pull=dir.multiplyScalar((.08+Math.min(.13,dist*.012))*tempoScale);
           pull.addScaledVector(tangent,p.swirl*(1+Math.min(2.2,dist*.08)));
           pull.y+=Math.sin(p.ageMs*.018+p.twinkle)*.003;
+          // Velocity jitter — keeps particles from clumping into a single stream
+          pull.x+=(Math.random()-.5)*.008*frameScale;
+          pull.y+=(Math.random()-.5)*.006*frameScale;
+          pull.z+=(Math.random()-.5)*.008*frameScale;
           p.vel.lerp(pull,Math.min(.14*frameScale*tempoScale,.24));
         }
         p.vel.multiplyScalar(Math.pow(.955,frameScale));
