@@ -4714,30 +4714,10 @@ function removeEnemyMesh(id){
   delete enemyMeshes[id];
 }
 
-// ── ROYGBIV Death Animation ──
-const ROYGBIV_COMPRESS=[0xff8c00,0xffcc00,0x44ff88,0x00cccc,0x4488ff,0x8844ff,0xcc44ff];
-const ROYGBIV_NOVA=[0xcc44ff,0x8844ff,0x4488ff,0x00cccc,0x44ff88,0xffcc00,0xff4400,0x880000];
-const COMPRESS_MS=500,NOVA_MS=300;
+// ── Death Animation: shrink→white, expand white→yellow→red→fade ──
+const DEATH_EXPAND_COLORS=[0xffffff,0xffee66,0xffaa22,0xcc3300,0x880000];
+const SHRINK_MS=350,EXPAND_MS=300;
 const dyingEnemies=[];
-// Nova shell pool (6 shells, skip effect on overflow)
-const novaShellPool=[];
-const NOVA_POOL_SIZE=6;
-const novaSphereGeo=new THREE.SphereGeometry(1,12,8);
-for(let i=0;i<NOVA_POOL_SIZE;i++){
-  const mat=new THREE.MeshBasicMaterial({wireframe:true,transparent:true,opacity:0,color:0xcc44ff,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
-  const mesh=new THREE.Mesh(novaSphereGeo,mat);
-  mesh.visible=false;
-  scene.add(mesh);
-  novaShellPool.push({mesh,mat,inUse:false});
-}
-function acquireNovaShell(){
-  for(let i=0;i<novaShellPool.length;i++){if(!novaShellPool[i].inUse){novaShellPool[i].inUse=true;return novaShellPool[i]}}
-  return null; // overflow — skip shell effect
-}
-function releaseNovaShell(shell){
-  if(!shell)return;
-  shell.mesh.visible=false;shell.mat.opacity=0;shell.inUse=false;
-}
 function lerpColor(a,b,t){
   const ar=(a>>16)&0xff,ag=(a>>8)&0xff,ab=a&0xff;
   const br=(b>>16)&0xff,bg=(b>>8)&0xff,bb=b&0xff;
@@ -4750,70 +4730,58 @@ function sampleColorArray(arr,t){
   return lerpColor(arr[i],arr[i+1],ct-i);
 }
 function startDeathAnimation(enemy,mesh,pts,particleCount,award){
-  // Detach mesh from enemyMeshes so updateEnemyMeshes skips it
   delete enemyMeshes[enemy.id];
+  // Switch to transparent basic material for fade-out
+  const startColor=mesh.material.color.getHex();
+  mesh.material.dispose();
+  mesh.material=new THREE.MeshBasicMaterial({color:startColor,transparent:true,opacity:1,depthWrite:false});
   dyingEnemies.push({
     mesh,position:mesh.position.clone(),
-    elapsedMs:0,phase:'compress',
-    novaShell:null,explosionSpawned:false,
+    elapsedMs:0,phase:'shrink',explosionSpawned:false,
     pts,particleCount,award,
-    originalScale:mesh.scale.x
+    originalScale:mesh.scale.x,startColor
   });
 }
 function updateDyingEnemies(dt){
   for(let i=dyingEnemies.length-1;i>=0;i--){
     const d=dyingEnemies[i];
     d.elapsedMs+=dt;
-    if(d.phase==='compress'){
-      const t=Math.min(1,d.elapsedMs/COMPRESS_MS);
-      const ease=t*t; // easeInQuad
-      // Scale down
-      const s=d.originalScale*(1-ease*0.92); // 1.0 → 0.08
+    if(d.phase==='shrink'){
+      const t=Math.min(1,d.elapsedMs/SHRINK_MS);
+      const ease=t*t; // easeInQuad — accelerating shrink
+      // Scale down to tiny cube
+      const s=d.originalScale*(1-ease*0.92);
       d.mesh.scale.setScalar(Math.max(0.04,s));
-      // Color sweep amber→violet
-      const col=sampleColorArray(ROYGBIV_COMPRESS,t);
+      // Color: original → white
+      const col=lerpColor(d.startColor,0xffffff,t);
       d.mesh.material.color.setHex(col);
-      d.mesh.material.emissive.setHex(col);
-      d.mesh.material.emissiveIntensity=0.2+t*1.3;
-      // Spin acceleration
-      d.mesh.rotation.y+=0.02+t*0.15;
-      d.mesh.rotation.x+=t*0.08;
+      // Brighten + spin
+      d.mesh.material.opacity=0.8+t*0.2; // most opaque when tiny
+      d.mesh.rotation.y+=0.02+t*0.12;
       if(t>=1){
-        // Transition to nova
-        d.phase='nova';
-        d.elapsedMs=0;
-        const pos=d.position;
-        // Remove cube mesh
-        scene.remove(d.mesh);d.mesh.geometry.dispose();d.mesh.material.dispose();
-        d.mesh=null;
-        // Acquire nova shell
-        d.novaShell=acquireNovaShell();
-        if(d.novaShell){
-          d.novaShell.mesh.position.copy(pos);
-          d.novaShell.mesh.scale.setScalar(0.1);
-          d.novaShell.mesh.visible=true;
-          d.novaShell.mat.opacity=0.8;
-          d.novaShell.mat.color.setHex(0xcc44ff);
-        }
+        d.phase='expand';d.elapsedMs=0;
+        d.mesh.material.color.setHex(0xffffff);
+        d.mesh.material.opacity=1.0;
       }
-    }else if(d.phase==='nova'){
-      const t=Math.min(1,d.elapsedMs/NOVA_MS);
-      const ease=1-(1-t)*(1-t); // easeOutQuad
-      if(d.novaShell){
-        const radius=0.1+ease*2.4;
-        d.novaShell.mesh.scale.setScalar(radius);
-        const col=sampleColorArray(ROYGBIV_NOVA,t);
-        d.novaShell.mat.color.setHex(col);
-        d.novaShell.mat.opacity=0.8*(1-t);
-      }
-      // Spawn particles once at ~60% expansion
-      if(!d.explosionSpawned&&t>=0.6){
+    }else if(d.phase==='expand'){
+      const t=Math.min(1,d.elapsedMs/EXPAND_MS);
+      const ease=1-(1-t)*(1-t); // easeOutQuad — fast start, slow end
+      // Scale up from tiny to ~2x original
+      const s=0.04+ease*(d.originalScale*2.2);
+      d.mesh.scale.setScalar(s);
+      // Color: white → yellow → red → deep red
+      const col=sampleColorArray(DEATH_EXPAND_COLORS,t);
+      d.mesh.material.color.setHex(col);
+      // Fade out
+      d.mesh.material.opacity=1.0-ease;
+      d.mesh.rotation.y+=0.08;
+      // Spawn score particles once at ~50% expansion
+      if(!d.explosionSpawned&&t>=0.5){
         d.explosionSpawned=true;
         spawnExplosion(d.position,d.particleCount,AMB.glow,true,d.award?{awardId:d.award.id}:{});
       }
       if(t>=1){
-        d.phase='done';
-        releaseNovaShell(d.novaShell);
+        scene.remove(d.mesh);d.mesh.geometry.dispose();d.mesh.material.dispose();
         dyingEnemies.splice(i,1);
       }
     }
@@ -4823,8 +4791,6 @@ function clearDyingEnemies(){
   for(let i=dyingEnemies.length-1;i>=0;i--){
     const d=dyingEnemies[i];
     if(d.mesh){scene.remove(d.mesh);d.mesh.geometry.dispose();d.mesh.material.dispose();}
-    releaseNovaShell(d.novaShell);
-    // Fire deferred explosion if not yet spawned
     if(!d.explosionSpawned&&d.award){
       spawnExplosion(d.position,d.particleCount,AMB.glow,true,{awardId:d.award.id});
     }
