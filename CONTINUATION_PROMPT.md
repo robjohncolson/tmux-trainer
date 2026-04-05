@@ -1880,9 +1880,101 @@ Drums were already fine — they're scheduled per-step in `seq()` with health ch
 
 - `index.html` `startBGM()`: health-gated initial bus volumes (~line 968)
 
+## Latest Update: Unit 8 Chi-Square Procedural Cards + td-audio.js Extraction (April 5, 2026)
+
+Two tasks shipped in a single commit (a760c62):
+
+### Task A: 5 New Chi-Square Procedural Cards (81 total commands)
+
+Added decision-making cards for Unit 8 that test the procedural skills scored on FRQs, complementing the existing 6 formula-recall chi-square cards.
+
+| ID | What it tests |
+|----|---------------|
+| `chi-sq-select` | Choosing GOF vs homogeneity vs independence by study design |
+| `chi-sq-hyp` | Writing H₀/Hₐ for each chi-square test type |
+| `chi-sq-conditions` | Random, 10% condition, expected counts ≥ 5 (not observed) |
+| `chi-sq-conclude` | Reject/fail to reject in context, never "accept H₀" |
+| `chi-sq-output` | Reading computer output: df↔categories, p-value→decision |
+
+Each card has:
+- 2 fill-blank questions with 3-option MC
+- 3 subconcepts for DAG decomposition
+- VARIABLE_BANK entry (3 vars each)
+- APPLICATION_BANK entry (2 scenarios each with authored confusionSets)
+- RELATIONSHIP_BANK where applicable (chi-sq-conditions, chi-sq-output)
+
+### DAG integration
+
+- New `chi-square-design` shared L2 node: "How do the three chi-square tests differ by design?" → prereqs: `sample-vs-population`, `independence-concept`, `observed-vs-expected`
+- New wireL1toL2 regex: `/goodness.?of.?fit|\bGOF\b|homogeneity|one categorical variable|claimed distribution|multiple populations|two variables.*one population|one-dimensional/i` → `['chi-square-design','sample-vs-population','independence-concept']`
+- 0 unwired subconcepts after wiring
+
+### Validation
+
+- 81 commands (was 76)
+- 13/13 new blanks pass `validateBlank()` normalization
+- 0 duplicate choices after normalization
+- All 5 new commands have VARIABLE_BANK (3 each), APPLICATION_BANK (2 each), RELATIONSHIP_BANK (2 of 5)
+- `node --check ap-stats-cartridge.js` passes
+
+### Task B: td-audio.js Extraction
+
+Extracted the SFX sound engine IIFE (~810 lines) from `index.html` into a standalone module.
+
+**New file: `td-audio.js`** (~810 lines)
+- Entire SFX IIFE body moved verbatim
+- Published as `window.TD_AUDIO` (same pattern as cartridge)
+- Contains: FM synthesis (14 voices), drum bus, `seq()` bar loop, musical health layer gating, streak groove, melody composer, music config load/save/preview, all SFX cues
+
+**Engine changes in `index.html`**
+- `const SFX = window.TD_AUDIO;` alias at the top of the engine script
+- Load guard: missing-module error page if `td-audio.js` fails to load
+- SFX IIFE deleted (~808 lines removed)
+- All existing `SFX.*` call sites unchanged
+
+**Loading pattern**
+- Blocking `<script src>` (not `defer`) — inline script reads `window.TD_AUDIO` at parse time, so external modules must finish loading first
+- Load order: CDN libs → `ap-stats-cartridge.js` → `td-audio.js` → inline `<script>`
+
+**Service worker**
+- `td-audio.js` added to `PRECACHE_URLS`
+- Cache bumped from `td-shell-v4` to `td-shell-v5`
+
+### File sizes after extraction
+
+| File | Lines |
+|------|-------|
+| `index.html` | 4802 (was ~5610) |
+| `td-audio.js` | 810 (new) |
+| `ap-stats-cartridge.js` | 1791 (was ~1700) |
+| `sw.js` | 137 |
+
+### Important code areas (new/updated)
+
+- `ap-stats-cartridge.js` lines 443-507: 5 new chi-square procedural commands
+- `ap-stats-cartridge.js` lines 913-917: VARIABLE_BANK entries for new commands
+- `ap-stats-cartridge.js` lines 1029-1033: APPLICATION_BANK entries for new commands
+- `ap-stats-cartridge.js` lines 1071-1072: RELATIONSHIP_BANK entries (conditions + output)
+- `ap-stats-cartridge.js` line 1529: `chi-square-design` shared DAG node
+- `ap-stats-cartridge.js` line 1718: wireL1toL2 regex for chi-square design concepts
+- `td-audio.js` line 727: `window.TD_AUDIO` public API
+- `index.html` line 328: `<script src="./td-audio.js">` (blocking, not defer)
+- `index.html` line 389: `const SFX = window.TD_AUDIO;` alias
+- `index.html` lines 390-393: missing-module load guard
+- `sw.js` line 4: `CACHE_SHELL = 'td-shell-v5'`
+- `sw.js` line 12: `'./td-audio.js'` in precache list
+
+### Modularization plan (on file for post-exam)
+
+A full Codex-generated modularization plan exists in `codex-modularize-prompt.md`. The plan proposes 14 modules (realistically ~8 merged) with extraction order, coupling analysis, and loading strategy. Decision: modularize at leisure after the May 7 exam — the audio extraction was the low-risk confidence-building first step. Next candidate would be `td-progress.js` (SRS/BKT/persistence).
+
+### Spec artifacts
+
+- `unit8-audio-extract-spec.md` — combined spec for both tasks
+- `codex-modularize-prompt.md` — full modularization research prompt
+
 ## Likely Next Tasks
 
-- **Unit 8 procedural cards** — GOF vs homogeneity vs independence selection, hypothesis templates, chi-square conditions, conclusion interpretation (4-6 new commands)
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
 - Quality review rendered animations — verify pedagogical accuracy per formula
@@ -1890,9 +1982,11 @@ Drums were already fine — they're scheduled per-step in `seq()` with health ch
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
 - Mobile input panel UX refinement — the swipe up/down + canvas shift needs more polish
+- Further modularization (post-exam): `td-progress.js`, `td-render.js`, `td-ui.js`
 
 ## GitNexus Note
 
 - GitNexus index was refreshed with `npx gitnexus analyze`.
 - The current GitNexus CLI in this environment indexed the repo, but it did not resolve the inline JS functions in `index.html` as named symbols for `impact/context`.
 - Manual call-site analysis was used for the HTML inline-script functions during this pass.
+- Post-extraction: `td-audio.js` is now a separate file that GitNexus can index as named symbols. Future `gitnexus analyze` runs should resolve SFX API methods.
