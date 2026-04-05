@@ -1427,6 +1427,32 @@ External review by Grok was cross-referenced against actual codebase state (76 c
 
 - `grok-pedagogy-fixes-spec.md` — full design + Codex review findings
 
+## Latest Update: Camera Overhaul — Zoomed-Out Default + Death Blip Fix
+
+### Zoomed-out default camera
+
+- Default `camZoomMult` changed from `1.0` to `2.0` — game starts at an overview angle (dist ~16, height ~8)
+- Users can zoom in voluntarily via scroll wheel (desktop) or pinch (mobile) down to 0.3x
+- Removed split-depth camera zoom — all enemies use the same base distance regardless of prereq depth (was: deeper prereqs got closer camera)
+- Follow-mode position lerp halved from `0.04` to `0.02` — camera drifts lazily instead of chasing targets
+- LookAt lerp also halved to `0.02` to match position drift rate
+- Cube mode (double-tap toggle) preserved for users who want close-up orbit
+
+### Camera death blip fix
+
+- Bug: when a cube died, `startDeathAnimation()` immediately deleted the mesh from `enemyMeshes`, but `autoSelect()` hadn't picked the next target yet. For 1-2 frames the camera fell through to the default orbit branch (`camera.lookAt(0,0,-1)` toward the tower), causing a visible snap/blip.
+- Fix: added a new camera branch — when `G.screen==='game'` and enemies exist but the selected mesh is missing (dying), the camera holds its current `camLookX/Y/Z` lookAt instead of snapping to the default orbit.
+
+### Spec artifact
+
+- `camera-zoom-out-spec.md` — design for zoomed-out default + cube mode preservation
+
+### Important code areas (updated)
+
+- `index.html` camera state: `camZoomMult=2.0` (was 1.0), `camOrbitAngle`, `camLookX/Y/Z`
+- `index.html` animate() camera: follow-mode lerp 0.02, no split-depth branching, death-hold branch
+- `index.html` cube mode: unchanged (orbit at cube height, lerp 0.12, double-tap toggle)
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
