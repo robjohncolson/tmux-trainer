@@ -1398,6 +1398,77 @@ Two-phase death sequence replacing instant mesh removal:
 - **Particle scale is feel**: Too big loses swarm charm, too small loses dopamine. 0.35 min with 1.2x life multiplier is the sweet spot.
 - **Bloom post-processing still doesn't work**: Emissive PhongMaterial + additive blending looked worse than plain MeshBasicMaterial + additive. The additive blending IS the bloom for small bright objects.
 
+## Latest Update: Cartridge Audit Remediation (April 5, 2026)
+
+External GPT-4o audit compared the 76-command AP Stats deck against the 2026 AP Statistics Exam Reference Information. Findings were verified against actual code, false positives discarded, and confirmed issues fixed.
+
+### Formula fix: rv-sd notation
+
+- `rv-sd` latex changed from `\mu` (unsubscripted) to `\mu_X` per the 2026 reference sheet
+- Blank answer updated from `mu` to `mu_X`, choices updated to `\mu_X`
+- `validateBlank('\\mu_X','mu_X')` confirmed working
+
+### Blank fix: large-counts stray `?`
+
+- Blank #2 had a bare `?` instead of showing `10` in the second condition
+- Changed `n(1-p) \geq ?` to `n(1-p) \geq 10` (student fills the first boxed blank only)
+
+### 10 application scenario rewrites
+
+Scenarios that gave away the answer by naming the formula, method, or key symbols were rewritten:
+
+| Command | Problem | Fix |
+|---------|---------|-----|
+| `linreg-mean` | "least-squares model" names method | Describes "landmark point of the dataset" |
+| `y-intercept` | "LSRL" and "intercept a" name formula | Describes "starting value when x is zero" |
+| `ci-formula` (2nd) | "computing SE and finding z*" names components | Describes "range of plausible values" |
+| `type-i-error` | "Name this mistake" is definition prompt | Real scenario: drug trial approves ineffective treatment |
+| `type-ii-error` | "Name this mistake" is definition prompt | Real scenario: factory passes bad inspection |
+| `pooled-se` | "single combined estimate" describes pooling | Describes "null hypothesis of equal proportions" |
+| `slope-mean` | "b values" names the symbol | Describes "long-run average of slopes" |
+| `slope-se` | "residual SD and x-spread" names inputs | Asks "how precisely the sample slope estimates the true slope" |
+| `slope-sd` | Gives exact σ, σ_x, n symbols | Asks "how much would fitted slopes spread out" |
+| `df-gof` | "chi-square goodness-of-fit test" names the test | Describes "comparing observed counts to expected" |
+
+### wireL1toL2 regex fixes (6 rules)
+
+3 over-broad rules tightened:
+- `why.*n\b` → `why\b.*\bby\s+n\b` (was matching "mean", "distribution", etc.)
+- `O\s` → `(?<!\w)O(?!\w).*count` (was matching "to ", "do " with `/i` flag)
+- `E\s.*count` → `(?<!\w)E(?!\w).*count` (same issue)
+
+3 miswired rules remapped to correct concept nodes:
+- Quartile/IQR: `mean-concept` → `order-statistics-concept` (new node)
+- Correlation/r: `slope-concept` �� `correlation-concept` (new node)
+- Y-intercept: `slope-concept` → `intercept-concept` (new node)
+
+### 3 new SHARED_PREREQ_NODES
+
+Added L2 nodes to support the remapped rules:
+- `order-statistics-concept`: "Sort values before finding quartiles" → prereqs: `compare-numbers`
+- `correlation-concept`: "r measures strength/direction of linear relationship" → prereqs: `slope-concept`, `fraction-concept`
+- `intercept-concept`: "Predicted y when x=0" → prereqs: `slope-concept`, `mean-concept`
+
+No dangling prereq refs. `validateDAG()` runs at boot (index.html).
+
+### Audit findings NOT confirmed
+
+- "6 blanks where answer doesn't match choices" — all answers match via norm() + alias system
+- "N/n normalization collision" — fill-blank is multiple choice, so no wrong answer can be accepted
+- Tier label conflict flagged as design decision (tier = difficulty, not reference-sheet presence)
+
+### Spec artifact
+
+- `cartridge-audit-remediation-spec.md` — full spec with line-by-line changes, verification checklist
+
+### Important code areas (updated)
+
+- `ap-stats-cartridge.js` line 78: rv-sd latex with `\mu_X`
+- `ap-stats-cartridge.js` line 522: large-counts blank with `10` (not stray `?`)
+- `ap-stats-cartridge.js` lines 897-967: APPLICATION_BANK (10 rewritten scenarios)
+- `ap-stats-cartridge.js` lines 1487-1501: 3 new SHARED_PREREQ_NODES
+- `ap-stats-cartridge.js` lines 1618, 1636-1637, 1646-1647, 1653: wireL1toL2 rule fixes
+
 ## Latest Update: Grok Pedagogy Fixes — Distractor Quality + Geometric SD Notation
 
 External review by Grok was cross-referenced against actual codebase state (76 commands, not 24). Most suggestions were already shipped. Three actionable items remained; Codex reviewed the spec (4 findings, all incorporated).
