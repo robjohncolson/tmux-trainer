@@ -1332,6 +1332,72 @@ Replaced the removed bloom with two lightweight, zero-ghosting visual layers.
 - `index.html` high contrast: body.hi-contrast CSS + inline filter prepend
 - `index.html` renderLatex(): auto-scale with transform:scale()
 
+## Latest Update: Pinned Label + Reticle + Death Animation + Camera + Particles (April 4 cont.)
+
+### Pinned Selected Label + 3D Corner-Bracket Reticle
+
+Replaced the entire floating DOM label projection system:
+- **Pinned label**: single `#selected-label` div inside `#input-panel`, no projection math, zoom-independent. Shows mastery dot, formula name, speed tag, depth color.
+- **3D reticle**: white `LineSegments` corner-bracket (4 L-shaped corners) around the selected cube. Pulsing scale+opacity, yaw-only billboard.
+- **Canvas selection**: `selectEnemy(id)` extracted as reusable function. Desktop click + mobile tap via `pickEnemyAtScreenPoint()`.
+- **Removed**: `updateLabels()`, `clearLabelCache()`, `labelCache`, `#labels` div, all `.enemy-label`/`.sel-arrow` CSS, label onclick handlers.
+
+### Fractal Stars — Sky Repositioning
+
+- Stars repositioned: y=3.5-5.2 (was 7-10.5), z=-12.5 to -17. 13 stars (was 7) spread across x=-22 to x=+20 in far-left/left/center/right/far-right sky regions.
+- Desktop camera: dist 6.5→8 (pulled back), height 5→4, lookBiasY 0.3→1.5 for less top-down angle.
+
+### Death Animation — Shrink + Particle Release
+
+Two-phase death sequence replacing instant mesh removal:
+- **Shrink** (500ms): cube keeps original color, gets brighter (emissive ramps 0.2→1.0), spins faster, exponential collapse `pow(1-t,5)` — most shrink in first ~150ms.
+- At <1% original volume: mesh removed, rainbow score particles spawn from that point.
+- No red husk, no wireframe sphere — just shrink and release.
+- `dyingEnemies` queue with accumulated frame-delta timing (pause-safe).
+- `checkWaveComplete()` gated on `dyingEnemies.length===0`.
+- All exit paths call `clearDyingEnemies()` with deferred explosion safety net.
+
+### Camera — Smooth Lazy Tracking
+
+- Camera position lerp: 0.10 → 0.04 (much lazier drift to next target).
+- Camera lookAt: now also lerped via `camLookX/Y/Z` at 0.04 rate (was instant snap). Prevents the zoom-out/zoom-in jolt on kill.
+- `handleHit` no longer sets `G.selectedId=null` — `autoSelect` picks next target naturally, so camera never has a "no target" frame.
+
+### Enhanced Fractal Particle Branching
+
+- Burst-phase branching: 3% → 10% chance, particle cap 80 → 120.
+- New funnel-phase branching: 4% chance after 40% of journey toward scoreboard. Particles fork mid-flight creating branching trails.
+- Branch children are visual-only (`awardId:null`) — no score collection or early award completion.
+- Funnel branching disabled on mobile (reduced particle mode).
+- Particle scale: min 0.35 (was 0.16), life×1.2. Count: 24-52 per kill (was 12-32).
+
+### Spec Artifacts
+
+- `pinned-label-reticle-spec.md` — label + reticle design + Codex review
+- `roygbiv-death-spec.md` — death animation design + Codex review (6 findings addressed)
+- `fractal-branching-spec.md` — branching design + Codex review (4 findings addressed)
+
+### Important Code Areas (new/updated)
+
+- `index.html` `selectEnemy()`: reusable selection function (after `pickEnemyAtScreenPoint`)
+- `index.html` `updateSelectedLabel()` / `clearPinnedLabel()`: pinned label system
+- `index.html` `selectionReticle`: LineSegments corner-bracket, `updateSelectionReticle(time)`
+- `index.html` `#selected-label` CSS: inside `#input-panel`, flex child
+- `index.html` canvas click handler: desktop click-to-select
+- `index.html` touchend: mobile tap-to-select via `pickEnemyAtScreenPoint`
+- `index.html` death animation: `dyingEnemies`, `startDeathAnimation()`, `updateDyingEnemies()`, `clearDyingEnemies()`
+- `index.html` camera: `camLookX/Y/Z` smoothed lookAt, 0.04 lerp rate
+- `index.html` fractal branching: burst 10% + funnel 4%, cap 120, `awardId:null` on branches
+- `index.html` STAR_POOL: 13 stars across x=-22 to x=+20, y=3.5-5.2, z=-12.5 to -17
+
+### Lessons Learned (visual polish)
+
+- **Camera lookAt must be lerped**: Instant `lookAt()` with slow position lerp creates jarring rotation snaps on target switch. Both must lerp at the same rate.
+- **Don't null selectedId on kill**: Let autoSelect handle the transition — prevents the one-frame "no target" camera jump to default orbit.
+- **Death animation timing**: Exponential easing (`pow(1-t,5)`) feels much more satisfying than quadratic for a collapse effect — most action in the first 30%.
+- **Particle scale is feel**: Too big loses swarm charm, too small loses dopamine. 0.35 min with 1.2x life multiplier is the sweet spot.
+- **Bloom post-processing still doesn't work**: Emissive PhongMaterial + additive blending looked worse than plain MeshBasicMaterial + additive. The additive blending IS the bloom for small bright objects.
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
