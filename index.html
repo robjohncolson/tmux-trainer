@@ -4477,12 +4477,16 @@ const craters=[];
 let craterPosIdx=0;
 const craterMeshPool=[];
 for(let i=0;i<CRATER_MAX;i++){
-  const geo=new THREE.BoxGeometry(1.5,0.3,1.5);
-  const mat=new THREE.MeshBasicMaterial({color:0xff0000,transparent:true,opacity:0.9});
+  const geo=new THREE.PlaneGeometry(3,3);
+  geo.rotateX(-Math.PI/2);
+  const cv=renderMandelbrotCanvas(128,8,1.5,-0.5+i*0.08,i*0.05);
+  const tex=new THREE.CanvasTexture(cv);
+  tex.minFilter=THREE.LinearFilter;
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geo,mat);
   mesh.visible=false;
   scene.add(mesh);
-  craterMeshPool.push({mesh,mat,tex:null});
+  craterMeshPool.push({mesh,mat,tex});
 }
 
 // ── Falling stars (miss → star descends → crater spawns) ──
@@ -4543,6 +4547,8 @@ function spawnCrater(pos){
   const cm=craterMeshPool[craters[slot].meshIdx];
   cm.mesh.position.set(pos.x,terrainHeight(pos.x,pos.z)+0.12,pos.z);
   cm.mat.opacity=0;
+  const cv=renderMandelbrotCanvas(128,8,1.2+Math.random()*1.5,-0.7+Math.random()*0.5,Math.random()*0.5-0.25);
+  cm.tex.image=cv;cm.tex.needsUpdate=true;
   cm.mesh.visible=true;
 }
 function clearCraters(){
@@ -7111,7 +7117,11 @@ function animate(time){
     const targetOp=c.iterations<=4?0:0.85;
     cm.mat.opacity+=(targetOp-cm.mat.opacity)*0.15;
     if(cm.mat.opacity<0.01&&c.iterations<=4)cm.mesh.visible=false;
-    // (Mandelbrot texture update will go here once red box test passes)
+    if(Math.abs(c.iterations-(c._lastIter||8))>=4){
+      const cv=renderMandelbrotCanvas(128,c.iterations,1.5,-0.5,0);
+      cm.tex.image=cv;cm.tex.needsUpdate=true;
+      c._lastIter=c.iterations;
+    }
   });
 
   // Born stars animation
