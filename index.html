@@ -4417,33 +4417,7 @@ function spawnLightning(from,to,color,duration){
 }
 
 // ── Mandelbrot craters (spawn where falling stars land) ──
-const CRATER_MAX=6;
-const CRATER_POOL=(()=>{
-  // Positions near the enemy path but offset to sides — visible to camera
-  const pts=[],maxAttempts=200;
-  let seed=137;
-  function rng(){seed=(seed*16807+0)%2147483647;return(seed-1)/2147483646}
-  const pp=[[10,-7],[6,-4],[2,-6],[-2,-2],[1,1],[4,3],[0,5],[-7,4.5]];
-  for(let i=0;i<maxAttempts&&pts.length<12;i++){
-    // Pick a random path point, offset 2-4 units perpendicular
-    const pi=Math.floor(rng()*pp.length);
-    const angle=rng()*Math.PI*2;
-    const dist=2+rng()*2;
-    const x=pp[pi][0]+Math.cos(angle)*dist;
-    const z=pp[pi][1]+Math.sin(angle)*dist;
-    if(x<-11||x>11||z<-11||z>8)continue; // stay on terrain
-    // Not too close to path itself (min 1.5)
-    let tooClose=false;
-    for(const p of pp){if(Math.hypot(p[0]-x,p[1]-z)<1.5){tooClose=true;break}}
-    if(tooClose)continue;
-    // Not too close to other crater spots
-    let ok=true;
-    for(const p of pts){if(Math.hypot(p.x-x,p.z-z)<2.5){ok=false;break}}
-    if(ok)pts.push({x,z});
-  }
-  return pts;
-})();
-// Render Mandelbrot to an offscreen canvas → CanvasTexture (no GLSL needed)
+// ── Single growing Mandelbrot on terrain ──
 function renderMandelbrotCanvas(size,maxIter,zoom,cx,cy){
   const cv=document.createElement('canvas');cv.width=size;cv.height=size;
   const ctx=cv.getContext('2d');
@@ -4456,16 +4430,16 @@ function renderMandelbrotCanvas(size,maxIter,zoom,cx,cy){
       let x=0,y=0,iter=0;
       while(x*x+y*y<=4&&iter<maxIter){const t=x*x-y*y+x0;y=2*x*y+y0;x=t;iter++}
       const t=iter/maxIter;
-      // Radial fade
+      // Radial fade — soft edge blend into terrain
       const dx=(px-half)/half,dy=(py-half)/half;
       const rd=Math.sqrt(dx*dx+dy*dy);
-      const edge=rd>1?0:rd>0.3?1-(rd-0.3)/0.7:1;
-      // Amber palette
-      const bright=0.15+Math.pow(t,0.5)*0.85;
+      const edge=rd>1?0:rd>0.7?1-(rd-0.7)/0.3:1;
+      // Amber palette: boundary detail is bright, deep interior is darker
+      const bright=0.1+Math.pow(t,0.4)*0.9;
       const r=Math.floor(255*bright);
       const g=Math.floor(140*bright);
-      const b=0;
-      const a=Math.floor(255*edge*(iter<maxIter?1:0.3));
+      const b=Math.floor(20*t);
+      const a=Math.floor(255*edge*(iter<maxIter?0.85:0.2));
       const off=(py*size+px)*4;
       img.data[off]=r;img.data[off+1]=g;img.data[off+2]=b;img.data[off+3]=a;
     }
@@ -4473,20 +4447,18 @@ function renderMandelbrotCanvas(size,maxIter,zoom,cx,cy){
   ctx.putImageData(img,0,0);
   return cv;
 }
-const craters=[];
-let craterPosIdx=0;
-const craterMeshPool=[];
-for(let i=0;i<CRATER_MAX;i++){
-  const geo=new THREE.BoxGeometry(3,0.05,3);
-  const cv=renderMandelbrotCanvas(128,8,1.5,-0.5+i*0.08,i*0.05);
-  const tex=new THREE.CanvasTexture(cv);
-  tex.minFilter=THREE.LinearFilter;
+const MBROT={mesh:null,mat:null,tex:null,size:0,targetSize:0,iterations:8,impacts:0};
+(function initMandelbrot(){
+  const geo=new THREE.BoxGeometry(1,0.06,1); // unit box, scaled at runtime
+  const cv=renderMandelbrotCanvas(256,8,1.5,-0.5,0);
+  const tex=new THREE.CanvasTexture(cv);tex.minFilter=THREE.LinearFilter;
   const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,depthWrite:false});
   const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.set(1,0.15,-1); // center of the path area
   mesh.visible=false;
   scene.add(mesh);
-  craterMeshPool.push({mesh,mat,tex});
-}
+  Object.assign(MBROT,{mesh,mat,tex});
+})();
 
 // ── Falling stars (miss → star descends → crater spawns) ──
 const fallingStars=[];
@@ -4531,28 +4503,27 @@ function spawnFallingStar(targetPos){
   star.geo.attributes.position.needsUpdate=true;
   star.geo.setDrawRange(0,FALLING_STAR_SEGS*2);
 }
-function spawnCrater(pos){
-  console.log('[CRATER] spawnCrater at',pos.x.toFixed(1),pos.z.toFixed(1),'craters:',craters.length);
-  let slot;
-  if(craters.length<CRATER_MAX){
-    slot=craters.length;
-    craters.push({meshIdx:slot,iterations:8,spawnTime:Date.now()});
-  }else{
-    let oldest=0;
-    for(let i=1;i<craters.length;i++){if(craters[i].spawnTime<craters[oldest].spawnTime)oldest=i}
-    slot=oldest;
-    craters[slot]={meshIdx:craters[slot].meshIdx,iterations:8,spawnTime:Date.now()};
-  }
-  const cm=craterMeshPool[craters[slot].meshIdx];
-  cm.mesh.position.set(pos.x,terrainHeight(pos.x,pos.z)+0.12,pos.z);
-  cm.mat.opacity=0;
-  const cv=renderMandelbrotCanvas(128,8,1.2+Math.random()*1.5,-0.7+Math.random()*0.5,Math.random()*0.5-0.25);
-  cm.tex.image=cv;cm.tex.needsUpdate=true;
-  cm.mesh.visible=true;
+function growMandelbrot(){
+  MBROT.impacts++;
+  // Each impact: grow size + add detail
+  MBROT.targetSize=Math.min(24,3+MBROT.impacts*3); // 3→6→9→12→...→24 (fills terrain)
+  MBROT.iterations=Math.min(isReducedParticleMode()?32:64,8+MBROT.impacts*6);
+  // Re-render texture at higher detail
+  const cv=renderMandelbrotCanvas(256,MBROT.iterations,1.5,-0.5,0);
+  MBROT.tex.image=cv;MBROT.tex.needsUpdate=true;
+  MBROT.mesh.visible=true;
+  console.log('[MBROT] impact #'+MBROT.impacts+', size:'+MBROT.targetSize+', iter:'+MBROT.iterations);
 }
-function clearCraters(){
-  craters.length=0;craterPosIdx=0;
-  craterMeshPool.forEach(c=>{c.mesh.visible=false;c.mat.opacity=0});
+function shrinkMandelbrot(){
+  if(!MBROT.mesh.visible)return;
+  MBROT.iterations=Math.max(4,MBROT.iterations-2);
+  if(MBROT.iterations<=4){MBROT.targetSize=Math.max(0,MBROT.targetSize-1)}
+  const cv=renderMandelbrotCanvas(256,MBROT.iterations,1.5,-0.5,0);
+  MBROT.tex.image=cv;MBROT.tex.needsUpdate=true;
+}
+function clearMandelbrot(){
+  MBROT.mesh.visible=false;MBROT.mat.opacity=0;
+  MBROT.size=0;MBROT.targetSize=0;MBROT.iterations=8;MBROT.impacts=0;
 }
 
 // ── Born stars (success streaks birth new stars) ──
@@ -5905,7 +5876,7 @@ function startGame(){
     spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
     unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
   G.missStarCounter=0;
-  clearCraters();clearBornStars();
+  clearMandelbrot();clearBornStars();
   fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   applyTimeDecay(G.srs);
   SFX.setTreeDepth(G.treeDepth);
@@ -5996,7 +5967,7 @@ function nextWave(){
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
     waveComplete:false,attemptsOnCurrent:0,typedBuffer:'',missStarCounter:0});
-  clearCraters();clearBornStars();
+  clearMandelbrot();clearBornStars();
   fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   G.waveCommands=genWave(nw);
   lastSpawnTime=performance.now();
@@ -6243,8 +6214,8 @@ function handleHit(enemy){
   // Don't null selectedId — autoSelect will pick the next target smoothly
   // so camera never has a frame with no target (prevents snap to default orbit)
   G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
-  // Craters heal on hit: reduce iterations
-  craters.forEach(c=>{c.iterations=Math.max(4,c.iterations-1)});
+  // Mandelbrot heals on hit: reduce detail
+  shrinkMandelbrot();
   // Born star at streak milestones (5, 10, 15, 20, 25)
   if(G.streak>=5&&G.streak%5===0)spawnBornStar();
   flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
@@ -6282,16 +6253,13 @@ function handleMiss(enemy){
   saveSRS();
   G.typedBuffer='';
 
-  // Crater iteration bump + falling star trigger — BEFORE hydra split (which may early-return)
-  craters.forEach(c=>{c.iterations=Math.min(isReducedParticleMode()?24:40,c.iterations+2)});
+  // Falling star trigger — every 3 misses, star falls → Mandelbrot grows
   G.missStarCounter=(G.missStarCounter||0)+1;
-  console.log('[STAR] miss #'+G.missStarCounter+' (depth '+missDepth+'), CRATER_POOL:'+CRATER_POOL.length);
-  if(G.missStarCounter>=3&&CRATER_POOL.length>0){
+  console.log('[STAR] miss #'+G.missStarCounter+' (depth '+missDepth+')');
+  if(G.missStarCounter>=3){
     G.missStarCounter=0;
-    const cp=CRATER_POOL[craterPosIdx%CRATER_POOL.length];
-    craterPosIdx++;
-    const landPos=new THREE.Vector3(cp.x,terrainHeight(cp.x,cp.z)+0.12,cp.z);
-    console.log('[STAR] Spawning falling star → landing at',landPos.x.toFixed(1),landPos.z.toFixed(1));
+    const landPos=new THREE.Vector3(1,0.15,-1); // Mandelbrot center
+    console.log('[STAR] Spawning falling star → Mandelbrot impact #'+(MBROT.impacts+1));
     spawnFallingStar(landPos);
   }
 
@@ -7098,30 +7066,23 @@ function animate(time){
     if(f.life<=0){f.mesh.visible=false;return}
     f.life-=f.decay*frameScale;
     f.mat.opacity=Math.max(0,f.life);
-    // Progressive reveal: show more segments as star falls
     const progress=1-f.life;
     const segsVisible=Math.max(1,Math.floor(progress*FALLING_STAR_SEGS));
     f.geo.setDrawRange(0,segsVisible*2);
     if(f.life<=0){
       f.mesh.visible=false;
-      // Spawn crater at landing position
-      spawnCrater(f.to);
+      growMandelbrot();
     }
   });
 
-  // Crater opacity update
-  craters.forEach((c,i)=>{
-    const cm=craterMeshPool[c.meshIdx];
-    if(!cm.mesh.visible)return;
-    const targetOp=c.iterations<=4?0:0.85;
-    cm.mat.opacity+=(targetOp-cm.mat.opacity)*0.15;
-    if(cm.mat.opacity<0.01&&c.iterations<=4)cm.mesh.visible=false;
-    if(Math.abs(c.iterations-(c._lastIter||8))>=4){
-      const cv=renderMandelbrotCanvas(128,c.iterations,1.5,-0.5,0);
-      cm.tex.image=cv;cm.tex.needsUpdate=true;
-      c._lastIter=c.iterations;
-    }
-  });
+  // Mandelbrot growth animation
+  if(MBROT.mesh.visible){
+    MBROT.size+=(MBROT.targetSize-MBROT.size)*0.06;
+    MBROT.mesh.scale.set(MBROT.size,1,MBROT.size);
+    const tgtOp=MBROT.iterations<=4?0:0.8;
+    MBROT.mat.opacity+=(tgtOp-MBROT.mat.opacity)*0.08;
+    if(MBROT.mat.opacity<0.01&&MBROT.targetSize<=0)MBROT.mesh.visible=false;
+  }
 
   // Born stars animation
   bornStars.forEach(s=>{
