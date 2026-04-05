@@ -6511,6 +6511,7 @@ document.addEventListener('touchend',function(e){const now=Date.now();if(now-las
 let touchStartX=0,touchStartY=0,touchStartTime=0;
 // Camera state
 let camZoomMult=1.0,camOrbitAngle=0; // orbit angle around focused cube
+let camLookX=0,camLookY=1.5,camLookZ=-1; // smoothed lookAt target
 let pinchStartDist=0,pinchStartZoom=1.0,isTwoFinger=false;
 let camMode='follow',lastDoubleTap=0; // 'follow' or 'cube'
 let ipMinimized=false; // question panel swiped down
@@ -6657,8 +6658,13 @@ function animate(time){
     camera.position.x+=(tx-camera.position.x)*.04;
     camera.position.y+=(ty-camera.position.y)*.04;
     camera.position.z+=(tz-camera.position.z)*.04;
+    // Smooth lookAt — lerp the target so camera doesn't snap on target switch
     const lookBiasY=port?1.5:1.5;
-    camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
+    const wantLookX=ep.x*0.8,wantLookY=lookBiasY,wantLookZ=ep.z*0.7-1;
+    camLookX+=(wantLookX-camLookX)*.04;
+    camLookY+=(wantLookY-camLookY)*.04;
+    camLookZ+=(wantLookZ-camLookZ)*.04;
+    camera.lookAt(camLookX,camLookY,camLookZ);
   }else{
     // Default orbit (title screen, no enemies)
     const orbY=isPortrait()?22:18;
