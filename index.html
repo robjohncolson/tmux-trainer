@@ -966,12 +966,13 @@ const SFX=(()=>{
     bgmPlaying=true;
     currentProgIdx=0;
     const waveCfg=getWaveConfig(currentWaveIdx);
+    const h=musicalHealth;
     const pv=(waveCfg.padVol!=null?waveCfg.padVol:.05)*.5;
     const bv=(waveCfg.bassVol!=null?waveCfg.bassVol:.6)*.35;
-    padBus.gain.setTargetAtTime(pv,t,.3);
-    bassBus.gain.setTargetAtTime(bv,t,.3);
+    padBus.gain.setTargetAtTime(h>=5?pv:0,t,.3);
+    bassBus.gain.setTargetAtTime(h>=4?bv:0,t,.3);
     for(let i=0;i<3;i++)voices[i].outputGain.gain.setTargetAtTime(0,t,.05);
-    voices[3].outputGain.gain.setTargetAtTime(.6,t,.3);
+    voices[3].outputGain.gain.setTargetAtTime(h>=4?.6:0,t,.3);
     let st=60/(getWaveConfig(currentWaveIdx).tempo||80)/2;
     let startT=t;
     function seq(){

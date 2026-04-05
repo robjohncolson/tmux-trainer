@@ -1859,6 +1859,27 @@ Fixed two melody/compose UX bugs: melody bleeding through pause, and no feedback
 - `index.html` `animate()`: calls `updateMelodyBar()` after pinned label update (~line 5308)
 - `index.html` `exitComposeMode()`: resets `melodyBarBuilt` flag (~line 2435)
 
+## Latest Update: startBGM Health-Gate Fix (April 5, 2026)
+
+Fixed audio flash at wave start where the full arrangement briefly played before health gating kicked in.
+
+### Root cause
+
+`startBGM()` ramped pad and bass bus gains to full volume unconditionally (lines 971-974), then `seq()` would correct them to health-gated levels on the first bar — but with a `.3` time constant, creating an audible split-second of the full song before layers faded out.
+
+### Fix
+
+`startBGM()` now reads `musicalHealth` and applies the same gates as `seq()`:
+- `padBus`: only ramps to volume if `health >= 5` (was: always)
+- `bassBus`: only ramps to volume if `health >= 4` (was: always)
+- `voices[3]` (bass voice): only ramps to `.6` if `health >= 4` (was: always `.6`)
+
+Drums were already fine — they're scheduled per-step in `seq()` with health checks, not via a bus ramp.
+
+### Important code area
+
+- `index.html` `startBGM()`: health-gated initial bus volumes (~line 968)
+
 ## Likely Next Tasks
 
 - **Unit 8 procedural cards** — GOF vs homogeneity vs independence selection, hypothesis templates, chi-square conditions, conclusion interpretation (4-6 new commands)
