@@ -1788,4 +1788,6 @@ AP_STATS_CARTRIDGE.buildExplanationBank=buildExplanationBank;
 AP_STATS_CARTRIDGE.wireL1toL2=wireL1toL2;
 
 window.AP_STATS_CARTRIDGE=AP_STATS_CARTRIDGE;
+window.TD_CARTRIDGES=window.TD_CARTRIDGES||[];
+window.TD_CARTRIDGES.push(AP_STATS_CARTRIDGE);
 })();

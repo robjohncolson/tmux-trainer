@@ -47,6 +47,13 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .menu-tab{flex:1;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:2px;color:#5a3800;background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;transition:all .15s;margin-bottom:-2px}
 .menu-tab:hover{color:#ff8c00}
 .menu-tab.active{color:#ff8c00;border-bottom-color:#ff8c00}
+.cart-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:20px auto;max-width:500px}
+.cart-card{background:rgba(255,140,0,0.08);border:1px solid rgba(255,140,0,0.25);border-radius:8px;padding:16px 20px;cursor:pointer;text-align:center;min-width:140px;flex:1 1 140px;max-width:200px;transition:border-color .15s,background .15s;font-family:inherit;color:inherit}
+.cart-card:hover,.cart-card:active{border-color:rgba(255,140,0,0.6);background:rgba(255,140,0,0.15)}
+.cart-icon{font-size:32px;margin-bottom:8px}
+.cart-name{font-size:14px;font-weight:bold;color:#ff8c00}
+.cart-desc{font-size:11px;color:#996622;margin-top:4px}
+.cart-hs{font-size:10px;color:#44ff88;margin-top:4px}
 .login-box{margin-top:12px;background:#0d050088;border:1px solid #3d1f0044;border-radius:10px;padding:12px 14px;max-width:320px;text-align:center}
 .login-box input{font-family:inherit;font-size:13px;color:#ffcc66;background:#0d0500;border:1.5px solid #3d1f00;border-radius:8px;padding:8px 12px;width:100%;box-sizing:border-box;margin-bottom:8px;outline:none}
 .login-box input:focus{border-color:#ff8c00}
@@ -325,6 +332,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <div id="overlay"></div>
 
 <script src="./ap-stats-cartridge.js"></script>
+<script src="./dummy-cartridge.js"></script>
 <script>
 // ═══════════════════════════════════════════════
 //  AMBER PALETTE
@@ -4095,6 +4103,53 @@ function showPauseScreen(){
   SFX.stopBGM();
 }
 
+function loadCartridge(cart){
+  activeCartridge=cart;
+  COMMANDS=cart.commands;
+  Object.keys(PREREQ_DAG).forEach(k=>delete PREREQ_DAG[k]);
+  buildDAGFromSubconcepts(COMMANDS);
+  Object.assign(PREREQ_DAG,cart.sharedPrereqNodes);
+  cart.wireL1toL2(PREREQ_DAG);
+  validateDAG();
+  EXPLANATION_BANK=cart.buildExplanationBank(COMMANDS);
+  G.srs=loadSRS(activeCartridge);
+  G.domainFilter=[];
+  G.difficulty='learn';
+  G._menuTab='play';
+  if(typeof fetchAnimationManifest==='function')fetchAnimationManifest();
+}
+
+function showCartridgeSelector(){
+  const cartridges=window.TD_CARTRIDGES||[];
+  G.screen='selector';
+  const ov=document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  let html='<div class="title-shell">';
+  html+='<h1>FORMULA DEFENSE</h1>';
+  html+='<h2 style="color:#996622;font-size:12px;letter-spacing:3px;margin-top:4px">CHOOSE YOUR DECK</h2>';
+  html+='<div class="cart-grid">';
+  cartridges.forEach(function(cart,i){
+    const hsKey='td-highscore-'+cart.id;
+    const hs=parseInt(localStorage.getItem(hsKey)||'0',10);
+    const cmdCount=cart.commands?cart.commands.length:0;
+    html+='<button class="cart-card" onclick="selectCartridge('+i+')">';
+    html+='<div class="cart-icon">'+(cart.icon||'\uD83D\uDCE6')+'</div>';
+    html+='<div class="cart-name">'+(cart.name||cart.id)+'</div>';
+    html+='<div class="cart-desc">'+cmdCount+' formulas</div>';
+    if(hs>0)html+='<div class="cart-hs">High: '+hs+'</div>';
+    html+='</button>';
+  });
+  html+='</div></div>';
+  ov.innerHTML=html;
+}
+
+function selectCartridge(index){
+  const cartridges=window.TD_CARTRIDGES||[];
+  if(index<0||index>=cartridges.length)return;
+  loadCartridge(cartridges[index]);
+  showTitleScreen('boot');
+}
+
 function showTitleScreen(context){
   G.screen='title';
   G.paused=false;
@@ -4238,6 +4293,9 @@ function showTitleScreen(context){
     // Reset + QR
     const prog=getCartridgeProgress(activeCartridge.id);
     if(prog.seen>0)html+='<div style="margin-top:10px"><a href="#" onclick="event.preventDefault();resetProgress()" style="color:#3d1f00;text-decoration:none;font-size:9px;letter-spacing:1px">Reset Progress</a></div>';
+    if((window.TD_CARTRIDGES||[]).length>1){
+      html+='<div class="menu-actions" style="margin-top:10px"><button class="btn btn-secondary" onclick="showCartridgeSelector()">[ CHANGE DECK ]</button></div>';
+    }
   }
 
   // QR code (MORE tab only)
@@ -5141,6 +5199,16 @@ window.addEventListener('keydown',e=>{
     return;
   }
 
+  // ── Selector screen shortcuts ──
+  if(G.screen==='selector'){
+    const num=parseInt(e.key,10);
+    if(num>=1&&num<=9){
+      e.preventDefault();
+      selectCartridge(num-1);
+    }
+    return;
+  }
+
   // ── Title screen shortcuts ──
   if(G.screen==='title'&&!MUSIC_EDITOR.open){
     const k=e.key.toLowerCase();
@@ -5751,25 +5819,30 @@ window.addEventListener('orientationchange',()=>setTimeout(handleResize,150));
 if(window.visualViewport)window.visualViewport.addEventListener('resize',handleResize);
 
 // ═══════════════════════════════════════════════
-//  INIT — boot title screen
+//  INIT — boot
 // ═══════════════════════════════════════════════
-activeCartridge=window.AP_STATS_CARTRIDGE;
-if(!activeCartridge){
-  const overlay=document.getElementById('overlay');
-  if(overlay){
-    overlay.classList.remove('hidden');
-    overlay.innerHTML='<h1>LOAD ERROR</h1><div class="desc">The AP Stats cartridge failed to load.</div><div class="sub">Reload once to refresh the cached shell.</div>';
+(function bootInit(){
+  var carts=window.TD_CARTRIDGES||[];
+  if(window.AP_STATS_CARTRIDGE){
+    var found=false;
+    for(var i=0;i<carts.length;i++){if(carts[i]===window.AP_STATS_CARTRIDGE){found=true;break}}
+    if(!found)carts.push(window.AP_STATS_CARTRIDGE);
   }
-  console.error('[Cartridge] window.AP_STATS_CARTRIDGE is missing');
-}else{
-  COMMANDS=activeCartridge.commands;
-  buildDAGFromSubconcepts(COMMANDS);
-  Object.assign(PREREQ_DAG,activeCartridge.sharedPrereqNodes);
-  activeCartridge.wireL1toL2(PREREQ_DAG);
-  validateDAG();
-  EXPLANATION_BANK=activeCartridge.buildExplanationBank(COMMANDS);
-  showTitleScreen('boot');
-}
+  window.TD_CARTRIDGES=carts;
+  if(carts.length===0){
+    var overlay=document.getElementById('overlay');
+    if(overlay){
+      overlay.classList.remove('hidden');
+      overlay.innerHTML='<h1>LOAD ERROR</h1><div class="desc">No cartridge files loaded.</div><div class="sub">Reload once to refresh the cached shell.</div>';
+    }
+    console.error('[Cartridge] No cartridges found in window.TD_CARTRIDGES');
+  }else if(carts.length===1){
+    loadCartridge(carts[0]);
+    showTitleScreen('boot');
+  }else{
+    showCartridgeSelector();
+  }
+})();
 // Service Worker registration
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});}
 </script>
