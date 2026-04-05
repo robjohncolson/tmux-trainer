@@ -4417,7 +4417,7 @@ function spawnLightning(from,to,color,duration){
 }
 
 // ── Mandelbrot craters (spawn where falling stars land) ──
-// ── Single growing Mandelbrot on terrain ──
+// ── Mandelbrot emissive map on terrain — glows through the wireframe grid ──
 function renderMandelbrotCanvas(size,maxIter,zoom,cx,cy){
   const cv=document.createElement('canvas');cv.width=size;cv.height=size;
   const ctx=cv.getContext('2d');
@@ -4430,34 +4430,24 @@ function renderMandelbrotCanvas(size,maxIter,zoom,cx,cy){
       let x=0,y=0,iter=0;
       while(x*x+y*y<=4&&iter<maxIter){const t=x*x-y*y+x0;y=2*x*y+y0;x=t;iter++}
       const t=iter/maxIter;
-      // Radial fade — soft edge blend into terrain
-      const dx=(px-half)/half,dy=(py-half)/half;
-      const rd=Math.sqrt(dx*dx+dy*dy);
-      const edge=rd>1?0:rd>0.7?1-(rd-0.7)/0.3:1;
-      // Amber palette: boundary detail is bright, deep interior is darker
-      const bright=0.1+Math.pow(t,0.4)*0.9;
+      // Amber: boundary detail is brightest, deep set interior dim
+      const bright=Math.pow(t,0.35);
       const r=Math.floor(255*bright);
       const g=Math.floor(140*bright);
-      const b=Math.floor(20*t);
-      const a=Math.floor(255*edge*(iter<maxIter?0.85:0.2));
+      const b=Math.floor(30*bright);
       const off=(py*size+px)*4;
-      img.data[off]=r;img.data[off+1]=g;img.data[off+2]=b;img.data[off+3]=a;
+      img.data[off]=r;img.data[off+1]=g;img.data[off+2]=b;img.data[off+3]=255;
     }
   }
   ctx.putImageData(img,0,0);
   return cv;
 }
-const MBROT={mesh:null,mat:null,tex:null,size:0,targetSize:0,iterations:8,impacts:0};
+const MBROT={tex:null,intensity:0,targetIntensity:0,iterations:8,impacts:0};
 (function initMandelbrot(){
-  const geo=new THREE.BoxGeometry(1,0.06,1); // unit box, scaled at runtime
-  const cv=renderMandelbrotCanvas(256,8,1.5,-0.5,0);
+  const cv=renderMandelbrotCanvas(512,8,1.5,-0.5,0);
   const tex=new THREE.CanvasTexture(cv);tex.minFilter=THREE.LinearFilter;
-  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,depthWrite:false});
-  const mesh=new THREE.Mesh(geo,mat);
-  mesh.position.set(1,0.15,-1); // center of the path area
-  mesh.visible=false;
-  scene.add(mesh);
-  Object.assign(MBROT,{mesh,mat,tex});
+  MBROT.tex=tex;
+  // Will be applied to terrMat.emissiveMap after terrMat is created
 })();
 
 // ── Falling stars (miss → star descends → crater spawns) ──
@@ -4505,25 +4495,27 @@ function spawnFallingStar(targetPos){
 }
 function growMandelbrot(){
   MBROT.impacts++;
-  // Each impact: grow size + add detail
-  MBROT.targetSize=Math.min(24,3+MBROT.impacts*3); // 3→6→9→12→...→24 (fills terrain)
-  MBROT.iterations=Math.min(isReducedParticleMode()?32:64,8+MBROT.impacts*6);
-  // Re-render texture at higher detail
-  const cv=renderMandelbrotCanvas(256,MBROT.iterations,1.5,-0.5,0);
+  MBROT.iterations=Math.min(isReducedParticleMode()?32:64,8+MBROT.impacts*8);
+  MBROT.targetIntensity=Math.min(1.2,0.15+MBROT.impacts*0.2);
+  // Re-render at higher detail (512px for crisp boundary edges)
+  const cv=renderMandelbrotCanvas(512,MBROT.iterations,1.5,-0.5,0);
   MBROT.tex.image=cv;MBROT.tex.needsUpdate=true;
-  MBROT.mesh.visible=true;
-  console.log('[MBROT] impact #'+MBROT.impacts+', size:'+MBROT.targetSize+', iter:'+MBROT.iterations);
+  terrMat.needsUpdate=true;
+  console.log('[MBROT] impact #'+MBROT.impacts+', iter:'+MBROT.iterations+', intensity:'+MBROT.targetIntensity.toFixed(2));
 }
 function shrinkMandelbrot(){
-  if(!MBROT.mesh.visible)return;
+  if(MBROT.targetIntensity<=0)return;
   MBROT.iterations=Math.max(4,MBROT.iterations-2);
-  if(MBROT.iterations<=4){MBROT.targetSize=Math.max(0,MBROT.targetSize-1)}
-  const cv=renderMandelbrotCanvas(256,MBROT.iterations,1.5,-0.5,0);
-  MBROT.tex.image=cv;MBROT.tex.needsUpdate=true;
+  MBROT.targetIntensity=Math.max(0,MBROT.targetIntensity-0.05);
+  if(MBROT.iterations!==MBROT._lastIter){
+    const cv=renderMandelbrotCanvas(512,MBROT.iterations,1.5,-0.5,0);
+    MBROT.tex.image=cv;MBROT.tex.needsUpdate=true;
+    MBROT._lastIter=MBROT.iterations;
+  }
 }
 function clearMandelbrot(){
-  MBROT.mesh.visible=false;MBROT.mat.opacity=0;
-  MBROT.size=0;MBROT.targetSize=0;MBROT.iterations=8;MBROT.impacts=0;
+  MBROT.intensity=0;MBROT.targetIntensity=0;MBROT.iterations=8;MBROT.impacts=0;
+  terrMat.emissiveIntensity=0;
 }
 
 // ── Born stars (success streaks birth new stars) ──
@@ -4560,7 +4552,7 @@ for(let i=0;i<verts.count;i++){
   verts.setY(i,h);
 }
 terrGeo.computeVertexNormals();
-const terrMat=new THREE.MeshPhongMaterial({color:AMB.darkest,flatShading:true,shininess:0});
+const terrMat=new THREE.MeshPhongMaterial({color:AMB.darkest,flatShading:true,shininess:0,emissive:0xff8c00,emissiveIntensity:0,emissiveMap:MBROT.tex});
 const terrain=new THREE.Mesh(terrGeo,terrMat);scene.add(terrain);
 const wireGeo=terrGeo.clone();
 const wireMat=new THREE.MeshBasicMaterial({color:AMB.dark,wireframe:true,transparent:true,opacity:.25});
@@ -7075,14 +7067,9 @@ function animate(time){
     }
   });
 
-  // Mandelbrot growth animation
-  if(MBROT.mesh.visible){
-    MBROT.size+=(MBROT.targetSize-MBROT.size)*0.06;
-    MBROT.mesh.scale.set(MBROT.size,1,MBROT.size);
-    const tgtOp=MBROT.iterations<=4?0:0.8;
-    MBROT.mat.opacity+=(tgtOp-MBROT.mat.opacity)*0.08;
-    if(MBROT.mat.opacity<0.01&&MBROT.targetSize<=0)MBROT.mesh.visible=false;
-  }
+  // Mandelbrot emissive intensity lerp — terrain glows with fractal detail
+  MBROT.intensity+=(MBROT.targetIntensity-MBROT.intensity)*0.06;
+  terrMat.emissiveIntensity=MBROT.intensity;
 
   // Born stars animation
   bornStars.forEach(s=>{
