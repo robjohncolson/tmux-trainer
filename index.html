@@ -4423,20 +4423,28 @@ function renderMandelbrotCanvas(size,maxIter,zoom,cx,cy){
   const ctx=cv.getContext('2d');
   const img=ctx.createImageData(size,size);
   const half=size/2;
+  const log2=Math.log(2);
   for(let py=0;py<size;py++){
     for(let px=0;px<size;px++){
       const x0=(px-half)/half*zoom+cx;
       const y0=(py-half)/half*zoom+cy;
       let x=0,y=0,iter=0;
       while(x*x+y*y<=4&&iter<maxIter){const t=x*x-y*y+x0;y=2*x*y+y0;x=t;iter++}
-      const t=iter/maxIter;
-      // Amber: boundary detail is brightest, deep set interior dim
-      const bright=Math.pow(t,0.35);
-      const r=Math.floor(255*bright);
-      const g=Math.floor(140*bright);
-      const b=Math.floor(30*bright);
       const off=(py*size+px)*4;
-      img.data[off]=r;img.data[off+1]=g;img.data[off+2]=b;img.data[off+3]=255;
+      if(iter>=maxIter){
+        // Inside the set — black void
+        img.data[off]=0;img.data[off+1]=0;img.data[off+2]=0;img.data[off+3]=255;
+      }else{
+        // Outside — smooth coloring for precise boundary glow
+        const mu=iter+1-Math.log(Math.log(Math.sqrt(x*x+y*y)))/log2;
+        const t=Math.min(1,mu/maxIter);
+        // Sharp boundary: bright near edge, dark far away
+        const bright=Math.pow(t,0.3);
+        img.data[off]=Math.floor(255*bright);
+        img.data[off+1]=Math.floor(120*bright+40*Math.pow(t,0.8));
+        img.data[off+2]=Math.floor(15*bright);
+        img.data[off+3]=255;
+      }
     }
   }
   ctx.putImageData(img,0,0);
