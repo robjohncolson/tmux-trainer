@@ -4631,7 +4631,7 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
     const spread=rainbow?.2:.15;
     const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
     particles.push({
-      mesh:m,vel:v,life:rainbow?4.5:1,decay:rainbow?.006+Math.random()*.004:.015+Math.random()*.015,
+      mesh:m,vel:v,life:rainbow?6.0:1,decay:rainbow?.004+Math.random()*.003:.015+Math.random()*.015,
       ageMs:0,burstMs:rainbow?250+Math.random()*150:0,
       funnelToScore:rainbow,
       awardId:options.awardId??null,
@@ -6019,7 +6019,9 @@ function handleHit(enemy){
   // Mesh removal is handled by death animation (startDeathAnimation detaches from enemyMeshes)
   G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
   resetExplanationState();
-  G.selectedId=null;G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
+  // Don't null selectedId — autoSelect will pick the next target smoothly
+  // so camera never has a frame with no target (prevents snap to default orbit)
+  G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
   flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
 }
 
@@ -6757,7 +6759,7 @@ function animate(time){
     const twinkleOpacity=p.funnelToScore?(.55+Math.sin(twinklePhase)*.45):1;
     p.mesh.material.opacity=Math.max(0,p.life*twinkleOpacity);
     const twinkleScale=p.funnelToScore?(.6+Math.sin(twinklePhase*.7+1.2)*.4):1;
-    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.45,p.life*1.6):Math.max(.22,p.life))*twinkleScale;
+    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.65,p.life*2.0):Math.max(.25,p.life))*twinkleScale;
     p.mesh.scale.setScalar(particleScale);
     // Spin plus symbols for star effect
     if(p.funnelToScore){p.mesh.rotation.z+=.04*frameScale*(1+Math.sin(p.twinkle)*.5)}
