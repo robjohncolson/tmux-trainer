@@ -1603,12 +1603,70 @@ Failures scar the battlefield permanently. Stars fall from the sky on every 3rd 
 - `index.html` `continueGame()`: restores MBROT state from checkpoint
 - `index.html` animate(): MBROT intensity/zoom lerp, terrMat uniform updates
 
+## Latest Update: Cartridge Module Extraction + Pedagogy Bug Fixes + Audio Polish
+
+### Cartridge Extraction (April 5, 2026)
+
+Separated ~1680 lines of AP Stats pedagogy data from the game engine into a standalone module.
+
+**New file: `ap-stats-cartridge.js`** (~1700 lines)
+- 76 commands with formulas, blanks, subconcepts
+- VARIABLE_BANK (76 entries), APPLICATION_BANK (72), RELATIONSHIP_BANK (34)
+- EXPLANATION_GLOSSARY (39 notation entries)
+- AUTO_BLANK_SPECS (notation match rules for auto-generated blanks)
+- DOM_LABELS (domain→curriculum unit mapping)
+- SHARED_PREREQ_NODES (73 hand-authored L2-L5 DAG nodes)
+- `wireL1toL2(dag)` — 52 regex rules for automatic DAG wiring
+- `generateQuestion(cmd, allCommands, difficulty)` — 5-type question generator
+- `validateBlank(input, answer)` — notation-aware answer validation
+- `buildExplanationBank(commands)` — explanation lookup builder
+
+**Engine changes in `index.html`**
+- Loads cartridge via `window.AP_STATS_CARTRIDGE` with missing-cartridge error path
+- Removed all moved constants and functions (~1680 lines)
+- Initialization: `buildDAGFromSubconcepts()` → `Object.assign(PREREQ_DAG, cartridge.sharedPrereqNodes)` → `cartridge.wireL1toL2(PREREQ_DAG)` → `validateDAG()`
+- Engine references banks via cartridge object, not globals
+
+**Service worker**: cache bumped to `td-shell-v4`, `ap-stats-cartridge.js` precached
+
+### Pedagogy Bug Fixes
+
+- **add-rule blank**: answer `P(A∩B)` (Unicode ∩) didn't match choice `P(A\cap B)` (LaTeX). Fixed to use LaTeX form.
+- **VARIABLE_BANK**: 3 fixes from external ChatGPT audit (binom-pmf k→x, geom-pmf k→x, lintransform a/b swap)
+
+### Audio Polish
+
+- **Miss SFX**: removed noise burst, halved FM modIndex (4→1.2), shorter duration. Gentle "wrong" tone instead of sandpaper.
+- **Split SFX**: removed noise burst, softened FM tone (modIndex 3→1.5). No more static on hydra split.
+
+### External Audit Prompts
+
+Created `cartridge-audit-prompts.md` with 4 ready-to-paste prompts for ChatGPT/Gemini review of the cartridge:
+1. Formula correctness vs 2026 AP Stats reference sheet
+2. Blank answer validation (Unicode/LaTeX mismatches, giveaways, dead choices)
+3. Application scenario review (keyword giveaways, ambiguity, confusion set quality)
+4. DAG wiring verification (unwired subconcepts, incorrect regex, dead ends)
+
+### Spec artifacts
+
+- `cartridge-extraction-spec.md` — full extraction plan with API contract
+- `cartridge-audit-prompts.md` — 4 external review prompts
+
+### Important code areas (new/updated)
+
+- `ap-stats-cartridge.js` — entire file is the cartridge module
+- `index.html` cartridge loading: `window.AP_STATS_CARTRIDGE` check + init (~line 5526)
+- `index.html` EXPLANATION_BANK init: built from cartridge at boot (~line 1183)
+- `index.html` DOM_LABELS: references `activeCartridge.domLabels` (~line 1748)
+- `sw.js`: shell cache v4, `./ap-stats-cartridge.js` in precache list
+
 ## Likely Next Tasks
 
-- **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
-- **Cartridge module splitting** — extract AP Stats deck/DAG/variable bank into pluggable cartridge format for multi-course reuse (lrsl-driller, Algebra 2)
+- **External cartridge audit** — run the 4 prompts against `ap-stats-cartridge.js` in ChatGPT/Gemini. Fix findings.
+- **Unit 8 procedural cards** — GOF vs homogeneity vs independence selection, hypothesis templates, chi-square conditions, conclusion interpretation (4-6 new commands)
+- **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
-- Quality review rendered animations — verify pedagogical accuracy per formula (ongoing as students use it)
+- Quality review rendered animations — verify pedagogical accuracy per formula
 - Add adaptive BKT params (v2) once enough telemetry collected
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
