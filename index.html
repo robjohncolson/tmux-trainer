@@ -6784,10 +6784,18 @@ function animate(time){
     const twinklePhase=p.ageMs*.001*tempoHz*Math.PI*4+p.twinkle;
     const twinkleOpacity=p.funnelToScore?(.55+Math.sin(twinklePhase)*.45):1;
     p.mesh.material.opacity=Math.max(0,p.life*twinkleOpacity);
-    const twinkleScale=p.funnelToScore?(.6+Math.sin(twinklePhase*.7+1.2)*.4):1;
-    // Funnel particles grow bigger as they approach score (illusion of coming toward camera)
-    const funnelGrow=p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.3,0.2+((1-p.life)*1.2)):1;
-    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.2,funnelGrow):Math.max(.18,p.life))*twinkleScale;
+    const twinkleScale=p.funnelToScore?(.7+Math.sin(twinklePhase*.7+1.2)*.3):1;
+    // Funnel particles grow HUGE as they approach score — in-your-face near the HUD
+    let particleScale;
+    if(p.funnelToScore&&p.ageMs>p.burstMs){
+      // progress: 0 at burst end → 1 when life runs out. life starts ~4.5, decay ~0.002/frame
+      const startLife=4.5;
+      const progress=Math.min(1,1-p.life/startLife);
+      // Grow from 0.15 to 2.5 — huge near the scoreboard
+      particleScale=(0.15+progress*progress*2.35)*twinkleScale;
+    }else{
+      particleScale=Math.max(.18,p.life)*twinkleScale;
+    }
     p.mesh.scale.setScalar(particleScale);
     // Spin plus symbols for star effect
     if(p.funnelToScore){p.mesh.rotation.z+=.04*frameScale*(1+Math.sin(p.twinkle)*.5)}
