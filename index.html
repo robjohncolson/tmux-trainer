@@ -4481,6 +4481,7 @@ for(let i=0;i<CRATER_MAX;i++){
 const fallingStars=[];
 const FALLING_STAR_SEGS=16;
 function spawnFallingStar(targetPos){
+  console.log('[STAR] spawnFallingStar called, in-flight:',fallingStars.filter(f=>f.life>0).length);
   if(fallingStars.filter(f=>f.life>0).length>=2)return; // max 2 in flight
   // Pick a sky origin: random visible star or random sky point
   const sx=(Math.random()-0.5)*20;
@@ -4520,7 +4521,7 @@ function spawnFallingStar(targetPos){
   star.geo.setDrawRange(0,FALLING_STAR_SEGS*2);
 }
 function spawnCrater(pos){
-  // Immediate reuse: oldest crater replaced instantly (Codex finding #2)
+  console.log('[CRATER] spawnCrater at',pos.x.toFixed(1),pos.z.toFixed(1),'craters:',craters.length);
   let slot;
   if(craters.length<CRATER_MAX){
     slot=craters.length;
@@ -6277,11 +6278,13 @@ function handleMiss(enemy){
   craters.forEach(c=>{c.iterations=Math.min(isReducedParticleMode()?24:40,c.iterations+2)});
   if(missDepth===0){
     G.missStarCounter=(G.missStarCounter||0)+1;
+    console.log('[STAR] L0 miss #'+G.missStarCounter+', CRATER_POOL:'+CRATER_POOL.length);
     if(G.missStarCounter>=3&&CRATER_POOL.length>0){
       G.missStarCounter=0;
       const cp=CRATER_POOL[craterPosIdx%CRATER_POOL.length];
       craterPosIdx++;
       const landPos=new THREE.Vector3(cp.x,terrainHeight(cp.x,cp.z)+0.03,cp.z);
+      console.log('[STAR] Spawning falling star → landing at',landPos.x.toFixed(1),landPos.z.toFixed(1));
       spawnFallingStar(landPos);
     }
   }
