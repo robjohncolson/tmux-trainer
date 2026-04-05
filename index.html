@@ -4038,7 +4038,7 @@ const G={
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
   srsError:false,runStateError:false,sessionStartTime:0,resetRev:0,
-  composing:false,
+  composing:false,missStarCounter:0,
 };
 const MELODY_STATE={
   notes:[],        // current recording buffer (0-8 entries: MIDI number or null for rest)
@@ -4415,6 +4415,155 @@ function spawnLightning(from,to,color,duration){
   bolt.life=1;
   bolt.decay=1/(duration*60); // ~60fps
   bolt.mesh.visible=true;
+}
+
+// ── Mandelbrot craters (spawn where falling stars land) ──
+const CRATER_MAX=6;
+const CRATER_POOL=(()=>{
+  const minDist=3.0,xMin=-9,xMax=9,zMin=-10,zMax=-3;
+  const pts=[],maxAttempts=150;
+  let seed=137;
+  function rng(){seed=(seed*16807+0)%2147483647;return(seed-1)/2147483646}
+  // Path points for distance check
+  const pp=[[10,-7],[6,-4],[2,-6],[-2,-2],[1,1],[4,3],[0,5],[-7,4.5]];
+  for(let i=0;i<maxAttempts&&pts.length<12;i++){
+    const x=xMin+rng()*(xMax-xMin),z=zMin+rng()*(zMax-zMin);
+    // Reject if too close to any path point
+    let nearPath=false;
+    for(const p of pp){if(Math.hypot(p[0]-x,p[1]-z)<3.5){nearPath=true;break}}
+    if(nearPath)continue;
+    let ok=true;
+    for(const p of pts){if(Math.hypot(p.x-x,p.z-z)<minDist){ok=false;break}}
+    if(ok)pts.push({x,z});
+  }
+  return pts;
+})();
+const craterShaderVert='varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
+const craterShaderFrag=[
+  'varying vec2 vUv;',
+  'uniform float iterations,zoom,time,opacity;',
+  'uniform vec2 center;',
+  'uniform vec3 colorBase;',
+  'void main(){',
+  '  vec2 c=(vUv-0.5)*zoom+center+vec2(sin(time*0.1)*0.01,cos(time*0.13)*0.01);',
+  '  vec2 z=vec2(0.0);float i=0.0;',
+  '  for(int n=0;n<40;n++){',
+  '    if(float(n)>=iterations)break;',
+  '    z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;',
+  '    if(dot(z,z)>4.0){i=float(n);break;}',
+  '    i=float(n);',
+  '  }',
+  '  float t=i/iterations;',
+  '  vec3 col=colorBase*pow(t,0.6);',
+  '  float dist=length((vUv-0.5)*2.0);',
+  '  float edge=smoothstep(1.0,0.4,dist);',
+  '  gl_FragColor=vec4(col,t*edge*opacity);',
+  '}'
+].join('\n');
+const craters=[];
+let craterPosIdx=0;
+const craterMeshPool=[];
+for(let i=0;i<CRATER_MAX;i++){
+  const geo=new THREE.PlaneGeometry(1.8,1.8);
+  geo.rotateX(-Math.PI/2);
+  const mat=new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,
+    uniforms:{iterations:{value:8},zoom:{value:3.0},time:{value:0},opacity:{value:0},center:{value:new THREE.Vector2(-0.5,0)},colorBase:{value:new THREE.Vector3(1.0,0.55,0.0)}},
+    vertexShader:craterShaderVert,fragmentShader:craterShaderFrag
+  });
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.visible=false;
+  scene.add(mesh);
+  craterMeshPool.push({mesh,mat});
+}
+
+// ── Falling stars (miss → star descends → crater spawns) ──
+const fallingStars=[];
+const FALLING_STAR_SEGS=16;
+function spawnFallingStar(targetPos){
+  if(fallingStars.filter(f=>f.life>0).length>=2)return; // max 2 in flight
+  // Pick a sky origin: random visible star or random sky point
+  const sx=(Math.random()-0.5)*20;
+  const sy=5+Math.random()*4;
+  const sz=-14-Math.random()*6;
+  let star=fallingStars.find(f=>f.life<=0);
+  if(!star){
+    if(fallingStars.length>=4)return;
+    const posArr=new Float32Array(FALLING_STAR_SEGS*6);
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(posArr,3).setUsage(THREE.DynamicDrawUsage));
+    const mat=new THREE.LineBasicMaterial({color:0xffcc88,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+    const mesh=new THREE.LineSegments(geo,mat);
+    scene.add(mesh);
+    star={mesh,geo,posArr,mat,life:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
+    fallingStars.push(star);
+  }
+  star.from.set(sx,sy,sz);
+  star.to.copy(targetPos);
+  star.life=1;
+  star.decay=1/(0.8*60); // 800ms at 60fps
+  star.mat.opacity=1;
+  star.mesh.visible=true;
+  // Generate trail: segments along the fall path
+  const dir=star.to.clone().sub(star.from);
+  for(let i=0;i<FALLING_STAR_SEGS;i++){
+    const t0=i/FALLING_STAR_SEGS,t1=(i+1)/FALLING_STAR_SEGS;
+    const p0=star.from.clone().add(dir.clone().multiplyScalar(t0));
+    const p1=star.from.clone().add(dir.clone().multiplyScalar(t1));
+    // Add slight wobble
+    p0.x+=(Math.random()-0.5)*0.15;
+    p1.x+=(Math.random()-0.5)*0.15;
+    star.posArr[i*6]=p0.x;star.posArr[i*6+1]=p0.y;star.posArr[i*6+2]=p0.z;
+    star.posArr[i*6+3]=p1.x;star.posArr[i*6+4]=p1.y;star.posArr[i*6+5]=p1.z;
+  }
+  star.geo.attributes.position.needsUpdate=true;
+  star.geo.setDrawRange(0,FALLING_STAR_SEGS*2);
+}
+function spawnCrater(pos){
+  // Immediate reuse: oldest crater replaced instantly (Codex finding #2)
+  let slot;
+  if(craters.length<CRATER_MAX){
+    slot=craters.length;
+    craters.push({meshIdx:slot,iterations:8,spawnTime:Date.now()});
+  }else{
+    // Find oldest
+    let oldest=0;
+    for(let i=1;i<craters.length;i++){if(craters[i].spawnTime<craters[oldest].spawnTime)oldest=i}
+    slot=oldest;
+    craters[slot]={meshIdx:craters[slot].meshIdx,iterations:8,spawnTime:Date.now()};
+  }
+  const cm=craterMeshPool[craters[slot].meshIdx];
+  cm.mesh.position.set(pos.x,terrainHeight(pos.x,pos.z)+0.03,pos.z);
+  cm.mat.uniforms.opacity.value=0;
+  cm.mat.uniforms.iterations.value=8;
+  // Randomize zoom/center for visual variety
+  cm.mat.uniforms.zoom.value=2.5+Math.random()*2;
+  cm.mat.uniforms.center.value.set(-0.7+Math.random()*0.4,Math.random()*0.4-0.2);
+  cm.mesh.visible=true;
+}
+function clearCraters(){
+  craters.length=0;craterPosIdx=0;
+  craterMeshPool.forEach(c=>{c.mesh.visible=false;c.mat.uniforms.opacity.value=0});
+}
+
+// ── Born stars (success streaks birth new stars) ──
+const BORN_STAR_MAX=5;
+const bornStars=[];
+function spawnBornStar(){
+  if(bornStars.length>=BORN_STAR_MAX)return;
+  const posArr=new Float32Array(FRACTAL_STAR_MAX*6);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(posArr,3).setUsage(THREE.DynamicDrawUsage));
+  const mat=new THREE.LineBasicMaterial({color:0xffcc88,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+  const mesh=new THREE.LineSegments(geo,mat);
+  mesh.position.set((Math.random()-0.5)*36,4+Math.random()*4,-15-Math.random()*10);
+  mesh.visible=true;
+  scene.add(mesh);
+  bornStars.push({mesh,geo,posArr,mat,birthTime:Date.now(),phase:Math.random()*6.28});
+}
+function clearBornStars(){
+  bornStars.forEach(s=>{scene.remove(s.mesh);s.geo.dispose();s.mat.dispose()});
+  bornStars.length=0;
 }
 
 const ambLight=new THREE.AmbientLight(AMB.dark,.4);scene.add(ambLight);
@@ -5746,6 +5895,9 @@ function startGame(){
     srs:loadSRS(activeCartridge),enemies:[],selectedId:null,inputState:'idle',treeDepth:3,
     spawnIdx:0,waveComplete:false,totalCorrect:0,totalWrong:0,combo:1,
     unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
+  G.missStarCounter=0;
+  clearCraters();clearBornStars();
+  fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   applyTimeDecay(G.srs);
   SFX.setTreeDepth(G.treeDepth);
   // Load persisted melody
@@ -5834,7 +5986,9 @@ function nextWave(){
   if(nw>12){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
-    waveComplete:false,attemptsOnCurrent:0,typedBuffer:''});
+    waveComplete:false,attemptsOnCurrent:0,typedBuffer:'',missStarCounter:0});
+  clearCraters();clearBornStars();
+  fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   G.waveCommands=genWave(nw);
   lastSpawnTime=performance.now();
   lastInputState='';
@@ -6080,6 +6234,10 @@ function handleHit(enemy){
   // Don't null selectedId — autoSelect will pick the next target smoothly
   // so camera never has a frame with no target (prevents snap to default orbit)
   G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
+  // Craters heal on hit: reduce iterations
+  craters.forEach(c=>{c.iterations=Math.max(4,c.iterations-1)});
+  // Born star at streak milestones (5, 10, 15, 20, 25)
+  if(G.streak>=5&&G.streak%5===0)spawnBornStar();
   flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
 }
 
@@ -6143,6 +6301,19 @@ function handleMiss(enemy){
     SFX.miss();
   }else{
     flash(isQuizMode?'MISS! PUSHED FORWARD \u26a0':'MISS! \u26a1FASTER','#ff4422');
+  }
+  // Crater iteration bump: all craters grow more detailed on miss
+  craters.forEach(c=>{c.iterations=Math.min(isReducedParticleMode()?24:40,c.iterations+2)});
+  // Falling star trigger: every 3rd L0 miss
+  if(missDepth===0){
+    G.missStarCounter=(G.missStarCounter||0)+1;
+    if(G.missStarCounter>=3&&CRATER_POOL.length>0){
+      G.missStarCounter=0;
+      const cp=CRATER_POOL[craterPosIdx%CRATER_POOL.length];
+      craterPosIdx++;
+      const landPos=new THREE.Vector3(cp.x,terrainHeight(cp.x,cp.z)+0.03,cp.z);
+      spawnFallingStar(landPos);
+    }
   }
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
   setTimeout(focusTypedInput,50);
@@ -6911,6 +7082,47 @@ function animate(time){
     b.life-=b.decay*frameScale;
     b.mat.opacity=Math.max(0,b.life);
     if(b.life<=0)b.mesh.visible=false;
+  });
+
+  // Falling stars lifecycle
+  fallingStars.forEach(f=>{
+    if(f.life<=0){f.mesh.visible=false;return}
+    f.life-=f.decay*frameScale;
+    f.mat.opacity=Math.max(0,f.life);
+    // Progressive reveal: show more segments as star falls
+    const progress=1-f.life;
+    const segsVisible=Math.max(1,Math.floor(progress*FALLING_STAR_SEGS));
+    f.geo.setDrawRange(0,segsVisible*2);
+    if(f.life<=0){
+      f.mesh.visible=false;
+      // Spawn crater at landing position
+      spawnCrater(f.to);
+    }
+  });
+
+  // Crater uniforms update
+  craters.forEach((c,i)=>{
+    const cm=craterMeshPool[c.meshIdx];
+    if(!cm.mesh.visible)return;
+    cm.mat.uniforms.time.value=timeSec;
+    cm.mat.uniforms.iterations.value=c.iterations;
+    // Fade in over 1 second
+    const age=(Date.now()-c.spawnTime)/1000;
+    const targetOp=c.iterations<=4?0:0.7;
+    cm.mat.uniforms.opacity.value+=(targetOp-cm.mat.uniforms.opacity.value)*0.05;
+    if(cm.mat.uniforms.opacity.value<0.01&&c.iterations<=4)cm.mesh.visible=false;
+  });
+
+  // Born stars animation
+  bornStars.forEach(s=>{
+    const age=(Date.now()-s.birthTime)/1000;
+    const fadeIn=Math.min(1,age/2); // 2s fade-in
+    s.mat.opacity=fadeIn*(0.4+Math.sin(timeSec*2.5+s.phase)*0.3);
+    s.mesh.rotation.z=timeSec*0.3+s.phase;
+    const depth=Math.min(3,Math.max(1,Math.floor(td*0.4)));
+    const count=generateFractalStar(0,0,0.4,0,depth,s.posArr,0,FRACTAL_STAR_MAX);
+    s.geo.attributes.position.needsUpdate=true;
+    s.geo.setDrawRange(0,count*2);
   });
 
   // Health-driven visual atmosphere

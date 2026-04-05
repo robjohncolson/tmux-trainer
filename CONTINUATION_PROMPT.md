@@ -1522,6 +1522,80 @@ External review by Grok was cross-referenced against actual codebase state (76 c
 - **CSS filter on HTML elements is fine**: Overlay/panel/HUD change infrequently — the filter cost is negligible compared to the canvas.
 - **Tab UIs need persistent actions**: Hiding Save/Preview behind a tab forces users to context-switch just to audition or persist changes. Keep core actions visible.
 
+## Latest Update: Falling Stars + Mandelbrot Craters + Star Birth
+
+### Concept
+
+Failures scar the battlefield. Stars fall from the sky on every 3rd L0 miss, landing at Poisson-distributed terrain spots where Mandelbrot fractal craters bloom. The fractals respond to performance: misses grow them more complex (+2 iterations), hits simplify them (-1 iteration). Sustained success (streak 5/10/15/20/25) births new stars in the sky.
+
+### Mandelbrot Craters
+
+- 6-mesh pool of `PlaneGeometry(1.8, 1.8)` with `ShaderMaterial` running Mandelbrot fragment shader
+- Shader uses `vUv` varying (Codex fix: not `gl_FragCoord`), GLSL ES 1.0 compatible (`for` with `break`)
+- Per-crater uniforms: `iterations` (8-40, clamped to 24 on mobile), `zoom`, `center` (randomized per crater), `opacity`, `time`, `colorBase`
+- Radial edge fade via `smoothstep` — craters blend into terrain
+- Oldest crater replaced immediately when pool full (Codex fix: no fade-out buffer needed)
+- All craters cleared on wave start and game start
+
+### Falling Stars
+
+- `fallingStars` array, max 2 in flight, max 4 pooled `LineSegments` meshes
+- `spawnFallingStar(targetPos)` — 16-segment trail from random sky point to terrain landing
+- Progressive reveal: segments appear as star descends (draw range animated)
+- 800ms duration, additive blending, warm gold color
+- On landing: `spawnCrater()` at the target position
+
+### Landing Positions (CRATER_POOL)
+
+- Poisson disk sampling: 12 pre-computed positions, seeded RNG (seed=137, different from ferns)
+- Bounds: x ∈ [-9, 9], z ∈ [-10, -3]
+- Path avoidance: rejects positions within 3.5 units of any path spline point (Codex fix: distance to actual path points, not Manhattan from center)
+- Cycled sequentially via `craterPosIdx`
+
+### Born Stars
+
+- `BORN_STARS` array, max 5 additional fractal stars in sky
+- Spawned at streak milestones: 5, 10, 15, 20, 25
+- Random sky position (x: -18 to 18, y: 4-8, z: -15 to -25)
+- 2-second fade-in, same twinkle/rotation as existing stars
+- Uses existing `generateFractalStar()` renderer, health-driven depth
+- Cleared on wave start and game start
+
+### Miss/Hit Hooks
+
+- `handleMiss()`: increment `G.missStarCounter`, trigger star fall on 3rd L0 miss, bump all crater iterations +2
+- `handleHit()`: decrease all crater iterations -1, spawn born star at streak milestones
+- Wave start: `clearCraters()`, `clearBornStars()`, reset falling stars, reset `missStarCounter`
+- Game start: same cleanup
+
+### Codex Review Findings (all addressed)
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| 1 | HIGH | Shader uses `gl_FragCoord`/`resolution` — wrong for per-mesh quad | Use `vUv` varying from PlaneGeometry UV coords |
+| 2 | HIGH | Pool of 6 but "fade out before new" needs 7th buffer | Immediate reuse — oldest crater replaced instantly |
+| 3 | MEDIUM | No GPU quality governor | Clamp iterations to 24 on mobile via `isReducedParticleMode()` |
+| 4 | MEDIUM | Falling star queue undefined for burst misses | Max 2 in flight, drop-newest |
+| 5 | MEDIUM | Path corridor rejection too loose | Distance to actual path spline points |
+| 6 | MEDIUM | Checkpoint restore inconsistency | Restore clears all transient visuals + resets counters |
+
+### Spec artifact
+
+- `falling-stars-mandelbrot-spec.md` — full design + Codex review findings
+
+### Important code areas (new)
+
+- `index.html` CRATER_POOL: Poisson disk positions with path avoidance
+- `index.html` Mandelbrot shader: `craterShaderVert`, `craterShaderFrag` (vUv-based)
+- `index.html` `craterMeshPool`: 6 pre-allocated PlaneGeometry meshes
+- `index.html` `spawnFallingStar()`: sky-to-terrain trail animation
+- `index.html` `spawnCrater()`: Mandelbrot quad at landing position
+- `index.html` `spawnBornStar()`: streak-milestone star birth
+- `index.html` `clearCraters()`, `clearBornStars()`: wave/game cleanup
+- `index.html` `handleMiss()`: missStarCounter + crater iteration bump
+- `index.html` `handleHit()`: crater iteration decrease + born star spawn
+- `index.html` animate(): falling star progressive reveal, crater uniform updates, born star animation
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
