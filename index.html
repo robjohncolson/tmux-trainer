@@ -5836,11 +5836,23 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
       overlay.innerHTML='<h1>LOAD ERROR</h1><div class="desc">No cartridge files loaded.</div><div class="sub">Reload once to refresh the cached shell.</div>';
     }
     console.error('[Cartridge] No cartridges found in window.TD_CARTRIDGES');
-  }else if(carts.length===1){
-    loadCartridge(carts[0]);
-    showTitleScreen('boot');
   }else{
-    showCartridgeSelector();
+    // Deep link: ?deck=id or ?d=id skips selector
+    var params=new URLSearchParams(window.location.search);
+    var deckParam=params.get('deck')||params.get('d');
+    var deepCart=null;
+    if(deckParam){
+      for(var j=0;j<carts.length;j++){if(carts[j].id===deckParam){deepCart=carts[j];break}}
+    }
+    if(deepCart){
+      loadCartridge(deepCart);
+      showTitleScreen('boot');
+    }else if(carts.length===1){
+      loadCartridge(carts[0]);
+      showTitleScreen('boot');
+    }else{
+      showCartridgeSelector();
+    }
   }
 })();
 // Service Worker registration
