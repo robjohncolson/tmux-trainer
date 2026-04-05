@@ -5837,9 +5837,9 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
     }
     console.error('[Cartridge] No cartridges found in window.TD_CARTRIDGES');
   }else{
-    // Deep link: ?deck=id or ?d=id skips selector
-    var params=new URLSearchParams(window.location.search);
-    var deckParam=params.get('deck')||params.get('d');
+    // Deep link: #deck=id skips selector (hash-based, no cache busting)
+    var hashMatch=window.location.hash.match(/(?:^#|&)deck=([^&]+)/);
+    var deckParam=hashMatch?decodeURIComponent(hashMatch[1]):null;
     var deepCart=null;
     if(deckParam){
       for(var j=0;j<carts.length;j++){if(carts[j].id===deckParam){deepCart=carts[j];break}}
