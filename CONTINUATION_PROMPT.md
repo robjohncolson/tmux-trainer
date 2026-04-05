@@ -2042,15 +2042,91 @@ Replaced the shrink-to-nothing death animation with an "unboxing" effect. When a
 
 - `unboxing-death-spec.md` — full design with phase breakdown and constraints
 
+## Latest Update: Particle Scaling Tuning (April 5, 2026)
+
+Tuned rainbow particle sizing for the unboxing death effect across several iterations:
+
+- **Burst phase**: particles start at 0.08 scale (compressed inside cube), grow to 0.20 during expansion
+- **Funnel phase**: scale now driven by distance to score HUD — starts at 0.5 far from scoreboard, grows to 1.8 as particles arrive (in-your-face flock effect)
+- **Flock spread**: burst spread widened 0.06→0.18, swirl doubled 0.024→0.06, per-frame velocity jitter added in funnel phase to break up clumping
+
+### Important code areas (updated)
+
+- `index.html` line 3214: `spread = 0.18` for volume-spawned particles
+- `index.html` line 3225: `swirl = 0.06` for rainbow particles
+- `index.html` line 5577: distance-based particle scale formula (`0.5 + closeness * 1.3`)
+- `index.html` line 5539: funnel velocity jitter (0.008 per axis per frame)
+
+## Latest Update: Cartridge Authoring Guide + Validator (April 5, 2026)
+
+Created a self-contained reference for building new cartridges and a Node.js validation script.
+
+### cartridge-authoring-guide.md
+
+Complete authoring reference covering all 8 sections of a cartridge file:
+1. Cartridge metadata (id, name, icon, inputMode, etc.)
+2. Command schema (id, action, tier, dom, latex, blanks, subconcepts)
+3. Question generator (5 return shapes: identify, fillblank, variable, application, relationship)
+4. Blank validation (normalization pipeline, alias system, critical choices[0] rule)
+5. Supplementary banks (VARIABLE, APPLICATION, RELATIONSHIP, EXPLANATION_GLOSSARY, AUTO_BLANK_SPECS, DOM_LABELS)
+6. Prerequisite DAG (SHARED_PREREQ_NODES L2-L5, wireL1toL2 regex rules)
+7. Boot-time expansion (auto-blank generation)
+8. Blank template (copy-paste minimal working cartridge)
+
+Includes a 12-point validation checklist and common mistakes table.
+
+### validate-cartridge.js
+
+Node.js script that checks all 12 rules from the guide:
+- Metadata completeness, generateQuestion/validateBlank presence
+- Command structure (required fields, unique IDs, valid tiers, exactly 3 subconcepts with 2 wrongs each)
+- Blank validation (every blank.answer matches blank.choices[0] via cartridge's own validateBlank)
+- Duplicate choice detection (post-normalization)
+- VARIABLE_BANK coverage (all commands)
+- APPLICATION_BANK coverage (all commands) + keyword giveaway heuristic
+- RELATIONSHIP_BANK structure validation
+- EXPLANATION_GLOSSARY format (keys, title, exactly 3 lines)
+- DOM_LABELS coverage (every domain used in commands)
+- DAG integrity (dangling refs, self-references, unwired subconcepts via simulated wireL1toL2)
+- AUTO_BLANK_SPECS format
+
+Usage: `node validate-cartridge.js [path]` (defaults to `./ap-stats-cartridge.js`)
+Result on current deck: 24 pass, 0 fail, 36 warnings (keyword heuristic false positives)
+
+## Multi-Cartridge Support (specced, not yet implemented)
+
+A Codex-ready spec exists at `multi-cartridge-spec.md` for adding support for multiple cartridges.
+
+### Key design decisions
+- **Registration**: cartridges push onto `window.TD_CARTRIDGES` array (backward-compat: `window.AP_STATS_CARTRIDGE` also checked)
+- **Loading**: all cartridge scripts load statically (blocking `<script>` tags, no lazy loading)
+- **Selection UI**: card grid before title screen, only shown when 2+ cartridges loaded
+- **`loadCartridge(cart)`**: extracted from boot init, rebuilds DAG/explanation bank/SRS for selected cartridge
+- **1 cartridge = no selector**: single-cartridge deployments see zero UI change
+- **`G.screen = 'selector'`**: new screen state, treated like title (no gameplay)
+- **"CHANGE DECK" button**: in MORE tab, only when 2+ cartridges
+- Includes `dummy-cartridge.js` template for testing
+
+### What already works for multi-cartridge (no changes needed)
+- SRS keys scoped by `activeCartridge.id`
+- Cloud sync sends `cartridgeId`
+- Leaderboard scoped by `cartridgeId`
+- `activeCartridge` variable used throughout engine (not hardcoded)
+
+### Spec artifacts
+- `multi-cartridge-spec.md` — full Codex implementation spec
+- `cartridge-authoring-guide.md` — LLM-readable authoring reference
+- `validate-cartridge.js` — automated validation script
+
 ## Likely Next Tasks
 
-- **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void
+- **Multi-cartridge implementation** — execute `multi-cartridge-spec.md` via Codex
+- **New cartridge: Algebra 2** — first additional deck using the authoring guide
+- **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
 - Quality review rendered animations — verify pedagogical accuracy per formula
-- Add adaptive BKT params (v2) once enough telemetry collected
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
-- Mobile input panel UX refinement — the swipe up/down + canvas shift needs more polish
 - Further modularization (post-exam): `td-audio.js`, `td-progress.js`, `td-render.js`, `td-ui.js`
 
 ## GitNexus Note
