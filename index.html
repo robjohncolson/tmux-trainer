@@ -5585,7 +5585,7 @@ function animate(time){
         const target=getScoreFunnelTarget(p.mesh.position);
         const dist=p.mesh.position.distanceTo(target);
         const closeness=1-Math.min(1,dist/8); // 0 far away, 1.0 at scoreboard
-        particleScale=(.15+closeness*1.35)*twinkleScale;
+        particleScale=(.15+closeness*1.65)*twinkleScale;
       }
     }else{
       particleScale=Math.max(.12,p.life)*twinkleScale;
