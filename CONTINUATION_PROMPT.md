@@ -1821,6 +1821,44 @@ APPLICATION_BANK now has 76 entries (was 72), matching all 76 commands.
 - Relationship bank gaps for core commands (`mean`, `linreg`, `rv-mean`, `phat-mean`, `xbar-mean`): noted but these are static formulas where "what happens when X changes?" questions are unnatural
 - Missing L2+ DAG nodes (random variable concept, sampling with/without replacement, LINE conditions): noted for future enrichment
 
+## Latest Update: Melody Pause Fix + Beat Playhead (April 5, 2026)
+
+Fixed two melody/compose UX bugs: melody bleeding through pause, and no feedback on when a composed melody starts playing.
+
+### Melody bleed-through fix
+
+- `clearBgmAutomation()` now cancels all scheduled events on voice 14 (melody)
+- Previously only voices 0-6 (pads, bass, kick, snare, hihat) were silenced
+- Melody notes pre-scheduled on the Web Audio timeline would keep playing through pause/stop/title transitions
+- Now: pausing, stopping BGM, or exiting to title immediately silences the melody
+
+### Beat playhead — bar progress exposed from SFX
+
+- New state variables `barStartTime` and `barLength` tracked in `seq()`, updated each bar
+- New public API: `SFX.getBarStep()` returns current 16th-note step (0-7) or -1 if not playing
+- Uses `ctx.currentTime` relative to bar start for frame-accurate step index
+
+### Beat playhead — melody bar UI
+
+- New `#melody-bar` div between `#selected-label` and `#ip-header` in the input panel
+- 8 tiny amber cells show the melody pattern during gameplay (not during compose mode)
+- Current step lights up with `.active` class (amber glow + box-shadow)
+- Filled slots (notes/holds) get `.filled` class (darker amber background)
+- Only touches DOM when step actually changes (at most 8 writes per bar)
+- Rebuilds automatically after KEEP saves a new melody (`melodyBarBuilt` flag reset in `exitComposeMode`)
+- Hidden when: composing, no melody saved, or not on game screen
+
+### Important code areas (new/updated)
+
+- `index.html` `clearBgmAutomation()`: voice 14 cancel + zero gain (~line 755)
+- `index.html` SFX module: `barStartTime`, `barLength` state vars (~line 392)
+- `index.html` `seq()`: records `barStartTime=startT; barLength=ll` each bar (~line 995)
+- `index.html` SFX public API: `getBarStep()` (~line 1117)
+- `index.html` `#melody-bar` CSS: `.mb`, `.mb.active`, `.mb.filled` (~line 78)
+- `index.html` `buildMelodyBar()`, `updateMelodyBar()`: DOM build + per-frame step update (~line 3488)
+- `index.html` `animate()`: calls `updateMelodyBar()` after pinned label update (~line 5308)
+- `index.html` `exitComposeMode()`: resets `melodyBarBuilt` flag (~line 2435)
+
 ## Likely Next Tasks
 
 - **Unit 8 procedural cards** — GOF vs homogeneity vs independence selection, hypothesis templates, chi-square conditions, conclusion interpretation (4-6 new commands)

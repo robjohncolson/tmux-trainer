@@ -75,6 +75,10 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 #selected-label{flex:0 0 auto;text-align:center;pointer-events:none;padding:0 0 2px;width:min(760px,100%);margin:0 auto}
 #selected-label .pinned-inner{display:inline-block;background:#120800f1;border:1px solid currentColor;border-bottom:none;border-radius:6px 6px 0 0;padding:4px 10px;font-size:10px;font-weight:700;line-height:1.3;max-width:280px;word-break:break-word;box-shadow:0 -4px 12px #00000044,0 0 10px currentColor}
 #selected-label .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+#melody-bar{display:flex;gap:2px;padding:2px 12px;justify-content:center;max-width:280px;margin:0 auto}
+#melody-bar .mb{flex:1;height:6px;border-radius:2px;background:#ff8c0015;border:1px solid #ff8c0022;transition:background .08s,border-color .08s,box-shadow .08s}
+#melody-bar .mb.active{background:#ff8c00;border-color:#ff8c00;box-shadow:0 0 6px #ff8c0088}
+#melody-bar .mb.filled{background:#ff8c0033;border-color:#ff8c0044}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0500ee;transition:opacity .3s;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 10px}
 #overlay.hidden{opacity:0;pointer-events:none}
 #overlay h1{font-size:56px;font-weight:900;letter-spacing:14px;color:#ff8c00;text-shadow:0 0 20px #ff8c00,0 0 40px #ff8c0044;margin-bottom:4px}
@@ -316,7 +320,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <div id="tier-bar" style="display:none"></div>
 <div id="mute-btn" style="display:none"></div>
 <div id="contrast-btn" style="display:none"></div>
-<div id="input-panel" style="display:none"><div id="selected-label" style="display:none"></div><div id="ip-header"></div><div id="ip-body"></div></div>
+<div id="input-panel" style="display:none"><div id="selected-label" style="display:none"></div><div id="melody-bar" style="display:none"></div><div id="ip-header"></div><div id="ip-body"></div></div>
 <div id="queue-bar" style="display:none"></div>
 <div id="overlay"></div>
 
@@ -390,6 +394,7 @@ const SFX=(()=>{
   let savedMelody=null; // array of 8 entries: MIDI note number or null (rest)
   let melodyMuted=false; // true during compose mode to prevent seq() contention on voice 14
   let bgmSeqTimer=null,currentWaveIdx=0,previewTimer=null,previewConfig=null;
+  let barStartTime=0,barLength=1; // track current bar timing for beat playhead
   let currentStreak=0,musicalHealth=5;
   const MUSIC_STORAGE_KEY='td-music-config-v1';
 
@@ -752,6 +757,16 @@ const SFX=(()=>{
         voices[i].modGain.gain.cancelScheduledValues(t);
       }
     }
+    // Clear melody voice (14) so melody doesn't bleed through pause
+    if(voices[14]){
+      voices[14].outputGain.gain.cancelScheduledValues(t);
+      voices[14].outputGain.gain.setValueAtTime(0,t);
+      voices[14].carrier.frequency.cancelScheduledValues(t);
+      if(voices[14].modulator){
+        voices[14].modulator.frequency.cancelScheduledValues(t);
+        voices[14].modGain.gain.cancelScheduledValues(t);
+      }
+    }
     // Clear noise bandpass gate
     if(voices._noiseBPGate){
       voices._noiseBPGate.gain.cancelScheduledValues(t);
@@ -981,6 +996,7 @@ const SFX=(()=>{
       const padPattern=cfg.pad||DEFAULT_MUSIC_CONFIG[0].pad;
       const stepCount=Math.max(bp.length,padPattern.length);
       const ll=stepCount*st;
+      barStartTime=startT;barLength=ll; // expose for beat playhead
       const now=ctx.currentTime;
       const root=ch[0]/4;
       // Schedule bass notes with FM tracking
@@ -1101,6 +1117,7 @@ const SFX=(()=>{
     getMusicalHealth(){return musicalHealth},
     getStreak(){return currentStreak},
     getWaveIndex(){return currentWaveIdx},
+    getBarStep(){if(!ctx||!bgmPlaying)return-1;const frac=Math.max(0,Math.min(1,(ctx.currentTime-barStartTime)/barLength));return Math.min(7,Math.floor(frac*8))},
     previewMusicConfig,
     stopMusicPreview(){stopPreview(false)},
     saveMusicConfig(nextConfig){return applyMusicConfig(nextConfig,true)},
@@ -2414,6 +2431,7 @@ function exitComposeMode(save){
     if(key)try{localStorage.setItem(key,JSON.stringify(MELODY_STATE.notes))}catch(e){}
   }
   G.composing=false;
+  melodyBarBuilt=false; // force rebuild with new melody
   lastInputState='';
 }
 function handleComposeKey(key){
@@ -3464,6 +3482,41 @@ function updateSelectionReticle(time){
   selectionReticle.scale.setScalar(baseScale*pulse);
   // Pulse opacity
   selectionReticle.material.opacity=0.7+Math.sin(time*0.004)*0.15;
+}
+
+// ── Melody beat bar (shows current step when melody is playing) ──
+const melodyBarDiv=document.getElementById('melody-bar');
+let melodyBarBuilt=false,lastMelodyBarStep=-2;
+function buildMelodyBar(){
+  const mel=SFX.getMelody();
+  if(!mel){melodyBarDiv.style.display='none';melodyBarBuilt=false;return}
+  let html='';
+  for(let i=0;i<8;i++){
+    const note=mel[i];
+    const cls=note!=null&&note!=='hold'?'mb filled':note==='hold'?'mb filled':'mb';
+    html+='<div class="'+cls+'"></div>';
+  }
+  melodyBarDiv.innerHTML=html;
+  melodyBarDiv.style.display='flex';
+  melodyBarBuilt=true;lastMelodyBarStep=-2;
+}
+function updateMelodyBar(){
+  if(G.composing||G.screen!=='game'){
+    if(melodyBarDiv.style.display!=='none'){melodyBarDiv.style.display='none';melodyBarBuilt=false;}
+    return;
+  }
+  if(!SFX.getMelody()){
+    if(melodyBarDiv.style.display!=='none'){melodyBarDiv.style.display='none';melodyBarBuilt=false;}
+    return;
+  }
+  if(!melodyBarBuilt)buildMelodyBar();
+  const step=SFX.getBarStep();
+  if(step===lastMelodyBarStep)return;
+  lastMelodyBarStep=step;
+  const cells=melodyBarDiv.children;
+  for(let i=0;i<cells.length;i++){
+    cells[i].classList.toggle('active',i===step);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -5273,6 +5326,7 @@ function animate(time){
   // Pinned label + 3D reticle (replaces old floating labels)
   updateSelectedLabel();
   updateSelectionReticle(time);
+  updateMelodyBar();
 
   serverLight.intensity=1.5+Math.sin(time*.003)*.3;
   sTop.rotation.y=time*.001;
