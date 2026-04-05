@@ -6273,6 +6273,19 @@ function handleMiss(enemy){
   saveSRS();
   G.typedBuffer='';
 
+  // Crater iteration bump + falling star trigger — BEFORE hydra split (which may early-return)
+  craters.forEach(c=>{c.iterations=Math.min(isReducedParticleMode()?24:40,c.iterations+2)});
+  if(missDepth===0){
+    G.missStarCounter=(G.missStarCounter||0)+1;
+    if(G.missStarCounter>=3&&CRATER_POOL.length>0){
+      G.missStarCounter=0;
+      const cp=CRATER_POOL[craterPosIdx%CRATER_POOL.length];
+      craterPosIdx++;
+      const landPos=new THREE.Vector3(cp.x,terrainHeight(cp.x,cp.z)+0.03,cp.z);
+      spawnFallingStar(landPos);
+    }
+  }
+
   const isQuizMode=activeCartridge&&activeCartridge.inputMode==='quiz';
   // Surge: inverted — deeper prereqs surge less to encourage exploration
   const surge=isQuizMode?(depth===0?0.15:depth===1?0.08:depth===2?0.04:0.02):0.06;
@@ -6301,19 +6314,6 @@ function handleMiss(enemy){
     SFX.miss();
   }else{
     flash(isQuizMode?'MISS! PUSHED FORWARD \u26a0':'MISS! \u26a1FASTER','#ff4422');
-  }
-  // Crater iteration bump: all craters grow more detailed on miss
-  craters.forEach(c=>{c.iterations=Math.min(isReducedParticleMode()?24:40,c.iterations+2)});
-  // Falling star trigger: every 3rd L0 miss
-  if(missDepth===0){
-    G.missStarCounter=(G.missStarCounter||0)+1;
-    if(G.missStarCounter>=3&&CRATER_POOL.length>0){
-      G.missStarCounter=0;
-      const cp=CRATER_POOL[craterPosIdx%CRATER_POOL.length];
-      craterPosIdx++;
-      const landPos=new THREE.Vector3(cp.x,terrainHeight(cp.x,cp.z)+0.03,cp.z);
-      spawnFallingStar(landPos);
-    }
   }
   if(activeCartridge&&activeCartridge.inputMode==='prefix-key')G.inputState='await_prefix';
   setTimeout(focusTypedInput,50);
