@@ -5581,11 +5581,11 @@ function animate(time){
         const burstT=Math.min(1,p.ageMs/Math.max(1,p.burstMs));
         particleScale=(.08+burstT*.12)*twinkleScale;
       }else{
-        // Funnel: shrink as particles approach the score HUD (depth illusion)
+        // Funnel: GROW as particles approach the score HUD (in-your-face flock)
         const target=getScoreFunnelTarget(p.mesh.position);
         const dist=p.mesh.position.distanceTo(target);
-        const distScale=Math.min(1,dist/8); // 1.0 far away, ~0 at scoreboard
-        particleScale=Math.max(.06,.25*distScale)*twinkleScale;
+        const closeness=1-Math.min(1,dist/8); // 0 far away, 1.0 at scoreboard
+        particleScale=(.15+closeness*.55)*twinkleScale;
       }
     }else{
       particleScale=Math.max(.12,p.life)*twinkleScale;
