@@ -4211,6 +4211,7 @@ function showTitleScreen(context){
     const examColor=examInfo.daysLeft<=7?'#ff4422':examInfo.daysLeft<=14?'#ffcc66':'#996622';
     html+='<div style="font-size:10px;color:'+examColor+';margin:6px 0;letter-spacing:1px">\ud83c\udfaf AP EXAM: '+examInfo.daysLeft+' days \u2014 <span style="text-transform:uppercase">'+examInfo.mode+'</span></div>';
     if(identity)html+='<div style="font-size:10px;color:#44ff88;margin:2px 0;letter-spacing:1px">\u2601 '+identity.username+(identity.realName?' ('+identity.realName+')':'')+'</div>';
+    else html+='<div style="font-size:10px;color:#996622;margin:2px 0;letter-spacing:1px;cursor:pointer" onclick="G._menuTab=\'settings\';showTitleScreen(\''+context+'\')">\u2601 <u>Sign in</u> to save progress across devices</div>';
     // Domain filter pills
     if(allDomains.length>1){
       html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:6px">DOMAINS</div>';
@@ -4696,6 +4697,7 @@ function showEndScreen(victory){
   html+=buildKnowledgeMapHtml(weak);
   html+='<button class="btn" onclick="startGame()">[ REDEPLOY ]</button>';
   html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showTitleScreen(\'game\')" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
+  if(!getIdentity())html+='<div style="margin-top:10px;font-size:10px;color:#996622;letter-spacing:1px;cursor:pointer" onclick="G._menuTab=\'settings\';showTitleScreen(\'game\')">\u2601 <u>Sign in</u> to keep your progress across devices</div>';
   ov.innerHTML=html;
 }
 
