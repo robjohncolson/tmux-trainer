@@ -4549,7 +4549,7 @@ const terrMat=new THREE.ShaderMaterial({
     '  vec3 mbrot=vec3(0.0);',
     '  if(mbrotIntensity>0.01){',
     '    float rd=length(vGridUv-0.5)*2.0;',
-    '    float mask=smoothstep(mbrotRadius,mbrotRadius*0.7,rd);',
+    '    float mask=1.0-smoothstep(mbrotRadius*0.7,mbrotRadius,rd);',
     '    if(mask>0.01){',
     '      vec2 c=(vGridUv-0.5)*mbrotZoom+mbrotCenter;',
     '      vec2 z=vec2(0.0);float i=0.0,done=0.0;',
@@ -4567,8 +4567,8 @@ const terrMat=new THREE.ShaderMaterial({
     '        float t=clamp(mu/mbrotIter,0.0,1.0);',
     // Boundary detection: pixels near the set edge have high t
     '        float edge=pow(t,0.25);',
-    '        float boundaryGlow=pow(1.0-abs(t-0.85)*5.0,3.0);',
-    '        boundaryGlow=max(0.0,boundaryGlow);',
+    '        float bg=max(0.0,1.0-abs(t-0.85)*5.0);',
+    '        float boundaryGlow=bg*bg*bg;',
     // Base amber + bright yellow at boundary
     '        vec3 amber=vec3(edge,0.45*edge,0.04*edge);',
     '        vec3 yellow=vec3(1.0,0.95,0.4);',
