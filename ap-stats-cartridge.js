@@ -18,7 +18,7 @@ const AP_STATS_CARTRIDGE={
       hint:'Add all values, divide by count',
       explain:'This measures the center — total divided by how many',
       latex:'\\bar{x} = \\frac{\\sum x_i}{n}',
-      blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','N']}],
+      blanks:[{latex:'\\bar{x} = \\frac{\\sum x_i}{\\boxed{\\,?\\,}}',answer:'n',choices:['n','n-1','\\mu']}],
       subconcepts:[{q:'What does \u03a3 (sigma) mean here?',correct:'Sum all values',wrong:['Multiply all values','Find the median']},{q:'Why divide by n?',correct:'To find the average per observation',wrong:['To convert to percentage','To adjust for bias']},{q:'What does x-bar estimate?',correct:'The population mean \u03bc',wrong:['The population SD','The median']}]},
     {id:'std-dev',action:'Sample Standard Deviation (s)',tier:'core',dom:'descriptive',
       hint:'Square root of variance; denominator is n-1',
@@ -84,7 +84,7 @@ const AP_STATS_CARTRIDGE={
       hint:'n choose x \u00b7 p^x \u00b7 (1-p)^(n-x)',
       explain:'Exactly x successes: choose which trials succeed, then multiply probabilities',
       latex:'P(X=x) = \\binom{n}{x}\\, p^x (1-p)^{n-x}',
-      blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'1-p',choices:['(1-p)','p','q^2']}],
+      blanks:[{latex:'P(X=x) = \\binom{n}{x}\\, p^x\\, \\boxed{\\,?\\,}^{n-x}',answer:'(1-p)',choices:['(1-p)','p','q^2']}],
       subconcepts:[{q:'What does C(n,x) count?',correct:'Ways to choose which x trials succeed',wrong:['Probability of x successes','The number of trials']},{q:'Why exponent (n-x) on (1-p)?',correct:'Remaining trials must all be failures',wrong:['To balance the equation','To calculate variance']},{q:'What are the BINS conditions?',correct:'Binary, Independent, fixed N, Same p',wrong:['Large sample, Normal, Random','Paired, Equal variance, Normal']}]},
     {id:'binom-mean',action:'Mean of Binomial Distribution (\u03bc)',tier:'core',dom:'distributions',
       hint:'n times p \u2014 expected successes',
@@ -96,7 +96,7 @@ const AP_STATS_CARTRIDGE={
       hint:'Square root of n\u00b7p\u00b7(1-p)',
       explain:'Variability is maximized when p = 0.5 (maximum uncertainty)',
       latex:'\\sigma_X = \\sqrt{np(1-p)}',
-      blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'1-p',choices:['(1-p)','p','n']}],
+      blanks:[{latex:'\\sigma_X = \\sqrt{np\\cdot\\boxed{\\,?\\,}}',answer:'(1-p)',choices:['(1-p)','p','n']}],
       subconcepts:[{q:'Why does p(1-p) appear?',correct:'Variability is largest when p=0.5',wrong:['It calculates the mean','It measures skewness']},{q:'What does n contribute to \u03c3?',correct:'More trials increase total variability',wrong:['More trials decrease variability','n has no effect']},{q:'What does the square root do?',correct:'Converts variance back to original units',wrong:['Squares the units','Makes the distribution symmetric']}]},
 
     // ══ II. GEOMETRIC ══
@@ -265,11 +265,11 @@ const AP_STATS_CARTRIDGE={
       blanks:[{latex:'t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{\\boxed{\\,?\\,}}{n_1}+\\frac{s_2^2}{n_2}}}',answer:'s1^2',choices:['s_1^2','\\sigma_1^2','s_1']}],
       subconcepts:[{q:'Why add s\u2081\u00b2/n\u2081 and s\u2082\u00b2/n\u2082?',correct:'Variances of independent estimates add',wrong:['Standard deviations add','To double precision']},{q:'What distribution does this follow?',correct:'t-distribution (with Welch df)',wrong:['Standard Normal','Chi-square']},{q:'What does numerator measure?',correct:'Difference between two sample means',wrong:['The pooled mean','The effect size']}]},
     {id:'slope-t',action:'Regression slope t statistic',tier:'power',dom:'regression',
-      hint:'b minus hypothesized slope over SE of b',
-      explain:'Is the observed slope far enough from the hypothesized slope to reject H0?',
-      latex:'t = \\frac{b - \\beta_0}{s_b}',
-      blanks:[{latex:'t = \\frac{b - \\boxed{\\,?\\,}}{s_b}',answer:'beta0',choices:['\\beta_0','b','\\beta']}],
-      subconcepts:[{q:'What is \u03b2\u2080 typically in AP Stats?',correct:'0 (testing if linear relationship exists)',wrong:['1 (testing if slope=1)','The sample slope b']},{q:'What does s_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
+      hint:'b over SE of b (testing H0: slope = 0)',
+      explain:'Is the observed slope far enough from zero to conclude a real linear relationship?',
+      latex:'t = \\frac{b}{s_b}',
+      blanks:[{latex:'t = \\frac{b}{\\boxed{\\,?\\,}}',answer:'s_b',choices:['s_b','s','\\sigma_b']}],
+      subconcepts:[{q:'Why is the hypothesized slope 0 in AP Stats?',correct:'H\u2080 says no linear relationship exists',wrong:['Because slope is always positive','The sample slope b equals 0']},{q:'What does s_b measure?',correct:'How much sample slope varies across samples',wrong:['Residual SD','The correlation']},{q:'What conditions are needed?',correct:'Linear, Independent, Normal residuals, Equal variance',wrong:['Large sample only','Random assignment required']}]},
     {id:'zscore',action:'Z-Score (SDs from mean)',tier:'support',dom:'descriptive',
       hint:'How many SDs from the mean',
       explain:'Standardizes any value to a common scale',
@@ -314,7 +314,7 @@ const AP_STATS_CARTRIDGE={
       hint:'Observed minus predicted',
       explain:'Measures prediction error for each data point',
       latex:'\\text{residual} = y - \\hat{y}',
-      blanks:[{latex:'\\text{residual} = y - \\boxed{\\,?\\,}',answer:'yhat',choices:['\\hat{y}','\\bar{y}','y']}],
+      blanks:[{latex:'\\text{residual} = y - \\boxed{\\,?\\,}',answer:'\\hat{y}',choices:['\\hat{y}','\\bar{y}','y']}],
       subconcepts:[
         {q:'What does a positive residual mean?',correct:'The model underpredicted (actual > predicted)',wrong:['The model overpredicted','The point is an outlier']},
         {q:'What should the sum of all residuals equal for LSRL?',correct:'Zero (residuals balance out by least squares)',wrong:['The mean of y','One']},
@@ -404,7 +404,7 @@ const AP_STATS_CARTRIDGE={
       hint:'Row total times column total divided by grand total',
       explain:'What we would expect if the variables were independent',
       latex:'E = \\frac{\\text{row total} \\times \\text{column total}}{\\text{grand total}}',
-      blanks:[{latex:'E = \\frac{\\text{row total} \\times \\text{column total}}{\\boxed{\\,?\\,}}',answer:'grand total',choices:['\\text{grand total}','n','\\text{row total}']}],
+      blanks:[{latex:'E = \\frac{\\text{row total} \\times \\text{column total}}{\\boxed{\\,?\\,}}',answer:'\\text{grand total}',choices:['\\text{grand total}','n','\\text{row total}']}],
       subconcepts:[
         {q:'What assumption does this formula reflect?',correct:'That the row and column variables are independent',wrong:['That the counts are equal','That the data is normal']},
         {q:'Why multiply row by column total?',correct:'Under independence, joint proportion = product of marginal proportions',wrong:['To get the largest possible count','To normalize the table']},
@@ -454,7 +454,7 @@ const AP_STATS_CARTRIDGE={
       hint:'Critical value times standard error',
       explain:'Controls the precision of the confidence interval',
       latex:'ME = z^* \\cdot SE \\quad \\text{or} \\quad ME = t^* \\cdot SE',
-      blanks:[{latex:'ME = \\boxed{\\,?\\,} \\cdot SE',answer:'z* or t*',choices:['z^* \\text{ or } t^*','\\alpha','n']}],
+      blanks:[{latex:'ME = \\boxed{\\,?\\,} \\cdot SE',answer:'z^* \\text{ or } t^*',choices:['z^* \\text{ or } t^*','\\alpha','n']}],
       subconcepts:[
         {q:'What determines whether to use z* or t*?',correct:'z* for proportions (sigma known), t* for means (sigma unknown)',wrong:['z* for small samples','t* only when n < 30']},
         {q:'How does increasing confidence level affect ME?',correct:'ME increases (wider interval, more confident)',wrong:['ME decreases','ME stays the same']},
@@ -464,7 +464,7 @@ const AP_STATS_CARTRIDGE={
       hint:'Width proportional to 1 over square root of n',
       explain:'Quadrupling n only halves the margin of error',
       latex:'\\text{Width} \\propto \\frac{1}{\\sqrt{n}}',
-      blanks:[{latex:'\\text{Width} \\propto \\frac{1}{\\boxed{\\,?\\,}}',answer:'sqrt(n)',choices:['\\sqrt{n}','n','n^2']}],
+      blanks:[{latex:'\\text{Width} \\propto \\frac{1}{\\boxed{\\,?\\,}}',answer:'\\sqrt{n}',choices:['\\sqrt{n}','n','n^2']}],
       subconcepts:[
         {q:'To halve the margin of error, you must...',correct:'Quadruple the sample size (multiply n by 4)',wrong:['Double the sample size','Halve the confidence level']},
         {q:'Why square root (not just n)?',correct:'SE has sqrt(n) in the denominator, so ME inherits this',wrong:['Because of the normal distribution','Because we square the SD']},
@@ -486,13 +486,13 @@ const AP_STATS_CARTRIDGE={
         {q:'What are the degrees of freedom for a paired t-test?',correct:'n minus 1, where n is the number of pairs',wrong:['n1 plus n2 minus 2','The smaller of n1-1 and n2-1']}
       ]},
     {id:'slope-ci',action:'Confidence Interval for Slope',tier:'power',dom:'regression',
-      hint:'b plus or minus t-star times SE of b',
+      hint:'b plus or minus t-star times s_b',
       explain:'Estimates the true population slope with a confidence interval',
-      latex:'b \\pm t^* \\cdot SE_b',
+      latex:'b \\pm t^* \\cdot s_b',
       blanks:[
-        {latex:'b \\pm \\boxed{\\,?\\,} \\cdot SE_b',answer:'t^*',choices:['t^*','z^*','\\chi^2']},
-        {latex:'\\boxed{\\,?\\,} \\pm t^* \\cdot SE_b',answer:'b',choices:['b','\\beta','\\bar{x}']},
-        {latex:'b \\pm t^* \\cdot \\boxed{\\,?\\,}',answer:'SE_b',choices:['SE_b','s_b','\\sigma_b']}
+        {latex:'b \\pm \\boxed{\\,?\\,} \\cdot s_b',answer:'t^*',choices:['t^*','z^*','\\chi^2']},
+        {latex:'\\boxed{\\,?\\,} \\pm t^* \\cdot s_b',answer:'b',choices:['b','\\beta','\\bar{x}']},
+        {latex:'b \\pm t^* \\cdot \\boxed{\\,?\\,}',answer:'s_b',choices:['s_b','s','\\sigma_b']}
       ],
       subconcepts:[
         {q:'Why use t* instead of z* for slope inference?',correct:'Population standard deviation is unknown and estimated from data',wrong:['Because the slope is always t-distributed','Because sample sizes are always small']},
@@ -584,7 +584,7 @@ const AP_STATS_CARTRIDGE={
       latex:'n < 0.10 \\cdot N',
       blanks:[
         {latex:'n < \\boxed{\\,?\\,} \\cdot N',answer:'0.10',choices:['0.10','0.05','0.50']},
-        {latex:'n < 0.10 \\cdot \\boxed{\\,?\\,}',answer:'N',choices:['N','n','\\mu']}
+        {latex:'n < 0.10 \\cdot \\boxed{\\,?\\,}',answer:'N',choices:['N','n-1','\\mu']}
       ],
       subconcepts:[
         {q:'Why does sampling without replacement matter?',correct:'Each draw changes the remaining pool slightly',wrong:['It doesn\'t matter','It makes the sample biased']},
@@ -874,8 +874,8 @@ const VARIABLE_BANK={
   'slope-sd':[{s:'\\sigma',d:'residual SD'},{s:'\\sigma_x',d:'SD of x-values'},{s:'n',d:'sample size'}],
   'slope-se':[{s:'s',d:'residual SD'},{s:'s_x',d:'sample SD of x'},{s:'n-1',d:'df adjustment'}],
   'resid-s':[{s:'s',d:'residual SD'},{s:'n-2',d:'df for regression'}],
-  'slope-t':[{s:'b',d:'sample slope'},{s:'\\beta_0',d:'hypothesized slope under H_0'},{s:'s_b',d:'SE of slope'}],
-  'slope-ci':[{s:'b',d:'sample slope'},{s:'t^*',d:'critical value'},{s:'SE_b',d:'standard error of slope'}],
+  'slope-t':[{s:'b',d:'sample slope'},{s:'s_b',d:'SE of slope'}],
+  'slope-ci':[{s:'b',d:'sample slope'},{s:'t^*',d:'critical value'},{s:'s_b',d:'standard error of slope'}],
   'log-transform':[{s:'\\hat{y}',d:'predicted response'},{s:'a',d:'intercept'},{s:'b',d:'slope of log model'}],
   'variance':[{s:'s^2',d:'sample variance'},{s:'n-1',d:'degrees of freedom'},{s:'\\bar{x}',d:'sample mean'}],
   'ten-pct-condition':[{s:'n',d:'sample size'},{s:'N',d:'population size'}],
@@ -896,7 +896,7 @@ const APPLICATION_BANK={
   'linreg':[{scenario:'A biologist collects height and weight data for 40 birds and wants to predict weight from height.',confusionSet:['corr-r','slope-b','linreg-mean']}],
   'linreg-mean':[{scenario:'A least-squares model is fit to bivariate data. What known coordinate pair must it always include?',confusionSet:['linreg','y-intercept','slope-b']}],
   'corr-r':[{scenario:'A researcher wants a single number summarizing the strength and direction of a linear relationship between study hours and GPA.',confusionSet:['r-squared','slope-b','linreg']}],
-  'slope-b':[{scenario:'A student needs to calculate the slope of the LSRL given r, sy, and sx.',confusionSet:['corr-r','linreg','y-intercept']}],
+  'slope-b':[{scenario:'A researcher knows the correlation between hours studied and test scores is 0.85, with score SD = 12 and hours SD = 3. She wants to know how much the predicted score changes per additional hour.',confusionSet:['corr-r','linreg','y-intercept']}],
   'zscore':[{scenario:'An admissions officer wants to compare an SAT score of 1350 to an ACT score of 30 on a common scale.',confusionSet:['mean','std-dev','empirical-rule']}],
   'iqr':[{scenario:'A teacher wants a resistant measure of spread for test scores that has several extreme outliers.',confusionSet:['std-dev','variance','outlier-iqr']}],
   'outlier-iqr':[{scenario:'A student must determine whether a home price of $1.2M is an outlier in a dataset with Q1=200K and Q3=400K.',confusionSet:['iqr','zscore','empirical-rule']}],
@@ -904,7 +904,7 @@ const APPLICATION_BANK={
   'residual':[{scenario:'A model predicts a car gets 28 mpg, but the actual value is 31 mpg. What is the prediction error?',confusionSet:['linreg','r-squared','resid-s']}],
   'r-squared':[{scenario:'A researcher reports r = 0.90 and is asked what proportion of variation in y is explained by the model.',confusionSet:['corr-r','slope-b','resid-s']}],
   'y-intercept':[{scenario:'Given the LSRL passes through (x-bar, y-bar), a student must find the intercept a.',confusionSet:['linreg','linreg-mean','slope-b']}],
-  'variance':[{scenario:'A student needs s-squared to use in the linear combination variance formula.',confusionSet:['std-dev','lincomb-var','rv-sd']}],
+  'variance':[{scenario:'Before combining two independent random variables, a statistician must first express each variable\'s spread as a squared quantity.',confusionSet:['std-dev','lincomb-var','rv-sd']}],
   'add-rule':[{scenario:'In a class of 30, 18 play sports and 12 are in band; 5 do both. Find P(sports or band).',confusionSet:['mult-rule','complement','cond-prob']}],
   'cond-prob':[{scenario:'Of 200 patients, 60 have condition A and 30 have both A and B. Find the probability of B given A.',confusionSet:['mult-rule','add-rule','mult-independent']}],
   'complement':[{scenario:'The probability of rain on any given day is 0.35. A student needs P(no rain).',confusionSet:['add-rule','cond-prob','mult-independent']}],
@@ -921,16 +921,16 @@ const APPLICATION_BANK={
   'lincomb-mean':[{scenario:'A store sells phones (mean profit $120) and cases (mean profit $15). Find expected total profit from one of each.',confusionSet:['rv-mean','binom-mean','lintransform']}],
   'lincomb-var':[{scenario:'X and Y are independent. A student needs the variance of X minus Y and is tempted to subtract variances.',confusionSet:['lincomb-mean','rv-sd','lintransform']}],
   'lintransform':[{scenario:'Temperatures are converted from Celsius to Fahrenheit (F = 1.8C + 32). How does the SD change?',confusionSet:['lincomb-mean','lincomb-var','std-dev']}],
-  'z-test-stat':[{scenario:'You have an observed value, a null hypothesis value, and an SE. Which formula combines all three?',confusionSet:['ci-formula','one-prop-z','one-mean-t']}],
+  'z-test-stat':[{scenario:'A sample statistic lands 2.4 standard errors above the claimed parameter. Express how extreme this result is as a single standardized number.',confusionSet:['ci-formula','one-prop-z','one-mean-t']}],
   'ci-formula':[{scenario:'A student knows the point estimate and the margin of error and needs to build an interval.',confusionSet:['z-test-stat','margin-error','one-prop-ci']},{scenario:'After computing SE and finding z*, a student wants a range of plausible values for the parameter.',confusionSet:['z-test-stat','margin-error','one-mean-ci']}],
   'power':[{scenario:'A researcher wants to know the probability that her study will detect a real difference if one truly exists.',confusionSet:['type-ii-error','type-i-error','p-value-interp']}],
   'margin-error':[{scenario:'A poll reports 52% support \u00b1 3%. How was that \u00b1 value calculated?',confusionSet:['ci-formula','width-ci','phat-se']}],
   'width-ci':[{scenario:'A researcher wants to halve the \u00b1 term in a poll. By what factor must n increase?',confusionSet:['margin-error','ci-formula','power']}],
   'type-i-error':[{scenario:'A drug trial rejects H0 and approves a treatment that is actually ineffective. Name this mistake.',confusionSet:['type-ii-error','p-value-interp','power']}],
   'type-ii-error':[{scenario:'A screening fails to detect a disease that is actually present. Name this mistake.',confusionSet:['type-i-error','power','p-value-interp']}],
-  'p-value-interp':[{scenario:'A student gets p = 0.03 and says "there is a 3% chance H0 is true." Is this correct?',confusionSet:['type-i-error','type-ii-error','power']},{scenario:'A test yields p = 0.12 at alpha = 0.05. The student must state the correct conclusion.',confusionSet:['type-i-error','type-ii-error','power']}],
-  'random-condition':[{scenario:'A student surveys every 5th person entering the cafeteria. Is the data collection method valid?',confusionSet:['normal-condition','ten-pct-condition','large-counts']},{scenario:'Volunteers sign up for a study on sleep and grades. Can the results generalize to all students?',confusionSet:['normal-condition','ten-pct-condition','large-counts']},{scenario:'Subjects are randomly assigned to treatment and control groups. What condition does this satisfy?',confusionSet:['normal-condition','ten-pct-condition','large-counts']}],
-  'normal-condition':[{scenario:'With n=15 from a strongly skewed population, can you justify using a t-procedure?',confusionSet:['random-condition','large-counts','ten-pct-condition']},{scenario:'With n=200 and p-hat=0.04, check whether a z-procedure for proportions is valid.',confusionSet:['large-counts','random-condition','ten-pct-condition']},{scenario:'A sample of size 45 from unknown population shape. Is CLT applicable for means?',confusionSet:['random-condition','ten-pct-condition','large-counts']}],
+  'p-value-interp':[{scenario:'A student gets p = 0.03 and says "there is a 3% chance H0 is true." Is this correct?',confusionSet:['type-i-error','ci-formula','z-test-stat']},{scenario:'A test yields p = 0.12 at alpha = 0.05. The student must state the correct conclusion.',confusionSet:['type-i-error','type-ii-error','power']}],
+  'random-condition':[{scenario:'A researcher uses a random number generator to select 50 households from a city directory. What condition does this sampling method satisfy?',confusionSet:['normal-condition','ten-pct-condition','large-counts']},{scenario:'Volunteers sign up for a study on sleep and grades. Can the results generalize to all students?',confusionSet:['normal-condition','ten-pct-condition','large-counts']},{scenario:'Subjects are randomly assigned to treatment and control groups. What condition does this satisfy?',confusionSet:['normal-condition','ten-pct-condition','large-counts']}],
+  'normal-condition':[{scenario:'With n=15 from a strongly skewed population, can you justify using a t-procedure?',confusionSet:['random-condition','large-counts','ten-pct-condition']},{scenario:'With n=150 and p-hat=0.12, check whether a z-procedure for proportions is valid.',confusionSet:['large-counts','random-condition','ten-pct-condition']},{scenario:'A sample of size 45 from unknown population shape. Is CLT applicable for means?',confusionSet:['random-condition','ten-pct-condition','large-counts']}],
   'ten-pct-condition':[{scenario:'A school surveys 80 of its 400 students. Is the independence assumption reasonable?',confusionSet:['random-condition','normal-condition','large-counts']},{scenario:'A researcher samples 500 from a city of 50,000. Does the 10% condition hold?',confusionSet:['random-condition','normal-condition','large-counts']},{scenario:'A biologist captures 30 fish from a pond of 150. Should she worry about dependence?',confusionSet:['random-condition','normal-condition','large-counts']}],
   'large-counts':[{scenario:'With n=40 and p0=0.08, a student checks np0=3.2 before a one-proportion z-test. Is the condition met?',confusionSet:['normal-condition','ten-pct-condition','random-condition']},{scenario:'A survey of 500 finds p-hat=0.92. Check whether a one-proportion CI is valid.',confusionSet:['normal-condition','ten-pct-condition','random-condition']},{scenario:'For a two-proportion z-test, verify large counts using the pooled proportion.',confusionSet:['normal-condition','ten-pct-condition','random-condition']}],
   'phat-mean':[{scenario:'If you take many samples of size 100 from a population with p=0.6, what will the average of all p-hats be?',confusionSet:['xbar-mean','phat-sd','binom-mean']}],
@@ -938,7 +938,7 @@ const APPLICATION_BANK={
   'phat-se':[{scenario:'A researcher gets p-hat=0.45 from n=200 and needs to quantify the variability of that estimate.',confusionSet:['phat-sd','xbar-se','pooled-se']}],
   'diff-p-sd':[{scenario:'Two populations have known p1=0.6 and p2=0.5. Find the SD of p-hat1 minus p-hat2.',confusionSet:['diff-p-se','diff-x-sd','phat-sd']}],
   'diff-p-se':[{scenario:'Build a CI for p1-p2 and must estimate the SE using the two sample proportions separately.',confusionSet:['pooled-se','diff-p-sd','diff-x-se']}],
-  'pooled-se':[{scenario:'In a two-proportion z-test (H0: p1=p2), compute SE by pooling the two samples.',confusionSet:['diff-p-se','phat-se','diff-x-se']}],
+  'pooled-se':[{scenario:'A clinical trial compares cure rates in two groups. Under the null hypothesis that both populations have the same rate, quantify the variability of the difference using a single combined estimate.',confusionSet:['diff-p-se','phat-se','diff-x-se']}],
   'one-prop-z':[{scenario:'A company claims 90% of orders ship on time. A consumer group surveys 200 orders and finds 84%.',confusionSet:['one-prop-ci','two-prop-z','one-mean-t']},{scenario:'A coin is flipped 100 times and lands heads 62 times. Test whether the coin is fair.',confusionSet:['one-prop-ci','two-prop-z','chi-sq']},{scenario:'A school claims 75% graduate. A sample of 150 finds 70%. Is there evidence the rate is lower?',confusionSet:['one-prop-ci','two-prop-z','one-mean-t']}],
   'one-prop-ci':[{scenario:'A survey of 600 voters finds 54% favor a ballot measure. Build a 95% interval for the true value.',confusionSet:['one-prop-z','two-prop-ci','ci-formula']},{scenario:'In a sample of 300 adults, 42% exercise daily. Construct a CI for the true proportion.',confusionSet:['one-prop-z','two-prop-ci','one-mean-ci']}],
   'two-prop-z':[{scenario:'Compare proportion of patients cured by Drug A vs Drug B using independent random samples.',confusionSet:['one-prop-z','two-prop-ci','two-mean-t']},{scenario:'An experiment assigns 100 students to tutoring and 100 to none, comparing pass rates.',confusionSet:['one-prop-z','paired-t','two-mean-t']},{scenario:'Two factories: defect rates 12/200 vs 18/250. Test whether the rates differ.',confusionSet:['one-prop-z','chi-sq','two-prop-ci']}],
@@ -953,16 +953,20 @@ const APPLICATION_BANK={
   'two-mean-t':[{scenario:'Compare mean reaction times for caffeine vs placebo groups with independent random samples.',confusionSet:['paired-t','two-mean-ci','one-mean-t']},{scenario:'Compare mean test scores of students taught with two different methods, using separate classes.',confusionSet:['paired-t','two-prop-z','one-mean-t']},{scenario:'Compare mean recovery times for two surgical techniques using independent patient groups.',confusionSet:['paired-t','two-mean-ci','two-prop-z']}],
   'two-mean-ci':[{scenario:'Build a 95% CI for how much faster Assembly Line A is than Line B, using independent samples.',confusionSet:['two-mean-t','one-mean-ci','two-prop-ci']},{scenario:'Estimate the difference in mean reading scores between two school districts.',confusionSet:['two-mean-t','paired-t','one-mean-ci']}],
   'paired-t':[{scenario:'Each of 20 runners is timed before and after a training program. Test whether times improved.',confusionSet:['two-mean-t','one-mean-t','two-mean-ci']},{scenario:'Students take a pre-test and post-test. Did scores increase on average?',confusionSet:['two-mean-t','one-mean-t','two-prop-z']},{scenario:'Blood pressure measured before and after a medication for 30 patients.',confusionSet:['two-mean-t','one-mean-t','two-mean-ci']}],
-  'chi-sq':[{scenario:'A die is rolled 300 times. Test whether outcomes fit a uniform distribution across all six faces.',confusionSet:['expected-gof','one-prop-z','two-prop-z']},{scenario:'A survey asks gender and political party. Test whether preference is independent of gender.',confusionSet:['expected-twoway','two-prop-z','cond-prob']},{scenario:'A geneticist compares observed flower-color ratios to a 9:3:3:1 Mendelian prediction.',confusionSet:['expected-gof','binom-pmf','one-prop-z']}],
+  'chi-sq':[{scenario:'A die is rolled 300 times. Test whether outcomes fit a uniform distribution across all six faces.',confusionSet:['expected-gof','one-prop-z','two-prop-z']},{scenario:'A survey cross-classifies 500 adults by education level (HS/BA/grad) and political preference (Dem/Rep/Ind). Test whether preference is independent of education.',confusionSet:['expected-twoway','two-prop-z','cond-prob']},{scenario:'A geneticist compares observed flower-color ratios to a 9:3:3:1 Mendelian prediction.',confusionSet:['expected-gof','binom-pmf','one-prop-z']}],
   'expected-twoway':[{scenario:'In a two-way table of gender by major, find the value a cell should hold if the variables are independent.',confusionSet:['expected-gof','chi-sq','cond-prob']}],
   'expected-gof':[{scenario:'Under H0 the four blood types occur with proportions 0.44, 0.42, 0.10, 0.04 in a sample of 500.',confusionSet:['expected-twoway','chi-sq','binom-mean']}],
   'std-resid-chi':[{scenario:'After a significant chi-square result, identify which cells contributed most to the statistic.',confusionSet:['chi-sq','residual','expected-twoway']}],
   'slope-mean':[{scenario:'If you repeatedly drew new datasets and fit lines, what would the center of all those b values equal?',confusionSet:['xbar-mean','phat-mean','slope-b']}],
-  'slope-se':[{scenario:'Computer output shows s=4.2, s_x=3.1, n=30. Calculate the SE of the slope.',confusionSet:['slope-sd','xbar-se','phat-se']}],
+  'slope-se':[{scenario:'A biologist fits a regression of wing length on body mass for 30 birds. From the computer output she reads the residual SD and x-spread, and needs to quantify how precisely the slope is estimated.',confusionSet:['slope-sd','xbar-se','phat-se']}],
   'resid-s':[{scenario:'From the sum of squared leftovers after fitting a model and n=25, compute the typical prediction miss.',confusionSet:['std-dev','residual','slope-se']}],
   'slope-t':[{scenario:'Test H0: beta=0 for the relationship between hours studied and exam score.',confusionSet:['one-mean-t','slope-ci','two-mean-t']},{scenario:'Computer output gives b=2.4 and SE_b=0.8. Test whether the slope is significantly nonzero.',confusionSet:['one-mean-t','slope-ci','z-test-stat']},{scenario:'Test whether tree age is a significant linear predictor of trunk diameter.',confusionSet:['corr-r','slope-ci','one-mean-t']}],
   'slope-ci':[{scenario:'After confirming LINE conditions, construct a 95% CI for the true population slope.',confusionSet:['slope-t','one-mean-ci','ci-formula']},{scenario:'Build an interval estimate for how much each additional year of education changes income.',confusionSet:['slope-t','two-mean-ci','one-mean-ci']}],
-  'log-transform':[{scenario:'A scatterplot of population vs year shows exponential growth. Linearize the relationship.',confusionSet:['linreg','corr-r','residual']}]
+  'log-transform':[{scenario:'A scatterplot of population vs year shows exponential growth. Linearize the relationship.',confusionSet:['linreg','corr-r','residual']}],
+  'slope-sd':[{scenario:'For the population of all possible samples from this dataset, how variable is the slope estimate? Given \u03c3=5, \u03c3_x=3, n=40.',confusionSet:['slope-se','xbar-sd','phat-sd']}],
+  'df-gof':[{scenario:'A spinner has 5 equally-likely sections. How many degrees of freedom for a chi-square goodness-of-fit test?',confusionSet:['df-twoway','df-t','chi-sq']}],
+  'df-twoway':[{scenario:'A 4\u00d73 table of grade level by lunch preference. Find the degrees of freedom.',confusionSet:['df-gof','df-t','chi-sq']}],
+  'df-t':[{scenario:'A paired study with 25 subjects. What are the degrees of freedom for the t-test?',confusionSet:['df-gof','df-twoway','one-mean-t']}]
 };
 
 // ── Relationship Bank: "what happens when X changes?" questions ──
@@ -1218,9 +1222,9 @@ const EXPLANATION_GLOSSARY=[
     'Spot it next to power because power equals 1 minus beta.'
   ]},
   {keys:['beta0'],title:'beta zero',lines:[
-    'Beta zero is the population regression intercept parameter in a linear model.',
-    'Use it when a regression inference formula is referring to the true intercept, not the sample estimate.',
-    'Spot it by the subscript zero, which marks the intercept term.'
+    'Beta zero is the population regression intercept parameter in the model Y = \u03b2\u2080 + \u03b2\u2081X + \u03b5.',
+    'Use it when a regression formula refers to the true y-intercept, not the sample estimate a.',
+    'Spot the subscript zero as the intercept term; the slope parameter is \u03b2\u2081.'
   ]},
   {keys:['grand total'],title:'Grand total',lines:[
     'The grand total is the overall sample size across every cell in a two-way table.',
@@ -1648,6 +1652,10 @@ function wireL1toL2(PREREQ_DAG){
     [/confidence.*level|1\.96|95%|99%/i,['critical-value-concept','interval-concept']],
     [/plausible.*value|range.*true|estimate.*parameter/i,['interval-concept','parameter-concept']],
     [/cause|causation|experiment/i,['independence-concept']],
+    [/if.*r.*=|what is b\b/i,['slope-concept']],
+    [/n.*different|unequal.*size|n_?[12].*differ/i,['sample-vs-population']],
+    [/1\.5|multiplier|convention|cutoff.*outlier/i,['mean-concept']],
+    [/log.*transform|curved|exponential.*pattern|linearize/i,['residual-concept']],
   ];
   for(const node of Object.values(PREREQ_DAG)){
     if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;

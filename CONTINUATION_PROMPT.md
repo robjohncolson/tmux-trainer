@@ -1660,9 +1660,98 @@ Created `cartridge-audit-prompts.md` with 4 ready-to-paste prompts for ChatGPT/G
 - `index.html` DOM_LABELS: references `activeCartridge.domLabels` (~line 1748)
 - `sw.js`: shell cache v4, `./ap-stats-cartridge.js` in precache list
 
+## Latest Update: Full Cartridge Audit Fixes (April 5, 2026)
+
+Ran a comprehensive four-prompt external audit of `ap-stats-cartridge.js` (formula correctness, blank validation, application scenarios, DAG wiring). All P0-P3 findings fixed.
+
+### P0 — Game-Breaking: 6 blank answer/choice mismatches fixed
+
+Answer fields didn't match `choices[0]` after `validateBlank()` normalization — correct answers wouldn't validate at runtime.
+
+| Command | Old answer | New answer | Root cause |
+|---------|-----------|-----------|------------|
+| `binom-pmf` | `1-p` | `(1-p)` | Parens in choice not in answer |
+| `binom-sd` | `1-p` | `(1-p)` | Same |
+| `residual` | `yhat` | `\hat{y}` | Plain text vs LaTeX |
+| `expected-twoway` | `grand total` | `\text{grand total}` | Plain text vs `\text{}` |
+| `margin-error` | `z* or t*` | `z^* \text{ or } t^*` | Plain text vs LaTeX |
+| `width-ci` | `sqrt(n)` | `\sqrt{n}` | Plain text vs LaTeX |
+
+### P0 — Game-Breaking: 2 duplicate choices fixed
+
+| Command | Old choices | Fix | Reason |
+|---------|-----------|-----|--------|
+| `mean` | `n, n-1, N` | `N` → `\mu` | `n` and `N` normalize identically |
+| `ten-pct-condition` blank 2 | `N, n, \mu` | `n` → `n-1` | Same normalization issue |
+
+### P1 — Content Accuracy: slope-t β₀ confusion resolved
+
+- **Problem**: `slope-t` formula used `β₀` for the hypothesized slope, but β₀ is the intercept in `Y = β₀ + β₁X + ε`. The `EXPLANATION_GLOSSARY` entry for `beta0` also said "intercept."
+- **Fix**: Simplified formula to `t = b/s_b` (standard AP form, H₀: slope = 0). Blank now tests `s_b` in denominator. Removed ambiguous β₀ parameter from formula, variable bank, and blanks.
+- Glossary entry updated to unambiguously describe β₀ as the population intercept, with reference to the full model.
+
+### P1 — Content Accuracy: SE_b / s_b notation standardized
+
+- `slope-ci` used `SE_b` while `slope-t` and `slope-se` used `s_b`
+- Changed `slope-ci` latex, blanks, hint, and variable bank from `SE_b` to `s_b`
+
+### P2 — Pedagogical Quality: 5 answer-giveaway scenarios rewritten
+
+| Command | Before | After |
+|---------|--------|-------|
+| `slope-b` | Named "slope" and listed formula inputs | Researcher with r, SD values, wants predicted score change per hour |
+| `z-test-stat` | Described formula structure | Statistic 2.4 SEs above claim, express as standardized number |
+| `variance` | Named "s-squared" directly | Must express spread as squared quantity before combining variables |
+| `pooled-se` | Said "pooling" (the answer keyword) | Clinical trial under null equality, quantify variability with combined estimate |
+| `slope-se` | Named "SE of the slope" directly | Biologist needs to quantify slope precision from computer output |
+
+### P2 — Pedagogical Quality: 5 unwired subconcepts wired into DAG
+
+Added 4 new regex rules to `wireL1toL2()`:
+- `/if.*r.*=|what is b\b/i` → `slope-concept` (covers slope-b SC2)
+- `/n.*different|unequal.*size|n_?[12].*differ/i` → `sample-vs-population` (covers diff-x-se SC2)
+- `/1\.5|multiplier|convention|cutoff.*outlier/i` → `mean-concept` (covers outlier-iqr SC0)
+- `/log.*transform|curved|exponential.*pattern|linearize/i` → `residual-concept` (covers log-transform SC0)
+- slope-t SC0 (rewritten) matches existing `/H.?0|null hyp|hypothes.*test/i` rule via H₀ in correct answer
+
+### P2 — Pedagogical Quality: 4 missing application bank entries added
+
+| Command | Scenario |
+|---------|----------|
+| `slope-sd` | Population of samples, slope estimate variability |
+| `df-gof` | Spinner with 5 sections, GOF test df |
+| `df-twoway` | 4×3 table, two-way df |
+| `df-t` | Paired study with 25 subjects, t-test df |
+
+APPLICATION_BANK now has 76 entries (was 72), matching all 76 commands.
+
+### P3 — Polish: 3 ambiguous scenarios clarified
+
+- `random-condition` #1: replaced systematic sampling (every 5th person) with explicit SRS (random number generator)
+- `normal-condition` #2: changed n=200/p̂=0.04 (fails: np̂=8<10) to n=150/p̂=0.12 (passes: both counts ≥10)
+- `chi-sq` #2: replaced vague "gender and political party" (could be 2-prop z) with explicit 3×3 table (education level × political preference)
+
+### P3 — Polish: p-value-interp confusion set improved
+
+- Scenario 1: swapped `type-ii-error` and `power` for `ci-formula` and `z-test-stat` (more relevant to p-value misconceptions)
+
+### Validation
+
+- 230/230 blanks pass `validateBlank()` (answer matches choices[0])
+- 0 duplicate choices after normalization
+- 76/76 application bank entries
+- JS parses clean (`node --check`)
+
+### Audit findings NOT actioned (by design)
+
+- Formula reference sheet: all 28 AP formulas match, 0 omissions
+- `linreg-mean` scenario ("what known coordinate pair"): flagged as debatable but audit said "acceptable — tests concept knowledge"
+- `normal-condition` #2 scenario: audit noted this may cause confusion with `large-counts` distractor — this is intentional pedagogical overlap (students must distinguish the two conditions)
+- Relationship bank gaps for core commands (`mean`, `linreg`, `rv-mean`, `phat-mean`, `xbar-mean`): noted but these are static formulas where "what happens when X changes?" questions are unnatural
+- Missing L2+ DAG nodes (random variable concept, sampling with/without replacement, LINE conditions): noted for future enrichment
+
 ## Likely Next Tasks
 
-- **External cartridge audit** — run the 4 prompts against `ap-stats-cartridge.js` in ChatGPT/Gemini. Fix findings.
 - **Unit 8 procedural cards** — GOF vs homogeneity vs independence selection, hypothesis templates, chi-square conditions, conclusion interpretation (4-6 new commands)
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
