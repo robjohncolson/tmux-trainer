@@ -6724,8 +6724,8 @@ function animate(time){
     camLookY+=(wantLookY-camLookY)*.02;
     camLookZ+=(wantLookZ-camLookZ)*.02;
     camera.lookAt(camLookX,camLookY,camLookZ);
-  }else if(G.screen==='game'&&G.enemies.length>0){
-    // Target mesh missing (dying) — hold current camera, don't snap to orbit
+  }else if(G.screen==='game'&&(G.enemies.length>0||dyingEnemies.length>0)){
+    // Target mesh missing or dying — hold current camera, don't snap to orbit
     camera.lookAt(camLookX,camLookY,camLookZ);
   }else{
     // Default orbit (title screen, no enemies)

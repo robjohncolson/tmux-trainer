@@ -1453,6 +1453,75 @@ External review by Grok was cross-referenced against actual codebase state (76 c
 - `index.html` animate() camera: follow-mode lerp 0.02, no split-depth branching, death-hold branch
 - `index.html` cube mode: unchanged (orbit at cube height, lerp 0.12, double-tap toggle)
 
+## Latest Update: Pedagogy Audit Fixes + Native High-Contrast + Music Editor Tabs + Camera Polish
+
+### VARIABLE_BANK pedagogy fixes (external ChatGPT audit)
+
+- `binom-pmf`: symbol `k` → `x` (formula displays `P(X=x)`, not `k`)
+- `geom-pmf`: symbol `k` → `x` (formula displays `P(X=x)`, not `k`)
+- `lintransform`: swapped `a`/`b` descriptions — `a` is the shift, `b` is the multiplier in `Y=a+bX` (was backwards, would teach wrong roles)
+
+### Native high-contrast theme (performance fix)
+
+- Removed `#game-canvas` from the CSS `filter: invert(1) hue-rotate(180deg)` selector — eliminates per-frame GPU filter on the WebGL canvas (battery drain on mobile)
+- HTML elements (`#overlay`, `#input-panel`, `#hud`) still use the cheap CSS filter for correct light-mode appearance
+- Added `AMB_DARK` / `AMB_LIGHT` palettes with sky shader color vectors
+- `applyThemeToScene()` natively swaps: fog color, renderer clear color, ambient/directional/point light colors, terrain material, wireframe material, server material + emissive, sky shader `darkCol`/`midCol`/`brightCol` uniforms
+- `toggleHighContrast()` replaces the old inline onclick — toggles DOM class + calls `applyThemeToScene()` + persists to localStorage
+- Sky shader parameterized: 3 new `vec3` uniforms (`darkCol`, `midCol`, `brightCol`) replace hardcoded GLSL colors
+- Vignette stays black in both modes (Codex review: colored vignette would break alpha compositing)
+- Boot init: `hiContrastActive` read from localStorage at script top; `applyThemeToScene()` called after scene construction via `typeof` guards
+- Removed `hiC` filter prepend from `animate()` — canvas CSS filter is now purely health-driven (`saturate` + `contrast`)
+
+### Music editor tabs (SEQ / MIX / SYS)
+
+- `MUSIC_EDITOR.activeTab` state field (default: `'seq'`, reset on editor open)
+- Three tabs using existing `.menu-tab` CSS: `[ SEQ ]` / `[ MIX ]` / `[ SYS ]`
+- SEQ tab: full step sequencer (drums + melody grid)
+- MIX tab: 5 volume sliders + tempo
+- SYS tab: chord picker
+- Preview / Save / Reset as persistent footer across all tabs (Codex finding: avoids tab-hopping to audition changes)
+- `selectMusicTab(tab)` helper function
+- Tab buttons rendered after wave selector with `max-width:none` override
+
+### Camera: death-hold expanded to cover empty enemies list
+
+- Bug: killing the last/only enemy caused camera to swoop to default top-down orbit before new enemies spawned (dramatic, disorienting, faked end-of-wave)
+- Root cause: death-hold branch only checked `G.enemies.length>0`, but when the last enemy was removed from `G.enemies` while still in `dyingEnemies`, camera fell through to default orbit
+- Fix: expanded condition to `G.enemies.length>0 || dyingEnemies.length>0` — camera holds lookAt during death animations even when enemies array is empty
+
+### Codex review findings (all addressed)
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| 1 | HIGH | Scene assets incomplete — trees/ferns/stars/particles not covered | Covered fog, lights, terrain, wireframe, server, sky shader. Trees/ferns/stars use vertex colors visible against both backgrounds. |
+| 2 | HIGH | Vignette gray compositing broken | Kept vignette black in both modes |
+| 3 | MEDIUM | JS inline colors via AMB.css not swapped | `applyThemeToScene()` updates `AMB.css` via `Object.assign` |
+| 4 | MEDIUM | Theme init timing — null crash if scene not built | `typeof` guards on all scene objects |
+| 5 | MEDIUM | Actions unreachable from SEQ/MIX tabs | Persistent footer across all tabs |
+| 6 | LOW | Framebuffer readback claim overstated | Noted (spec wording) |
+
+### Spec artifact
+
+- `hi-contrast-music-tabs-spec.md` — full design + Codex review findings
+
+### Important code areas (new/updated)
+
+- `index.html` `AMB_DARK` / `AMB_LIGHT`: dual palette constants (after AMB definition)
+- `index.html` `applyThemeToScene()`: swaps fog, lights, materials, sky shader uniforms
+- `index.html` `toggleHighContrast()`: DOM class + scene swap + localStorage persist
+- `index.html` sky shader: `darkCol`, `midCol`, `brightCol` vec3 uniforms
+- `index.html` `MUSIC_EDITOR.activeTab`: tab state field
+- `index.html` `selectMusicTab()`: tab switch helper
+- `index.html` `renderMusicEditor()`: tab-conditional HTML with persistent action footer
+- `index.html` animate() camera: death-hold branch expanded with `dyingEnemies.length>0`
+
+### Lessons learned
+
+- **CSS filter on WebGL canvas = per-frame GPU cost**: `filter: invert(1)` on a `<canvas>` re-applies every frame the canvas renders. On HTML elements it's cheap (only re-composites on DOM change). Split the selector.
+- **CSS filter on HTML elements is fine**: Overlay/panel/HUD change infrequently — the filter cost is negligible compared to the canvas.
+- **Tab UIs need persistent actions**: Hiding Save/Preview behind a tab forces users to context-switch just to audition or persist changes. Keep core actions visible.
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
