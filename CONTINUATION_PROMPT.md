@@ -1522,79 +1522,86 @@ External review by Grok was cross-referenced against actual codebase state (76 c
 - **CSS filter on HTML elements is fine**: Overlay/panel/HUD change infrequently — the filter cost is negligible compared to the canvas.
 - **Tab UIs need persistent actions**: Hiding Save/Preview behind a tab forces users to context-switch just to audition or persist changes. Keep core actions visible.
 
-## Latest Update: Falling Stars + Mandelbrot Craters + Star Birth
+## Latest Update: Falling Stars + Per-Pixel Mandelbrot Terrain Scar + Star Birth
 
 ### Concept
 
-Failures scar the battlefield. Stars fall from the sky on every 3rd L0 miss, landing at Poisson-distributed terrain spots where Mandelbrot fractal craters bloom. The fractals respond to performance: misses grow them more complex (+2 iterations), hits simplify them (-1 iteration). Sustained success (streak 5/10/15/20/25) births new stars in the sky.
+Failures scar the battlefield permanently. Stars fall from the sky on every 3rd miss, and where they land, a Mandelbrot fractal blooms on the terrain grid. The fractal starts small (central bulb only), expands with each impact, and its boundary edges shift from red through the rainbow to violet as the player scores points. Correct answers permanently sharpen the fractal detail. The scar persists across waves — a visual diary of the entire run.
 
-### Mandelbrot Craters
+### Per-Pixel Mandelbrot on Terrain
 
-- 6-mesh pool of `PlaneGeometry(1.8, 1.8)` with `ShaderMaterial` running Mandelbrot fragment shader
-- Shader uses `vUv` varying (Codex fix: not `gl_FragCoord`), GLSL ES 1.0 compatible (`for` with `break`)
-- Per-crater uniforms: `iterations` (8-40, clamped to 24 on mobile), `zoom`, `center` (randomized per crater), `opacity`, `time`, `colorBase`
-- Radial edge fade via `smoothstep` — craters blend into terrain
-- Oldest crater replaced immediately when pool full (Codex fix: no fade-out buffer needed)
-- All craters cleared on wave start and game start
+- `terrMat` is a custom `ShaderMaterial` (not MeshPhongMaterial) that computes Mandelbrot iterations per screen pixel — infinite resolution at any camera angle/zoom
+- Black interior (inside the set), colored boundary glow (outside), bright white edge band at the set boundary
+- ROYGBIV color shift: `hsv2rgb()` in the fragment shader maps `detail = (mbrotIter-8)/40` to hue 0→0.78 (red→violet). No new uniforms needed — color derived from `mbrotIter`
+- White edge band: `edgeBand` near t=0.93 with sharpness scaling by detail level — becomes more defined as iterations increase
+- Shader uses `done` flag (no `break`), proper `smoothstep` ordering, no `pow(negative)` — ANGLE/DirectX compatible
+- Custom lighting: diffuse terrain shading + fog computed in same shader
+- Mandelbrot only evaluated when `mbrotIntensity > 0.01` (early-out, zero cost when inactive)
+
+### Zoom-Based Expansion (not radial mask)
+
+- Initial `mbrotZoom = 3.5` — zoomed out, only central Mandelbrot bulb visible (~40% of terrain)
+- Each star impact: `targetZoom` decreases toward 1.5 over ~7 impacts (fills entire terrain)
+- Formula: `expandT = min(1, max(0, impacts-1)/6)`, `targetZoom = 3.5 - 2.0 * expandT`
+- Zoom lerps smoothly at 0.04 rate per frame
+- **Why not radial mask**: Adding a `mbrotRadius` uniform + `smoothstep` mask to the fragment shader caused silent shader failure on Windows/ANGLE in multiple attempts. The zoom approach reuses the existing `mbrotZoom` uniform without any shader changes.
+
+### Persistence
+
+- Mandelbrot persists across waves — `nextWave()` does NOT call `clearMandelbrot()`
+- Only clears on new game (`startGame()`)
+- Run state checkpoints save/restore full MBROT state: intensity, targetIntensity, iterations, impacts, zoom, targetZoom
+- `continueGame()` restores MBROT state and directly sets terrMat uniforms
 
 ### Falling Stars
 
 - `fallingStars` array, max 2 in flight, max 4 pooled `LineSegments` meshes
-- `spawnFallingStar(targetPos)` — 16-segment trail from random sky point to terrain landing
+- `spawnFallingStar(targetPos)` — 16-segment trail from random sky point to Mandelbrot center
 - Progressive reveal: segments appear as star descends (draw range animated)
 - 800ms duration, additive blending, warm gold color
-- On landing: `spawnCrater()` at the target position
-
-### Landing Positions (CRATER_POOL)
-
-- Poisson disk sampling: 12 pre-computed positions, seeded RNG (seed=137, different from ferns)
-- Bounds: x ∈ [-9, 9], z ∈ [-10, -3]
-- Path avoidance: rejects positions within 3.5 units of any path spline point (Codex fix: distance to actual path points, not Manhattan from center)
-- Cycled sequentially via `craterPosIdx`
+- On landing: `growMandelbrot()` — expands zoom + boosts intensity
 
 ### Born Stars
 
-- `BORN_STARS` array, max 5 additional fractal stars in sky
+- `bornStars` array, max 5 additional fractal stars in sky
 - Spawned at streak milestones: 5, 10, 15, 20, 25
-- Random sky position (x: -18 to 18, y: 4-8, z: -15 to -25)
-- 2-second fade-in, same twinkle/rotation as existing stars
-- Uses existing `generateFractalStar()` renderer, health-driven depth
-- Cleared on wave start and game start
+- Random sky position, 2-second fade-in, same twinkle as existing fractal stars
+- Cleared per wave (born stars are wave rewards, unlike the permanent Mandelbrot)
 
 ### Miss/Hit Hooks
 
-- `handleMiss()`: increment `G.missStarCounter`, trigger star fall on 3rd L0 miss, bump all crater iterations +2
-- `handleHit()`: decrease all crater iterations -1, spawn born star at streak milestones
-- Wave start: `clearCraters()`, `clearBornStars()`, reset falling stars, reset `missStarCounter`
-- Game start: same cleanup
+- `handleMiss()`: increment `G.missStarCounter`, trigger star fall on every 3rd miss (any depth)
+- `handleHit()`: `mbrotScoreBoost()` adds +0.5 iterations permanently, `spawnBornStar()` at streak milestones
+- Wave start: `clearBornStars()`, reset falling stars and `missStarCounter`. Mandelbrot persists.
+- Game start: `clearMandelbrot()` resets everything
 
-### Codex Review Findings (all addressed)
+### Lessons Learned (Mandelbrot rendering on ANGLE)
 
-| # | Severity | Issue | Fix |
-|---|----------|-------|-----|
-| 1 | HIGH | Shader uses `gl_FragCoord`/`resolution` — wrong for per-mesh quad | Use `vUv` varying from PlaneGeometry UV coords |
-| 2 | HIGH | Pool of 6 but "fade out before new" needs 7th buffer | Immediate reuse — oldest crater replaced instantly |
-| 3 | MEDIUM | No GPU quality governor | Clamp iterations to 24 on mobile via `isReducedParticleMode()` |
-| 4 | MEDIUM | Falling star queue undefined for burst misses | Max 2 in flight, drop-newest |
-| 5 | MEDIUM | Path corridor rejection too loose | Distance to actual path spline points |
-| 6 | MEDIUM | Checkpoint restore inconsistency | Restore clears all transient visuals + resets counters |
+- **Custom ShaderMaterial replacing terrMat works** — the per-pixel fragment shader compiles and renders correctly
+- **Adding new uniforms to a working shader can silently break it on ANGLE** — the `mbrotRadius` uniform + smoothstep mask killed rendering in multiple attempts
+- **Reusing existing uniforms is safe** — zoom-based expansion through existing `mbrotZoom` works perfectly
+- **onBeforeCompile chunk injection failed silently** — the `#include <emissivemap_fragment>` replacement may not resolve correctly in r128 on ANGLE
+- **WebGLRenderTarget → emissiveMap also failed** — the ShaderMaterial compiled in the separate scene but the render target texture didn't transfer to the emissiveMap correctly (unclear why; may be a Three.js r128 + ANGLE interaction)
+- **CPU canvas → CanvasTexture → emissiveMap DID work** — but looks like a bitmap stamp, not per-pixel quality. Adequate fallback if shader route ever breaks again.
 
-### Spec artifact
+### Spec artifacts
 
-- `falling-stars-mandelbrot-spec.md` — full design + Codex review findings
+- `falling-stars-mandelbrot-spec.md` — original design + Codex review findings
+- `mandelbrot-growth-spec.md` — expansion/persistence/ROYGBIV design for Codex
+- `codex_prompt.md` — ANGLE debugging prompt
 
-### Important code areas (new)
+### Important code areas (new/updated)
 
-- `index.html` CRATER_POOL: Poisson disk positions with path avoidance
-- `index.html` Mandelbrot shader: `craterShaderVert`, `craterShaderFrag` (vUv-based)
-- `index.html` `craterMeshPool`: 6 pre-allocated PlaneGeometry meshes
+- `index.html` `MBROT` state: intensity, targetIntensity, iterations, impacts, zoom, targetZoom
+- `index.html` `terrMat` ShaderMaterial: per-pixel Mandelbrot in fragment shader with `hsv2rgb`, edge band, fog
+- `index.html` `growMandelbrot()`: zoom-based expansion, no new uniforms
+- `index.html` `mbrotScoreBoost()`: +0.5 iterations per correct answer
+- `index.html` `clearMandelbrot()`: full reset with direct uniform writes
 - `index.html` `spawnFallingStar()`: sky-to-terrain trail animation
-- `index.html` `spawnCrater()`: Mandelbrot quad at landing position
 - `index.html` `spawnBornStar()`: streak-milestone star birth
-- `index.html` `clearCraters()`, `clearBornStars()`: wave/game cleanup
-- `index.html` `handleMiss()`: missStarCounter + crater iteration bump
-- `index.html` `handleHit()`: crater iteration decrease + born star spawn
-- `index.html` animate(): falling star progressive reveal, crater uniform updates, born star animation
+- `index.html` `buildRunStateSnapshot()`: saves MBROT state in checkpoint
+- `index.html` `continueGame()`: restores MBROT state from checkpoint
+- `index.html` animate(): MBROT intensity/zoom lerp, terrMat uniform updates
 
 ## Likely Next Tasks
 
