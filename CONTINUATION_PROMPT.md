@@ -1398,6 +1398,35 @@ Two-phase death sequence replacing instant mesh removal:
 - **Particle scale is feel**: Too big loses swarm charm, too small loses dopamine. 0.35 min with 1.2x life multiplier is the sweet spot.
 - **Bloom post-processing still doesn't work**: Emissive PhongMaterial + additive blending looked worse than plain MeshBasicMaterial + additive. The additive blending IS the bloom for small bright objects.
 
+## Latest Update: Grok Pedagogy Fixes — Distractor Quality + Geometric SD Notation
+
+External review by Grok was cross-referenced against actual codebase state (76 commands, not 24). Most suggestions were already shipped. Three actionable items remained; Codex reviewed the spec (4 findings, all incorporated).
+
+### Distractor quality improvements (5 edits)
+
+- `geom-pmf`: Stem anchored to AP convention ("In AP Stats, what does the geometric random variable X count?"). Wrong answer changed to "Number of failures before first success" — the classic off-by-one trap.
+- `chi-sq`: "Why square" wrong answer changed from "To convert to proportions" to "Taking |O-E| would work just as well" (squaring-specific misconception). Added second blank targeting denominator E vs O.
+- `std-dev`: "Why n-1" wrong answer changed from "Because one value is always zero" to "Because one data point is dropped from the sample" (common df misinterpretation).
+- `phat-sd`: Added numerator blank testing p vs p̂ vs p₀ (SD formula uses population p, not sample p̂).
+
+### Geometric SD notation polish
+
+- `geom-sd` explain text now bridges variance→SD: "Variance form: σ² = (1-p)/p²; take √ to get SD"
+- Added variance blank: σ² = (1-p)/□ with answer p² and distractors p, (1-p)²
+
+### Codex review findings (all addressed)
+
+| # | Severity | Issue | Fix |
+|---|---|---|---|
+| 1 | MEDIUM | Chi-sq "Why square" distractor tested denominator, not squaring | Used squaring-specific misconception instead |
+| 2 | MEDIUM | std-dev distractor "divide by n for populations" was true-but-not-best | Used actually-false "data point dropped" distractor |
+| 3 | MEDIUM | phat-sd/phat-se p vs p̂ guidance too broad | Split by card: SD→p, SE→p̂, test→p₀ |
+| 4 | LOW | geom-pmf "failures before success" is alternate convention | Anchored stem to "In AP Stats" convention |
+
+### Spec artifact
+
+- `grok-pedagogy-fixes-spec.md` — full design + Codex review findings
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void. Needs proper path interpolation, not a quick shader swap.
