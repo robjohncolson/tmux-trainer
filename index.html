@@ -4477,12 +4477,11 @@ const craters=[];
 let craterPosIdx=0;
 const craterMeshPool=[];
 for(let i=0;i<CRATER_MAX;i++){
-  const geo=new THREE.PlaneGeometry(3,3);
-  geo.rotateX(-Math.PI/2);
+  const geo=new THREE.BoxGeometry(3,0.05,3);
   const cv=renderMandelbrotCanvas(128,8,1.5,-0.5+i*0.08,i*0.05);
   const tex=new THREE.CanvasTexture(cv);
   tex.minFilter=THREE.LinearFilter;
-  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,depthWrite:false});
   const mesh=new THREE.Mesh(geo,mat);
   mesh.visible=false;
   scene.add(mesh);
