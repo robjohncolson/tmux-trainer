@@ -4736,7 +4736,8 @@ function updateDyingEnemies(dt){
     d.elapsedMs+=dt;
     if(d.phase==='shrink'){
       const t=Math.min(1,d.elapsedMs/SHRINK_MS);
-      const ease=t*t; // easeInQuad
+      // Exponential decay — most of the shrink happens in the first 150ms
+      const ease=1-Math.pow(1-t,5);
       // Shrink — keep original color, get brighter, spin
       const s=d.originalScale*(1-ease*0.99);
       d.mesh.scale.setScalar(Math.max(0.02,s));
@@ -6750,7 +6751,7 @@ function animate(time){
     const twinkleOpacity=p.funnelToScore?(.55+Math.sin(twinklePhase)*.45):1;
     p.mesh.material.opacity=Math.max(0,p.life*twinkleOpacity);
     const twinkleScale=p.funnelToScore?(.6+Math.sin(twinklePhase*.7+1.2)*.4):1;
-    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.28,p.life*1.1):Math.max(.18,p.life))*twinkleScale;
+    const particleScale=(p.funnelToScore&&p.ageMs>p.burstMs?Math.max(.45,p.life*1.6):Math.max(.22,p.life))*twinkleScale;
     p.mesh.scale.setScalar(particleScale);
     // Spin plus symbols for star effect
     if(p.funnelToScore){p.mesh.rotation.z+=.04*frameScale*(1+Math.sin(p.twinkle)*.5)}
