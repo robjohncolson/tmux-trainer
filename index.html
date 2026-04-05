@@ -4715,7 +4715,6 @@ function removeEnemyMesh(id){
 }
 
 // ── Death Animation: shrink→white, expand white→yellow→red→fade ──
-const DEATH_EXPAND_COLORS=[0xffffff,0xffee66,0xffaa22,0xcc3300,0x880000];
 const SHRINK_MS=500,EXPAND_MS=900;
 const dyingEnemies=[];
 function lerpColor(a,b,t){
@@ -4723,14 +4722,9 @@ function lerpColor(a,b,t){
   const br=(b>>16)&0xff,bg=(b>>8)&0xff,bb=b&0xff;
   return((ar+Math.round((br-ar)*t))<<16)|((ag+Math.round((bg-ag)*t))<<8)|(ab+Math.round((bb-ab)*t));
 }
-function sampleColorArray(arr,t){
-  const ct=Math.max(0,Math.min(1,t))*(arr.length-1);
-  const i=Math.floor(ct);
-  if(i>=arr.length-1)return arr[arr.length-1];
-  return lerpColor(arr[i],arr[i+1],ct-i);
-}
 function startDeathAnimation(enemy,mesh,pts,particleCount,award){
   delete enemyMeshes[enemy.id];
+  deathCamHold=true;
   // Switch to transparent basic material for fade-out
   const startColor=mesh.material.color.getHex();
   mesh.material.dispose();
@@ -4766,15 +4760,14 @@ function updateDyingEnemies(dt){
     }else if(d.phase==='expand'){
       const t=Math.min(1,d.elapsedMs/EXPAND_MS);
       const ease=1-(1-t)*(1-t); // easeOutQuad — fast expand
-      // Scale up from tiny to ~5x original
-      const s=0.04+ease*(d.originalScale*5.0);
+      // Scale up from tiny to massive (eclipses the plane)
+      const s=0.04+ease*(d.originalScale*18);
       d.mesh.scale.setScalar(s);
-      // Color: white → yellow → red → deep red
-      const col=sampleColorArray(DEATH_EXPAND_COLORS,t);
-      d.mesh.material.color.setHex(col);
-      // Late fade: stays mostly opaque until the back 55%
-      const fadeT=Math.max(0,t-0.45)/0.55; // 0 until 45%, then 0→1
-      d.mesh.material.opacity=1.0-fadeT*fadeT; // easeIn fade — slow start, fast end
+      // Solid red the whole time
+      d.mesh.material.color.setHex(0xcc2200);
+      // Late fade: stays mostly opaque until the back 40%
+      const fadeT=Math.max(0,t-0.35)/0.65;
+      d.mesh.material.opacity=(1.0-fadeT*fadeT)*0.7; // peak 0.7, easeIn fade
       d.mesh.rotation.y+=0.08;
       // Spawn score particles once at ~50% expansion
       if(!d.explosionSpawned&&t>=0.5){
@@ -4787,6 +4780,7 @@ function updateDyingEnemies(dt){
       }
     }
   }
+  if(dyingEnemies.length===0)deathCamHold=false;
 }
 function clearDyingEnemies(){
   for(let i=dyingEnemies.length-1;i>=0;i--){
@@ -4797,6 +4791,7 @@ function clearDyingEnemies(){
     }
   }
   dyingEnemies.length=0;
+  deathCamHold=false;
 }
 
 function addChildEnemyMesh(enemy,offsetIdx){
@@ -6539,6 +6534,7 @@ document.addEventListener('touchend',function(e){const now=Date.now();if(now-las
 let touchStartX=0,touchStartY=0,touchStartTime=0;
 // Camera state
 let camZoomMult=1.0,camOrbitAngle=0; // orbit angle around focused cube
+let deathCamHold=false; // freeze camera during death animations
 let pinchStartDist=0,pinchStartZoom=1.0,isTwoFinger=false;
 let camMode='follow',lastDoubleTap=0; // 'follow' or 'cube'
 let ipMinimized=false; // question panel swiped down
@@ -6682,12 +6678,14 @@ function animate(time){
     const tx=ep.x+Math.sin(camOrbitAngle)*dist*0.3;
     const tz=ep.z+Math.cos(camOrbitAngle)*dist*0.15+dist;
     const ty=height;
-    camera.position.x+=(tx-camera.position.x)*.10;
-    camera.position.y+=(ty-camera.position.y)*.10;
-    camera.position.z+=(tz-camera.position.z)*.10;
+    // Hold camera during death animation — very slow lerp
+    const camRate=deathCamHold?0.01:0.10;
+    camera.position.x+=(tx-camera.position.x)*camRate;
+    camera.position.y+=(ty-camera.position.y)*camRate;
+    camera.position.z+=(tz-camera.position.z)*camRate;
     // Look slightly ahead of the cube — raised to catch sky/stars
     const lookBiasY=port?1.5:1.5;
-    camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
+    if(!deathCamHold)camera.lookAt(ep.x*0.8,lookBiasY,ep.z*0.7-1);
   }else{
     // Default orbit (title screen, no enemies)
     const orbY=isPortrait()?22:18;
