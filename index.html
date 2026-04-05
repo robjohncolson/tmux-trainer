@@ -358,7 +358,7 @@ function applyThemeToScene(){
   if(typeof ambLight!=='undefined')ambLight.color.setHex(p.dark);
   if(typeof dirLight!=='undefined')dirLight.color.setHex(p.bright);
   if(typeof serverLight!=='undefined')serverLight.color.setHex(p.hot);
-  if(typeof terrMat!=='undefined')terrMat.color.setHex(p.darkest);
+  if(typeof terrMat!=='undefined'&&terrMat.uniforms)terrMat.uniforms.baseColor.value.setHex(p.darkest);
   if(typeof wireMat!=='undefined')wireMat.color.setHex(p.dark);
   if(typeof smat!=='undefined'){smat.color.setHex(p.hot);smat.emissive.setHex(p.bright)}
   // Sky shader color uniforms
@@ -4417,42 +4417,7 @@ function spawnLightning(from,to,color,duration){
 }
 
 // ── Mandelbrot craters (spawn where falling stars land) ──
-// ── Real-time GPU Mandelbrot — rendered to texture, applied as terrain emissive map ──
-const mbrotRT=new THREE.WebGLRenderTarget(1024,1024,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
-const mbrotScene=new THREE.Scene();
-const mbrotCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-const mbrotMaterial=new THREE.ShaderMaterial({
-  depthTest:false,depthWrite:false,
-  uniforms:{
-    maxIter:{value:8.0},
-    zoom:{value:1.5},
-    center:{value:new THREE.Vector2(-0.5,0.0)},
-    time:{value:0.0}
-  },
-  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}',
-  fragmentShader:[
-    'varying vec2 vUv;',
-    'uniform float maxIter,zoom,time;',
-    'uniform vec2 center;',
-    'void main(){',
-    '  vec2 c=(vUv-0.5)*zoom+center;',
-    '  vec2 z=vec2(0.0);',
-    '  float i=0.0,done=0.0;',
-    '  for(int n=0;n<128;n++){',
-    '    if(done>0.5||float(n)>=maxIter)done=1.0;',
-    '    else{z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;i=float(n);',
-    '      if(dot(z,z)>4.0)done=1.0;}',
-    '  }',
-    '  if(i>=maxIter-1.0){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
-    '  float mu=i+1.0-log2(log2(dot(z,z))*0.5);',
-    '  float t=clamp(mu/maxIter,0.0,1.0);',
-    '  float b=pow(t,0.3);',
-    '  vec3 col=vec3(b,0.47*b+0.16*pow(t,0.8),0.06*b);',
-    '  gl_FragColor=vec4(col,1.0);',
-    '}'
-  ].join('\n')
-});
-mbrotScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),mbrotMaterial));
+// ── Mandelbrot state (computed per-pixel in terrain fragment shader) ──
 const MBROT={intensity:0,targetIntensity:0,iterations:8,impacts:0};
 
 // ── Falling stars (miss → star descends → crater spawns) ──
@@ -4502,19 +4467,15 @@ function growMandelbrot(){
   MBROT.impacts++;
   MBROT.iterations=Math.min(isReducedParticleMode()?48:96,8+MBROT.impacts*12);
   MBROT.targetIntensity=Math.min(1.4,0.2+MBROT.impacts*0.25);
-  mbrotMaterial.uniforms.maxIter.value=MBROT.iterations;
   console.log('[MBROT] impact #'+MBROT.impacts+', iter:'+MBROT.iterations+', intensity:'+MBROT.targetIntensity.toFixed(2));
 }
 function shrinkMandelbrot(){
   if(MBROT.targetIntensity<=0)return;
   MBROT.iterations=Math.max(4,MBROT.iterations-3);
   MBROT.targetIntensity=Math.max(0,MBROT.targetIntensity-0.06);
-  mbrotMaterial.uniforms.maxIter.value=MBROT.iterations;
 }
 function clearMandelbrot(){
   MBROT.intensity=0;MBROT.targetIntensity=0;MBROT.iterations=8;MBROT.impacts=0;
-  mbrotMaterial.uniforms.maxIter.value=8;
-  terrMat.emissiveIntensity=0;
 }
 
 // ── Born stars (success streaks birth new stars) ──
@@ -4551,7 +4512,63 @@ for(let i=0;i<verts.count;i++){
   verts.setY(i,h);
 }
 terrGeo.computeVertexNormals();
-const terrMat=new THREE.MeshPhongMaterial({color:AMB.darkest,flatShading:true,shininess:0,emissive:0xff8c00,emissiveIntensity:0,emissiveMap:mbrotRT.texture});
+const terrMat=new THREE.ShaderMaterial({
+  uniforms:{
+    baseColor:{value:new THREE.Color(AMB.darkest)},
+    lightDir:{value:new THREE.Vector3(5,12,8).normalize()},
+    lightColor:{value:new THREE.Color(AMB.bright)},
+    ambientColor:{value:new THREE.Color(AMB.dark)},
+    mbrotIntensity:{value:0.0},
+    mbrotIter:{value:8.0},
+    mbrotZoom:{value:1.5},
+    mbrotCenter:{value:new THREE.Vector2(-0.5,0.0)},
+    fogColor:{value:new THREE.Color(AMB.black)},
+    fogDensity:{value:0.035}
+  },
+  vertexShader:[
+    'varying vec3 vNormal,vWorldPos;varying vec2 vGridUv;',
+    'void main(){',
+    '  vNormal=normalize(normalMatrix*normal);',
+    '  vec4 wp=modelMatrix*vec4(position,1.0);',
+    '  vWorldPos=wp.xyz;',
+    '  vGridUv=vec2(position.x/24.0+0.5,position.z/24.0+0.5);',
+    '  gl_Position=projectionMatrix*viewMatrix*wp;',
+    '}'
+  ].join('\n'),
+  fragmentShader:[
+    'varying vec3 vNormal,vWorldPos;varying vec2 vGridUv;',
+    'uniform vec3 baseColor,lightDir,lightColor,ambientColor,fogColor;',
+    'uniform float mbrotIntensity,mbrotIter,mbrotZoom,fogDensity;',
+    'uniform vec2 mbrotCenter;',
+    'void main(){',
+    '  float diff=max(dot(vNormal,lightDir),0.0)*0.6;',
+    '  vec3 terrain=baseColor*(ambientColor*0.4+lightColor*diff);',
+    // Mandelbrot per-pixel
+    '  vec3 mbrot=vec3(0.0);',
+    '  if(mbrotIntensity>0.01){',
+    '    vec2 c=(vGridUv-0.5)*mbrotZoom+mbrotCenter;',
+    '    vec2 z=vec2(0.0);float i=0.0,done=0.0;',
+    '    for(int n=0;n<128;n++){',
+    '      if(done>0.5||float(n)>=mbrotIter)done=1.0;',
+    '      else{z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;i=float(n);',
+    '        if(dot(z,z)>4.0)done=1.0;}',
+    '    }',
+    '    if(i<mbrotIter-1.0){',
+    '      float mu=i+1.0-log2(log2(dot(z,z))*0.5);',
+    '      float t=clamp(mu/mbrotIter,0.0,1.0);',
+    '      float b=pow(t,0.3);',
+    '      mbrot=vec3(b,0.47*b+0.16*pow(t,0.8),0.06*b);',
+    '    }',
+    '  }',
+    '  vec3 col=terrain+mbrot*mbrotIntensity;',
+    // Fog
+    '  float fd=length(vWorldPos-cameraPosition);',
+    '  float fog=1.0-exp(-fogDensity*fd*fogDensity*fd);',
+    '  col=mix(col,fogColor,fog);',
+    '  gl_FragColor=vec4(col,1.0);',
+    '}'
+  ].join('\n')
+});
 const terrain=new THREE.Mesh(terrGeo,terrMat);scene.add(terrain);
 const wireGeo=terrGeo.clone();
 const wireMat=new THREE.MeshBasicMaterial({color:AMB.dark,wireframe:true,transparent:true,opacity:.25});
@@ -7066,18 +7083,13 @@ function animate(time){
     }
   });
 
-  // Real-time Mandelbrot — render to texture when active, gentle zoom drift
+  // Mandelbrot per-pixel — update terrain shader uniforms
   MBROT.intensity+=(MBROT.targetIntensity-MBROT.intensity)*0.06;
-  terrMat.emissiveIntensity=MBROT.intensity;
-  if(MBROT.intensity>0.01){
-    mbrotMaterial.uniforms.time.value=timeSec;
-    // Slow zoom drift into the boundary — deeper with each impact
-    const driftZoom=1.5-MBROT.impacts*0.08*Math.sin(timeSec*0.05);
-    mbrotMaterial.uniforms.zoom.value=Math.max(0.3,driftZoom);
-    renderer.setRenderTarget(mbrotRT);
-    renderer.render(mbrotScene,mbrotCamera);
-    renderer.setRenderTarget(null);
-  }
+  terrMat.uniforms.mbrotIntensity.value=MBROT.intensity;
+  terrMat.uniforms.mbrotIter.value=MBROT.iterations;
+  // Slow zoom drift into the boundary — deeper with each impact
+  const driftZoom=1.5-MBROT.impacts*0.06*Math.sin(timeSec*0.05);
+  terrMat.uniforms.mbrotZoom.value=Math.max(0.3,driftZoom);
 
   // Born stars animation
   bornStars.forEach(s=>{
