@@ -4420,20 +4420,26 @@ function spawnLightning(from,to,color,duration){
 // ── Mandelbrot craters (spawn where falling stars land) ──
 const CRATER_MAX=6;
 const CRATER_POOL=(()=>{
-  const minDist=3.0,xMin=-9,xMax=9,zMin=-10,zMax=-3;
-  const pts=[],maxAttempts=150;
+  // Positions near the enemy path but offset to sides — visible to camera
+  const pts=[],maxAttempts=200;
   let seed=137;
   function rng(){seed=(seed*16807+0)%2147483647;return(seed-1)/2147483646}
-  // Path points for distance check
   const pp=[[10,-7],[6,-4],[2,-6],[-2,-2],[1,1],[4,3],[0,5],[-7,4.5]];
   for(let i=0;i<maxAttempts&&pts.length<12;i++){
-    const x=xMin+rng()*(xMax-xMin),z=zMin+rng()*(zMax-zMin);
-    // Reject if too close to any path point
-    let nearPath=false;
-    for(const p of pp){if(Math.hypot(p[0]-x,p[1]-z)<3.5){nearPath=true;break}}
-    if(nearPath)continue;
+    // Pick a random path point, offset 2-4 units perpendicular
+    const pi=Math.floor(rng()*pp.length);
+    const angle=rng()*Math.PI*2;
+    const dist=2+rng()*2;
+    const x=pp[pi][0]+Math.cos(angle)*dist;
+    const z=pp[pi][1]+Math.sin(angle)*dist;
+    if(x<-11||x>11||z<-11||z>8)continue; // stay on terrain
+    // Not too close to path itself (min 1.5)
+    let tooClose=false;
+    for(const p of pp){if(Math.hypot(p[0]-x,p[1]-z)<1.5){tooClose=true;break}}
+    if(tooClose)continue;
+    // Not too close to other crater spots
     let ok=true;
-    for(const p of pts){if(Math.hypot(p.x-x,p.z-z)<minDist){ok=false;break}}
+    for(const p of pts){if(Math.hypot(p.x-x,p.z-z)<2.5){ok=false;break}}
     if(ok)pts.push({x,z});
   }
   return pts;
@@ -4464,7 +4470,7 @@ const craters=[];
 let craterPosIdx=0;
 const craterMeshPool=[];
 for(let i=0;i<CRATER_MAX;i++){
-  const geo=new THREE.PlaneGeometry(1.8,1.8);
+  const geo=new THREE.PlaneGeometry(2.5,2.5);
   geo.rotateX(-Math.PI/2);
   const mat=new THREE.ShaderMaterial({
     transparent:true,depthWrite:false,
@@ -7111,8 +7117,8 @@ function animate(time){
     cm.mat.uniforms.iterations.value=c.iterations;
     // Fade in over 1 second
     const age=(Date.now()-c.spawnTime)/1000;
-    const targetOp=c.iterations<=4?0:0.7;
-    cm.mat.uniforms.opacity.value+=(targetOp-cm.mat.uniforms.opacity.value)*0.05;
+    const targetOp=c.iterations<=4?0:0.85;
+    cm.mat.uniforms.opacity.value+=(targetOp-cm.mat.uniforms.opacity.value)*0.15;
     if(cm.mat.uniforms.opacity.value<0.01&&c.iterations<=4)cm.mesh.visible=false;
   });
 
