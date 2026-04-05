@@ -440,6 +440,71 @@ const AP_STATS_CARTRIDGE={
         {q:'A 3x4 table has how many df?',correct:'6 = (3-1)(4-1) = 2 times 3',wrong:['12','11']},
         {q:'Does this apply to GOF tests?',correct:'No, GOF uses k-1 (one-dimensional)',wrong:['Yes, same formula','Only if there are 2 rows']}
       ]},
+    {id:'chi-sq-select',action:'Which Chi-Square Test?',tier:'support',dom:'chi-square',
+      hint:'GOF = one variable vs claimed distribution. Homogeneity = same variable across populations. Independence = two variables in one population.',
+      explain:'All three use the same chi-square formula, but the design and hypotheses differ',
+      latex:'\\text{GOF: 1 var, claimed } p_i \\quad | \\quad \\text{Homog: 1 var, multiple pops} \\quad | \\quad \\text{Indep: 2 vars, 1 pop}',
+      blanks:[
+        {latex:'A researcher compares the distribution of a \\textbf{single categorical variable} across 3 school districts \\to \\boxed{\\,?\\,}',answer:'Homogeneity',choices:['Homogeneity','Independence','Goodness of Fit']},
+        {latex:'A survey asks 500 adults about \\textbf{party affiliation} and \\textbf{opinion on a policy} \\to \\boxed{\\,?\\,}',answer:'Independence',choices:['Independence','Homogeneity','Goodness of Fit']}
+      ],
+      subconcepts:[
+        {q:'When do you use a Goodness-of-Fit test?',correct:'One categorical variable compared to a claimed/hypothesized distribution',wrong:['Two categorical variables in one sample','One variable across multiple populations']},
+        {q:'What distinguishes homogeneity from independence?',correct:'Homogeneity compares one variable across separate populations; independence tests two variables within one population',wrong:['They use different formulas','Homogeneity requires equal sample sizes']},
+        {q:'A bag of candy claims 30% red, 20% blue, 50% green. You count 200 candies. Which test?',correct:'Goodness of Fit - one variable vs a claimed distribution',wrong:['Independence - two variables','Homogeneity - comparing groups']}
+      ]},
+    {id:'chi-sq-hyp',action:'Chi-Square Hypotheses (H0 and Ha)',tier:'support',dom:'chi-square',
+      hint:'H0 always states "no difference" or "fits the claimed distribution." Ha says "at least one differs."',
+      explain:'Chi-square tests are always one-sided (right-tail) because chi-square cannot be negative',
+      latex:'H_0\\!:\\text{observed fits expected} \\quad H_a\\!:\\text{at least one category differs}',
+      blanks:[
+        {latex:'\\text{GOF } H_0\\!: \\text{The distribution of [variable] is } \\boxed{\\,?\\,}',answer:'as claimed',choices:['as claimed','uniform','Normal']},
+        {latex:'\\text{Independence } H_0\\!: \\text{[var 1] and [var 2] are } \\boxed{\\,?\\,}',answer:'independent',choices:['independent','dependent','equal']}
+      ],
+      subconcepts:[
+        {q:'What does Ha say for a GOF test?',correct:'At least one proportion differs from the claimed value',wrong:['All proportions are different','The distribution is Normal']},
+        {q:'Why are chi-square tests always right-tailed?',correct:'Chi-square is always non-negative - large values indicate poor fit',wrong:['Because Ha is always "greater than"','Left-tail is for t-tests only']},
+        {q:'For a homogeneity test, what does H0 claim?',correct:'The distribution of the variable is the same across all populations',wrong:['The means are equal','The sample sizes are equal']}
+      ]},
+    {id:'chi-sq-conditions',action:'Conditions for Chi-Square Inference',tier:'support',dom:'chi-square',
+      hint:'Random, Independent (10% condition), Large Counts (all expected >= 5)',
+      explain:'Expected counts >= 5 (not observed) ensures the chi-square approximation is valid',
+      latex:'\\text{Random sample/experiment} \\quad \\text{Independent (10\\% rule)} \\quad \\text{All } E_i \\geq 5',
+      blanks:[
+        {latex:'\\text{Large counts condition: All } \\boxed{\\,?\\,} \\text{ counts} \\geq 5',answer:'expected',choices:['expected','observed','total']},
+        {latex:'\\text{Independence requires } n < \\boxed{\\,?\\,}',answer:'0.10N',choices:['0.10N','0.05N','N']}
+      ],
+      subconcepts:[
+        {q:'Why must EXPECTED counts (not observed) be at least 5?',correct:'The chi-square approximation breaks down when expected counts are small',wrong:['Observed counts are always larger','To ensure the data is Normal']},
+        {q:'A GOF test has one cell with E=3.2. What should you do?',correct:'The large counts condition is not met - results may not be valid',wrong:['Combine categories or collect more data and proceed','Ignore it if other cells are large']},
+        {q:'What does the 10% condition ensure for chi-square?',correct:'Sampling without replacement is approximately independent',wrong:['Expected counts are large enough','The sample is representative']}
+      ]},
+    {id:'chi-sq-conclude',action:'Chi-Square Conclusion Template',tier:'support',dom:'chi-square',
+      hint:'Compare p-value to alpha. State in context of the variables and populations.',
+      explain:'Never say "accept H0" - say "fail to reject." Always link back to the specific variables.',
+      latex:'\\text{Since p-value } [</>] \\; \\alpha\\text{, we [reject/fail to reject] } H_0',
+      blanks:[
+        {latex:'\\text{p-value} = 0.02,\\; \\alpha = 0.05 \\implies \\boxed{\\,?\\,} H_0',answer:'reject',choices:['reject','fail to reject','accept']},
+        {latex:'\\text{p-value} = 0.12,\\; \\alpha = 0.05 \\implies \\boxed{\\,?\\,}',answer:'fail to reject H_0',choices:['fail to reject H_0','reject H_0','accept H_a']}
+      ],
+      subconcepts:[
+        {q:'Why should you never say "accept H0"?',correct:'Failing to reject does not prove H0 true - we just lack evidence against it',wrong:['It is grammatically incorrect','Accepting requires alpha < 0.01']},
+        {q:'What must a conclusion in context include?',correct:'Reference to the specific variables and populations in the study',wrong:['The exact p-value','The expected counts table']},
+        {q:'After rejecting H0 in a chi-square test, what is a useful follow-up?',correct:'Examine standardized residuals to see which cells drove the result',wrong:['Run a t-test','Increase the sample size and retest']}
+      ]},
+    {id:'chi-sq-output',action:'Interpreting Chi-Square Output',tier:'support',dom:'chi-square',
+      hint:'Computer output gives chi-square, df, and p-value. You supply the context and conclusion.',
+      explain:'AP exam often gives output - your job is to verify conditions and state conclusions, not compute chi-square',
+      latex:'\\chi^2 = \\text{[value]}, \\quad df = \\text{[value]}, \\quad \\text{p-value} = \\text{[value]}',
+      blanks:[
+        {latex:'\\chi^2 = 14.2,\\; df = 3 \\implies \\text{the test has } \\boxed{\\,?\\,} \\text{ categories}',answer:'4',choices:['4','3','5']},
+        {latex:'\\text{df} = 6 \\text{ from a two-way table with } r=3 \\implies c = \\boxed{\\,?\\,}',answer:'4',choices:['4','3','7']}
+      ],
+      subconcepts:[
+        {q:'Computer output shows chi-square = 8.3, df = 4, p = 0.081. At alpha = 0.05, what do you conclude?',correct:'Fail to reject H0 - not enough evidence that the distribution differs',wrong:['Reject H0 - the result is significant','Cannot determine without expected counts']},
+        {q:'Why does the AP exam give you chi-square instead of making you calculate it?',correct:'The test focuses on interpretation and conditions, not arithmetic',wrong:['The formula is too hard to memorize','Students can use calculators']},
+        {q:'Output shows a large standardized residual (+3.1) in one cell. What does that mean?',correct:'That cell had far more observed than expected - a major contributor to the chi-square result',wrong:['The test is invalid','That cell should be removed']}
+      ]},
     {id:'power',action:'Power (1 \u2212 \u03b2, prob of rejecting false H\u2080)',tier:'support',dom:'inference',
       hint:'Probability of correctly rejecting a false H0',
       explain:'Higher power means better ability to detect real effects',
@@ -845,6 +910,11 @@ const VARIABLE_BANK={
   'expected-gof':[{s:'E',d:'expected count'},{s:'n',d:'sample size'},{s:'p',d:'hypothesized proportion'}],
   'df-gof':[{s:'df',d:'degrees of freedom'},{s:'k',d:'number of categories'}],
   'df-twoway':[{s:'r',d:'number of rows'},{s:'c',d:'number of columns'}],
+  'chi-sq-select':[{s:'\\text{GOF}',d:'test for one variable vs claimed distribution'},{s:'\\text{Homogeneity}',d:'test for one variable across multiple populations'},{s:'\\text{Independence}',d:'test for association between two variables in one population'}],
+  'chi-sq-hyp':[{s:'H_0',d:'null hypothesis of no difference, no association, or fits the claim'},{s:'H_a',d:'alternative that at least one category differs or variables are associated'},{s:'\\chi^2',d:'right-tailed test statistic for categorical inference'}],
+  'chi-sq-conditions':[{s:'E_i',d:'expected count in cell i'},{s:'N',d:'population size for the 10% condition'},{s:'5',d:'minimum expected count threshold'}],
+  'chi-sq-conclude':[{s:'P\\text{-value}',d:'probability of a result this extreme under H_0'},{s:'\\alpha',d:'significance level cutoff'},{s:'H_0',d:'null hypothesis referenced in reject/fail to reject statements'}],
+  'chi-sq-output':[{s:'\\chi^2',d:'computer-reported test statistic'},{s:'df',d:'degrees of freedom used to read the p-value'},{s:'P\\text{-value}',d:'reported tail probability for the test'}],
   'z-test-stat':[{s:'z',d:'test statistic'},{s:'SE',d:'standard error'}],
   'ci-formula':[{s:'\\text{statistic}',d:'point estimate'},{s:'SE',d:'standard error'}],
   'power':[{s:'\\beta',d:'prob of Type II error'},{s:'\\text{Power}',d:'prob of correctly rejecting false H_0'}],
@@ -956,6 +1026,11 @@ const APPLICATION_BANK={
   'chi-sq':[{scenario:'A die is rolled 300 times. Test whether outcomes fit a uniform distribution across all six faces.',confusionSet:['expected-gof','one-prop-z','two-prop-z']},{scenario:'A survey cross-classifies 500 adults by education level (HS/BA/grad) and political preference (Dem/Rep/Ind). Test whether preference is independent of education.',confusionSet:['expected-twoway','two-prop-z','cond-prob']},{scenario:'A geneticist compares observed flower-color ratios to a 9:3:3:1 Mendelian prediction.',confusionSet:['expected-gof','binom-pmf','one-prop-z']}],
   'expected-twoway':[{scenario:'In a two-way table of gender by major, find the value a cell should hold if the variables are independent.',confusionSet:['expected-gof','chi-sq','cond-prob']}],
   'expected-gof':[{scenario:'Under H0 the four blood types occur with proportions 0.44, 0.42, 0.10, 0.04 in a sample of 500.',confusionSet:['expected-twoway','chi-sq','binom-mean']}],
+  'chi-sq-select':[{scenario:'Before running categorical inference, a student must sort the design into one variable vs a claim, one variable across groups, or two variables from one sample.',confusionSet:['chi-sq-hyp','chi-sq-output','two-prop-z']},{scenario:'An FRQ describes a categorical study, and the first scoring point is deciding which chi-square setup matches the study design.',confusionSet:['chi-sq-hyp','chi-sq-conditions','one-prop-z']}],
+  'chi-sq-hyp':[{scenario:'After identifying a categorical procedure, a student now has to write the null and alternative statements in words before interpreting any output.',confusionSet:['p-value-interp','type-i-error','chi-sq-conclude']},{scenario:'A response needs the formal no-difference / no-association claim for a categorical inference procedure.',confusionSet:['p-value-interp','type-i-error','chi-sq-select']}],
+  'chi-sq-conditions':[{scenario:'A write-up checks random sampling, approximate independence, and whether every model-based cell count is large enough before trusting the test.',confusionSet:['large-counts','ten-pct-condition','random-condition']},{scenario:'A student is grading whether a categorical inference argument justified randomness, independence, and count assumptions.',confusionSet:['large-counts','ten-pct-condition','random-condition']}],
+  'chi-sq-conclude':[{scenario:'After comparing a reported tail probability to alpha, the student must state the decision and explain it in the context of the study.',confusionSet:['p-value-interp','type-i-error','type-ii-error']},{scenario:'A free-response answer needs the correct reject/fail-to-reject language tied back to the variables and populations under study.',confusionSet:['p-value-interp','type-i-error','type-ii-error']}],
+  'chi-sq-output':[{scenario:'A calculator printout reports a test statistic, degrees of freedom, and a tail probability. The student must translate that output into a contextual decision.',confusionSet:['chi-sq','df-gof','df-twoway']},{scenario:'A statistics package gives categorical inference output, and the task is to read df, infer table structure, and interpret the p-value.',confusionSet:['chi-sq','df-gof','df-twoway']}],
   'std-resid-chi':[{scenario:'After a significant chi-square result, identify which cells contributed most to the statistic.',confusionSet:['chi-sq','residual','expected-twoway']}],
   'slope-mean':[{scenario:'A statistician imagines drawing thousands of samples and fitting a regression line each time. What does the long-run average of those slopes converge to?',confusionSet:['xbar-mean','phat-mean','slope-b']}],
   'slope-se':[{scenario:'A biologist fits a regression of wing length on body mass for 30 birds and wants to know how precisely the sample slope estimates the true slope.',confusionSet:['slope-sd','xbar-se','phat-se']}],
@@ -993,6 +1068,8 @@ const RELATIONSHIP_BANK={
   'two-mean-ci':[{input:'n1 and n2 (sample sizes)',output:'interval width',direction:'decreases',explain:'Larger samples reduce SE, narrowing the interval'},{input:'confidence level',output:'interval width',direction:'increases',explain:'Higher confidence uses a larger t*, widening the interval'}],
   'paired-t':[{input:'n (number of pairs)',output:'t statistic (magnitude)',direction:'increases',explain:'More pairs reduce s_d/sqrt(n), increasing |t|'},{input:'s_d (SD of differences)',output:'t statistic (magnitude)',direction:'decreases',explain:'More variability in differences inflates the denominator'}],
   'chi-sq':[{input:'n (sample size)',output:'chi-square statistic',direction:'increases',explain:'Larger n increases expected counts, amplifying (O-E)\u00b2/E terms'},{input:'difference (O minus E)',output:'chi-square statistic',direction:'increases',explain:'Each (O-E)\u00b2/E term grows with larger discrepancies from expected'}],
+  'chi-sq-conditions':[{input:'expected counts',output:'validity of the chi-square approximation',direction:'decreases',explain:'Smaller expected counts make the chi-square approximation less reliable'}],
+  'chi-sq-output':[{input:'chi-square statistic (holding df constant)',output:'p-value',direction:'decreases',explain:'For fixed degrees of freedom, larger chi-square values push farther into the right tail and produce smaller p-values'}],
   'slope-sd':[{input:'n (sample size)',output:'SD of slope b',direction:'decreases',explain:'sqrt(n) is in the denominator — more data gives more precise slopes'},{input:'sigma (residual SD)',output:'SD of slope b',direction:'increases',explain:'sigma in numerator — more noise means less precise slopes'},{input:'sigma_x (spread of x)',output:'SD of slope b',direction:'decreases',explain:'sigma_x in denominator — more spread in x anchors the slope'}],
   'slope-se':[{input:'n (sample size)',output:'SE of slope b',direction:'decreases',explain:'sqrt(n-1) in denominator — more data reduces slope uncertainty'},{input:'s (residual SD)',output:'SE of slope b',direction:'increases',explain:'s in numerator — noisier data gives a less precise slope'},{input:'s_x (spread of x)',output:'SE of slope b',direction:'decreases',explain:'s_x in denominator — wider x range pins down the slope better'}],
   'slope-t':[{input:'n (sample size)',output:'t statistic (magnitude)',direction:'increases',explain:'Larger n reduces SE_b in the denominator, making t larger'},{input:'s (residual SD)',output:'t statistic (magnitude)',direction:'decreases',explain:'More residual noise inflates SE_b, reducing |t|'}],
@@ -1449,6 +1526,12 @@ const SHARED_PREREQ_NODES={
   'critical-value-concept':{id:'critical-value-concept',type:'conceptual',level:2,
     q:'What is a critical value (z* or t*)?',correct:'The cutoff from the reference distribution for a given confidence level',
     wrong:['The sample mean','The standard error'],prereqs:['z-score-concept','distribution-shape','interval-concept']},
+  'chi-square-design':{id:'chi-square-design',type:'conceptual',level:2,
+    q:'How do the three chi-square tests differ by design?',correct:'GOF = one variable vs a claimed distribution; homogeneity = one variable across populations; independence = two variables in one population',
+    wrong:['They use different formulas','Only one of them uses expected counts'],prereqs:['sample-vs-population','independence-concept','observed-vs-expected']},
+  'back-transform-concept':{id:'back-transform-concept',type:'conceptual',level:2,
+    q:'How do you convert a prediction on a log scale back to the original scale?',correct:'Exponentiate the fitted value to undo the log transform',
+    wrong:['Take the log again','Subtract the slope'],prereqs:['exponent-concept','distribution-shape']},
   'interval-concept':{id:'interval-concept',type:'conceptual',level:3,
     q:'What does \u00b1 create on a number line?',correct:'A range of values centered on a point',
     wrong:['A single exact value','Two separate points'],prereqs:['number-line-concept','subtract-from-whole']},
@@ -1629,9 +1712,10 @@ function wireL1toL2(PREREQ_DAG){
     [/p\(1-p\)|1-p|complement/i,['complement-concept','proportion-arithmetic']],
     [/Normal|CLT|central limit|approx.*Normal/i,['clt-concept','normal-approx']],
     [/z.score|standard.*unit|how many SD/i,['z-score-concept']],
-    [/H.?0|null hyp|hypothes.*test/i,['hypothesis-framework']],
+    [/H.?0|H.?a|null hyp|alternative hyp|hypothes.*test/i,['hypothesis-framework']],
     [/\u221an|sqrt.*n|sample size.*reduc|larger.*sample.*variab/i,['sqrt-n-effect']],
     [/critical|z\*|t\*/i,['critical-value-concept']],
+    [/goodness.?of.?fit|\bGOF\b|homogeneity|one categorical variable|claimed distribution|multiple populations|two variables.*one population|one-dimensional/i,['chi-square-design','sample-vs-population','independence-concept']],
     [/\u00b1|margin|interval|range.*plausible/i,['interval-concept']],
     [/observed|(?<!\w)O(?!\w).*count/i,['observed-vs-expected']],
     [/expected.*count|(?<!\w)E(?!\w).*count/i,['observed-vs-expected']],
@@ -1642,7 +1726,11 @@ function wireL1toL2(PREREQ_DAG){
     [/residual|observed.*predicted/i,['residual-concept']],
     [/BINS|binary.*independent|binomial.*condition/i,['bins-conditions']],
     [/p\s*=.*trial|success rate|probability.*success/i,['proportion-arithmetic']],
+    [/what happens to .* as p increases|approaches 1|success almost certain/i,['proportion-arithmetic','bigger-smaller']],
+    [/no fixed number of trials|fixed number of trials/i,['bins-conditions']],
+    [/p-hat1 and p-hat2 separately|each group estimates its own proportion/i,['sample-vs-population','unbiased-estimator']],
     [/fraction|ratio|divide.*by/i,['fraction-concept','division-concept']],
+    [/subtract mu|distance from the center/i,['subtraction-for-deviation','mean-concept']],
     [/y.intercept|"a".*represent|predict.*when x|a\b.*represent.*intercept/i,['intercept-concept']],
     [/\br\b.*measure|linear.*assoc|correlation|strength.*direction/i,['correlation-concept']],
     [/P\(A.*B\)|both.*occur|intersect|mutually exclusive/i,['double-counting']],
@@ -1655,6 +1743,7 @@ function wireL1toL2(PREREQ_DAG){
     [/\bp.hat\b|p\u0302|sample proportion/i,['unbiased-estimator','proportion-arithmetic']],
     [/\bs\b.*measure|prediction error|typical.*error/i,['variance-to-sd','residual-concept']],
     [/not.*change.*SD|shift.*equally|spread.*unchanged/i,['variance-to-sd']],
+    [/multiply by 2\.54|multiplies the SD|does what to SD/i,['variance-to-sd']],
     [/absolute value|non.negative|always positive/i,['squaring-concept']],
     [/\bSE.*unit|statistic.*from.*parameter/i,['se-concept','z-score-concept']],
     [/variance|s\u00b2|square.*of.*SD|SD.*square/i,['squaring-concept','variance-to-sd']],
@@ -1664,6 +1753,8 @@ function wireL1toL2(PREREQ_DAG){
     [/10%|population size|sampling.*replacement/i,['independence-concept','sample-vs-population']],
     [/large counts|np.*10|n.*30|condition.*check/i,['clt-concept','proportion-arithmetic']],
     [/chi.square|cell.*contribut|standardized.*resid/i,['observed-vs-expected','squaring-concept']],
+    [/why subtract 1|last is determined|row totals are fixed/i,['df-concept','constraint-concept']],
+    [/within the fences|fences/i,['order-statistics-concept']],
     [/confidence.*level|1\.96|95%|99%/i,['critical-value-concept','interval-concept']],
     [/plausible.*value|range.*true|estimate.*parameter/i,['interval-concept','parameter-concept']],
     [/cause|causation|experiment/i,['independence-concept']],
@@ -1671,6 +1762,7 @@ function wireL1toL2(PREREQ_DAG){
     [/n.*different|unequal.*size|n_?[12].*differ/i,['sample-vs-population']],
     [/1\.5|multiplier|convention|cutoff.*outlier/i,['mean-concept']],
     [/log.*transform|curved|exponential.*pattern|linearize/i,['residual-concept']],
+    [/back.transform|10 raised to|log\(y\)/i,['back-transform-concept']],
   ];
   for(const node of Object.values(PREREQ_DAG)){
     if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;
