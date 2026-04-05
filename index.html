@@ -4622,11 +4622,15 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
   const totalCount=rainbow&&isReducedParticleMode()?Math.max(10,Math.round(count*.7)):count;
   for(let i=0;i<totalCount;i++){
     const c=rainbow?RAINBOW[i%RAINBOW.length]:color;
-    const m=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({
+    const mat=rainbow?new THREE.MeshPhongMaterial({
+      color:0xffffff,emissive:c,emissiveIntensity:2.5,
+      transparent:true,opacity:1,
+      blending:THREE.AdditiveBlending,depthWrite:false,fog:false
+    }):new THREE.MeshBasicMaterial({
       color:c,transparent:true,opacity:1,
-      blending:rainbow?THREE.AdditiveBlending:THREE.NormalBlending,
-      depthWrite:!rainbow
-    }));
+      blending:THREE.NormalBlending,depthWrite:true
+    });
+    const m=new THREE.Mesh(particleGeo,mat);
     m.position.copy(pos);
     const spread=rainbow?.2:.15;
     const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
