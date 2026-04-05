@@ -1973,6 +1973,75 @@ A full Codex-generated modularization plan exists in `codex-modularize-prompt.md
 - `unit8-audio-extract-spec.md` — combined spec for both tasks
 - `codex-modularize-prompt.md` — full modularization research prompt
 
+### Audio extraction reverted
+
+The `td-audio.js` extraction (Task B from a760c62) was reverted in d4a31e8 due to gameplay regressions (all cubes disappearing on single breach, Mandelbrot stars not firing). `index.html` and `sw.js` were restored to the pre-extraction state. The SFX engine remains inline. The 5 Unit 8 chi-square cards in `ap-stats-cartridge.js` were preserved. Audio extraction is deferred to post-exam as part of the broader modularization plan.
+
+## Latest Update: Unboxing Death Animation (April 5, 2026)
+
+Replaced the shrink-to-nothing death animation with an "unboxing" effect. When a correct answer kills an enemy, the cube's 6 faces separate outward, the selection reticle shatters into spinning corner shrapnel, and rainbow particles burst from the cube volume.
+
+### What shipped
+
+- **Face separation**: `startDeathAnimation()` removes the original cube mesh immediately and spawns 6 `PlaneGeometry` faces matching the cube's size. Faces use a brightened (1.8x) version of the depth color with `AdditiveBlending`. Each face flies outward along its normal with random perpendicular offset and random angular velocity (tumbling). Faces are not faded — they tumble off-screen and are cleaned up at 800ms.
+
+- **Reticle shatter**: when the killed enemy was the selected target, the 4 corner-bracket segments from `selectionReticle` are cloned into individual `LineSegments` that fly outward with fast spin (~10 rad/sec on all 3 axes). White additive blending, opacity fades 0.85→0 over 400ms. Shared reticle hidden immediately.
+
+- **Compressed particle release**: particles now spawn **within the cube volume** (not at a single point) via new `spawnVolume` option on `spawnExplosion()`. Initial velocity is tiny (spread 0.06 vs 0.2) for a ~100ms "pressurized gas" beat. After the pressurized phase, particles push outward radially from the cube center before the existing score funnel takes over.
+
+- **spawnExplosion() additions** (backward-compatible):
+  - `opts.spawnVolume` (number): randomize spawn positions within a box of this size
+  - `opts.burstMs` (number): override the default 250-400ms burst duration
+  - Volume-spawned particles get `compressedBurst:true` and `burstOrigin` for the pressurized→expansion phase
+  - Non-volume callers (breach explosions, etc.) keep their old behavior
+
+### Data structure change
+
+`dyingEnemies` entries now contain:
+```javascript
+{
+  faces: [{mesh, vel, angVel}, ...],     // 6 face planes
+  corners: [{mesh, vel, angVel, life}],  // 0 or 4 reticle shards
+  elapsedMs, maxMs: 800,
+  explosionSpawned: true,                // always true (particles spawn immediately)
+  position, pts, particleCount, award, cubeSize
+}
+```
+
+### Helper functions (new)
+
+- `brightenHexColor(hex, mult)` — clamp-safe RGB brightening
+- `getEnemyDepthColor(enemy, mesh)` — returns depth-appropriate color hex
+- `randomAngularVelocity(maxSpeed)` — random spin on 2 random axes
+- `disposeSceneMesh(mesh)` — shared cleanup (remove from scene, dispose geometry + material)
+- `createDeathFaces(position, cubeSize, colorHex, baseQuaternion)` — builds 6 face shards
+- `createReticleCorners(enemy, position)` — builds 4 corner shrapnel pieces from reticle geometry
+- `cleanupDyingEnemy(entry)` — disposes faces + corners
+
+### Contract preserved
+
+- `handleHit()` call site unchanged (line ~4767)
+- `checkWaveComplete()` still gates on `dyingEnemies.length === 0`
+- `clearDyingEnemies()` cleanup on screen transitions still works (no deferred explosion needed since particles spawn immediately)
+- Camera death-hold branch still works (`dyingEnemies.length > 0`)
+- Deferred score awards via particle `awardId` unchanged
+
+### Important code areas (new/updated)
+
+- `index.html` line 3305: `UNBOX_DEATH_MS=800`, `RETICLE_SHATTER_MS=400`, face normal/rotation defs
+- `index.html` line 3322: `dyingEnemies[]` with new entry shape
+- `index.html` line 3355: `createDeathFaces()` — 6 PlaneGeometry shards with tumble
+- `index.html` line 3383: `createReticleCorners()` — 4 LineSegments shrapnel from reticle geometry
+- `index.html` line 3426: `startDeathAnimation()` — face creation, reticle shatter, immediate particle spawn
+- `index.html` line 3453: `updateDyingEnemies()` — face/corner physics + cleanup
+- `index.html` line 3483: `clearDyingEnemies()` — simplified (no deferred explosion)
+- `index.html` line 3208: `spawnExplosion()` — `spawnVolume`/`burstMs` support
+- `index.html` line 5495: particle loop — `compressedBurst` pressurized→expansion phase
+
+### Spec artifact
+
+- `unboxing-death-spec.md` — full design with phase breakdown and constraints
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design, trees/ferns on boundary, stars in the void
@@ -1982,11 +2051,10 @@ A full Codex-generated modularization plan exists in `codex-modularize-prompt.md
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
 - Mobile input panel UX refinement — the swipe up/down + canvas shift needs more polish
-- Further modularization (post-exam): `td-progress.js`, `td-render.js`, `td-ui.js`
+- Further modularization (post-exam): `td-audio.js`, `td-progress.js`, `td-render.js`, `td-ui.js`
 
 ## GitNexus Note
 
 - GitNexus index was refreshed with `npx gitnexus analyze`.
 - The current GitNexus CLI in this environment indexed the repo, but it did not resolve the inline JS functions in `index.html` as named symbols for `impact/context`.
 - Manual call-site analysis was used for the HTML inline-script functions during this pass.
-- Post-extraction: `td-audio.js` is now a separate file that GitNexus can index as named symbols. Future `gitnexus analyze` runs should resolve SFX API methods.

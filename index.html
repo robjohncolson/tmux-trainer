@@ -3205,17 +3205,28 @@ function spawnExplosion(pos,count=12,color=AMB.glow,rainbow=false,opts){
       depthWrite:!rainbow
     }));
     m.position.copy(pos);
-    const spread=rainbow?.2:.15;
-    const v=new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
+    if(options.spawnVolume){
+      const sv=Number(options.spawnVolume)||0;
+      m.position.x+=(Math.random()-.5)*sv;
+      m.position.y+=(Math.random()-.5)*sv;
+      m.position.z+=(Math.random()-.5)*sv;
+    }
+    const spread=options.spawnVolume ? 0.06 : (rainbow ? 0.2 : 0.15);
+    const v=options.spawnVolume
+      ?new THREE.Vector3((Math.random()-.5)*spread,(Math.random()-.5)*spread,(Math.random()-.5)*spread)
+      :new THREE.Vector3((Math.random()-.5)*2,Math.random()*2.5+.5,(Math.random()-.5)*2).multiplyScalar(spread);
+    const burstMs=options.burstMs!=null?options.burstMs+Math.random()*50:(rainbow?250+Math.random()*150:0);
     particles.push({
-      mesh:m,vel:v,life:rainbow?4.5:1,decay:rainbow?.006+Math.random()*.004:.015+Math.random()*.015,
-      ageMs:0,burstMs:rainbow?250+Math.random()*150:0,
+      mesh:m,vel:v,life:rainbow?4.5:1,decay:rainbow ? 0.006+Math.random()*.004 : 0.015+Math.random()*.015,
+      ageMs:0,burstMs,
       funnelToScore:rainbow,
       awardId:options.awardId??null,
       trailTicker:0,
-      swirl:(Math.random()-.5)*(rainbow?.024:.01),
+      swirl:(Math.random()-.5)*(rainbow ? 0.024 : 0.01),
       twinkle:Math.random()*Math.PI*2,
-      branchDepth:0,branched:false
+      branchDepth:0,branched:false,
+      compressedBurst:!!options.spawnVolume,
+      burstOrigin:options.spawnVolume?pos.clone():null
     });
     scene.add(m);
   }
@@ -3291,59 +3302,187 @@ function removeEnemyMesh(id){
   delete enemyMeshes[id];
 }
 
-// ── Death Animation: shrink→white, expand white→yellow→red→fade ──
-const SHRINK_MS=500;
+// ── Death Animation: cube unboxes into faces + reticle shrapnel ──
+const UNBOX_DEATH_MS=800;
+const RETICLE_SHATTER_MS=400;
+const deathFaceDefs=[
+  {normal:new THREE.Vector3(1,0,0),rotation:new THREE.Euler(0,Math.PI/2,0)},
+  {normal:new THREE.Vector3(-1,0,0),rotation:new THREE.Euler(0,-Math.PI/2,0)},
+  {normal:new THREE.Vector3(0,1,0),rotation:new THREE.Euler(-Math.PI/2,0,0)},
+  {normal:new THREE.Vector3(0,-1,0),rotation:new THREE.Euler(Math.PI/2,0,0)},
+  {normal:new THREE.Vector3(0,0,1),rotation:new THREE.Euler(0,0,0)},
+  {normal:new THREE.Vector3(0,0,-1),rotation:new THREE.Euler(0,Math.PI,0)}
+];
+const reticleCornerDirs=[
+  new THREE.Vector3(-1,1,0),
+  new THREE.Vector3(1,1,0),
+  new THREE.Vector3(-1,-1,0),
+  new THREE.Vector3(1,-1,0)
+];
 const dyingEnemies=[];
+function brightenHexColor(hex,mult=1.8){
+  const color=new THREE.Color(hex);
+  color.r=Math.min(1,color.r*mult);
+  color.g=Math.min(1,color.g*mult);
+  color.b=Math.min(1,color.b*mult);
+  return color.getHex();
+}
+function getEnemyDepthColor(enemy,mesh){
+  const depth=enemy&&enemy.splitDepth||0;
+  if(depth>=4)return 0xcccccc;
+  if(depth>=3)return 0x44cc66;
+  if(depth>=2)return 0x44bbcc;
+  if(depth>=1)return 0x4488ff;
+  return AMB.hot;
+}
+function randomAngularVelocity(maxSpeed){
+  const components=['x','y','z'];
+  const first=Math.floor(Math.random()*components.length);
+  let second=Math.floor(Math.random()*components.length);
+  if(second===first)second=(second+1)%components.length;
+  const angVel=new THREE.Vector3();
+  angVel[components[first]]=(Math.random()-.5)*maxSpeed;
+  angVel[components[second]]=(Math.random()-.5)*maxSpeed;
+  return angVel;
+}
+function disposeSceneMesh(mesh){
+  if(!mesh)return;
+  scene.remove(mesh);
+  if(mesh.geometry)mesh.geometry.dispose();
+  if(Array.isArray(mesh.material))mesh.material.forEach(mat=>mat&&mat.dispose&&mat.dispose());
+  else if(mesh.material&&mesh.material.dispose)mesh.material.dispose();
+}
+function createDeathFaces(position,cubeSize,colorHex,baseQuaternion){
+  const brightHex=brightenHexColor(colorHex,1.8);
+  return deathFaceDefs.map(def=>{
+    const geo=new THREE.PlaneGeometry(cubeSize,cubeSize);
+    const mat=new THREE.MeshBasicMaterial({
+      color:brightHex,
+      transparent:true,
+      opacity:1,
+      depthWrite:false,
+      side:THREE.DoubleSide,
+      blending:THREE.AdditiveBlending
+    });
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.copy(position);
+    mesh.quaternion.copy(baseQuaternion).multiply(new THREE.Quaternion().setFromEuler(def.rotation));
+    const outward=def.normal.clone().applyQuaternion(baseQuaternion).normalize();
+    const lateral=new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).projectOnPlane(outward);
+    if(lateral.lengthSq()<1e-5){
+      if(Math.abs(outward.y)<0.9)lateral.set(0,1,0).projectOnPlane(outward);
+      else lateral.set(1,0,0).projectOnPlane(outward);
+    }
+    lateral.normalize().multiplyScalar(.3+Math.random()*.2);
+    const vel=outward.multiplyScalar(3+Math.random()).add(lateral);
+    const angVel=randomAngularVelocity(8);
+    scene.add(mesh);
+    return{mesh,vel,angVel};
+  });
+}
+function createReticleCorners(enemy,position){
+  const attr=selectionReticle.geometry.getAttribute('position');
+  if(!attr)return[];
+  const src=attr.array;
+  const corners=[];
+  const basePosition=selectionReticle.visible?selectionReticle.position.clone():position.clone();
+  const baseScale=selectionReticle.visible
+    ?selectionReticle.scale.clone()
+    :new THREE.Vector3(1,1,1).multiplyScalar((enemy.splitDepth||0)>=2 ? 0.6 : (enemy.splitDepth||0)>=1 ? 0.8 : 1);
+  const baseQuaternion=selectionReticle.visible?selectionReticle.quaternion.clone():(()=>{
+    const pivot=new THREE.Object3D();
+    pivot.position.copy(position);
+    pivot.lookAt(camera.position.x,position.y,camera.position.z);
+    return pivot.quaternion.clone();
+  })();
+  for(let i=0;i<4;i++){
+    const verts=src.slice(i*12,(i+1)*12);
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(verts),3));
+    const mat=new THREE.LineBasicMaterial({
+      color:0xffffff,
+      transparent:true,
+      opacity:0.85,
+      fog:false,
+      depthWrite:false,
+      blending:THREE.AdditiveBlending
+    });
+    const mesh=new THREE.LineSegments(geo,mat);
+    mesh.position.copy(basePosition);
+    mesh.quaternion.copy(baseQuaternion);
+    mesh.scale.copy(baseScale);
+    mesh.renderOrder=selectionReticle.renderOrder;
+    const vel=reticleCornerDirs[i].clone().applyQuaternion(baseQuaternion).normalize().multiplyScalar(4+Math.random());
+    const angVel=new THREE.Vector3((Math.random()-.5)*10,(Math.random()-.5)*10,(Math.random()-.5)*10);
+    scene.add(mesh);
+    corners.push({mesh,vel,angVel,life:RETICLE_SHATTER_MS});
+  }
+  return corners;
+}
+function cleanupDyingEnemy(entry){
+  entry.faces.forEach(face=>disposeSceneMesh(face.mesh));
+  entry.corners.forEach(corner=>disposeSceneMesh(corner.mesh));
+}
 function startDeathAnimation(enemy,mesh,pts,particleCount,award){
+  const deathPos=mesh.position.clone();
+  const baseQuaternion=mesh.quaternion.clone();
+  const geometryParams=mesh.geometry&&mesh.geometry.parameters?mesh.geometry.parameters:{};
+  const cubeSize=(geometryParams.width||geometryParams.height||geometryParams.depth||.45)*(mesh.scale&&mesh.scale.x?mesh.scale.x:1);
+  const colorHex=getEnemyDepthColor(enemy,mesh);
+  const wasSelected=enemy.id===G.selectedId;
   delete enemyMeshes[enemy.id];
-  // Switch to transparent basic material for fade-out
-  const startColor=mesh.material.color.getHex();
-  mesh.material.dispose();
-  mesh.material=new THREE.MeshBasicMaterial({color:startColor,transparent:true,opacity:1,depthWrite:false});
+  scene.remove(mesh);
+  if(mesh.geometry)mesh.geometry.dispose();
+  if(mesh.material&&mesh.material.dispose)mesh.material.dispose();
+  const faces=createDeathFaces(deathPos,cubeSize,colorHex,baseQuaternion);
+  const corners=wasSelected?createReticleCorners(enemy,deathPos):[];
+  if(wasSelected)selectionReticle.visible=false;
+  spawnExplosion(deathPos,particleCount,AMB.glow,true,{
+    awardId:award?award.id:null,
+    spawnVolume:cubeSize,
+    burstMs:120
+  });
   dyingEnemies.push({
-    mesh,position:mesh.position.clone(),
-    elapsedMs:0,phase:'shrink',explosionSpawned:false,
+    faces,corners,
+    elapsedMs:0,maxMs:UNBOX_DEATH_MS,explosionSpawned:true,
+    position:deathPos,
     pts,particleCount,award,
-    originalScale:mesh.scale.x,startColor
+    cubeSize
   });
 }
 function updateDyingEnemies(dt){
   for(let i=dyingEnemies.length-1;i>=0;i--){
     const d=dyingEnemies[i];
     d.elapsedMs+=dt;
-    if(d.phase==='shrink'){
-      const t=Math.min(1,d.elapsedMs/SHRINK_MS);
-      // Exponential decay — most of the shrink happens in the first 150ms
-      const ease=1-Math.pow(1-t,5);
-      // Shrink — keep original color, get brighter, spin
-      const s=d.originalScale*(1-ease*0.99);
-      d.mesh.scale.setScalar(Math.max(0.02,s));
-      d.mesh.material.emissiveIntensity=0.2+t*0.8;
-      d.mesh.material.opacity=0.9+t*0.1;
-      d.mesh.rotation.y+=0.03+t*0.15;
-      // At <1% original volume, release particles and remove
-      if(s<=d.originalScale*0.01&&!d.explosionSpawned){
-        d.explosionSpawned=true;
-        spawnExplosion(d.position,d.particleCount,AMB.glow,true,d.award?{awardId:d.award.id}:{});
+    const dtSec=dt*.001;
+    d.faces.forEach(face=>{
+      face.mesh.position.addScaledVector(face.vel,dtSec);
+      face.mesh.rotation.x+=face.angVel.x*dtSec;
+      face.mesh.rotation.y+=face.angVel.y*dtSec;
+      face.mesh.rotation.z+=face.angVel.z*dtSec;
+    });
+    for(let j=d.corners.length-1;j>=0;j--){
+      const corner=d.corners[j];
+      corner.life-=dt;
+      corner.mesh.position.addScaledVector(corner.vel,dtSec);
+      corner.mesh.rotation.x+=corner.angVel.x*dtSec;
+      corner.mesh.rotation.y+=corner.angVel.y*dtSec;
+      corner.mesh.rotation.z+=corner.angVel.z*dtSec;
+      corner.mesh.material.opacity=Math.max(0,.85*(corner.life/RETICLE_SHATTER_MS));
+      if(corner.life<=0){
+        disposeSceneMesh(corner.mesh);
+        d.corners.splice(j,1);
       }
-      if(t>=1){
-        if(!d.explosionSpawned){
-          d.explosionSpawned=true;
-          spawnExplosion(d.position,d.particleCount,AMB.glow,true,d.award?{awardId:d.award.id}:{});
-        }
-        scene.remove(d.mesh);d.mesh.geometry.dispose();d.mesh.material.dispose();
-        dyingEnemies.splice(i,1);
-      }
+    }
+    if(d.elapsedMs>=d.maxMs){
+      cleanupDyingEnemy(d);
+      dyingEnemies.splice(i,1);
     }
   }
 }
 function clearDyingEnemies(){
   for(let i=dyingEnemies.length-1;i>=0;i--){
-    const d=dyingEnemies[i];
-    if(d.mesh){scene.remove(d.mesh);d.mesh.geometry.dispose();d.mesh.material.dispose();}
-    if(!d.explosionSpawned&&d.award){
-      spawnExplosion(d.position,d.particleCount,AMB.glow,true,{awardId:d.award.id});
-    }
+    cleanupDyingEnemy(dyingEnemies[i]);
   }
   dyingEnemies.length=0;
 }
@@ -5354,10 +5493,27 @@ function animate(time){
     p.ageMs=(p.ageMs||0)+dt;
     if(p.funnelToScore){
       if(p.ageMs<p.burstMs){
-        p.vel.multiplyScalar(1.012);
-        p.vel.y-=.0035*frameScale;
+        const pressurizedMs=p.compressedBurst?Math.min(100,Math.max(48,p.burstMs*.72)):0;
+        if(p.compressedBurst){
+          if(p.ageMs<pressurizedMs){
+            p.vel.multiplyScalar(Math.pow(.8,frameScale));
+            p.vel.x+=(Math.random()-.5)*.0022*frameScale;
+            p.vel.y+=(Math.random()-.5)*.0022*frameScale;
+            p.vel.z+=(Math.random()-.5)*.0022*frameScale;
+          }else{
+            const outward=p.mesh.position.clone().sub(p.burstOrigin||p.mesh.position);
+            if(outward.lengthSq()<1e-6)outward.set(Math.random()-.5,Math.random()-.5,Math.random()-.5);
+            outward.normalize();
+            p.vel.addScaledVector(outward,.018*frameScale);
+            p.vel.multiplyScalar(Math.pow(1.11,frameScale));
+          }
+        }else{
+          p.vel.multiplyScalar(1.012);
+          p.vel.y-=.0035*frameScale;
+        }
         // Fractal branching: 10% chance mid-burst, max depth 2, cap 120
-        if(!p.branched&&(p.branchDepth||0)<2&&particles.length<120&&p.ageMs>p.burstMs*0.4&&Math.random()<0.10){
+        const branchStartMs=p.compressedBurst?pressurizedMs:p.burstMs*0.4;
+        if(!p.branched&&(p.branchDepth||0)<2&&particles.length<120&&p.ageMs>branchStartMs&&Math.random()<0.10){
           p.branched=true;
           const bc=p.mesh.material.color.getHex();
           const bm=new THREE.Mesh(particleGeo,new THREE.MeshBasicMaterial({color:bc,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false}));
