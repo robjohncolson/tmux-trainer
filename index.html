@@ -4416,43 +4416,89 @@ function spawnLightning(from,to,color,duration){
 }
 
 // ── Mandelbrot craters (spawn where falling stars land) ──
-// ── Mandelbrot GPU render target (same pattern as skyScene — proven on this machine) ──
-const mbrotRT=new THREE.WebGLRenderTarget(2048,2048,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
-const mbrotScene=new THREE.Scene();
-const mbrotCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-const mbrotMat=new THREE.ShaderMaterial({
-  depthTest:false,depthWrite:false,
-  uniforms:{maxIter:{value:8.0},zoom:{value:1.5},center:{value:new THREE.Vector2(-0.5,0.0)},radius:{value:0.4}},
-  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}',
-  fragmentShader:[
-    'varying vec2 vUv;',
-    'uniform float maxIter,zoom,radius;',
-    'uniform vec2 center;',
-    'void main(){',
-    '  float rd=length(vUv-0.5)*2.0;',
-    '  float mask=1.0-smoothstep(radius*0.7,radius,rd);',
-    '  if(mask<0.01){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
-    '  vec2 c=(vUv-0.5)*zoom+center;',
-    '  vec2 z=vec2(0.0);float i=0.0,done=0.0;',
-    '  for(int n=0;n<128;n++){',
-    '    if(done>0.5||float(n)>=maxIter)done=1.0;',
-    '    else{z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;i=float(n);',
-    '      if(dot(z,z)>4.0)done=1.0;}',
-    '  }',
-    '  if(i>=maxIter-1.0){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}',
-    '  float t=clamp(i/maxIter,0.0,1.0);',
-    '  float edge=pow(t,0.25);',
-    '  float bg=max(0.0,1.0-abs(t-0.85)*5.0);',
-    '  float glow=bg*bg*bg;',
-    '  vec3 amber=vec3(edge,0.45*edge,0.04*edge);',
-    '  vec3 yellow=vec3(1.0,0.95,0.4);',
-    '  vec3 col=mix(amber,yellow,glow)*mask;',
-    '  gl_FragColor=vec4(col,1.0);',
-    '}'
-  ].join('\n')
-});
-mbrotScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),mbrotMat));
-const MBROT={intensity:0,targetIntensity:0,iterations:8,impacts:0,radius:0.4,targetRadius:0.4};
+// Render the fractal on a CPU canvas and use it as an emissiveMap.
+// This is slower than the render-target route, but it is the path already
+// proven to render correctly on this Windows/ANGLE + Three.js r128 setup.
+const MBROT_TEX_SIZE=isReducedParticleMode()?384:640;
+const mbrotCanvas=document.createElement('canvas');
+mbrotCanvas.width=MBROT_TEX_SIZE;
+mbrotCanvas.height=MBROT_TEX_SIZE;
+const mbrotCtx=mbrotCanvas.getContext('2d');
+const mbrotImage=mbrotCtx.createImageData(MBROT_TEX_SIZE,MBROT_TEX_SIZE);
+const mbrotTexture=new THREE.CanvasTexture(mbrotCanvas);
+mbrotTexture.minFilter=THREE.LinearFilter;
+mbrotTexture.magFilter=THREE.LinearFilter;
+mbrotTexture.wrapS=THREE.ClampToEdgeWrapping;
+mbrotTexture.wrapT=THREE.ClampToEdgeWrapping;
+const MBROT={
+  intensity:0,targetIntensity:0,iterations:8,impacts:0,radius:0.4,targetRadius:0.4,
+  zoom:1.5,centerX:-0.5,centerY:0.0,needsRedraw:true,lastDrawRadius:-1,lastDrawIter:-1
+};
+function smoothstep01(edge0,edge1,x){
+  const t=Math.max(0,Math.min(1,(x-edge0)/Math.max(1e-6,edge1-edge0)));
+  return t*t*(3-2*t);
+}
+function renderMandelbrotTexture(radius,maxIter){
+  const data=mbrotImage.data;
+  const iterMax=Math.max(1,Math.min(128,Math.round(maxIter)));
+  const size=MBROT_TEX_SIZE;
+  for(let y=0;y<size;y++){
+    const v=y/(size-1);
+    for(let x=0;x<size;x++){
+      const idx=(y*size+x)*4;
+      const u=x/(size-1);
+      const rd=Math.hypot(u-0.5,v-0.5)*2;
+      const mask=1-smoothstep01(radius*0.7,radius,rd);
+      if(mask<0.01){
+        data[idx]=0;data[idx+1]=0;data[idx+2]=0;data[idx+3]=255;
+        continue;
+      }
+      const cx=(u-0.5)*MBROT.zoom+MBROT.centerX;
+      const cy=(v-0.5)*MBROT.zoom+MBROT.centerY;
+      let zx=0,zy=0,iter=iterMax-1,escaped=false;
+      for(let n=0;n<iterMax;n++){
+        const xx=zx*zx-zy*zy+cx;
+        zy=2*zx*zy+cy;
+        zx=xx;
+        if(zx*zx+zy*zy>4){
+          iter=n;
+          escaped=true;
+          break;
+        }
+      }
+      if(!escaped){
+        data[idx]=0;data[idx+1]=0;data[idx+2]=0;data[idx+3]=255;
+        continue;
+      }
+      const t=Math.max(0,Math.min(1,iter/Math.max(1,maxIter)));
+      const edge=Math.pow(t,0.25);
+      const bg=Math.max(0,1-Math.abs(t-0.85)*5);
+      const glow=bg*bg*bg;
+      const amberR=edge;
+      const amberG=0.45*edge;
+      const amberB=0.04*edge;
+      const colR=((amberR*(1-glow))+glow)*mask;
+      const colG=((amberG*(1-glow))+(0.95*glow))*mask;
+      const colB=((amberB*(1-glow))+(0.4*glow))*mask;
+      data[idx]=Math.round(colR*255);
+      data[idx+1]=Math.round(colG*255);
+      data[idx+2]=Math.round(colB*255);
+      data[idx+3]=255;
+    }
+  }
+  mbrotCtx.putImageData(mbrotImage,0,0);
+  mbrotTexture.needsUpdate=true;
+  MBROT.lastDrawRadius=radius;
+  MBROT.lastDrawIter=maxIter;
+  MBROT.needsRedraw=false;
+}
+function clearMandelbrotTexture(){
+  mbrotCtx.clearRect(0,0,MBROT_TEX_SIZE,MBROT_TEX_SIZE);
+  mbrotTexture.needsUpdate=true;
+  MBROT.lastDrawRadius=-1;
+  MBROT.lastDrawIter=-1;
+}
+clearMandelbrotTexture();
 
 // ── Falling stars (miss → star descends → crater spawns) ──
 const fallingStars=[];
@@ -4502,15 +4548,19 @@ function growMandelbrot(){
   MBROT.impacts++;
   MBROT.targetRadius=Math.min(1.4,0.4+MBROT.impacts*0.15); // 0.4→0.55→0.7→...→1.4 (fills terrain)
   MBROT.targetIntensity=Math.min(1.5,0.3+MBROT.impacts*0.2);
+  MBROT.needsRedraw=true;
   console.log('[MBROT] impact #'+MBROT.impacts+', radius:'+MBROT.targetRadius.toFixed(2)+', iter:'+MBROT.iterations);
 }
 function mbrotScoreBoost(){
   // Correct answers sharpen the boundary detail (permanent, accumulates)
   MBROT.iterations=Math.min(isReducedParticleMode()?48:96,MBROT.iterations+0.5);
+  MBROT.needsRedraw=true;
 }
 function clearMandelbrot(){
   MBROT.intensity=0;MBROT.targetIntensity=0;MBROT.iterations=8;MBROT.impacts=0;
   MBROT.radius=0.4;MBROT.targetRadius=0.4;
+  MBROT.needsRedraw=true;
+  clearMandelbrotTexture();
   terrMat.emissiveIntensity=0;
 }
 
@@ -4548,7 +4598,7 @@ for(let i=0;i<verts.count;i++){
   verts.setY(i,h);
 }
 terrGeo.computeVertexNormals();
-const terrMat=new THREE.MeshPhongMaterial({color:AMB.darkest,flatShading:true,shininess:0,emissive:0xff8c00,emissiveIntensity:0,emissiveMap:mbrotRT.texture});
+const terrMat=new THREE.MeshPhongMaterial({color:AMB.darkest,flatShading:true,shininess:0,emissive:0xffffff,emissiveIntensity:0,emissiveMap:mbrotTexture});
 const terrain=new THREE.Mesh(terrGeo,terrMat);scene.add(terrain);
 const wireGeo=terrGeo.clone();
 const wireMat=new THREE.MeshBasicMaterial({color:AMB.dark,wireframe:true,transparent:true,opacity:.25});
@@ -7063,16 +7113,16 @@ function animate(time){
     }
   });
 
-  // Mandelbrot render target — GPU Mandelbrot → emissiveMap on terrain
+  // Mandelbrot terrain texture — redraw only when visible parameters change
   MBROT.intensity+=(MBROT.targetIntensity-MBROT.intensity)*0.06;
   MBROT.radius+=(MBROT.targetRadius-MBROT.radius)*0.04;
   terrMat.emissiveIntensity=MBROT.intensity;
   if(MBROT.intensity>0.01){
-    mbrotMat.uniforms.maxIter.value=MBROT.iterations;
-    mbrotMat.uniforms.radius.value=MBROT.radius;
-    renderer.setRenderTarget(mbrotRT);
-    renderer.render(mbrotScene,mbrotCamera);
-    renderer.setRenderTarget(null);
+    const radiusChanged=Math.abs(MBROT.radius-MBROT.lastDrawRadius)>0.01;
+    const iterChanged=Math.abs(MBROT.iterations-MBROT.lastDrawIter)>0.49;
+    if(MBROT.needsRedraw||radiusChanged||iterChanged){
+      renderMandelbrotTexture(MBROT.radius,MBROT.iterations);
+    }
   }
 
   // Born stars animation
