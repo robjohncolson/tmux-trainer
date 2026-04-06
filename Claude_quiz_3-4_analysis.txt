@@ -1,0 +1,22 @@
+Let me read the authoring guide first to understand what a well-built cartridge should look like.Good cartridge skeleton from Gemini, but it's missing significant quiz content and has a few structural issues. Here's what I'd improve:
+
+**Missing commands (biggest gap).** The quiz tests 5 distinct skills; the cartridge only covers 3 abstract theorems. You need commands for:
+
+- **`long-division`** — Q1 tests the *procedure* of polynomial long division (placing partial quotients, subtracting, bringing down). The existing `division-algorithm` captures the abstract formula but not the step-by-step mechanics.
+- **`synthetic-division`** — Q2 is entirely about synthetic division setup and execution. This is completely absent.
+- **`factoring-with-division`** — Q5 combines the Factor Theorem with actually producing the factored form. That's a distinct skill from just knowing "P(c)=0 means (x-c) is a factor."
+
+Three commands for a five-question quiz means your students are drilling theorems but never practicing the procedures the quiz actually tests.
+
+**Application bank gives away answers.** The authoring guide explicitly warns against this. "Use long division to divide x³ + x² − 2x + 14 by x + 3" tells the student it's the Division Algorithm. Rewrite these as situations where the student must *choose* which method applies without naming it, e.g. "A polynomial expression needs to be simplified into a quotient and remainder. Which concept applies?"
+
+**Structural issues:**
+
+- Missing `normalizeExplanationLookup` and `buildExplanationBank` functions (the dummy cartridge has these; the engine may expect them).
+- `RELATIONSHIP_BANK` only has one entry — add entries for remainder-theorem (input: value of c → output: remainder) and factor-theorem (input: P(c) result → output: whether (x-c) is a factor).
+- `AUTO_BLANK_SPECS` is empty — you could use regex patterns to auto-generate blanks for common LaTeX patterns across commands.
+- The `fillblank` branch in `generateQuestion` returns `choices` instead of `options` and doesn't return `correctKey` — check what shape the engine actually expects for consistency.
+
+**Subconcepts are solid** — those are well-written and properly structured with 3 each and 2 wrong answers. The prereq DAG and wireL1toL2 are reasonable for the scope.
+
+Want me to write the expanded cartridge with the missing commands added?
