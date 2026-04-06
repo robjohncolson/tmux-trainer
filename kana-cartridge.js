@@ -400,8 +400,11 @@ function pickKanaDistractors(record,count){
   const picked=[];
   const used=new Set([record.kana]);
   const pools=[
+    (CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]).filter(candidate=>candidate&&candidate.script===record.script),
     (CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]),
-    (ROW_IDS[record.row]||[]).map(id=>RECORD_BY_ID[id]),
+    RECORDS.filter(item=>item.script===record.script&&item.dom===record.dom),
+    (ROW_IDS[record.row]||[]).map(id=>RECORD_BY_ID[id]).filter(candidate=>candidate&&candidate.script===record.script),
+    RECORDS.filter(item=>item.script===record.script),
     RECORDS.filter(item=>item.dom===record.dom),
     RECORDS
   ];
@@ -441,12 +444,14 @@ function pickActionDistractors(record,count){
 }
 
 function buildCounterpartWrongs(record,index){
-  const desiredScript=record.script==='hiragana'?'katakana':'hiragana';
-  const pool=(CONFUSABLE_MAP[record.id]||[])
-    .map(id=>RECORD_BY_ID[id])
-    .concat(RECORDS)
-    .filter(candidate=>candidate&&candidate.script===desiredScript&&candidate.dom===record.dom)
+  const targetScript=record.script==='hiragana'?'katakana':'hiragana';
+  const sameFamilyPool=RECORDS
+    .filter(candidate=>candidate.script===targetScript&&(record.dom==='yoon'?candidate.dom==='yoon':candidate.dom!=='yoon')&&candidate.kana!==record.counterpart)
     .map(candidate=>candidate.kana);
+  const fallbackPool=RECORDS
+    .filter(candidate=>candidate.script===targetScript&&candidate.kana!==record.counterpart)
+    .map(candidate=>candidate.kana);
+  const pool=sameFamilyPool.length>=2?sameFamilyPool:[...sameFamilyPool,...fallbackPool];
   return pickDistinct(pool,record.counterpart,index,7);
 }
 
@@ -521,11 +526,36 @@ const COMMAND_BY_ID=Object.fromEntries(COMMANDS.map(cmd=>[cmd.id,cmd]));
 
 function buildBlankChoices(cmd){
   const record=RECORD_BY_ID[cmd.id];
-  return [record.kana,...pickKanaDistractors(record,2)];
+  if(!record)return [cmd.latex,cmd.latex,cmd.latex];
+  const candidates=[
+    ...(CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]).filter(candidate=>candidate&&candidate.script===record.script).map(candidate=>candidate.kana),
+    ...RECORDS.filter(candidate=>candidate.script===record.script&&candidate.dom===record.dom&&candidate.kana!==record.kana).map(candidate=>candidate.kana),
+    ...RECORDS.filter(candidate=>candidate.script===record.script&&candidate.kana!==record.kana).map(candidate=>candidate.kana),
+    ...RECORDS.filter(candidate=>candidate.kana!==record.kana).map(candidate=>candidate.kana)
+  ];
+  const wrongs=[];
+  const used=new Set([record.kana]);
+  for(const kana of candidates){
+    if(!kana||used.has(kana))continue;
+    wrongs.push(kana);
+    used.add(kana);
+    if(wrongs.length>=2)break;
+  }
+  return [record.kana,wrongs[0]||'?',wrongs[1]||'??'];
 }
 
 COMMANDS.forEach(cmd=>{
   cmd.blanks.forEach(blank=>{blank.choices=buildBlankChoices(cmd)});
+});
+
+COMMANDS.forEach(cmd=>{
+  cmd.subconcepts.forEach((sc,i)=>{
+    if((sc.wrong||[]).includes('unknown'))console.warn(`[kana] ${cmd.id} SC${i} has "unknown" wrong answer`);
+  });
+  cmd.blanks.forEach((blank,i)=>{
+    if(blank.choices[0]!==blank.answer)console.warn(`[kana] ${cmd.id} blank${i} choices[0] does not match answer`);
+    if(new Set(blank.choices).size!==blank.choices.length)console.warn(`[kana] ${cmd.id} blank${i} has duplicate choices`);
+  });
 });
 
 const VARIABLE_BANK=Object.fromEntries(RECORDS.map(record=>[
@@ -581,6 +611,95 @@ const DOM_LABELS={
   'yoon':['Yoon Combinations (拗音)']
 };
 
+const SOUND_RECOGNITION_NODES={
+  'sound-a':{id:'sound-a',type:'conceptual',level:2,q:'Which kana makes the "a" sound (as in "father")?',correct:'あ / ア',wrong:['い / イ','う / ウ'],prereqs:['vowel-sounds']},
+  'sound-i':{id:'sound-i',type:'conceptual',level:2,q:'Which kana makes the "i" sound (as in "feet")?',correct:'い / イ',wrong:['え / エ','う / ウ'],prereqs:['vowel-sounds']},
+  'sound-u':{id:'sound-u',type:'conceptual',level:2,q:'Which kana makes the "u" sound (as in "rule")?',correct:'う / ウ',wrong:['お / オ','え / エ'],prereqs:['vowel-sounds']},
+  'sound-e':{id:'sound-e',type:'conceptual',level:2,q:'Which kana makes the "e" sound (as in "met")?',correct:'え / エ',wrong:['あ / ア','お / オ'],prereqs:['vowel-sounds']},
+  'sound-o':{id:'sound-o',type:'conceptual',level:2,q:'Which kana makes the "o" sound (as in "told")?',correct:'お / オ',wrong:['う / ウ','え / エ'],prereqs:['vowel-sounds']},
+  'sound-ka':{id:'sound-ka',type:'conceptual',level:2,q:'What sound does か / カ make?',correct:'ka',wrong:['sa','ta'],prereqs:['consonant-k']},
+  'sound-sa':{id:'sound-sa',type:'conceptual',level:2,q:'What sound does さ / サ make?',correct:'sa',wrong:['ka','ha'],prereqs:['consonant-s']},
+  'sound-ta':{id:'sound-ta',type:'conceptual',level:2,q:'What sound does た / タ make?',correct:'ta',wrong:['na','ra'],prereqs:['consonant-t']},
+  'sound-na':{id:'sound-na',type:'conceptual',level:2,q:'What sound does な / ナ make?',correct:'na',wrong:['ma','wa'],prereqs:['consonant-n']},
+  'sound-ha':{id:'sound-ha',type:'conceptual',level:2,q:'What sound does は / ハ make?',correct:'ha',wrong:['sa','ma'],prereqs:['consonant-h']},
+  'sound-ma':{id:'sound-ma',type:'conceptual',level:2,q:'What sound does ま / マ make?',correct:'ma',wrong:['na','ra'],prereqs:['consonant-m']},
+  'sound-ra':{id:'sound-ra',type:'conceptual',level:2,q:'What sound does ら / ラ make?',correct:'ra',wrong:['na','ya'],prereqs:['consonant-r']},
+  'sound-ya':{id:'sound-ya',type:'conceptual',level:2,q:'What sound does や / ヤ make?',correct:'ya',wrong:['ra','wa'],prereqs:['consonant-y']},
+};
+
+const VOICING_RECOGNITION_NODES={
+  'voice-k-to-g':{id:'voice-k-to-g',type:'conceptual',level:2,q:'What happens to the K-row when dakuten is added?',correct:'K sounds become G sounds (ka→ga, ki→gi, ku→gu, ke→ge, ko→go)',wrong:['K sounds become B sounds','K sounds become P sounds'],prereqs:['dakuten-rules','consonant-k']},
+  'voice-s-to-z':{id:'voice-s-to-z',type:'conceptual',level:2,q:'What happens to the S-row when dakuten is added?',correct:'S sounds become Z/J sounds (sa→za, shi→ji, su→zu, se→ze, so→zo)',wrong:['S sounds become T sounds','S sounds become P sounds'],prereqs:['dakuten-rules','consonant-s']},
+  'voice-t-to-d':{id:'voice-t-to-d',type:'conceptual',level:2,q:'What happens to the T-row when dakuten is added?',correct:'T sounds become D/J/Z sounds (ta→da, chi→ji, tsu→zu, te→de, to→do)',wrong:['T sounds become K sounds','T sounds become P sounds'],prereqs:['dakuten-rules','consonant-t']},
+  'voice-h-to-b':{id:'voice-h-to-b',type:'conceptual',level:2,q:'What happens to the H-row when dakuten is added?',correct:'H sounds become B sounds (ha→ba, hi→bi, fu→bu, he→be, ho→bo)',wrong:['H sounds become G sounds','H sounds become Y sounds'],prereqs:['dakuten-rules','consonant-h']},
+};
+
+const VOCAB_WORD_NODES={
+  'word-greetings':{id:'word-greetings',type:'conceptual',level:3,q:'Which kana starts the greeting おはよう?',correct:'お',wrong:['あ','え'],prereqs:['vowel-sounds']},
+  'word-animals':{id:'word-animals',type:'conceptual',level:3,q:'Which kana starts the word ねこ (cat)?',correct:'ね',wrong:['の','な'],prereqs:['consonant-n']},
+  'word-food':{id:'word-food',type:'conceptual',level:3,q:'Which kana starts the word すし (sushi)?',correct:'す',wrong:['し','せ'],prereqs:['consonant-s']},
+  'word-nature':{id:'word-nature',type:'conceptual',level:3,q:'Which kana starts the word やま (mountain)?',correct:'や',wrong:['ゆ','よ'],prereqs:['consonant-y']},
+  'word-body':{id:'word-body',type:'conceptual',level:3,q:'Which kana starts the word て (hand)?',correct:'て',wrong:['た','と'],prereqs:['consonant-t']},
+  'word-colors':{id:'word-colors',type:'conceptual',level:3,q:'Which kana starts the word あか (red)?',correct:'あ',wrong:['え','お'],prereqs:['vowel-sounds']},
+  'word-numbers':{id:'word-numbers',type:'conceptual',level:3,q:'Which kana starts いち (one)?',correct:'い',wrong:['う','え'],prereqs:['vowel-sounds']},
+  'word-loanwords':{id:'word-loanwords',type:'conceptual',level:3,q:'Which katakana starts コーヒー (coffee)?',correct:'コ',wrong:['カ','ケ'],prereqs:['consonant-k','system-recognition']},
+  'word-school':{id:'word-school',type:'conceptual',level:3,q:'Which kana starts せんせい (teacher)?',correct:'せ',wrong:['さ','し'],prereqs:['consonant-s']},
+  'word-family':{id:'word-family',type:'conceptual',level:3,q:'Which kana starts はは (mother)?',correct:'は',wrong:['ひ','ほ'],prereqs:['consonant-h']},
+};
+
+const CONFUSABLE_DISCRIMINATION_NODES={
+  'confuse-shi-tsu':{id:'confuse-shi-tsu',type:'conceptual',level:2,q:'How do you tell シ (shi) from ツ (tsu)?',correct:'シ has side strokes that rise from left to right; ツ has top strokes that fall into the body',wrong:['They are the same character','シ has 3 strokes and ツ has 2'],prereqs:['stroke-direction']},
+  'confuse-so-n':{id:'confuse-so-n',type:'conceptual',level:2,q:'How do you tell ソ (so) from ン (n)?',correct:'ソ starts from the top-right; ン starts from the top-left',wrong:['They are identical','ン adds a dakuten mark'],prereqs:['stroke-direction']},
+  'confuse-ha-ho':{id:'confuse-ha-ho',type:'conceptual',level:2,q:'How do you tell は (ha) from ほ (ho)?',correct:'は has two simple right-side strokes; ほ has a crossing middle stroke and a tail',wrong:['They sound the same','は has more strokes than ほ'],prereqs:['consonant-h']},
+  'confuse-nu-me':{id:'confuse-nu-me',type:'conceptual',level:2,q:'How do you tell ぬ (nu) from め (me)?',correct:'ぬ has a looped finish; め closes without the extra loop',wrong:['め is the one with the loop','They are in the same row'],prereqs:['kana-basics']},
+  'confuse-ru-ro':{id:'confuse-ru-ro',type:'conceptual',level:2,q:'How do you tell る (ru) from ろ (ro)?',correct:'る curls into a small hook at the bottom; ろ ends more cleanly',wrong:['ろ is the one with the hook','They are pronounced the same'],prereqs:['consonant-r']},
+  'confuse-ki-sa':{id:'confuse-ki-sa',type:'conceptual',level:2,q:'How do you tell き (ki) from さ (sa)?',correct:'き has separated horizontal strokes; さ curves down in one flowing body',wrong:['さ has more horizontal bars','They only differ by dakuten'],prereqs:['stroke-direction']},
+  'confuse-wa-ne-re':{id:'confuse-wa-ne-re',type:'conceptual',level:2,q:'How do you tell わ, ね, and れ apart?',correct:'わ loops low, ね has a full looped tail, and れ has a simpler hooked ending',wrong:['They are the same shape with different sizes','Only れ belongs to a kana row'],prereqs:['stroke-direction']},
+  'confuse-a-ma':{id:'confuse-a-ma',type:'conceptual',level:2,q:'How do you tell ア from マ?',correct:'ア has a single angled body; マ stacks three short strokes before the curve',wrong:['They are identical in print','マ uses dakuten'],prereqs:['stroke-direction']},
+  'confuse-ku-ta-ke':{id:'confuse-ku-ta-ke',type:'conceptual',level:2,q:'How do you tell ク, タ, and ケ apart?',correct:'ク is a single hooked form, タ adds a crossing slash, and ケ has separate vertical and diagonal strokes',wrong:['They differ only by font weight','ケ is just rotated ク'],prereqs:['stroke-direction']},
+  'confuse-u-wa-fu':{id:'confuse-u-wa-fu',type:'conceptual',level:2,q:'How do you tell ウ, ワ, and フ apart?',correct:'ウ has a roof with a centered drop, ワ hooks down leftward, and フ opens with two short top strokes',wrong:['They are all the same except for size','フ is the voiced version of ウ'],prereqs:['stroke-direction']},
+};
+
+const SOUND_NODE_IDS=Object.keys(SOUND_RECOGNITION_NODES);
+const VOICING_NODE_IDS=Object.keys(VOICING_RECOGNITION_NODES);
+const VOCAB_NODE_IDS=Object.keys(VOCAB_WORD_NODES);
+const CONFUSABLE_NODE_IDS=Object.keys(CONFUSABLE_DISCRIMINATION_NODES);
+const ROW_TO_SOUND_IDS={
+  'k-row':['sound-ka'],
+  's-row':['sound-sa'],
+  't-row':['sound-ta'],
+  'n-row':['sound-na'],
+  'h-row':['sound-ha'],
+  'm-row':['sound-ma'],
+  'r-row':['sound-ra'],
+  'y-row':['sound-ya'],
+};
+const ROW_TO_VOICING_ID={
+  'k-row':'voice-k-to-g',
+  's-row':'voice-s-to-z',
+  't-row':'voice-t-to-d',
+  'h-row':'voice-h-to-b',
+};
+const VOWEL_SOUND_RULES=[
+  [/あ|ア/,['sound-a']],
+  [/い|イ/,['sound-i']],
+  [/う|ウ/,['sound-u']],
+  [/え|エ/,['sound-e']],
+  [/お|オ/,['sound-o']],
+];
+const CONFUSABLE_ROUTING_RULES=[
+  [/シ|ツ|shi.*tsu|tsu.*shi/i,['confuse-shi-tsu']],
+  [/ソ|ン|so.*n\b/i,['confuse-so-n']],
+  [/は|ほ|ha.*ho|ho.*ha/i,['confuse-ha-ho']],
+  [/ぬ|め|nu.*me|me.*nu/i,['confuse-nu-me']],
+  [/る|ろ|ru.*ro|ro.*ru/i,['confuse-ru-ro']],
+  [/き|さ|ki.*sa|sa.*ki/i,['confuse-ki-sa']],
+  [/わ|ね|れ|wa.*ne|ne.*re|wa.*re/i,['confuse-wa-ne-re']],
+  [/ア|マ/,['confuse-a-ma']],
+  [/ク|タ|ケ/,['confuse-ku-ta-ke']],
+  [/ウ|ワ|フ/,['confuse-u-wa-fu']],
+];
+
 const SHARED_PREREQ_NODES={
   'vowel-sounds':{id:'vowel-sounds',type:'computational',level:2,q:'What are the five Japanese vowels?',correct:'a i u e o',wrong:['a e i o u','ka ki ku ke ko'],prereqs:['kana-basics']},
   'consonant-k':{id:'consonant-k',type:'computational',level:2,q:'What sounds belong to the k-row?',correct:'ka ki ku ke ko',wrong:['sa shi su se so','ta chi tsu te to'],prereqs:['kana-basics']},
@@ -596,8 +715,12 @@ const SHARED_PREREQ_NODES={
   'handakuten-rules':{id:'handakuten-rules',type:'conceptual',level:2,q:'What does handakuten do?',correct:'Handakuten turns h-row sounds into p-row sounds',wrong:['It changes vowels to y-sounds','It marks long vowels'],prereqs:['kana-basics']},
   'yoon-rules':{id:'yoon-rules',type:'conceptual',level:2,q:'How are yoon combinations built?',correct:'Base kana plus small ya yu or yo makes one blended sound',wrong:['Two full-size kana are always read separately','Yoon only appears in katakana'],prereqs:['kana-basics']},
   'hira-kata-pairs':{id:'hira-kata-pairs',type:'conceptual',level:2,q:'How do hiragana and katakana correspond?',correct:'Each sound has a hiragana form and a matching katakana form',wrong:['Only hiragana has sound pairs','Katakana has no matching sounds'],prereqs:['kana-basics']},
+  ...SOUND_RECOGNITION_NODES,
+  ...VOICING_RECOGNITION_NODES,
   'stroke-direction':{id:'stroke-direction',type:'conceptual',level:3,q:'What is the usual Japanese stroke order direction?',correct:'Top to bottom and left to right',wrong:['Bottom to top and right to left','Any order is equally standard'],prereqs:['stroke-basics']},
   'system-recognition':{id:'system-recognition',type:'conceptual',level:3,q:'When is katakana usually used?',correct:'For loanwords emphasis and many onomatopoeia',wrong:['For every native grammar ending','Only for handwritten notes'],prereqs:['kana-basics']},
+  ...VOCAB_WORD_NODES,
+  ...CONFUSABLE_DISCRIMINATION_NODES,
   'kana-basics':{id:'kana-basics',type:'conceptual',level:5,q:'What are the two main phonetic scripts in Japanese?',correct:'Hiragana and Katakana',wrong:['Kanji and Romaji','Latin and Cyrillic'],prereqs:[]},
   'stroke-basics':{id:'stroke-basics',type:'conceptual',level:5,q:'Why does stroke order matter?',correct:'It makes kana easier to read write and remember',wrong:['It changes the meaning of every word','It only matters for punctuation'],prereqs:[]}
 };
@@ -620,13 +743,39 @@ function wireL1toL2(PREREQ_DAG){
     [/katakana.*for|hiragana.*for|counterpart/i,['hira-kata-pairs']],
     [/stroke|write|order/i,['stroke-direction']],
     [/hiragana.*used|katakana.*used|native|foreign|loanword|script/i,['system-recognition']],
+    [/what sound|what.*romaji|pronounce|how.*read/i,SOUND_NODE_IDS],
+    [/what happens to the.*when dakuten is added|voicing/i,VOICING_NODE_IDS],
+    [/which word|word.*contains|starts with|word.*start|vocabulary|completes/i,VOCAB_NODE_IDS],
+    [/シ.*ツ|ツ.*シ|shi.*tsu|tsu.*shi/i,['confuse-shi-tsu']],
+    [/ソ.*ン|ン.*ソ|so.*n\b/i,['confuse-so-n']],
+    [/は.*ほ|ほ.*は|ha.*ho|ho.*ha/i,['confuse-ha-ho']],
+    [/ぬ.*め|め.*ぬ|nu.*me|me.*nu/i,['confuse-nu-me']],
+    [/る.*ろ|ろ.*る|ru.*ro|ro.*ru/i,['confuse-ru-ro']],
+    [/き.*さ|さ.*き|ki.*sa|sa.*ki/i,['confuse-ki-sa']],
+    [/わ.*ね|ね.*れ|わ.*れ|wa.*ne|ne.*re|wa.*re/i,['confuse-wa-ne-re']],
+    [/ア.*マ|マ.*ア/i,['confuse-a-ma']],
+    [/ク.*タ|タ.*ケ|ク.*ケ/i,['confuse-ku-ta-ke']],
+    [/ウ.*ワ|ワ.*フ|ウ.*フ/i,['confuse-u-wa-fu']],
     [/word|contains|vocabulary|completes/i,['kana-basics']]
   ];
   for(const node of Object.values(PREREQ_DAG)){
     if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;
     const matched=new Set();
+    const text=`${node.q||''} ${node.correct||''}`;
     for(const [re,ids] of rules){
-      if(re.test(node.q)||re.test(node.correct))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
+      if(re.test(text))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
+    }
+    if(ROW_TO_SOUND_IDS[node.correct]){
+      ROW_TO_SOUND_IDS[node.correct].forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
+    }
+    if(/dakuten|voiced|゛/i.test(text)&&ROW_TO_VOICING_ID[node.correct]&&PREREQ_DAG[ROW_TO_VOICING_ID[node.correct]]){
+      matched.add(ROW_TO_VOICING_ID[node.correct]);
+    }
+    for(const [re,ids] of VOWEL_SOUND_RULES){
+      if(re.test(node.q||''))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
+    }
+    for(const [re,ids] of CONFUSABLE_ROUTING_RULES){
+      if(re.test(node.q||''))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
     }
     if(matched.size===0&&PREREQ_DAG['kana-basics'])matched.add('kana-basics');
     node.prereqs=[...matched];
@@ -744,6 +893,9 @@ KANA.buildExplanationBank=function(){
 };
 KANA.wireL1toL2=wireL1toL2;
 
+if(typeof process!=='undefined'&&process&&Array.isArray(process.argv)&&/(^|[\\/])kana-cartridge\.js$/.test(process.argv[2]||'')){
+  window.KANA_CARTRIDGE=KANA;
+}
 window.KANA_DATA=KANA;
 
 })();
