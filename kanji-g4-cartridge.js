@@ -4286,7 +4286,5 @@ KANJI_G4.buildExplanationBank = function() {
 };
 KANJI_G4.wireL1toL2 = wireL1toL2;
 
-window.TD_CARTRIDGES = window.TD_CARTRIDGES || [];
-window.TD_CARTRIDGES.push(KANJI_G4);
-window.KANJI_G4_CARTRIDGE = KANJI_G4;
+window.KANJI_G4_DATA = KANJI_G4;
 })();

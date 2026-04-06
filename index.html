@@ -332,14 +332,14 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <div id="overlay"></div>
 
 <script src="./ap-stats-cartridge.js"></script>
-<script src="./alg2-dividing-polynomials-cartridge.js"></script>
+<script src="./kana-cartridge.js"></script>
 <script src="./kanji-g1-cartridge-v2.js"></script>
 <script src="./kanji-g2-cartridge.js"></script>
 <script src="./kanji-g3-cartridge.js"></script>
 <script src="./kanji-g4-cartridge.js"></script>
 <script src="./kanji-g5-cartridge.js"></script>
 <script src="./kanji-g6-cartridge.js"></script>
-<script src="./dummy-cartridge.js"></script>
+<script src="./kanji-joyo-cartridge.js"></script>
 <script>
 // ═══════════════════════════════════════════════
 //  AMBER PALETTE
@@ -4185,10 +4185,17 @@ function showTitleScreen(context){
   // Collect unique domains from active cartridge
   const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
   const savedRun=loadRunState();
+  const presetDomains=activeCartridge&&activeCartridge.id==='joyo-kanji'&&Array.isArray(window.TD_INITIAL_DOMAIN_FILTER)
+    ? window.TD_INITIAL_DOMAIN_FILTER.filter(dom=>allDomains.includes(dom))
+    : [];
   if(savedRun){
     const restoredDomains=(Array.isArray(savedRun.domainFilter)?savedRun.domainFilter:[]).filter(dom=>allDomains.includes(dom));
     if(restoredDomains.length)G.domainFilter=restoredDomains;
     if(['learn','practice','challenge'].includes(savedRun.difficulty))G.difficulty=savedRun.difficulty;
+  }
+  if(presetDomains.length){
+    G.domainFilter=presetDomains.slice();
+    window.TD_INITIAL_DOMAIN_FILTER=null;
   }
   // Initialize domainFilter to all domains if empty or stale
   if(!G.domainFilter||G.domainFilter.length===0)G.domainFilter=[...allDomains];
@@ -4234,7 +4241,8 @@ function showTitleScreen(context){
       html+='<button class="domain-pill active" id="domain-all" onclick="toggleAllDomains()">ALL</button>';
       allDomains.forEach(d=>{
         const active=G.domainFilter.includes(d);
-        const label=domainLabels[d]||d;
+        const cartLabels=activeCartridge&&activeCartridge.domLabels?activeCartridge.domLabels[d]:null;
+        const label=/^g\d+$/i.test(d)?d.toUpperCase():(Array.isArray(cartLabels)&&cartLabels.length?cartLabels[0]:(domainLabels[d]||d));
         html+='<button class="domain-pill'+(active?' active':'')+'" data-domain="'+d+'" onclick="toggleDomain(\''+d+'\')">'+label+'</button>';
       });
       html+='</div>';
