@@ -1787,10 +1787,26 @@ const SHARED_PREREQ_NODES = {
   'similar-kanji-dai':{id:'similar-kanji-dai',type:'conceptual',level:3,q:'Distinguish: 大 犬 太 天',correct:'大=big, 犬=dog(dot right), 太=fat(dot left), 天=heaven(top bar)',wrong:['All identical','Only size differs'],prereqs:[]},
   'similar-kanji-nichi':{id:'similar-kanji-nichi',type:'conceptual',level:3,q:'Distinguish: 日 目 白 田',correct:'日=sun(tall), 目=eye(wide), 白=white(top stroke), 田=field(cross)',wrong:['All identical','Only width differs'],prereqs:['radical-sun','radical-eye','radical-field']},
   // L4: Reading foundations
-  'onyomi-kunyomi':{id:'onyomi-kunyomi',type:'conceptual',level:4,q:'Difference between on\'yomi and kun\'yomi?',correct:'On = Chinese-derived reading; Kun = native Japanese reading',wrong:['They are the same','On is always used alone'],prereqs:['hiragana-reading']},
+  'onyomi-kunyomi':{id:'onyomi-kunyomi',type:'conceptual',level:4,q:'Difference between on\'yomi and kun\'yomi?',correct:'On = Chinese-derived reading; Kun = native Japanese reading',wrong:['They are the same','On is always used alone'],prereqs:['hiragana-reading','katakana-vowels','katakana-ka-row']},
   'compound-reading-rules':{id:'compound-reading-rules',type:'conceptual',level:4,q:'In a two-kanji compound (熟語), which reading is most common?',correct:'On\'yomi for both kanji (音読み×2)',wrong:['Kun\'yomi for both','Mix is most common'],prereqs:['onyomi-kunyomi']},
-  'hiragana-reading':{id:'hiragana-reading',type:'conceptual',level:4,q:'Can you read hiragana?',correct:'Yes — basic syllabary for native Japanese words',wrong:['Hiragana is for foreign words','Same as kanji'],prereqs:[]},
+  'hiragana-reading':{id:'hiragana-reading',type:'conceptual',level:4,q:'Can you read hiragana?',correct:'Yes — basic syllabary for native Japanese words',wrong:['Hiragana is for foreign words','Same as kanji'],prereqs:['hiragana-vowels','hiragana-ka-row','hiragana-sa-row','hiragana-ta-row','hiragana-na-row']},
+  'hiragana-vowels':{id:'hiragana-vowels',type:'computational',level:4,q:'What is the romaji for あ い う え お?',correct:'a i u e o',wrong:['e i u o a','ka ki ku ke ko'],prereqs:['kana-basics']},
+  'hiragana-ka-row':{id:'hiragana-ka-row',type:'computational',level:4,q:'What is the romaji for か?',correct:'ka',wrong:['ga','ki'],prereqs:['kana-basics']},
+  'hiragana-sa-row':{id:'hiragana-sa-row',type:'computational',level:4,q:'What is the romaji for さ?',correct:'sa',wrong:['za','shi'],prereqs:['kana-basics']},
+  'hiragana-ta-row':{id:'hiragana-ta-row',type:'computational',level:4,q:'What is the romaji for た?',correct:'ta',wrong:['da','chi'],prereqs:['kana-basics']},
+  'hiragana-na-row':{id:'hiragana-na-row',type:'computational',level:4,q:'What is the romaji for な?',correct:'na',wrong:['ni','nu'],prereqs:['kana-basics']},
+  'hiragana-ha-row':{id:'hiragana-ha-row',type:'computational',level:4,q:'What is the romaji for は?',correct:'ha',wrong:['ba','pa'],prereqs:['kana-basics']},
+  'hiragana-ma-row':{id:'hiragana-ma-row',type:'computational',level:4,q:'What is the romaji for ま?',correct:'ma',wrong:['mi','na'],prereqs:['kana-basics']},
+  'hiragana-ya-row':{id:'hiragana-ya-row',type:'computational',level:4,q:'What is the romaji for や?',correct:'ya',wrong:['yu','wa'],prereqs:['kana-basics']},
+  'hiragana-ra-row':{id:'hiragana-ra-row',type:'computational',level:4,q:'What is the romaji for ら?',correct:'ra',wrong:['la','ri'],prereqs:['kana-basics']},
+  'hiragana-wa-n':{id:'hiragana-wa-n',type:'computational',level:4,q:'What is the romaji for ん?',correct:'n',wrong:['m','ng'],prereqs:['kana-basics']},
+  'katakana-vowels':{id:'katakana-vowels',type:'computational',level:4,q:'What is the romaji for ア イ ウ エ オ?',correct:'a i u e o',wrong:['e i u o a','ka ki ku ke ko'],prereqs:['kana-basics']},
+  'katakana-ka-row':{id:'katakana-ka-row',type:'computational',level:4,q:'What is the romaji for カ?',correct:'ka',wrong:['ga','sa'],prereqs:['kana-basics']},
+  'katakana-sa-row':{id:'katakana-sa-row',type:'computational',level:4,q:'What is the romaji for サ?',correct:'sa',wrong:['za','ka'],prereqs:['kana-basics']},
+  'katakana-ta-row':{id:'katakana-ta-row',type:'computational',level:4,q:'What is the romaji for タ?',correct:'ta',wrong:['da','ka'],prereqs:['kana-basics']},
+  'katakana-na-row':{id:'katakana-na-row',type:'computational',level:4,q:'What is the romaji for ナ?',correct:'na',wrong:['ni','ma'],prereqs:['kana-basics']},
   // L5: Leaf
+  'kana-basics':{id:'kana-basics',type:'conceptual',level:5,q:'Japanese has two phonetic scripts. What are they called?',correct:'Hiragana and Katakana',wrong:['Romaji and Kanji','Hiragana and Romaji'],prereqs:[]},
   'stroke-basics':{id:'stroke-basics',type:'conceptual',level:5,q:'What are the basic stroke types?',correct:'Horizontal, vertical, diagonal, turning, dot',wrong:['Only horizontal and vertical','Only diagonal'],prereqs:[]},
 };
 
@@ -1798,7 +1814,8 @@ function wireL1toL2(PREREQ_DAG) {
   const rules = [
     [/on.yomi|音読/i, ['onyomi-kunyomi']],
     [/kun.yomi|訓読/i, ['onyomi-kunyomi']],
-    [/reading/i, ['onyomi-kunyomi','hiragana-reading']],
+    [/reading|よみ|romaji/i, ['hiragana-reading']],
+    [/カタカナ|katakana|オン.*yomi/i, ['katakana-vowels']],
     [/compound.*reading|熟語/i, ['compound-reading-rules']],
     [/radical.*口|mouth/i, ['radical-mouth']],
     [/radical.*日|sun.*radical/i, ['radical-sun']],

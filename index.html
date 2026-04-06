@@ -334,6 +334,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <script src="./ap-stats-cartridge.js"></script>
 <script src="./alg2-dividing-polynomials-cartridge.js"></script>
 <script src="./kanji-g1-cartridge-v2.js"></script>
+<script src="./kanji-g2-cartridge.js"></script>
 <script src="./dummy-cartridge.js"></script>
 <script>
 // ═══════════════════════════════════════════════
@@ -3695,7 +3696,12 @@ let lastInputState='';
 function updateInput(){
   // Safety valve: force-clear stuck feedback lock after 5 seconds
   if(QUIZ_ANSWER_FEEDBACK.locked&&QUIZ_ANSWER_FEEDBACK.lockedAt&&Date.now()-QUIZ_ANSWER_FEEDBACK.lockedAt>5000){
-    clearQuizAnswerFeedback();
+    if(QUIZ_ANSWER_FEEDBACK.heldCallback){
+      QUIZ_ANSWER_FEEDBACK.held=false;
+      QUIZ_ANSWER_FEEDBACK.heldCallback();
+    }else{
+      clearQuizAnswerFeedback();
+    }
   }
   // ── Compose mode UI ──
   if(G.composing){
