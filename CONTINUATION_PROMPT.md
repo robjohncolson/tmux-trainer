@@ -2179,7 +2179,7 @@ A Codex-ready spec exists at `multi-cartridge-spec.md` for adding support for mu
 - `kanji-g1-cartridge-v2.js:1790+` — kana→romaji DAG nodes
 - `kanji-g2-cartridge.js` — entire file, Grade 2 cartridge
 
-### Cartridge Inventory
+### Cartridge Inventory (as of April 5, 2026)
 | Cartridge | File | Commands | Status |
 |-----------|------|----------|--------|
 | AP Statistics | `ap-stats-cartridge.js` | 81 | Shipped |
@@ -2189,10 +2189,144 @@ A Codex-ready spec exists at `multi-cartridge-spec.md` for adding support for mu
 | Kanji Grade 3 | `kanji-g3-cartridge.js` | 200 | Specced, not yet implemented |
 | Test Basics | `dummy-cartridge.js` | 2 | Testing only |
 
+## Latest Update: Complete Kanji Grades 3-6 + Unified Joyo Deck + Kana Rewrite (April 5-6, 2026)
+
+Massive session completing the full 1,026 kyoiku kanji set, consolidating into a unified deck, and rewriting the kana foundation layer.
+
+### Kanji Grades 3-6 Shipped
+
+All remaining elementary school grades implemented via Codex with CC-authored specs/prompts:
+
+| Grade | File | Commands | Blanks | Validator |
+|-------|------|----------|--------|-----------|
+| G3 | `kanji-g3-cartridge.js` | 200 | ~400 | 24/0/0 |
+| G4 | `kanji-g4-cartridge.js` | 202 | 404 | 24/0/0 |
+| G5 | `kanji-g5-cartridge.js` | 193 | 386 | 24/0/0 |
+| G6 | `kanji-g6-cartridge.js` | 191 | 382 | 24/0/0 |
+
+Each cartridge follows the G2 data-driven pattern: compact source array → expanded commands at load time. Includes:
+- Full command set with compound-completion blanks, variable/application banks, glossary
+- Grade-specific confusable groups and confusion sets
+- New radical/concept DAG nodes per grade
+- Updated `wireL1toL2` regex rules
+
+### Unified Joyo Kanji Deck (1,026 → 1,186 commands)
+
+Merged all 6 grade cartridges + kana into a single deck registered as `joyo-kanji`.
+
+**Architecture**: Grade files + kana file export data only (`window.KANJI_G{N}_DATA`, `window.KANA_DATA`). New `kanji-joyo-cartridge.js` (~185 lines) reads all sources, merges commands/banks/DAG/wireL1toL2, registers one cartridge.
+
+**Features**:
+- Domain filter pills: `[ かな ] [ G1 ] [ G2 ] [ G3 ] [ G4 ] [ G5 ] [ G6 ]`
+- Legacy deep link redirect: `#deck=joyo-kanji-g3` → `#deck=joyo-kanji` with grade preset
+- Legacy deep link redirect: `#deck=kana` → `#deck=joyo-kanji` with kana preset
+- Per-grade SRS migration: old `td-srs-joyo-kanji-g{N}` and `td-srs-kana` keys merged into unified `td-srs-joyo-kanji` on first load
+- Single SRS pool, leaderboard, and cloud sync scope
+
+**Files**:
+- `kanji-joyo-cartridge.js` — merger (new, ~185 lines)
+- `kanji-g1-cartridge-v2.js` through `kanji-g6-cartridge.js` — export-only (modified registration)
+- `kana-cartridge.js` — export-only
+
+### Deck Cleanup
+
+- **Removed**: `alg2-dividing-polynomials-cartridge.js`, `dummy-cartridge.js`, `kanji-g1-cartridge.js` (old v1)
+- **Only 2 `TD_CARTRIDGES.push()` calls remain**: `ap-stats-cartridge.js` and `kanji-joyo-cartridge.js`
+- SW cache bumped to `td-shell-v9`, all cartridges precached
+
+### Kana Cartridge v2 — Vocabulary-Driven Hiragana
+
+Completely rewrote the kana cartridge from 208 isolated characters to 160 real vocabulary words sourced from Grade 1 kanji furigana + beginner supplements.
+
+**Learning flow** (4-level DAG decomposition):
+```
+L0: みぎて → "right hand"     (hiragana word → English meaning)
+L1: みぎて → "migite"          (word → romaji subconcept)
+L2: み → "mi"                   (individual hiragana → romaji DAG node)
+L3: m-row: ma mi mu me mo      (row membership DAG node)
+L4: kana-foundation             (leaf)
+```
+
+**What shipped**:
+- 160 vocabulary commands, 320 blanks
+- Source: G1 kanji example words, readings, vocabulary + curated beginner supplements
+- 4-type question system: identify (word→meaning), fillblank (complete hiragana word), variable (morpheme decomposition), application (context→word)
+- Subconcepts: word romaji, individual kana romaji, reverse (English→hiragana)
+- DAG: ~85 nodes — 65 individual hiragana nodes (L2), 10 row nodes (L3), 4 voicing nodes (L3), 5-8 confusable discrimination nodes (L3), 1 foundation (L4)
+- Blank distractors use same-row/confusable kana
+- Build-time warnings for "unknown" wrongs or duplicate choices
+
+**Previous kana audit (v1.5, superseded by v2)**:
+- Fixed counterpart subconcepts showing "unknown" wrong answers
+- Fixed blank triple-duplicate choices
+- Expanded DAG from 18 to 55 nodes
+- All fixes superseded by the v2 rewrite but informed its design
+
+### G1 Cartridge External Audit (ChatGPT)
+
+Comprehensive external audit of `kanji-g1-cartridge-v2.js` identified:
+- Reading subconcept distractors use katakana while correct answers use hiragana (trivial elimination by script)
+- Vocabulary meaning distractors are weak (generic pool, not semantically targeted)
+- `wireL1toL2` default-to-stroke behavior misroutes vocabulary failures
+- Fill-blank distractors weak as visual confusables (~11% share components)
+- Regex wiring false positives ("train" matching `rain` rule)
+
+These findings informed the kana v2 design and are documented for future G1 cartridge refinement. See `kana-vocab-spec.md` for the full audit summary.
+
+### Spec Artifacts (new)
+- `kanji-g4-spec.md` + `codex-prompt-kanji-g4.md` — Grade 4 spec/prompt
+- `kanji-g5-spec.md` + `codex-prompt-kanji-g5.md` — Grade 5 spec/prompt
+- `kanji-g6-spec.md` + `codex-prompt-kanji-g6.md` — Grade 6 spec/prompt
+- `kanji-joyo-merge-spec.md` + `codex-prompt-kanji-joyo-merge.md` — Joyo merger spec/prompt
+- `kana-joyo-merge-spec.md` + `codex-prompt-kana-joyo-merge.md` — Kana-into-Joyo merge spec/prompt
+- `kana-cartridge-spec.md` + `codex-prompt-kana-cartridge.md` — Original kana spec/prompt (v1)
+- `kana-audit-spec.md` + `codex-prompt-kana-audit.md` — Kana audit fix spec/prompt (v1.5)
+- `kana-vocab-spec.md` + `codex-prompt-kana-vocab.md` — Kana v2 vocabulary rewrite spec/prompt
+- `deck-cleanup-spec.md` + `codex-prompt-deck-cleanup.md` — Deck cleanup spec/prompt
+
+### Important Code Areas (new/updated)
+- `kanji-joyo-cartridge.js:34` — legacy deep link redirect
+- `kanji-joyo-cartridge.js:51` — per-grade SRS migration
+- `kanji-joyo-cartridge.js:92` — kana source integration + domain remap
+- `kanji-joyo-cartridge.js:123` — unified cartridge object build
+- `kanji-joyo-cartridge.js:170` — registration
+- `kana-cartridge.js` — entire file rewritten: 160 vocab commands, ~85 DAG nodes, vocabulary-driven design
+- `index.html:334-341` — cartridge script tags (ap-stats, kana, G1-G6, joyo merger)
+- `sw.js:4` — cache `td-shell-v9`
+- `sw.js:8-19` — precache list with all cartridge files
+
+### Cartridge Inventory (current as of April 6, 2026)
+
+**Registered decks (2 total)**:
+
+| Deck | Cartridge ID | Commands | Source |
+|------|-------------|----------|--------|
+| AP Statistics | `ap-stats-formulas` | 81 | `ap-stats-cartridge.js` |
+| にほんご (Japanese) | `joyo-kanji` | 1,186 | Merged from kana + G1-G6 |
+
+**Data files feeding the にほんご deck**:
+
+| File | Role | Commands |
+|------|------|----------|
+| `kana-cartridge.js` | Kana vocabulary (G1 furigana) | 160 |
+| `kanji-g1-cartridge-v2.js` | Grade 1 kanji | 80 |
+| `kanji-g2-cartridge.js` | Grade 2 kanji | 160 |
+| `kanji-g3-cartridge.js` | Grade 3 kanji | 200 |
+| `kanji-g4-cartridge.js` | Grade 4 kanji | 202 |
+| `kanji-g5-cartridge.js` | Grade 5 kanji | 193 |
+| `kanji-g6-cartridge.js` | Grade 6 kanji | 191 |
+| `kanji-joyo-cartridge.js` | Merger (reads all above) | — |
+
+**Removed files**:
+- `alg2-dividing-polynomials-cartridge.js` — deleted
+- `dummy-cartridge.js` — deleted
+- `kanji-g1-cartridge.js` (v1) — deleted (superseded by v2)
+
 ## Likely Next Tasks
 
-- **Kanji Grade 3** — execute `codex-prompt-kanji-g3.md` via Codex (200 kanji, specced and ready)
-- **Kanji Grades 4-6** — spec and implement remaining Joyo grades (202 + 193 + 191 kanji)
+- **G1 cartridge pedagogy fixes** — apply ChatGPT audit findings: script-consistent reading distractors, semantically targeted vocabulary wrongs, tighten wireL1toL2 regex, fix default-to-stroke fallback
+- **Apply same audit to G2-G6 cartridges** — reading distractors, vocabulary distractors, regex wiring likely have similar issues across all grades
+- **Kana coverage expansion** — extend kana vocab to G2+ words as students progress (currently only G1 words)
 - **Validator: level-monotonicity check** — implement Section 0 of `kanji-kana-dag-and-g2-spec.md`
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
