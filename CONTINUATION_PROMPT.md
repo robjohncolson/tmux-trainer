@@ -2118,10 +2118,82 @@ A Codex-ready spec exists at `multi-cartridge-spec.md` for adding support for mu
 - `cartridge-authoring-guide.md` — LLM-readable authoring reference
 - `validate-cartridge.js` — automated validation script
 
+## Latest Update: Kanji Cartridge System — G1 v2 Ship + G2 + Kana DAG + Bug Fix (April 5, 2026)
+
+### Kanji G1 v2 Shipped
+- `kanji-g1-cartridge-v2.js` registered in `index.html`, replacing v1
+- 80 Grade 1 kanji, compound-completion blanks, radical DAG with 18+ L2 nodes
+- Deep link: `https://tmux-trainer.vercel.app/#deck=joyo-kanji-g1`
+
+### Engine: Cartridge-Level Prompt Overrides
+- Engine now reads optional `identifyPrompt`, `variablePrompt`, `applicationPrompt` from active cartridge
+- Falls back to existing stats-flavored text for AP Stats / Algebra 2 cartridges
+- Kanji cartridges use "What is the meaning of this kanji?" etc. instead of "What does this formula calculate?"
+
+### Application Scenario Rewrite (G1)
+- All 80 APPLICATION_BANK scenarios rewritten from "A word meaning 'X'..." (answer giveaway) to context-based clues
+- Example: "Students do this at school with books and teachers. Which kanji relates to education and studying?"
+
+### Kanji G2 Cartridge (new)
+- `kanji-g2-cartridge.js`: 160 Grade 2 kanji, 320 blanks, full banks, context-based scenarios
+- Data-driven source array pattern (compact data → expanded commands at load)
+- New radicals: 刂 sword, 言 speech, 辶 walk, 食 food, 馬 horse, 鳥 bird, 米 rice
+- Confusable sets: seasons, directions, family, animals, communication, movement
+- Deep link: `https://tmux-trainer.vercel.app/#deck=joyo-kanji-g2`
+- Validator: 24 passed, 0 warnings, 0 failures
+
+### Kana→Romaji DAG Nodes (G1 enhancement)
+- 16 new prerequisite nodes at L4-L5: 10 hiragana rows + 5 katakana rows + `kana-basics` leaf
+- `hiragana-reading` now cascades to actual kana recognition drills
+- `onyomi-kunyomi` wires to katakana nodes (on'yomi written in katakana)
+- Shared across all kanji cartridges
+
+### Wrong-Answer Timeout Bug Fix
+- **Bug**: 5-second safety valve (`index.html:3698`) called `clearQuizAnswerFeedback()` which nulled `heldCallback` without calling `handleMiss()` — wrong-answer penalties (BKT, SRS, DAG decomposition, streak reset) never applied if player waited
+- **Fix**: safety valve now fires `heldCallback()` (which calls `handleMiss()`) then clears UI, so penalties always apply after 5 seconds
+
+### Validator Enhancement Spec
+- Level-monotonicity check added to spec (`kanji-kana-dag-and-g2-spec.md` Section 0)
+- Prereq edges pointing upward in DAG levels get a FAIL; same-level gets a WARN
+- Not yet implemented in `validate-cartridge.js` — documented for future Codex task
+
+### Spec Artifacts
+- `kanji-g1-v2-ship-spec.md` — G1 v2 ship specification
+- `codex-prompt-kanji-g1-v2.md` — Codex prompt for G1 v2 implementation
+- `kanji-kana-dag-and-g2-spec.md` — kana DAG + G2 expansion + bug fix spec
+- `codex-prompt-kana-dag-g2-bugfix.md` — Codex prompt for kana DAG + G2 + bug fix
+- `kanji-g3-spec.md` — Grade 3 cartridge spec (200 kanji, ready for Codex)
+- `codex-prompt-kanji-g3.md` — Codex prompt for Grade 3 implementation
+
+### Files Changed
+- `index.html` — prompt override support (3 lines), safety valve fix (5 lines), G2 script tag
+- `kanji-g1-cartridge-v2.js` — prompt strings, rewritten scenarios, kana DAG nodes
+- `kanji-g2-cartridge.js` — **new file** (629 lines, 160 commands)
+
+### Important Code Areas (new/updated)
+- `index.html:3698-3703` — safety valve with heldCallback (bug fix)
+- `index.html:3804-3807` — cartridge-level identify/variable prompt override
+- `index.html:3819` — cartridge-level application prompt override
+- `index.html:337` — G2 cartridge script tag
+- `kanji-g1-cartridge-v2.js:22-24` — identifyPrompt/variablePrompt/applicationPrompt
+- `kanji-g1-cartridge-v2.js:1790+` — kana→romaji DAG nodes
+- `kanji-g2-cartridge.js` — entire file, Grade 2 cartridge
+
+### Cartridge Inventory
+| Cartridge | File | Commands | Status |
+|-----------|------|----------|--------|
+| AP Statistics | `ap-stats-cartridge.js` | 81 | Shipped |
+| Algebra 2 Dividing Polynomials | `alg2-dividing-polynomials-cartridge.js` | ~20 | Shipped |
+| Kanji Grade 1 | `kanji-g1-cartridge-v2.js` | 80 | Shipped (v2) |
+| Kanji Grade 2 | `kanji-g2-cartridge.js` | 160 | Shipped |
+| Kanji Grade 3 | `kanji-g3-cartridge.js` | 200 | Specced, not yet implemented |
+| Test Basics | `dummy-cartridge.js` | 2 | Testing only |
+
 ## Likely Next Tasks
 
-- **Multi-cartridge implementation** — execute `multi-cartridge-spec.md` via Codex
-- **New cartridge: Algebra 2** — first additional deck using the authoring guide
+- **Kanji Grade 3** — execute `codex-prompt-kanji-g3.md` via Codex (200 kanji, specced and ready)
+- **Kanji Grades 4-6** — spec and implement remaining Joyo grades (202 + 193 + 191 kanji)
+- **Validator: level-monotonicity check** — implement Section 0 of `kanji-kana-dag-and-g2-spec.md`
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
 - Quality review rendered animations — verify pedagogical accuracy per formula
