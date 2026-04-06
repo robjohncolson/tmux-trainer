@@ -9,6 +9,7 @@ const PRECACHE_URLS = [
   './',
   './index.html',
   './ap-stats-cartridge.js',
+  './kanji-g1-cartridge.js',
   './dummy-cartridge.js',
 ];
 
