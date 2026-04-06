@@ -574,63 +574,259 @@ const SHARED_PREREQ_NODES={
     q:'What does it mean to evaluate P(c)?',
     correct:'Substitute c for x and simplify',
     wrong:['Divide by c','Set P(x)=0 automatically'],
-    prereqs:[]
+    prereqs:['eval-full-poly']
   },
   'poly-degree':{
     id:'poly-degree',type:'conceptual',level:2,
     q:'What does the degree of a polynomial tell you?',
     correct:'The highest power of x with a nonzero coefficient',
     wrong:['The number of terms','The constant term only'],
-    prereqs:[]
+    prereqs:['square-a-number','cube-a-number']
   },
   'division-concept':{
     id:'division-concept',type:'conceptual',level:2,
     q:'What does a quotient represent in polynomial division?',
     correct:'How many times the divisor fits into the dividend with some remainder left over',
     wrong:['A sum of the divisor and remainder','Always the same as the dividend'],
-    prereqs:[]
+    prereqs:['reverse-distribute','one-div-step']
   },
   'sign-of-c':{
     id:'sign-of-c',type:'conceptual',level:2,
     q:'When dividing by (x + 3), what value of c do you use in synthetic division?',
     correct:'-3 (rewrite as x-(-3))',
     wrong:['3','+3'],
-    prereqs:[]
+    prereqs:['sub-a-negative']
   },
   'zero-placeholder':{
     id:'zero-placeholder',type:'conceptual',level:2,
     q:'If a polynomial is missing the x^2 term, what coefficient must you use for it?',
     correct:'0',
     wrong:['1','Skip it'],
-    prereqs:[]
+    prereqs:['combine-like-terms']
   },
   'degree-reduction':{
     id:'degree-reduction',type:'conceptual',level:2,
     q:'If P(x) has degree 4 and you divide by x-c, what degree is the quotient?',
     correct:'Degree 3 (one less)',
     wrong:['Degree 4','Degree 2'],
-    prereqs:['poly-degree']
+    prereqs:['poly-degree','read-synth-result']
   },
   'factor-vs-remainder':{
     id:'factor-vs-remainder',type:'conceptual',level:2,
     q:'What distinguishes the Factor Theorem from the Remainder Theorem?',
     correct:'Factor Theorem is the special case where the remainder equals 0',
     wrong:['They are completely unrelated','Factor Theorem works for quadratic divisors'],
-    prereqs:[]
+    prereqs:['zero-means-factor','nonzero-not-factor']
   },
   'multiply-add-step':{
     id:'multiply-add-step',type:'computational',level:3,
     q:'In synthetic division, if the current bottom-row value is 3 and c = 2, what goes in the next column above the line?',
     correct:'6 (multiply 3 by 2)',
     wrong:['5 (add 3 and 2)','1 (subtract)'],
-    prereqs:['eval-poly']
+    prereqs:['mult-by-negative','add-negatives']
   },
   'leading-term-division':{
     id:'leading-term-division',type:'computational',level:3,
     q:'What is x^3 divided by x?',
     correct:'x^2',
     wrong:['x^3','x'],
-    prereqs:['poly-degree']
+    prereqs:['square-a-number']
+  },
+  'mult-whole':{
+    id:'mult-whole',type:'computational',level:5,
+    q:'7 × 8 = ?',
+    correct:'56',
+    wrong:['54','48'],
+    prereqs:[]
+  },
+  'add-whole':{
+    id:'add-whole',type:'computational',level:5,
+    q:'14 + 9 = ?',
+    correct:'23',
+    wrong:['22','25'],
+    prereqs:[]
+  },
+  'sub-whole':{
+    id:'sub-whole',type:'computational',level:5,
+    q:'23 − 8 = ?',
+    correct:'15',
+    wrong:['13','17'],
+    prereqs:[]
+  },
+  'mult-by-negative':{
+    id:'mult-by-negative',type:'computational',level:4,
+    q:'(−3) × 5 = ?',
+    correct:'−15',
+    wrong:['15','−8'],
+    prereqs:['mult-whole']
+  },
+  'neg-times-neg':{
+    id:'neg-times-neg',type:'computational',level:4,
+    q:'(−4) × (−6) = ?',
+    correct:'24',
+    wrong:['−24','−10'],
+    prereqs:['mult-whole']
+  },
+  'add-negatives':{
+    id:'add-negatives',type:'computational',level:4,
+    q:'−7 + (−5) = ?',
+    correct:'−12',
+    wrong:['−2','12'],
+    prereqs:['add-whole']
+  },
+  'sub-a-negative':{
+    id:'sub-a-negative',type:'computational',level:4,
+    q:'8 − (−3) = ?',
+    correct:'11',
+    wrong:['5','−11'],
+    prereqs:['sub-whole']
+  },
+  'square-a-number':{
+    id:'square-a-number',type:'computational',level:4,
+    q:'4² = ?',
+    correct:'16',
+    wrong:['8','12'],
+    prereqs:['mult-whole']
+  },
+  'cube-a-number':{
+    id:'cube-a-number',type:'computational',level:4,
+    q:'2³ = ?',
+    correct:'8',
+    wrong:['6','9'],
+    prereqs:['mult-whole']
+  },
+  'neg-odd-power':{
+    id:'neg-odd-power',type:'computational',level:3,
+    q:'(−2)³ = ?',
+    correct:'−8',
+    wrong:['8','−6'],
+    prereqs:['cube-a-number','mult-by-negative']
+  },
+  'neg-even-power':{
+    id:'neg-even-power',type:'computational',level:3,
+    q:'(−3)² = ?',
+    correct:'9',
+    wrong:['−9','6'],
+    prereqs:['square-a-number','neg-times-neg']
+  },
+  'eval-monomial':{
+    id:'eval-monomial',type:'computational',level:3,
+    q:'If x = 3, what is 2x² ?',
+    correct:'18',
+    wrong:['12','36'],
+    prereqs:['square-a-number','mult-whole']
+  },
+  'eval-neg-substitution':{
+    id:'eval-neg-substitution',type:'computational',level:3,
+    q:'If x = −2, what is x³ ?',
+    correct:'−8',
+    wrong:['8','−6'],
+    prereqs:['neg-odd-power']
+  },
+  'coeff-times-power':{
+    id:'coeff-times-power',type:'computational',level:3,
+    q:'2 · (−2)³ = ?',
+    correct:'−16',
+    wrong:['16','−12'],
+    prereqs:['neg-odd-power','mult-by-negative']
+  },
+  'eval-two-terms':{
+    id:'eval-two-terms',type:'computational',level:3,
+    q:'If x = 2, what is x² + 3x ?',
+    correct:'10',
+    wrong:['8','14'],
+    prereqs:['eval-monomial','add-whole']
+  },
+  'eval-three-terms':{
+    id:'eval-three-terms',type:'computational',level:3,
+    q:'If x = −1, what is 2x² − 3x + 1 ?',
+    correct:'6',
+    wrong:['0','−4'],
+    prereqs:['neg-even-power','mult-by-negative','add-negatives']
+  },
+  'combine-like-terms':{
+    id:'combine-like-terms',type:'computational',level:3,
+    q:'5x + 3x = ?',
+    correct:'8x',
+    wrong:['15x','53x'],
+    prereqs:['add-whole']
+  },
+  'distribute-monomial':{
+    id:'distribute-monomial',type:'computational',level:3,
+    q:'3(x + 4) = ?',
+    correct:'3x + 12',
+    wrong:['3x + 4','7x'],
+    prereqs:['mult-whole','add-whole']
+  },
+  'subtract-polynomials':{
+    id:'subtract-polynomials',type:'computational',level:3,
+    q:'(3x² + 2x) − (x² + 5x) = ?',
+    correct:'2x² − 3x',
+    wrong:['4x² + 7x','2x² + 3x'],
+    prereqs:['sub-whole','sub-a-negative']
+  },
+  'mult-mono-by-binomial':{
+    id:'mult-mono-by-binomial',type:'computational',level:3,
+    q:'x · (x + 3) = ?',
+    correct:'x² + 3x',
+    wrong:['x² + 3','2x + 3'],
+    prereqs:['distribute-monomial']
+  },
+  'reverse-distribute':{
+    id:'reverse-distribute',type:'computational',level:3,
+    q:'If x(x + 3) = x² + 3x, then (x² + 3x) ÷ x = ?',
+    correct:'x + 3',
+    wrong:['x + 3x','x²'],
+    prereqs:['mult-mono-by-binomial']
+  },
+  'synth-chain-step':{
+    id:'synth-chain-step',type:'computational',level:3,
+    q:'Synthetic division: bring down 1, multiply by 2 to get 2, add to the next coefficient 1 to get 3. What is the next product (3 × 2)?',
+    correct:'6',
+    wrong:['5','3'],
+    prereqs:['mult-by-negative','add-negatives']
+  },
+  'zero-means-factor':{
+    id:'zero-means-factor',type:'computational',level:3,
+    q:'You evaluate P(2) and get 0. Is (x − 2) a factor of P(x)?',
+    correct:'Yes, because the remainder is 0',
+    wrong:['No, because 2 is positive','Only if P(x) is quadratic'],
+    prereqs:['eval-three-terms']
+  },
+  'nonzero-not-factor':{
+    id:'nonzero-not-factor',type:'computational',level:3,
+    q:'You evaluate P(3) and get 5. Is (x − 3) a factor of P(x)?',
+    correct:'No, the remainder is 5, not 0',
+    wrong:['Yes, because 5 is close to 0','Yes, because P(3) exists'],
+    prereqs:['eval-three-terms']
+  },
+  'factor-implies-zero':{
+    id:'factor-implies-zero',type:'computational',level:3,
+    q:'You are told (x + 2) is a factor of P(x). What must P(−2) equal?',
+    correct:'0',
+    wrong:['2','−2'],
+    prereqs:['zero-means-factor','sub-a-negative']
+  },
+  'eval-full-poly':{
+    id:'eval-full-poly',type:'computational',level:2,
+    q:'Evaluate P(x) = 2x³ − x² + 4x + 5 at x = −2',
+    correct:'−23',
+    wrong:['−7','33'],
+    prereqs:['coeff-times-power','eval-three-terms','add-negatives']
+  },
+  'read-synth-result':{
+    id:'read-synth-result',type:'computational',level:2,
+    q:'Synthetic division bottom row: [1, 3, 0, −4, 0]. The last number is the remainder. What is the quotient?',
+    correct:'x³ + 3x² − 4',
+    wrong:['x⁴ + 3x³ − 4x','x² + 3x − 4'],
+    prereqs:['synth-chain-step','combine-like-terms']
+  },
+  'one-div-step':{
+    id:'one-div-step',type:'computational',level:2,
+    q:'Long division first step: x³ ÷ x = x². Then x²(x+3) = x³+3x². Subtract from x³+x²: what remains?',
+    correct:'−2x²',
+    wrong:['4x²','2x²'],
+    prereqs:['leading-term-division','mult-mono-by-binomial','subtract-polynomials']
   }
 };
 
@@ -644,7 +840,15 @@ function wireL1toL2(PREREQ_DAG){
     [/degree.*quotient|one.*less|degree.*reduction/i,['degree-reduction']],
     [/factor.*theorem.*vs|remainder.*0.*factor|special.*case/i,['factor-vs-remainder']],
     [/multiply.*add|bring.*down|synthetic.*step/i,['multiply-add-step']],
-    [/leading.*term|first.*step.*division|divide.*leading/i,['leading-term-division']]
+    [/leading.*term|first.*step.*division|divide.*leading/i,['leading-term-division']],
+    [/multiply|product|times/i,['mult-mono-by-binomial','distribute-monomial']],
+    [/subtract|minus|change.*sign/i,['subtract-polynomials']],
+    [/combin|like.*term|collect/i,['combine-like-terms']],
+    [/exponent|power|squared|cubed/i,['neg-even-power','neg-odd-power']],
+    [/negative|−|sign.*flip/i,['sub-a-negative','mult-by-negative']],
+    [/distribut|expand/i,['distribute-monomial']],
+    [/P\(\-?\d\)\s*=\s*0|is.*factor|not.*factor/i,['zero-means-factor','nonzero-not-factor']],
+    [/quotient.*row|bottom.*row|read.*result/i,['read-synth-result']]
   ];
   for(const node of Object.values(PREREQ_DAG)){
     if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;
