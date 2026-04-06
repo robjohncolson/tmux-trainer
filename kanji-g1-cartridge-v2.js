@@ -18,6 +18,10 @@ const KANJI_G1 = {
   instructions: 'Identify kanji by <b>meaning</b>, <b>reading</b>, and <b>components</b>. Fill blanks in real vocabulary compounds. Wrong answers decompose into radical and reading sub-questions.',
   instructionsSub: 'Grade 1 · 80 kanji · Recognition → Recall → Compounds',
 
+  identifyPrompt: 'What is the meaning of this kanji?',
+  variablePrompt: 'What does <span id="var-symbol" style="display:inline-block"></span> represent in this kanji?',
+  applicationPrompt: 'Which kanji fits this context?',
+
   commands: [
     {id:'k-4e00',action:'one',tier:'core',dom:'l1',
       hint:'オン: イチ・イツ | くん: ひと(つ) | 例: 一日 (いちにち)',
@@ -1144,88 +1148,75 @@ const KANJI_G1 = {
   //  QUESTION GENERATOR — 6 types
   // ══════════════════════════════════════
   generateQuestion(cmd, allCommands) {
-    const rand = Math.random();
-    const hasBlanks = cmd.blanks && cmd.blanks.length > 0;
-    const hasVars = this.variableBank && this.variableBank[cmd.id];
-    const hasApp = this.applicationBank && this.applicationBank[cmd.id];
-    const hasRel = this.relationshipBank && this.relationshipBank[cmd.id];
+    const difficulty = (typeof G !== 'undefined' && G && G.difficulty) || 'learn';
+    const baseWeights = {
+      learn:{identify:0.40,fillblank:0.25,variable:0.15,application:0.10},
+      practice:{identify:0.25,fillblank:0.325,variable:0.15,application:0.175},
+      challenge:{identify:0.10,fillblank:0.40,variable:0.15,application:0.25},
+    };
+    const selected = baseWeights[difficulty] || baseWeights.learn;
+    const weights = {identify:selected.identify};
+    if(cmd.blanks && cmd.blanks.length) weights.fillblank = selected.fillblank;
+    if(this.variableBank && this.variableBank[cmd.id] && this.variableBank[cmd.id].length) weights.variable = selected.variable;
+    if(this.applicationBank && this.applicationBank[cmd.id] && this.applicationBank[cmd.id].length) weights.application = selected.application;
 
-    // 6-type weights (Learn mode): identify, reverse-identify, fillblank, variable, application, relationship
-    let weights = {identify:0.30, fillblank:0.30, variable:0.15, application:0.15, relationship:0.10};
-    if(!hasBlanks) weights.fillblank = 0;
-    if(!hasVars) weights.variable = 0;
-    if(!hasApp) weights.application = 0;
-    if(!hasRel) weights.relationship = 0;
-
-    const total = Object.values(weights).reduce((a,b)=>a+b,0);
-    if(total===0) weights.identify=1;
-    else Object.keys(weights).forEach(k=>weights[k]/=total);
-
-    let cum=0, pick='identify';
-    for(const [type,w] of Object.entries(weights)){
-      cum+=w; if(rand<cum){pick=type;break}
+    const total = Object.values(weights).reduce((sum, value) => sum + value, 0) || 1;
+    let roll = Math.random() * total;
+    let pick = 'identify';
+    for (const [type, weight] of Object.entries(weights)) {
+      roll -= weight;
+      if (roll <= 0) {
+        pick = type;
+        break;
+      }
     }
 
-    switch(pick){
-      case 'identify': {
-        // Kanji→meaning (standard) OR meaning→kanji (reverse, 40% chance)
-        const reverse = Math.random() < 0.4;
-        const sameDom = allCommands.filter(c=>c.dom===cmd.dom && c.id!==cmd.id);
-        const pool = sameDom.length>=3 ? sameDom : allCommands.filter(c=>c.id!==cmd.id);
-        const picked = shuffleArr(pool).slice(0,3);
-        if (reverse) {
-          // Prompt: meaning → pick kanji glyph
-          const options = shuffleArr([cmd.latex, ...picked.map(c=>c.latex)]);
-          const ci = options.indexOf(cmd.latex);
-          return{type:'identify',latex:'\\text{'+cmd.action.replace(/;.*/,'').trim()+'}',options,correctIdx:ci,correctKey:['a','b','c','d'][ci]};
-        } else {
-          // Prompt: kanji → pick meaning
-          const options = shuffleArr([cmd.action, ...picked.map(c=>c.action)]);
-          const ci = options.indexOf(cmd.action);
-          return{type:'identify',latex:cmd.latex,options,correctIdx:ci,correctKey:['a','b','c','d'][ci]};
+    if (pick === 'identify') {
+      const distractors = pickActionDistractors(cmd, allCommands, 3);
+      const options = shuffleArr([cmd.action, ...distractors.map(item => item.action)]);
+      const correctIdx = options.indexOf(cmd.action);
+      return{type:'identify',latex:cmd.latex,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    }
+
+    if (pick === 'variable') {
+      const vars = this.variableBank[cmd.id];
+      const entry = vars[Math.floor(Math.random()*vars.length)];
+      const otherDescs = [];
+      for (const [id, entries] of Object.entries(this.variableBank || {})) {
+        if (id === cmd.id) continue;
+        for (const candidate of entries) {
+          if (candidate.d !== entry.d && !otherDescs.includes(candidate.d)) otherDescs.push(candidate.d);
         }
       }
-      case 'fillblank': {
-        const blank = cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
-        const shuffled = shuffleArr([...blank.choices]);
-        const ci = shuffled.indexOf(blank.choices[0]);
-        return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffled,correctIdx:ci,fullLatex:cmd.latex};
-      }
-      case 'variable': {
-        const vars = this.variableBank[cmd.id];
-        const v = vars[Math.floor(Math.random()*vars.length)];
-        const otherDescs = [];
-        Object.entries(this.variableBank).forEach(([id,arr])=>{
-          if(id!==cmd.id) arr.forEach(x=>otherDescs.push(x.d));
-        });
-        const dists = shuffleArr(otherDescs).slice(0,3);
-        const options = shuffleArr([v.d,...dists]);
-        const ci = options.indexOf(v.d);
-        return{type:'variable',latex:cmd.latex,symbol:v.s,options,correctIdx:ci,correctKey:['a','b','c','d'][ci]};
-      }
-      case 'application': {
-        const apps = this.applicationBank[cmd.id];
-        const app = apps[Math.floor(Math.random()*apps.length)];
-        const confusionActions = app.confusionSet.map(cid=>{
-          const c = allCommands.find(x=>x.id===cid);
-          return c ? c.action : cid;
-        });
-        const options = shuffleArr([cmd.action,...confusionActions]);
-        const ci = options.indexOf(cmd.action);
-        return{type:'application',scenario:app.scenario,options,correctIdx:ci,correctKey:['a','b','c','d'][ci]};
-      }
-      case 'relationship': {
-        const rels = this.relationshipBank[cmd.id];
-        const rel = rels[Math.floor(Math.random()*rels.length)];
-        const allOpts = ['Increases','Decreases','Stays the same'];
-        const opts = shuffleArr(allOpts);
-        const normDir = rel.direction.charAt(0).toUpperCase()+rel.direction.slice(1).toLowerCase();
-        const target = normDir.startsWith('C')?'Stays the same':normDir.startsWith('I')?'Increases':'Decreases';
-        const ci = opts.indexOf(target);
-        return{type:'relationship',latex:cmd.latex,input:rel.input,output:rel.output,direction:normDir,
-          explain:rel.explain,formulaName:cmd.action,options:opts,correctIdx:ci>=0?ci:0,correctKey:['a','b','c'][ci>=0?ci:0]};
-      }
+      const options = shuffleArr([entry.d, ...shuffleArr(otherDescs).slice(0, 3)]);
+      const correctIdx = options.indexOf(entry.d);
+      return{type:'variable',latex:cmd.latex,symbol:entry.s,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
     }
+
+    if (pick === 'application') {
+      const apps = this.applicationBank[cmd.id];
+      const app = apps[Math.floor(Math.random()*apps.length)];
+      const options = [];
+      const used = new Set();
+      function addOption(text) {
+        if (!text) return;
+        const key = text.toLowerCase();
+        if (used.has(key)) return;
+        used.add(key);
+        options.push(text);
+      }
+      addOption(cmd.action);
+      for (const id of app.confusionSet || []) addOption(commandActionFromId(id));
+      for (const distractor of pickActionDistractors(cmd, allCommands, 3)) addOption(distractor.action);
+      const shuffled = shuffleArr(options.slice(0, 4));
+      const correctIdx = shuffled.indexOf(cmd.action);
+      return{type:'application',scenario:app.scenario,options:shuffled,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    }
+
+    const blank = cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
+    const shuffled = shuffleArr([...blank.choices]);
+    const correctIdx = shuffled.indexOf(blank.answer);
+    return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffled,correctIdx,fullLatex:cmd.latex};
   },
 
   formatPrompt(cmd) { return cmd.latex + ' — ' + cmd.action; },
@@ -1329,92 +1320,89 @@ const VARIABLE_BANK = {
 };
 
 const APPLICATION_BANK = {
-  'k-4e00':[{scenario:'A word meaning \'one day\' is spelled ___日. Which kanji fills the blank?',confusionSet:['k-4e09','k-5341','k-4e8c']}],
-  'k-53f3':[{scenario:'A word meaning \'right hand\' is spelled ___手. Which kanji fills the blank?',confusionSet:['k-5de6','k-77f3','k-5e74']}],
-  'k-96e8':[{scenario:'A word meaning \'heavy rain\' is spelled 大___. Which kanji fills the blank?',confusionSet:['k-516b','k-767e','k-6587']}],
-  'k-5186':[{scenario:'A word meaning \'round\' is spelled ___い. Which kanji fills the blank?',confusionSet:['k-53e3','k-6821','k-5de6']}],
-  'k-738b':[{scenario:'A word meaning \'king\' is spelled ___様. Which kanji fills the blank?',confusionSet:['k-7389','k-9752','k-5915']}],
-  'k-97f3':[{scenario:'A word meaning \'music\' is spelled ___楽. Which kanji fills the blank?',confusionSet:['k-516b','k-767e','k-6587']}],
-  'k-4e0b':[{scenario:'A word meaning \'unskillful\' is spelled ___手. Which kanji fills the blank?',confusionSet:['k-4e0a','k-8349','k-8db3']}],
-  'k-706b':[{scenario:'A word meaning \'fire (disaster)\' is spelled ___事. Which kanji fills the blank?',confusionSet:['k-6c34','k-6728','k-516b']}],
-  'k-82b1':[{scenario:'A word meaning \'fireworks\' is spelled ___火. Which kanji fills the blank?',confusionSet:['k-8349','k-6c17','k-4e5d']}],
-  'k-8c9d':[{scenario:'A word meaning \'seashell\' is spelled ___殻. Which kanji fills the blank?',confusionSet:['k-898b','k-96e8','k-5186']}],
-  'k-5b66':[{scenario:'A word meaning \'school\' is spelled ___校. Which kanji fills the blank?',confusionSet:['k-5b57','k-4e00','k-53f3']}],
-  'k-6c17':[{scenario:'A word meaning \'weather\' is spelled 天___. Which kanji fills the blank?',confusionSet:['k-706b','k-82b1','k-8c9d']}],
-  'k-4e5d':[{scenario:'A word meaning \'September\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-516b','k-529b','k-4e0a']}],
-  'k-4f11':[{scenario:'A word meaning \'holiday\' is spelled ___日. Which kanji fills the blank?',confusionSet:['k-516d','k-97f3','k-4e0b']}],
-  'k-7389':[{scenario:'A word meaning \'ladle\' is spelled お___. Which kanji fills the blank?',confusionSet:['k-738b','k-706b','k-82b1']}],
-  'k-91d1':[{scenario:'A word meaning \'money\' is spelled お___. Which kanji fills the blank?',confusionSet:['k-8033','k-4e03','k-8eca']}],
-  'k-7a7a':[{scenario:'A word meaning \'air; atmosphere\' is spelled ___気. Which kanji fills the blank?',confusionSet:['k-751f','k-9752','k-5915']}],
-  'k-6708':[{scenario:'A word meaning \'Monday\' is spelled ___曜日. Which kanji fills the blank?',confusionSet:['k-5915','k-65e5','k-5de6']}],
-  'k-72ac':[{scenario:'A word meaning \'puppy\' is spelled 子___. Which kanji fills the blank?',confusionSet:['k-5927','k-5929','k-5165']}],
-  'k-898b':[{scenario:'A word meaning \'flower viewing\' is spelled 花___. Which kanji fills the blank?',confusionSet:['k-8c9d','k-753a','k-5929']}],
-  'k-4e94':[{scenario:'A word meaning \'May\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-56db','k-516d','k-5ddd']}],
-  'k-53e3':[{scenario:'A word meaning \'entrance\' is spelled 入___. Which kanji fills the blank?',confusionSet:['k-7530','k-65e5','k-76ee']}],
-  'k-6821':[{scenario:'A word meaning \'school\' is spelled 学___. Which kanji fills the blank?',confusionSet:['k-6751','k-77f3','k-8d64']}],
-  'k-5de6':[{scenario:'A word meaning \'left hand\' is spelled ___手. Which kanji fills the blank?',confusionSet:['k-53f3','k-77f3','k-96e8']}],
-  'k-4e09':[{scenario:'A word meaning \'March\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-738b','k-56db','k-4e8c']}],
-  'k-5c71':[{scenario:'A word meaning \'mountain path\' is spelled ___道. Which kanji fills the blank?',confusionSet:['k-51fa','k-5ddd','k-751f']}],
-  'k-5b50':[{scenario:'A word meaning \'children\' is spelled ___供. Which kanji fills the blank?',confusionSet:['k-5b66','k-5b57','k-516d']}],
-  'k-56db':[{scenario:'A word meaning \'April\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-4e94','k-4e09','k-6c34']}],
-  'k-7cf8':[{scenario:'A word meaning \'yarn\' is spelled 毛___. Which kanji fills the blank?',confusionSet:['k-767d','k-516b','k-767e']}],
-  'k-5b57':[{scenario:'A word meaning \'kanji\' is spelled 漢___. Which kanji fills the blank?',confusionSet:['k-5b66','k-4e00','k-53f3']}],
-  'k-8033':[{scenario:'A word meaning \'ENT clinic\' is spelled ___鼻科. Which kanji fills the blank?',confusionSet:['k-53e3','k-76ee','k-5c0f']}],
-  'k-4e03':[{scenario:'A word meaning \'July\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-4e5d','k-516b','k-516d']}],
-  'k-8eca':[{scenario:'A word meaning \'automobile\' is spelled 自動___. Which kanji fills the blank?',confusionSet:['k-672c','k-540d','k-76ee']}],
-  'k-624b':[{scenario:'A word meaning \'right hand\' is spelled 右___. Which kanji fills the blank?',confusionSet:['k-8db3','k-68ee','k-4eba']}],
-  'k-5341':[{scenario:'A word meaning \'October\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-4e5d','k-5343','k-767e']}],
-  'k-51fa':[{scenario:'A word meaning \'exit\' is spelled ___口. Which kanji fills the blank?',confusionSet:['k-5c71','k-5165','k-97f3']}],
-  'k-5973':[{scenario:'A word meaning \'girl/woman\' is spelled ___子. Which kanji fills the blank?',confusionSet:['k-7537','k-4e8c','k-65e5']}],
-  'k-5c0f':[{scenario:'A word meaning \'elementary school\' is spelled ___学校. Which kanji fills the blank?',confusionSet:['k-6c34','k-5927','k-4e03']}],
-  'k-4e0a':[{scenario:'A word meaning \'skillful\' is spelled ___手. Which kanji fills the blank?',confusionSet:['k-4e0b','k-6b63','k-53e3']}],
-  'k-68ee':[{scenario:'A word meaning \'forest\' is spelled ___林. Which kanji fills the blank?',confusionSet:['k-6751','k-6728','k-6797']}],
-  'k-4eba':[{scenario:'A word meaning \'adult\' is spelled 大___. Which kanji fills the blank?',confusionSet:['k-5927','k-5165','k-8d64']}],
-  'k-6c34':[{scenario:'A word meaning \'Wednesday\' is spelled ___曜日. Which kanji fills the blank?',confusionSet:['k-706b','k-8eca','k-624b']}],
-  'k-6b63':[{scenario:'A word meaning \'correct\' is spelled ___しい. Which kanji fills the blank?',confusionSet:['k-751f','k-4e0b','k-706b']}],
-  'k-751f':[{scenario:'A word meaning \'student\' is spelled 学___. Which kanji fills the blank?',confusionSet:['k-6b63','k-8eca','k-624b']}],
-  'k-9752':[{scenario:'A word meaning \'blue sky\' is spelled ___空. Which kanji fills the blank?',confusionSet:['k-8d64','k-767d','k-7acb']}],
-  'k-5915':[{scenario:'A word meaning \'evening\' is spelled ___方. Which kanji fills the blank?',confusionSet:['k-6708','k-540d','k-7acb']}],
-  'k-77f3':[{scenario:'A word meaning \'stone bridge\' is spelled ___橋. Which kanji fills the blank?',confusionSet:['k-53f3','k-7537','k-7af9']}],
-  'k-8d64':[{scenario:'A word meaning \'baby\' is spelled ___ちゃん. Which kanji fills the blank?',confusionSet:['k-9752','k-767d','k-56db']}],
-  'k-5343':[{scenario:'A word meaning \'1000 yen\' is spelled ___円. Which kanji fills the blank?',confusionSet:['k-5341','k-767e','k-4e0b']}],
-  'k-5ddd':[{scenario:'A word meaning \'stream\' is spelled 小___. Which kanji fills the blank?',confusionSet:['k-4e09','k-5c71','k-751f']}],
-  'k-5148':[{scenario:'A word meaning \'teacher\' is spelled ___生. Which kanji fills the blank?',confusionSet:['k-5343','k-6c34','k-6b63']}],
-  'k-65e9':[{scenario:'A word meaning \'early rising\' is spelled ___起き. Which kanji fills the blank?',confusionSet:['k-8349','k-5de6','k-4e09']}],
-  'k-8349':[{scenario:'A word meaning \'grassland\' is spelled ___原. Which kanji fills the blank?',confusionSet:['k-82b1','k-97f3','k-4e0b']}],
-  'k-8db3':[{scenario:'A word meaning \'to be enough\' is spelled ___りる. Which kanji fills the blank?',confusionSet:['k-624b','k-68ee','k-4eba']}],
-  'k-6751':[{scenario:'A word meaning \'village chief\' is spelled ___長. Which kanji fills the blank?',confusionSet:['k-753a','k-6797','k-4f11']}],
-  'k-5927':[{scenario:'A word meaning \'adult\' is spelled ___人. Which kanji fills the blank?',confusionSet:['k-72ac','k-5929','k-4e8c']}],
-  'k-7537':[{scenario:'A word meaning \'boy; male\' is spelled ___子. Which kanji fills the blank?',confusionSet:['k-5973','k-7530','k-529b']}],
-  'k-7af9':[{scenario:'A word meaning \'bamboo grove\' is spelled ___林. Which kanji fills the blank?',confusionSet:['k-8349','k-6728','k-8033']}],
-  'k-4e2d':[{scenario:'A word meaning \'middle school\' is spelled ___学校. Which kanji fills the blank?',confusionSet:['k-866b','k-7acb','k-529b']}],
-  'k-866b':[{scenario:'A word meaning \'insect\' is spelled 昆___. Which kanji fills the blank?',confusionSet:['k-4e2d','k-56db','k-7cf8']}],
-  'k-753a':[{scenario:'A word meaning \'town mayor\' is spelled ___長. Which kanji fills the blank?',confusionSet:['k-6751','k-4e09','k-5c71']}],
-  'k-5929':[{scenario:'A word meaning \'weather\' is spelled ___気. Which kanji fills the blank?',confusionSet:['k-72ac','k-5927','k-76ee']}],
-  'k-7530':[{scenario:'A word meaning \'rice paddy\' is spelled ___んぼ. Which kanji fills the blank?',confusionSet:['k-767d','k-516b','k-767e']}],
-  'k-571f':[{scenario:'A word meaning \'Saturday\' is spelled ___曜日. Which kanji fills the blank?',confusionSet:['k-738b','k-7530','k-4e8c']}],
-  'k-4e8c':[{scenario:'A word meaning \'February\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-4e00','k-4e09','k-77f3']}],
-  'k-65e5':[{scenario:'A word meaning \'Japan\' is spelled ___本. Which kanji fills the blank?',confusionSet:['k-6708','k-767d','k-76ee']}],
-  'k-5165':[{scenario:'A word meaning \'entrance\' is spelled ___口. Which kanji fills the blank?',confusionSet:['k-51fa','k-4eba','k-624b']}],
-  'k-5e74':[{scenario:'A word meaning \'this year\' is spelled 今___. Which kanji fills the blank?',confusionSet:['k-751f','k-4e0a','k-68ee']}],
-  'k-767d':[{scenario:'A word meaning \'white\' is spelled ___い. Which kanji fills the blank?',confusionSet:['k-65e5','k-767e','k-7a7a']}],
-  'k-516b':[{scenario:'A word meaning \'August\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-4e5d','k-516d','k-5b66']}],
-  'k-767e':[{scenario:'A word meaning \'100 yen\' is spelled ___円. Which kanji fills the blank?',confusionSet:['k-5343','k-767d','k-76ee']}],
-  'k-6587':[{scenario:'A word meaning \'character\' is spelled ___字. Which kanji fills the blank?',confusionSet:['k-5b57','k-672c','k-5929']}],
-  'k-6728':[{scenario:'A word meaning \'Thursday\' is spelled ___曜日. Which kanji fills the blank?',confusionSet:['k-68ee','k-672c','k-6797']}],
-  'k-672c':[{scenario:'A word meaning \'Japan\' is spelled 日___. Which kanji fills the blank?',confusionSet:['k-5927','k-6728','k-4f11']}],
-  'k-540d':[{scenario:'A word meaning \'name\' is spelled ___前. Which kanji fills the blank?',confusionSet:['k-5915','k-6c34','k-6b63']}],
-  'k-76ee':[{scenario:'A word meaning \'purpose\' is spelled ___的. Which kanji fills the blank?',confusionSet:['k-898b','k-65e5','k-8033']}],
-  'k-7acb':[{scenario:'A word meaning \'to stand\' is spelled ___つ. Which kanji fills the blank?',confusionSet:['k-97f3','k-4eba','k-6c34']}],
-  'k-529b':[{scenario:'A word meaning \'strong person\' is spelled ___持ち. Which kanji fills the blank?',confusionSet:['k-4e5d','k-7537','k-8eca']}],
-  'k-6797':[{scenario:'A word meaning \'forest road\' is spelled ___道. Which kanji fills the blank?',confusionSet:['k-68ee','k-6751','k-6728']}],
-  'k-516d':[{scenario:'A word meaning \'June\' is spelled ___月. Which kanji fills the blank?',confusionSet:['k-56db','k-516b','k-82b1']}],
+  'k-4e00':[{scenario:'A single horizontal stroke — the simplest kanji. Which kanji looks like a flat line?',confusionSet:['k-4e09','k-5341','k-4e8c']}],
+  'k-53f3':[{scenario:'You write with this hand if you are not left-handed. Which kanji means the opposite of left?',confusionSet:['k-5de6','k-77f3','k-5e74']}],
+  'k-96e8':[{scenario:'Drops falling from clouds. Umbrellas protect you from this. Which kanji shows precipitation?',confusionSet:['k-516b','k-767e','k-6587']}],
+  'k-5186':[{scenario:'Japanese coins are this shape. The currency symbol for Japan. Which kanji represents a round coin?',confusionSet:['k-53e3','k-6821','k-5de6']}],
+  'k-738b':[{scenario:'A ruler who wears a crown and sits on a throne. Which kanji represents royalty?',confusionSet:['k-7389','k-9752','k-5915']}],
+  'k-97f3':[{scenario:'What you hear when someone plays piano or sings. Which kanji relates to what your ears pick up?',confusionSet:['k-516b','k-767e','k-6587']}],
+  'k-4e0b':[{scenario:'The opposite of up. An elevator going to the basement. Which kanji means the lower direction?',confusionSet:['k-4e0a','k-8349','k-8db3']}],
+  'k-706b':[{scenario:'It burns, it is hot, and campfires are made of it. Which kanji represents flames?',confusionSet:['k-6c34','k-6728','k-516b']}],
+  'k-82b1':[{scenario:'Cherry blossoms bloom in spring. Bees visit these for pollen. Which kanji represents blooming plants?',confusionSet:['k-8349','k-6c17','k-4e5d']}],
+  'k-8c9d':[{scenario:'Found on the beach, often with a pearl inside. Ancient people used these as currency. Which kanji?',confusionSet:['k-898b','k-96e8','k-5186']}],
+  'k-5b66':[{scenario:'Students do this at school with books and teachers. Which kanji relates to education and studying?',confusionSet:['k-5b57','k-4e00','k-53f3']}],
+  'k-6c17':[{scenario:'You cannot see it, but you feel energy and mood from it. Spirit, feeling, atmosphere. Which kanji?',confusionSet:['k-706b','k-82b1','k-8c9d']}],
+  'k-4e5d':[{scenario:'The number after eight and before ten. Which kanji represents this single digit?',confusionSet:['k-516b','k-529b','k-4e0a']}],
+  'k-4f11':[{scenario:'A person leaning against a tree to take a break. No work, just relaxing. Which kanji?',confusionSet:['k-516d','k-97f3','k-4e0b']}],
+  'k-7389':[{scenario:'A round precious stone, smaller than a jewel. Marbles are shaped like this. Which kanji?',confusionSet:['k-738b','k-706b','k-82b1']}],
+  'k-91d1':[{scenario:'You use this to buy things. Coins and bills. Shiny metal from the earth. Which kanji?',confusionSet:['k-8033','k-4e03','k-8eca']}],
+  'k-7a7a':[{scenario:'Look up — there is nothing but open sky above you. Birds fly through it. Which kanji means the open sky?',confusionSet:['k-751f','k-9752','k-5915']}],
+  'k-6708':[{scenario:'It shines at night, changes shape over 30 days, and controls the tides. Which kanji?',confusionSet:['k-5915','k-65e5','k-5de6']}],
+  'k-72ac':[{scenario:'A loyal pet that barks, wags its tail, and fetches sticks. Which kanji represents this animal?',confusionSet:['k-5927','k-5929','k-5165']}],
+  'k-898b':[{scenario:'You do this with your eyes — looking, watching, observing. Which kanji relates to using your eyes?',confusionSet:['k-8c9d','k-753a','k-5929']}],
+  'k-4e94':[{scenario:'The number of fingers on one hand. After four, before six. Which kanji?',confusionSet:['k-56db','k-516d','k-5ddd']}],
+  'k-53e3':[{scenario:'You eat with it, you talk with it. The opening in your face. Which kanji looks like an opening?',confusionSet:['k-7530','k-65e5','k-76ee']}],
+  'k-6821':[{scenario:'A building with classrooms, a playground, and teachers. Children go here every weekday. Which kanji?',confusionSet:['k-6751','k-77f3','k-8d64']}],
+  'k-5de6':[{scenario:'The opposite of right. The hand you do not usually write with. Which kanji?',confusionSet:['k-53f3','k-77f3','k-96e8']}],
+  'k-4e09':[{scenario:'Three horizontal lines stacked. After two, before four. Which kanji shows this number?',confusionSet:['k-738b','k-56db','k-4e8c']}],
+  'k-5c71':[{scenario:'A tall landform with a peak, covered in trees. Climbers hike up it. Which kanji looks like three peaks?',confusionSet:['k-51fa','k-5ddd','k-751f']}],
+  'k-5b50':[{scenario:'A young person, someone\'s son or daughter. Parents take care of this little one. Which kanji?',confusionSet:['k-5b66','k-5b57','k-516d']}],
+  'k-56db':[{scenario:'A box with lines inside. The number after three. How many legs does a table have? Which kanji?',confusionSet:['k-4e94','k-4e09','k-6c34']}],
+  'k-7cf8':[{scenario:'Thin strands used for sewing or weaving fabric. Spiders make webs from it. Which kanji?',confusionSet:['k-767d','k-516b','k-767e']}],
+  'k-5b57':[{scenario:'Written symbols that make up words — you are reading many of these right now. Which kanji means a written symbol?',confusionSet:['k-5b66','k-4e00','k-53f3']}],
+  'k-8033':[{scenario:'The organ on each side of your head used for hearing sounds. Which kanji represents this body part?',confusionSet:['k-53e3','k-76ee','k-5c0f']}],
+  'k-4e03':[{scenario:'The number of days in a week. After six, before eight. Which kanji?',confusionSet:['k-4e5d','k-516b','k-516d']}],
+  'k-8eca':[{scenario:'It has wheels and carries passengers on roads. Taxis, buses, and trains are types. Which kanji?',confusionSet:['k-672c','k-540d','k-76ee']}],
+  'k-624b':[{scenario:'You have two of these with five fingers each. You use them to hold, write, and wave. Which kanji?',confusionSet:['k-8db3','k-68ee','k-4eba']}],
+  'k-5341':[{scenario:'Two strokes that cross — a plus sign shape. The number after nine. Which kanji?',confusionSet:['k-4e5d','k-5343','k-767e']}],
+  'k-51fa':[{scenario:'Going outside, leaving a room, or coming out from hiding. The opposite of entering. Which kanji?',confusionSet:['k-5c71','k-5165','k-97f3']}],
+  'k-5973':[{scenario:'A person who might become a mother. The opposite of a male person. Which kanji?',confusionSet:['k-7537','k-4e8c','k-65e5']}],
+  'k-5c0f':[{scenario:'Tiny, little, not big at all. An ant is this compared to an elephant. Which kanji?',confusionSet:['k-6c34','k-5927','k-4e03']}],
+  'k-4e0a':[{scenario:'The opposite of down. An elevator going to the top floor. Which kanji means the higher direction?',confusionSet:['k-4e0b','k-6b63','k-53e3']}],
+  'k-68ee':[{scenario:'Three trees packed together — very dense with vegetation. Deeper and thicker than a grove. Which kanji?',confusionSet:['k-6751','k-6728','k-6797']}],
+  'k-4eba':[{scenario:'A living being that walks upright on two legs. You are one. Which kanji looks like a walking figure?',confusionSet:['k-5927','k-5165','k-8d64']}],
+  'k-6c34':[{scenario:'You drink it, swim in it, and it flows in rivers. Which kanji represents this liquid?',confusionSet:['k-706b','k-8eca','k-624b']}],
+  'k-6b63':[{scenario:'Not wrong, not mistaken — the answer is exactly right. Which kanji means accurate or proper?',confusionSet:['k-751f','k-4e0b','k-706b']}],
+  'k-751f':[{scenario:'To be born, to be alive, to grow. Fresh and raw. Which kanji relates to being alive?',confusionSet:['k-6b63','k-8eca','k-624b']}],
+  'k-9752':[{scenario:'The color of a clear sky or the ocean. Also used for unripe and fresh. Which kanji?',confusionSet:['k-8d64','k-767d','k-7acb']}],
+  'k-5915':[{scenario:'The sun is setting, it is getting dark. The time just before night. Which kanji?',confusionSet:['k-6708','k-540d','k-7acb']}],
+  'k-77f3':[{scenario:'Hard, heavy, found on the ground. You might skip it across a lake. Which kanji?',confusionSet:['k-53f3','k-7537','k-7af9']}],
+  'k-8d64':[{scenario:'The color of a tomato, a fire truck, or the Japanese flag circle. Which kanji?',confusionSet:['k-9752','k-767d','k-56db']}],
+  'k-5343':[{scenario:'Ten times a hundred. A very large number but not quite ten thousand. Which kanji?',confusionSet:['k-5341','k-767e','k-4e0b']}],
+  'k-5ddd':[{scenario:'Water flowing between two banks, from mountains to the sea. Which kanji looks like flowing water?',confusionSet:['k-4e09','k-5c71','k-751f']}],
+  'k-5148':[{scenario:'The person who goes first, ahead of others. A teacher or someone born earlier. Which kanji?',confusionSet:['k-5343','k-6c34','k-6b63']}],
+  'k-65e9':[{scenario:'The first part of the morning, before everyone else wakes up. Which kanji means soon or prompt?',confusionSet:['k-8349','k-5de6','k-4e09']}],
+  'k-8349':[{scenario:'Green plants covering a field, shorter than trees. Lawns are made of this. Which kanji?',confusionSet:['k-82b1','k-97f3','k-4e0b']}],
+  'k-8db3':[{scenario:'You walk and run with these. Below your legs, inside your shoes. Which kanji represents this body part?',confusionSet:['k-624b','k-68ee','k-4eba']}],
+  'k-6751':[{scenario:'A small rural community, smaller than a town. Farmers live here. Which kanji?',confusionSet:['k-753a','k-6797','k-4f11']}],
+  'k-5927':[{scenario:'The opposite of small. An elephant is this compared to a mouse. Which kanji means large?',confusionSet:['k-72ac','k-5929','k-4e8c']}],
+  'k-7537':[{scenario:'The opposite of female. A boy, not a girl. Which kanji represents the masculine?',confusionSet:['k-5973','k-7530','k-529b']}],
+  'k-7af9':[{scenario:'Tall, green, hollow stems. Pandas eat this plant. Which kanji looks like two stalks?',confusionSet:['k-8349','k-6728','k-8033']}],
+  'k-4e2d':[{scenario:'Not left, not right — exactly in the center. A line through a box. Which kanji?',confusionSet:['k-866b','k-7acb','k-529b']}],
+  'k-866b':[{scenario:'A small creature with six legs. Ants, beetles, and butterflies are examples. Which kanji?',confusionSet:['k-4e2d','k-56db','k-7cf8']}],
+  'k-753a':[{scenario:'Bigger than a village but smaller than a city. A local neighborhood area. Which kanji?',confusionSet:['k-6751','k-4e09','k-5c71']}],
+  'k-5929':[{scenario:'The sky above, where the sun and stars live. Also means nature or fate. Which kanji?',confusionSet:['k-72ac','k-5927','k-76ee']}],
+  'k-7530':[{scenario:'Flat land flooded with water for growing rice. Paddies are everywhere in the Japanese countryside. Which kanji?',confusionSet:['k-767d','k-516b','k-767e']}],
+  'k-571f':[{scenario:'The ground beneath your feet. Dirt, soil, earth. Plants grow in it. Which kanji?',confusionSet:['k-738b','k-7530','k-4e8c']}],
+  'k-4e8c':[{scenario:'Two horizontal lines, one shorter than the other. The number after one. Which kanji?',confusionSet:['k-4e00','k-4e09','k-77f3']}],
+  'k-65e5':[{scenario:'It rises in the east, shines all day, and sets in the west. Which kanji represents our star?',confusionSet:['k-6708','k-767d','k-76ee']}],
+  'k-5165':[{scenario:'Going inside, walking through a door. The opposite of going out. Which kanji?',confusionSet:['k-51fa','k-4eba','k-624b']}],
+  'k-5e74':[{scenario:'365 days make one. Birthdays come once per this. Which kanji measures a long time period?',confusionSet:['k-751f','k-4e0a','k-68ee']}],
+  'k-767d':[{scenario:'The color of snow, milk, and paper. The lightest color. Which kanji?',confusionSet:['k-65e5','k-767e','k-7a7a']}],
+  'k-516b':[{scenario:'The number after seven. An octopus has this many legs. Which kanji?',confusionSet:['k-4e5d','k-516d','k-5b66']}],
+  'k-767e':[{scenario:'Ten times ten. Two digits, all zeros except the first. Which kanji represents this number?',confusionSet:['k-5343','k-767d','k-76ee']}],
+  'k-6587':[{scenario:'Writing, literature, a piece of composed text. Sentences are made of these. Which kanji?',confusionSet:['k-5b57','k-672c','k-5929']}],
+  'k-6728':[{scenario:'A single plant with a trunk, branches, and leaves. Which kanji looks like a trunk with branches?',confusionSet:['k-68ee','k-672c','k-6797']}],
+  'k-672c':[{scenario:'The origin, the root, the real thing. Also a counter for long thin objects like pencils. Which kanji?',confusionSet:['k-5927','k-6728','k-4f11']}],
+  'k-540d':[{scenario:'What people call you. Everyone has one — first and last. Which kanji relates to what you are called?',confusionSet:['k-5915','k-6c34','k-6b63']}],
+  'k-76ee':[{scenario:'The organ you see with. Two of them on your face above your nose. Which kanji?',confusionSet:['k-898b','k-65e5','k-8033']}],
+  'k-7acb':[{scenario:'Getting up from sitting. Being upright on your feet. Which kanji?',confusionSet:['k-97f3','k-4eba','k-6c34']}],
+  'k-529b':[{scenario:'Muscles, effort, physical strength. Lifting heavy things requires this. Which kanji?',confusionSet:['k-4e5d','k-7537','k-8eca']}],
+  'k-6797':[{scenario:'Two trees side by side — a grove, thinner than a dense forest. Which kanji?',confusionSet:['k-68ee','k-6751','k-6728']}],
+  'k-516d':[{scenario:'The number after five. Half a dozen. How many sides does a cube have? Which kanji?',confusionSet:['k-56db','k-516b','k-82b1']}],
 };
 
-const RELATIONSHIP_BANK = {
-  'k-6728':[{input:'Number of 木 combined',output:'Vegetation density',direction:'increases',explain:'木→林→森: more trees = denser'}],
-  'k-767e':[{input:'Number of zeros',output:'Magnitude',direction:'increases',explain:'十→百→千→万: more zeros = larger'}],
-};
+const RELATIONSHIP_BANK = {};
 
 const EXPLANATION_GLOSSARY = [
   {keys:['一'],title:'一 (one)',lines:['one. Strokes: 1.','On: イチ, イツ | Kun: ひと(つ)','Components: standalone. Ex: 一日(one day), 一人(one person), 一つ(one thing)']},
@@ -1502,13 +1490,271 @@ const EXPLANATION_GLOSSARY = [
 const AUTO_BLANK_SPECS = [];
 
 const DOM_LABELS = {
-  'l1': ['Level 1 · 小学一年 · Foundations (80 kanji)'],
-  'l2': ['Level 2 · 小学二年 · Expansion (160 kanji)'],
-  'l3': ['Level 3 · 小学三年 · Components & Context (200 kanji)'],
-  'l4': ['Level 4 · 小学四年 · Fluency & Confusables (202 kanji)'],
-  'l5': ['Level 5 · 小学五年 · Abstract & Dense Forms (193 kanji)'],
-  'l6': ['Level 6 · 小学六年 · Consolidation (191 kanji)'],
+  'g1': ['Grade 1 (first-year elementary)'],
 };
+
+const CORE_IDS = new Set([
+  'k-4e00','k-4e8c','k-4e09','k-56db','k-4e94','k-516d','k-4e03','k-516b','k-4e5d','k-5341',
+  'k-65e5','k-6708','k-706b','k-6c34','k-6728','k-91d1','k-571f','k-4eba','k-5b50','k-5973',
+  'k-7537','k-5927','k-5c0f','k-4e0a','k-4e0b','k-4e2d','k-5c71','k-5ddd','k-96e8','k-7a7a',
+  'k-76ee','k-53e3','k-624b','k-8db3','k-767d','k-8d64','k-9752',
+]);
+
+const CONFUSABLE_GROUPS = [
+  ['k-4e00','k-4e8c','k-4e09','k-5341','k-767e','k-5343'],
+  ['k-56db','k-4e94','k-4e03','k-516d','k-516b','k-4e5d'],
+  ['k-4e0a','k-4e0b','k-5de6','k-53f3','k-4e2d','k-5148'],
+  ['k-65e5','k-76ee','k-767d','k-7530'],
+  ['k-65e5','k-6708','k-5915','k-5929','k-7a7a','k-96e8'],
+  ['k-706b','k-6c34','k-571f','k-6728','k-91d1'],
+  ['k-5c71','k-5ddd','k-571f','k-7530','k-6751','k-753a'],
+  ['k-6728','k-6797','k-68ee','k-6751','k-6821','k-672c'],
+  ['k-4eba','k-5927','k-5929','k-72ac','k-4f11'],
+  ['k-5973','k-7537','k-5b50','k-4eba'],
+  ['k-53e3','k-76ee','k-8033','k-624b','k-8db3','k-898b'],
+  ['k-738b','k-7389','k-91d1','k-8c9d','k-5186'],
+  ['k-5b66','k-6821','k-5b57','k-6587','k-672c','k-540d'],
+  ['k-97f3','k-7acb','k-65e9','k-8349'],
+  ['k-82b1','k-8349','k-7af9','k-6751','k-6797'],
+  ['k-8eca','k-51fa','k-5165','k-624b','k-8db3'],
+  ['k-6b63','k-4e0a','k-4e0b','k-5148'],
+  ['k-751f','k-5e74','k-65e9','k-5148','k-5b66'],
+  ['k-6c17','k-7a7a','k-5929','k-96e8'],
+  ['k-7cf8','k-7af9','k-866b','k-8349'],
+  ['k-77f3','k-53f3','k-5de6','k-738b'],
+  ['k-5165','k-4eba','k-51fa'],
+  ['k-8d64','k-767d','k-9752','k-7a7a'],
+  ['k-529b','k-7537','k-624b','k-8db3'],
+  ['k-5c0f','k-5927','k-5b50','k-4eba','k-5165'],
+];
+
+const COMMAND_BY_ID = Object.fromEntries(KANJI_G1.commands.map(cmd => [cmd.id, cmd]));
+const COMMAND_IDS = KANJI_G1.commands.map(cmd => cmd.id);
+
+function uniqueBy(items, keyFn) {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = keyFn(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function commandActionFromId(id) {
+  return COMMAND_BY_ID[id] ? COMMAND_BY_ID[id].action : null;
+}
+
+const CONFUSABLE_MAP = (() => {
+  const map = Object.fromEntries(COMMAND_IDS.map(id => [id, []]));
+  for (const group of CONFUSABLE_GROUPS) {
+    for (const id of group) {
+      if (!map[id]) continue;
+      for (const peer of group) {
+        if (peer !== id && !map[id].includes(peer)) map[id].push(peer);
+      }
+    }
+  }
+  for (const id of COMMAND_IDS) {
+    if (map[id].length >= 3) continue;
+    for (const peer of COMMAND_IDS) {
+      if (peer === id || map[id].includes(peer)) continue;
+      map[id].push(peer);
+      if (map[id].length >= 3) break;
+    }
+  }
+  return map;
+})();
+
+function buildBlankChoices(cmd, blank, blankIndex) {
+  const pool = [...CONFUSABLE_MAP[cmd.id], ...COMMAND_IDS]
+    .filter(id => id !== cmd.id)
+    .map(id => COMMAND_BY_ID[id].latex)
+    .filter(choice => choice && choice !== blank.answer);
+  const uniquePool = [...new Set(pool)];
+  const distractors = [];
+  let cursor = blankIndex % uniquePool.length;
+  const step = blankIndex + 1;
+  while (distractors.length < 2) {
+    const candidate = uniquePool[cursor % uniquePool.length];
+    if (!distractors.includes(candidate)) distractors.push(candidate);
+    cursor += step;
+  }
+  return [blank.answer, ...distractors];
+}
+
+function pickActionDistractors(cmd, allCommands, count) {
+  const byId = Object.fromEntries(allCommands.map(item => [item.id, item]));
+  const picked = [];
+  const used = new Set([cmd.id]);
+  function addFromIds(ids) {
+    for (const id of ids) {
+      if (picked.length >= count) break;
+      const candidate = byId[id];
+      if (!candidate || used.has(candidate.id)) continue;
+      picked.push(candidate);
+      used.add(candidate.id);
+    }
+  }
+  addFromIds(shuffleArr([...(CONFUSABLE_MAP[cmd.id] || [])]));
+  addFromIds(shuffleArr(allCommands.filter(item => item.id !== cmd.id).map(item => item.id)));
+  return picked.slice(0, count);
+}
+
+const VARIABLE_AUGMENTS = {
+  'k-4e00':[['horizontal stroke','single horizontal line'],['top bar','top horizontal marker in larger kanji']],
+  'k-96e8':[['top cover','top frame sheltering the drops below'],['inner drops','four dot-like drops showing falling water']],
+  'k-5186':[['outer enclosure','round enclosing shape around the center'],['inner stroke','vertical line inside the enclosure']],
+  'k-738b':[['top line','top horizontal stroke'],['three bars','three horizontal bars joined by a center line']],
+  'k-4e0b':[['top line','upper horizontal reference line'],['lower mark','short stroke hanging below the line']],
+  'k-8c9d':[['eye-like top','boxy top shape of the shell'],['bottom legs','two lower strokes like shell legs']],
+  'k-6c17':[['slanted top','sweeping top strokes from the old steam form'],['lower spread','lower strokes spreading outward like vapor']],
+  'k-4e5d':[['hook','curved hook stroke'],['sweep','long sweeping second stroke']],
+  'k-91d1':[['umbrella top','roof-like top strokes over the metal form'],['bottom legs','lower split strokes under the center']],
+  'k-6708':[['left edge','left vertical edge of the crescent body'],['inner lines','two inner horizontal strokes marking the phases shape']],
+  'k-4e94':[['top bar','top horizontal stroke'],['middle frame','middle enclosure-like shape between the bars']],
+  'k-53e3':[['left side','left vertical side of the opening'],['bottom closure','base stroke closing the box shape']],
+  'k-4e09':[['top stroke','short upper horizontal line'],['bottom stroke','long lower horizontal line anchoring the character']],
+  'k-5c71':[['center peak','tall middle vertical stroke like a peak'],['side peaks','two shorter side strokes like smaller peaks']],
+  'k-5b50':[['top cap','top horizontal stroke with a slight hook'],['legs','bottom spreading strokes like small legs']],
+  'k-56db':[['outer box','enclosing frame around the inside'],['inner legs','two inner strokes at the bottom']],
+  'k-7cf8':[['top twists','small top strokes showing twisted fiber'],['hanging strands','lower strokes trailing like loose thread']],
+  'k-8033':[['outer frame','long outer vertical frame'],['inner bars','three inner horizontals across the ear shape']],
+  'k-4e03':[['crossing stroke','horizontal line crossed by the slanted stroke'],['hooking sweep','curved second stroke with a hook']],
+  'k-8eca':[['top roof','top horizontal cover of the cart shape'],['axle cross','center cross stroke representing the axle']],
+  'k-5341':[['vertical line','upright center stroke'],['crossbar','horizontal stroke crossing the center']],
+  'k-51fa':[['double mountain','two stacked mountain-like shapes'],['upper peak','top central stroke rising outward']],
+  'k-5973':[['bending sweep','long curved sweep forming the body'],['crossing arm','crossing stroke through the middle']],
+  'k-5c0f':[['center line','central vertical stroke'],['side dots','two side strokes falling away from the center']],
+  'k-4e0a':[['baseline','lower horizontal reference line'],['rising mark','short stroke extending above the line']],
+  'k-68ee':[['left tree','left 木 component'],['right trees','pair of 木 components beside the center tree']],
+  'k-751f':[['growing shoot','top stroke crossing a vertical like a sprout'],['ground line','bottom horizontal line as the ground']],
+  'k-9752':[['top growth','top strokes above the lower section'],['lower frame','bottom enclosed shape in the lower half']],
+  'k-5915':[['moon-like curve','curved opening shape of the dusk sky'],['dropping stroke','small slanting stroke at the top']],
+  'k-8d64':[['earth top','upper part related to 土'],['fire legs','lower spreading strokes like a burning base']],
+  'k-5343':[['top slash','short top slash before the main cross'],['cross','crossed vertical and horizontal strokes under the slash']],
+  'k-5ddd':[['three streams','three vertical strokes like flowing channels'],['center stream','middle line between the side streams']],
+  'k-8db3':[['mouth top','top 口 shape'],['walking bottom','lower strokes suggesting a moving leg']],
+  'k-5927':[['spreading arms','left and right sweeping strokes'],['center body','vertical center stroke of the person shape']],
+  'k-4e2d':[['outer box','box enclosure around the center'],['center line','vertical stroke running through the middle']],
+  'k-866b':[['head','top box-like head section'],['tail stroke','bottom curved stroke like an insect tail']],
+  'k-7530':[['outer plot','square field enclosure'],['cross paths','inner cross dividing the field into sections']],
+  'k-571f':[['top bar','short top horizontal stroke'],['ground line','long bottom line like the ground']],
+  'k-4e8c':[['top line','short upper horizontal stroke'],['bottom line','longer lower horizontal stroke']],
+  'k-65e5':[['outer frame','tall outer box of the sun shape'],['middle bar','center horizontal line inside the frame']],
+  'k-5165':[['left sweep','left slanting stroke opening inward'],['right sweep','right slanting stroke crossing over the left']],
+  'k-5e74':[['top bend','upper slanted stroke above the crossbars'],['lower stem','center vertical stroke running downward']],
+  'k-767d':[['top drop','small top stroke above the box'],['sun box','box-like lower shape under the top mark']],
+  'k-516b':[['left sweep','left opening stroke'],['right sweep','right opening stroke']],
+  'k-6587':[['top dot','small top mark above the crossing strokes'],['crossed legs','lower crossing strokes spreading outward']],
+  'k-6728':[['trunk','center vertical trunk stroke'],['branches','left and right diagonal branches']],
+  'k-76ee':[['outer lid','outer frame of the eye shape'],['inner lines','two horizontal lines inside the eye']],
+  'k-7acb':[['top point','small top point above the main body'],['standing base','broad base under the upright center']],
+  'k-529b':[['curved arm','long curved stroke like a flexed arm'],['hook','hooking finish at the lower end']],
+  'k-6797':[['left tree','left 木 component'],['right tree','right 木 component']],
+  'k-516d':[['roof','top lid-like strokes'],['open legs','two lower strokes spreading apart']],
+};
+
+const APPLICATION_SCENARIOS = {
+  'k-4e00':'The attendance sheet shows 1 student at the make-up lesson.',
+  'k-53f3':'Mika lifts the arm she uses for writing when the teacher calls on that side.',
+  'k-96e8':'Umbrellas pop open as drops start falling over the playground.',
+  'k-5186':'A snack at the school store has 100 printed after the price.',
+  'k-738b':'In the storybook, the ruler of the realm sits on a throne with a crown.',
+  'k-97f3':'A piano note echoes through the music room during practice.',
+  'k-4e0b':'The ball rolls from the shelf to the floor.',
+  'k-706b':'Campers warm their hands beside glowing coals at night.',
+  'k-82b1':'Cherry blossoms open all around the park pond in spring.',
+  'k-8c9d':'At the beach, a child picks a spiral treasure from the sand.',
+  'k-5b66':'A child sits at a desk reading a textbook and finishing homework.',
+  'k-6c17':'After a nap and a snack, the child feels cheerful and full of energy.',
+  'k-4e5d':'The calendar page for September is marked with the digit 9.',
+  'k-4f11':'After gym class, everyone takes a break and sits quietly.',
+  'k-7389':'At sports day, children toss small round pieces into a basket.',
+  'k-91d1':'The child opens a wallet to pay for juice from the vending machine.',
+  'k-7a7a':'After lunch, the bento box has nothing left inside.',
+  'k-6708':'The calendar flips from April to May.',
+  'k-72ac':'A puppy runs across the yard wagging its tail.',
+  'k-898b':'Families gather under blossoms to admire the trees together.',
+  'k-4e94':'The worksheet asks students to circle the kanji that matches 5.',
+  'k-53e3':'The dentist asks the child to open wide and say ah.',
+  'k-6821':'Children line up at the gate each morning before classes begin.',
+  'k-5de6':'The arrow points to the side opposite the hand most children use for writing.',
+  'k-4e09':'The worksheet asks students to pick the kanji that matches 3.',
+  'k-5c71':'A hiking trail climbs to a tall peak behind the station town.',
+  'k-5b50':'A toddler holds an adult hand while crossing the street.',
+  'k-56db':'The quiz card shows 4 and asks for the matching character.',
+  'k-7cf8':'Grandma pulls a thin line through a needle while sewing a button.',
+  'k-5b57':'A first-grader carefully copies a written symbol onto lined paper.',
+  'k-8033':'The doctor checks hearing and looks on each side of the head.',
+  'k-4e03':'The class matches the digit 7 with its kanji.',
+  'k-8eca':'A family buckles seat belts before the trip to the zoo.',
+  'k-624b':'The child raises a palm to answer the question.',
+  'k-5341':'The flash card shows 10 and asks for the matching kanji.',
+  'k-51fa':'When the bell rings, students leave the classroom and head into the hallway.',
+  'k-5973':'The sign on the door is for girls.',
+  'k-5c0f':'The kitten is the tiniest one in the box.',
+  'k-4e0a':'The hat sits at the highest part of the coat rack.',
+  'k-68ee':'Tall trunks surround the path so densely that sunlight barely reaches the ground.',
+  'k-4eba':'Only one human figure is drawn on the sign by the elevator.',
+  'k-6c34':'A glass spills across the lunch table.',
+  'k-6b63':'The teacher marks the answer with a big check because it is not wrong.',
+  'k-751f':'A baby chick cracks the egg and comes into the world.',
+  'k-9752':'The child grabs the crayon the color of the daytime sky.',
+  'k-5915':'The sun has set, streetlights turn on, and families head home for dinner.',
+  'k-77f3':'Children skip flat pebbles across the pond.',
+  'k-8d64':'The stop sign and a ripe apple share the same bright color.',
+  'k-5343':'A price sign shows 1,000 on the board at the festival.',
+  'k-5ddd':'Fish swim in the stream beside the hiking trail.',
+  'k-5148':'The runner at the front reaches the tape first.',
+  'k-65e9':'The child wakes before sunrise for a field trip.',
+  'k-8349':'Morning dew sparkles on the lawn.',
+  'k-8db3':'A muddy shoe print appears by the doorway.',
+  'k-6751':'A few farmhouses cluster around the fields and shrine.',
+  'k-5927':'The elephant is much bigger than the goat.',
+  'k-7537':'The boys line up on one side for the relay race.',
+  'k-7af9':'A panda munches tall hollow stalks at the zoo.',
+  'k-4e2d':'The marble lands in the center of the circle.',
+  'k-866b':'A tiny creature with six legs crawls across the leaf.',
+  'k-753a':'Shops line the main street around the station.',
+  'k-5929':'The weather report talks about what the clouds are doing overhead.',
+  'k-7530':'Seedlings grow in flooded rectangles beside the road.',
+  'k-571f':'The gardener digs into the dirt to plant seeds.',
+  'k-4e8c':'The board shows the digit 2 next to three other kanji choices.',
+  'k-65e5':'A bright disk rises each morning and also appears in dates on the calendar.',
+  'k-5165':'Students step through the doorway into the room.',
+  'k-5e74':'Everyone writes the new number on January 1 after 12 months pass.',
+  'k-767d':'Fresh snow and blank paper share this color.',
+  'k-516b':'The flash card with 8 is held up in front of the class.',
+  'k-767e':'The toy store poster advertises an item for 100 yen.',
+  'k-6587':'A student turns in a short essay made of several written lines.',
+  'k-6728':'A squirrel runs up the trunk in the park.',
+  'k-672c':'The student borrows a novel from the library.',
+  'k-540d':'On the first day of class, everyone writes what they are called on a tag.',
+  'k-76ee':'The optometrist asks the child to read the chart.',
+  'k-7acb':'When the principal enters, the whole class rises from their chairs.',
+  'k-529b':'The heavy box will not move without strong muscles.',
+  'k-6797':'A short trail passes through a small cluster of trees.',
+  'k-516d':'The teacher points to the card marked 6.',
+};
+
+for (const cmd of KANJI_G1.commands) {
+  cmd.dom = 'g1';
+  cmd.tier = CORE_IDS.has(cmd.id) ? 'core' : 'regular';
+  if (cmd.id === 'k-4e00' && cmd.subconcepts[0]) cmd.subconcepts[0].wrong = ['2','3'];
+  cmd.blanks.forEach((blank, index) => {
+    blank.choices = buildBlankChoices(cmd, blank, index);
+  });
+}
+
+for (const cmd of KANJI_G1.commands) {
+  const extras = (VARIABLE_AUGMENTS[cmd.id] || []).map(([s, d]) => ({s, d}));
+  VARIABLE_BANK[cmd.id] = uniqueBy([...(VARIABLE_BANK[cmd.id] || []), ...extras], entry => `${entry.s}|${entry.d}`).slice(0, 3);
+  APPLICATION_BANK[cmd.id] = [{
+    scenario: APPLICATION_SCENARIOS[cmd.id],
+    confusionSet: CONFUSABLE_MAP[cmd.id].slice(0, 3),
+  }];
+}
 
 const SHARED_PREREQ_NODES = {
   // L2: Radical recognition nodes
@@ -1592,7 +1838,8 @@ function wireL1toL2(PREREQ_DAG) {
         ids.forEach(id => { if (PREREQ_DAG[id]) matched.add(id) });
       }
     }
-    if (matched.size > 0) node.prereqs = [...matched];
+    if (matched.size === 0 && PREREQ_DAG['stroke-basics']) matched.add('stroke-basics');
+    node.prereqs = [...matched];
   }
 }
 

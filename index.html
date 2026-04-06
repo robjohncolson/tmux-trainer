@@ -333,7 +333,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 
 <script src="./ap-stats-cartridge.js"></script>
 <script src="./alg2-dividing-polynomials-cartridge.js"></script>
-<script src="./kanji-g1-cartridge.js"></script>
+<script src="./kanji-g1-cartridge-v2.js"></script>
 <script src="./dummy-cartridge.js"></script>
 <script>
 // ═══════════════════════════════════════════════
@@ -3801,9 +3801,11 @@ function updateInput(){
       headerHtml+='<div class="q-type-badge"'+(isVar?' style="background:#22886618;border-color:#22886633;color:#228866"':'')+'>'+(isVar?'VARIABLE':'IDENTIFY')+'</div>'+speedInfo;
       headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display" id="quiz-latex"></div></div></div>';
       if(isVar){
-        headerHtml+='<div style="font-size:11px;color:'+AMB.css.bright+';margin-bottom:2px">What does <span id="var-symbol" style="display:inline-block"></span> represent in this formula?</div>';
+        const vp=activeCartridge&&activeCartridge.variablePrompt?activeCartridge.variablePrompt:'What does <span id="var-symbol" style="display:inline-block"></span> represent in this formula?';
+        headerHtml+='<div style="font-size:11px;color:'+AMB.css.bright+';margin-bottom:2px">'+vp+'</div>';
       }else{
-        headerHtml+='<div style="font-size:11px;color:'+AMB.css.bright+';margin-bottom:2px">What does this formula calculate?</div>';
+        const ip=activeCartridge&&activeCartridge.identifyPrompt?activeCartridge.identifyPrompt:'What does this formula calculate?';
+        headerHtml+='<div style="font-size:11px;color:'+AMB.css.bright+';margin-bottom:2px">'+ip+'</div>';
       }
       const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
       bodyHtml+='<div class="mc-grid"'+answerDim+'>';
@@ -3816,7 +3818,8 @@ function updateInput(){
       bodyHtml+=renderShortcutBadges();
     }else if(q.type==='application'){
       headerHtml+='<div class="q-type-badge" style="background:#22884418;border-color:#22884433;color:#228844">APPLICATION</div>'+speedInfo;
-      headerHtml+='<div style="font-size:11px;color:'+AMB.css.bright+';margin-bottom:2px">Which formula or concept applies?</div>';
+      const apPrompt=activeCartridge&&activeCartridge.applicationPrompt?activeCartridge.applicationPrompt:'Which formula or concept applies?';
+      headerHtml+='<div style="font-size:11px;color:'+AMB.css.bright+';margin-bottom:2px">'+apPrompt+'</div>';
       bodyHtml+='<div style="font-size:12px;color:'+AMB.css.bright+';margin:4px 0 8px;line-height:1.4;padding:6px 8px;background:#1a0d0044;border-left:2px solid #22884466;border-radius:0 4px 4px 0;white-space:normal;word-wrap:break-word">'+q.scenario+'</div>';
       const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
       bodyHtml+='<div class="mc-grid"'+answerDim+'>';
