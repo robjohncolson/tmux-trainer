@@ -1,901 +1,1194 @@
 (function(){
 
-function shuffleArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function uniqueBy(items,keyFn){const seen=new Set();return items.filter(item=>{const key=keyFn(item);if(seen.has(key))return false;seen.add(key);return true})}
-function makeId(kana){return 'kana-'+[...String(kana||'')].map(ch=>ch.charCodeAt(0).toString(16)).join('-')}
-function toKatakana(s){return String(s||'').replace(/[\u3041-\u3096]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60))}
-function toHiragana(s){return String(s||'').replace(/[\u30A1-\u30F6]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60))}
-function normalizeLookup(s){return toHiragana(String(s||'').toLowerCase()).trim().replace(/\s+/g,'').replace(/[-'".,!?()]/g,'')}
-function pickDistinct(pool,correct,index,step){
-  const items=pool.filter(item=>item&&item!==correct);
-  if(items.length===0)return ['unknown','unknown'];
-  const unique=[...new Set(items)];
-  if(unique.length===1)return [unique[0],unique[0]];
-  const picks=[];
-  let cursor=index+1;
-  const stride=step||11;
-  while(picks.length<2){
-    const candidate=unique[cursor%unique.length];
-    if(candidate&&candidate!==correct&&!picks.includes(candidate))picks.push(candidate);
-    cursor+=stride;
+function shuffleArr(arr){
+  const copy = arr.slice();
+  for(let i = copy.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
   }
-  return picks;
+  return copy;
 }
-function parseTable(text){
-  return String(text||'').trim().split('\n').map(line=>line.trim()).filter(Boolean).map(line=>line.split('|').map(part=>part.trim()));
-}
-function parseExampleMap(text){
-  const map={};
-  parseTable(text).forEach(parts=>{
-    const [key,w1,r1,m1,w2,r2,m2]=parts;
-    map[key]=[
-      {word:w1,reading:r1,meaning:m1},
-      {word:w2,reading:r2,meaning:m2},
-    ];
-  });
-  return map;
-}
-function detectScript(kana){return /[\u30A1-\u30FA]/.test(kana)?'katakana':'hiragana'}
-function buildKanaBlank(word,kana){
-  const blank='□';
-  const idx=String(word||'').indexOf(kana);
-  if(idx===-1)return blank+word;
-  return word.slice(0,idx)+blank+word.slice(idx+kana.length);
-}
-function hasLongVowelMark(s){return String(s||'').includes('ー')}
 
-const ROWS=['a-row','k-row','s-row','t-row','n-row','h-row','m-row','y-row','r-row','w-row'];
-const ROW_DESCRIPTIONS={
-  'a-row':'あ い う え お vowel group',
-  'k-row':'か き く け こ consonant group',
-  's-row':'さ し す せ そ consonant group',
-  't-row':'た ち つ て と consonant group',
-  'n-row':'な に ぬ ね の and ん nasal group',
-  'h-row':'は ひ ふ へ ほ breathy group',
-  'm-row':'ま み む め も humming group',
-  'y-row':'や ゆ よ glide group',
-  'r-row':'ら り る れ ろ liquid group',
-  'w-row':'わ を gliding group'
+function uniqueBy(items, keyFn){
+  const seen = new Set();
+  return items.filter(item => {
+    const key = keyFn(item);
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function toHiragana(text){
+  return String(text || '').replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+
+function normalizeLookup(text){
+  return toHiragana(String(text || '').toLowerCase())
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/['".,!?()\-:;[\]{}]/g, '');
+}
+
+function stripActionLabel(text){
+  return String(text || '').replace(/\s*\([^)]*\)/g, '').trim();
+}
+
+function takeDistinct(items, correct, count, normalizer){
+  const norm = normalizer || normalizeLookup;
+  const seen = new Set([norm(correct)]);
+  const picked = [];
+  items.forEach(item => {
+    if(item == null) return;
+    const key = norm(item);
+    if(!key || seen.has(key)) return;
+    seen.add(key);
+    picked.push(item);
+  });
+  return picked.slice(0, count);
+}
+
+function simpleHash(text){
+  let hash = 0;
+  for(const ch of String(text || '')){
+    hash = (hash * 131 + ch.charCodeAt(0)) % 1679616;
+  }
+  return hash.toString(36);
+}
+
+function makeId(word){
+  const chars = [...String(word || '')];
+  const firstHex = chars[0] ? chars[0].charCodeAt(0).toString(16) : '0000';
+  return `kv-${firstHex}-${chars.length}-${simpleHash(word)}`;
+}
+
+function isKanaChar(ch){
+  return /^[ぁ-ん]$/.test(ch);
+}
+
+const SMALL_KANA = new Set(['ゃ','ゅ','ょ','っ']);
+const SMALL_Y_KANA = new Set(['ゃ','ゅ','ょ']);
+const REQUIRED_BASIC = [...'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'];
+const REQUIRED_VOICED = [...'がぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ'];
+
+const DIGRAPH_ROMAJI = {
+  'きゃ':'kya','きゅ':'kyu','きょ':'kyo',
+  'ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo',
+  'しゃ':'sha','しゅ':'shu','しょ':'sho',
+  'じゃ':'ja','じゅ':'ju','じょ':'jo',
+  'ちゃ':'cha','ちゅ':'chu','ちょ':'cho',
+  'にゃ':'nya','にゅ':'nyu','にょ':'nyo',
+  'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo',
+  'びゃ':'bya','びゅ':'byu','びょ':'byo',
+  'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo',
+  'みゃ':'mya','みゅ':'myu','みょ':'myo',
+  'りゃ':'rya','りゅ':'ryu','りょ':'ryo',
 };
 
-const BASE_SYLLABLES=parseTable(String.raw`
-あ|ア|a|a-row|core|あさ|asa|morning|あめ|ame|rain
-い|イ|i|a-row|core|いぬ|inu|dog|いえ|ie|house
-う|ウ|u|a-row|core|うみ|umi|sea|うた|uta|song
-え|エ|e|a-row|core|えき|eki|station|えんぴつ|enpitsu|pencil
-お|オ|o|a-row|core|おと|oto|sound|おに|oni|ogre
-か|カ|ka|k-row|core|かさ|kasa|umbrella|かに|kani|crab
-き|キ|ki|k-row|core|きく|kiku|listen|きた|kita|north
-く|ク|ku|k-row|core|くち|kuchi|mouth|くま|kuma|bear
-け|ケ|ke|k-row|core|けさ|kesa|this morning|けむり|kemuri|smoke
-こ|コ|ko|k-row|core|こえ|koe|voice|こねこ|koneko|kitten
-さ|サ|sa|s-row|core|さかな|sakana|fish|さくら|sakura|cherry blossom
-し|シ|shi|s-row|core|しお|shio|salt|しま|shima|island
-す|ス|su|s-row|core|すし|sushi|sushi|すな|suna|sand
-せ|セ|se|s-row|core|せかい|sekai|world|せみ|semi|cicada
-そ|ソ|so|s-row|core|そら|sora|sky|そば|soba|buckwheat noodles
-た|タ|ta|t-row|core|たこ|tako|octopus|たまご|tamago|egg
-ち|チ|chi|t-row|core|ちず|chizu|map|ちから|chikara|strength
-つ|ツ|tsu|t-row|core|つき|tsuki|moon|つくえ|tsukue|desk
-て|テ|te|t-row|core|て|te|hand|てがみ|tegami|letter
-と|ト|to|t-row|core|とり|tori|bird|とけい|tokei|clock
-な|ナ|na|n-row|core|なつ|natsu|summer|なまえ|namae|name
-に|ニ|ni|n-row|core|にく|niku|meat|にわ|niwa|garden
-ぬ|ヌ|nu|n-row|core|ぬま|numa|swamp|たぬき|tanuki|raccoon dog
-ね|ネ|ne|n-row|core|ねこ|neko|cat|ねつ|netsu|fever
-の|ノ|no|n-row|core|のり|nori|seaweed|のど|nodo|throat
-は|ハ|ha|h-row|core|はな|hana|flower|はこ|hako|box
-ひ|ヒ|hi|h-row|core|ひと|hito|person|ひこうき|hikoki|airplane
-ふ|フ|fu|h-row|core|ふね|fune|boat|ふゆ|fuyu|winter
-へ|ヘ|he|h-row|core|へや|heya|room|へび|hebi|snake
-ほ|ホ|ho|h-row|core|ほし|hoshi|star|ほね|hone|bone
-ま|マ|ma|m-row|core|まど|mado|window|まくら|makura|pillow
-み|ミ|mi|m-row|core|みみ|mimi|ear|みず|mizu|water
-む|ム|mu|m-row|core|むし|mushi|insect|むら|mura|village
-め|メ|me|m-row|core|め|me|eye|めがね|megane|glasses
-も|モ|mo|m-row|core|もり|mori|forest|もも|momo|peach
-や|ヤ|ya|y-row|core|やま|yama|mountain|やさい|yasai|vegetables
-ゆ|ユ|yu|y-row|core|ゆき|yuki|snow|ゆび|yubi|finger
-よ|ヨ|yo|y-row|core|よる|yoru|night|よてい|yotei|schedule
-ら|ラ|ra|r-row|core|らいおん|raion|lion|らくだ|rakuda|camel
-り|リ|ri|r-row|core|りんご|ringo|apple|りす|risu|squirrel
-る|ル|ru|r-row|core|るす|rusu|absence|はる|haru|spring
-れ|レ|re|r-row|core|れいぞうこ|reizoko|refrigerator|れんしゅう|renshu|practice
-ろ|ロ|ro|r-row|core|ろうそく|rosoku|candle|ろば|roba|donkey
-わ|ワ|wa|w-row|core|わに|wani|crocodile|わた|wata|cotton
-を|ヲ|wo|w-row|core|ほんをよむ|hon wo yomu|read a book|みずをのむ|mizu wo nomu|drink water
-ん|ン|n|n-row|core|りんご|ringo|apple|ぱん|pan|bread
-が|ガ|ga|k-row|regular|がくせい|gakusei|student|がぞう|gazo|image
-ぎ|ギ|gi|k-row|regular|ぎんこう|ginko|bank|おにぎり|onigiri|rice ball
-ぐ|グ|gu|k-row|regular|ぐんて|gunte|work gloves|てぬぐい|tenugui|hand towel
-げ|ゲ|ge|k-row|regular|げんき|genki|healthy|ひげ|hige|beard
-ご|ゴ|go|k-row|regular|ごはん|gohan|meal|ごみ|gomi|trash
-ざ|ザ|za|s-row|regular|ざっし|zasshi|magazine|ざぶとん|zabuton|cushion
-じ|ジ|ji|s-row|regular|じてんしゃ|jitensha|bicycle|じかん|jikan|time
-ず|ズ|zu|s-row|regular|ずこう|zuko|art class|みず|mizu|water
-ぜ|ゼ|ze|s-row|regular|ぜんぶ|zenbu|all|ぜりー|zeri|jelly
-ぞ|ゾ|zo|s-row|regular|ぞう|zo|elephant|かぞく|kazoku|family
-だ|ダ|da|t-row|regular|だいどころ|daidokoro|kitchen|だるま|daruma|daruma doll
-ぢ|ヂ|ji|t-row|regular|ちぢむ|chidimu|shrink|はなぢ|hanaji|nosebleed
-づ|ヅ|zu|t-row|regular|つづく|tsuzuku|continue|みかづき|mikazuki|crescent moon
-で|デ|de|t-row|regular|でぐち|deguchi|exit|でんわ|denwa|telephone
-ど|ド|do|t-row|regular|どあ|doa|door|どようび|doyobi|Saturday
-ば|バ|ba|h-row|regular|ばす|basu|bus|ばら|bara|rose
-び|ビ|bi|h-row|regular|びょういん|byoin|hospital|びん|bin|bottle
-ぶ|ブ|bu|h-row|regular|ぶた|buta|pig|ぶどう|budo|grapes
-べ|ベ|be|h-row|regular|べんとう|bento|lunchbox|べる|beru|bell
-ぼ|ボ|bo|h-row|regular|ぼうし|boshi|hat|とんぼ|tonbo|dragonfly
-ぱ|パ|pa|h-row|regular|ぱん|pan|bread|ぱじゃま|pajama|pajamas
-ぴ|ピ|pi|h-row|regular|ぴあの|piano|piano|えんぴつ|enpitsu|pencil
-ぷ|プ|pu|h-row|regular|ぷりん|purin|pudding|てんぷら|tenpura|tempura
-ぺ|ペ|pe|h-row|regular|ぺん|pen|pen|ほっぺ|hoppe|cheek
-ぽ|ポ|po|h-row|regular|ぽけっと|poketto|pocket|しっぽ|shippo|tail
-`);
+const KANA_ROMAJI = {
+  'あ':'a','い':'i','う':'u','え':'e','お':'o',
+  'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+  'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
+  'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+  'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+  'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
+  'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+  'や':'ya','ゆ':'yu','よ':'yo',
+  'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
+  'わ':'wa','を':'wo','ん':'n',
+  'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+  'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+  'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
+  'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+  'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+};
 
-const BASE_YOON=parseTable(String.raw`
-きゃ|キャ|kya|k-row|きゃく|kyaku|guest|きゃべつ|kyabetsu|cabbage
-きゅ|キュ|kyu|k-row|きゅうり|kyuri|cucumber|きゅう|kyu|nine
-きょ|キョ|kyo|k-row|きょう|kyo|today|きょうしつ|kyoshitsu|classroom
-ぎゃ|ギャ|gya|k-row|ぎゃくてん|gyakuten|comeback|ぎゃらりー|gyarari|gallery
-ぎゅ|ギュ|gyu|k-row|ぎゅうにゅう|gyunyu|milk|ぎゅうどん|gyudon|beef bowl
-ぎょ|ギョ|gyo|k-row|ぎょうざ|gyoza|dumpling|ぎょうれつ|gyoretsu|line
-しゃ|シャ|sha|s-row|しゃしん|shashin|photo|しゃかい|shakai|society
-しゅ|シュ|shu|s-row|しゅくだい|shukudai|homework|しゅみ|shumi|hobby
-しょ|ショ|sho|s-row|しょうゆ|shoyu|soy sauce|しょうが|shoga|ginger
-じゃ|ジャ|ja|s-row|じゃがいも|jagaimo|potato|じゃんけん|janken|rock paper scissors
-じゅ|ジュ|ju|s-row|じゅう|ju|ten|じゅぎょう|jugyo|class
-じょ|ジョ|jo|s-row|じょうず|jozu|skillful|じょうほう|joho|information
-ちゃ|チャ|cha|t-row|おちゃ|ocha|tea|ちゃわん|chawan|tea bowl
-ちゅ|チュ|chu|t-row|ちゅうごく|chugoku|China|ちゅうしゃ|chusha|parking
-ちょ|チョ|cho|t-row|ちょっと|chotto|a little|ちょうちょ|chocho|butterfly
-にゃ|ニャ|nya|n-row|にゃんこ|nyanko|kitty|こんにゃく|konnyaku|konjac
-にゅ|ニュ|nyu|n-row|にゅうがく|nyugaku|school entry|にゅういん|nyuin|hospitalization
-にょ|ニョ|nyo|n-row|にょきにょき|nyokinyoki|sprouting|にょろにょろ|nyoronyoro|slithering
-ひゃ|ヒャ|hya|h-row|ひゃく|hyaku|hundred|ひゃっかてん|hyakkaten|department store
-ひゅ|ヒュ|hyu|h-row|ひゅうひゅう|hyuhyu|whizzing|ひゅーず|hyuzu|fuse
-ひょ|ヒョ|hyo|h-row|ひょう|hyo|chart|ひょうし|hyoshi|rhythm
-びゃ|ビャ|bya|h-row|さんびゃく|sanbyaku|three hundred|びゃくや|byakuya|white night
-びゅ|ビュ|byu|h-row|でびゅう|debyu|debut|びゅうびゅう|byubyu|howling wind
-びょ|ビョ|byo|h-row|びょうき|byoki|illness|びょういん|byoin|hospital
-ぴゃ|ピャ|pya|h-row|はっぴゃく|happyaku|eight hundred|ろっぴゃく|roppyaku|six hundred
-ぴゅ|ピュ|pyu|h-row|ぴゅあ|pyua|pure|こんぴゅーたー|konpyuta|computer
-ぴょ|ピョ|pyo|h-row|ぴょんぴょん|pyonpyon|hopping|ぴょこぴょこ|pyokopyoko|popping up
-みゃ|ミャ|mya|m-row|みゃく|myaku|pulse|みゃーみゃー|myamya|meowing
-みゅ|ミュ|myu|m-row|みゅーじっく|myujikku|music|みゅーじあむ|myujiamu|museum
-みょ|ミョ|myo|m-row|みょうじ|myoji|surname|みょうが|myoga|myoga ginger
-りゃ|リャ|rya|r-row|りゃくご|ryakugo|abbreviation|りゃくず|ryakuzu|sketch map
-りゅ|リュ|ryu|r-row|りゅう|ryu|dragon|りゅうがく|ryugaku|study abroad
-りょ|リョ|ryo|r-row|りょうり|ryori|cooking|りょこう|ryoko|travel
-`);
-
-const KATAKANA_EXAMPLE_MAP=parseExampleMap(String.raw`
-a|アイス|aisu|ice cream|アプリ|apuri|app
-i|イヤホン|iyahon|earphones|イラスト|irasuto|illustration
-u|ウイルス|uirusu|virus|ウクレレ|ukurere|ukulele
-e|エアコン|eakon|air conditioner|エレベーター|erebeta|elevator
-o|オムレツ|omuretsu|omelet|オレンジ|orenji|orange
-ka|カメラ|kamera|camera|カード|kado|card
-ki|キー|ki|key|キムチ|kimuchi|kimchi
-ku|クラス|kurasu|class|クッキー|kukki|cookie
-ke|ケーキ|keki|cake|ケチャップ|kechappu|ketchup
-ko|コーヒー|kohi|coffee|コート|koto|coat
-sa|サラダ|sarada|salad|サンダル|sandaru|sandals
-shi|シーツ|shitsu|bedsheet|シール|shiru|sticker
-su|スープ|supu|soup|スカート|sukato|skirt
-se|セーター|seta|sweater|セロリ|serori|celery
-so|ソファ|sofa|sofa|ソース|sosu|sauce
-ta|タクシー|takushi|taxi|タオル|taoru|towel
-chi|チーズ|chizu|cheese|チケット|chiketto|ticket
-tsu|ツアー|tsua|tour|ツナ|tsuna|tuna
-te|テレビ|terebi|television|テスト|tesuto|test
-to|トマト|tomato|tomato|トラック|torakku|truck
-na|ナイフ|naifu|knife|ナポリタン|naporitan|Napolitan pasta
-ni|ニット|nitto|knitwear|ニンジャ|ninja|ninja
-ne|ネクタイ|nekutai|necktie|ネット|netto|internet
-no|ノート|noto|notebook|ノック|nokku|knock
-ha|ハム|hamu|ham|ハンバーガー|hanbaga|hamburger
-hi|ヒント|hinto|hint|ヒーロー|hiro|hero
-fu|フォーク|foku|fork|フライ|furai|fried item
-he|ヘリコプター|herikoputa|helicopter|ヘアゴム|heagomu|hair tie
-ho|ホテル|hoteru|hotel|ホットケーキ|hottokeki|pancake
-ma|マスク|masuku|mask|マフラー|mafura|scarf
-mi|ミルク|miruku|milk|ミント|minto|mint
-mu|ムース|musu|mousse|ムード|mudo|mood
-me|メモ|memo|memo|メロン|meron|melon
-mo|モーター|mota|motor|モデル|moderu|model
-ya|ヤクルト|yakuruto|Yakult drink|ヤード|yado|yard
-yu|ユニフォーム|yunifomu|uniform|ユーモア|yumoa|humor
-yo|ヨーグルト|yoguruto|yogurt|ヨット|yotto|yacht
-ra|ラジオ|rajio|radio|ランプ|ranpu|lamp
-ri|リボン|ribon|ribbon|リモコン|rimokon|remote control
-ru|ルール|ruru|rule|ルビー|rubi|ruby
-re|レストラン|resutoran|restaurant|レモン|remon|lemon
-ro|ロボット|robotto|robot|ロケット|roketto|rocket
-wa|ワイン|wain|wine|ワッフル|waffuru|waffle
-ga|ガラス|garasu|glass|ガム|gamu|gum
-gi|ギター|gita|guitar|ギフト|gifuto|gift
-gu|グラス|gurasu|glass cup|グミ|gumi|gummy candy
-ge|ゲーム|gemu|game|ゲート|geto|gate
-go|ゴール|goru|goal|ゴム|gomu|rubber band
-za|ザーサイ|zasai|pickled mustard stem|ピザ|piza|pizza
-ji|ジム|jimu|gym|ジーンズ|jinzu|jeans
-zu|ズボン|zubon|trousers|スムーズ|sumuzu|smooth
-ze|ゼリー|zeri|jelly|ゼミ|zemi|seminar
-zo|ゾーン|zon|zone|アマゾン|amazon|Amazon
-da|ダンス|dansu|dance|ダイヤ|daiya|diamond
-de|デザート|dezato|dessert|デート|deto|date outing
-do|ドア|doa|door|ドレス|doresu|dress
-ba|バス|basu|bus|バター|bata|butter
-bi|ビール|biru|beer|ビデオ|bideo|video
-bu|ブラシ|burashi|brush|ブーツ|butsu|boots
-be|ベッド|beddo|bed|ベル|beru|bell
-bo|ボール|boru|ball|ボタン|botan|button
-pa|パン|pan|bread|パジャマ|pajama|pajamas
-pi|ピアノ|piano|piano|ピザ|piza|pizza
-pu|プリン|purin|pudding|プール|puru|pool
-pe|ペン|pen|pen|ペット|petto|pet
-po|ポスト|posuto|postbox|ポケット|poketto|pocket
-`);
-
-const KATAKANA_YOON_EXAMPLE_MAP=parseExampleMap(String.raw`
-kya|キャベツ|kyabetsu|cabbage|キャンプ|kyanpu|camp
-kyu|キューブ|kyubu|cube|キュウリ|kyuri|cucumber
-gya|ギャグ|gyagu|gag|ギャラリー|gyarari|gallery
-gyo|ギョーザ|gyoza|dumpling|ギョロギョロ|gyorogyoro|staring around
-sha|シャツ|shatsu|shirt|シャンプー|shanpu|shampoo
-shu|シュークリーム|shukurimu|cream puff|シュート|shuto|shoot
-sho|ショップ|shoppu|shop|ショート|shoto|short
-ja|ジャム|jamu|jam|ジャケット|jaketto|jacket
-ju|ジュース|jusu|juice|ジュエル|jueru|jewel
-jo|ジョーク|joku|joke|ジョギング|jogingu|jogging
-cha|チャイ|chai|chai tea|チャンス|chansu|chance
-chu|チューリップ|churippu|tulip|チューブ|chubu|tube
-cho|チョコレート|chokoreto|chocolate|チョーク|choku|chalk
-nya|ニャンコ|nyanko|kitty|コンニャク|konnyaku|konjac
-nyu|ニュース|nyusu|news|ニューヨーク|nyuyoku|New York
-hyu|ヒューマン|hyuman|human|ヒューズ|hyuzu|fuse
-byu|ビュッフェ|byuffe|buffet|ビュー|byu|view
-pyu|ピュア|pyua|pure|ピューレ|pyure|puree
-myu|ミュージック|myujikku|music|ミュージアム|myujiamu|museum
-ryu|リュック|ryukku|backpack|リュウ|ryu|dragon
-`);
-
-function buildMnemonic(kana,row,dom,romaji){
-  if(dom==='yoon')return `blend the base sound into ${romaji} with a small kana`;
-  if(['pa','pi','pu','pe','po'].includes(romaji))return 'handakuten turns the h-row into a sharp p sound';
-  if(['ga','gi','gu','ge','go','za','ji','zu','ze','zo','da','de','do','ba','bi','bu','be','bo'].includes(romaji))return 'dakuten voices the base row sound';
-  return detectScript(kana)==='katakana'?'angular katakana strokes mark this sound':'flowing hiragana strokes carry this sound';
-}
-function getKatakanaExamples(romaji,hWord1,hRead1,hMean1,hWord2,hRead2,hMean2){
-  return KATAKANA_EXAMPLE_MAP[romaji]||[
-    {word:toKatakana(hWord1),reading:hRead1,meaning:hMean1},
-    {word:toKatakana(hWord2),reading:hRead2,meaning:hMean2},
-  ];
-}
-function getKatakanaYoonExamples(romaji,hWord1,hRead1,hMean1,hWord2,hRead2,hMean2){
-  return KATAKANA_YOON_EXAMPLE_MAP[romaji]||[
-    {word:toKatakana(hWord1),reading:hRead1,meaning:hMean1},
-    {word:toKatakana(hWord2),reading:hRead2,meaning:hMean2},
-  ];
-}
-
-const PAIRS=[...BASE_SYLLABLES.map(parts=>({h:parts[0],k:parts[1]})),...BASE_YOON.map(parts=>({h:parts[0],k:parts[1]}))];
-const COUNTERPART_BY_KANA={};
-PAIRS.forEach(pair=>{COUNTERPART_BY_KANA[pair.h]=pair.k;COUNTERPART_BY_KANA[pair.k]=pair.h});
-
-const HIRAGANA_SOURCE=BASE_SYLLABLES.map(([h,_k,romaji,row,tier,w1,r1,m1,w2,r2,m2])=>[
-  h,romaji,row,'hiragana',tier,w1,r1,m1,w2,r2,m2,buildMnemonic(h,row,'hiragana',romaji)
-]);
-const KATAKANA_SOURCE=BASE_SYLLABLES.map(([h,k,romaji,row,tier,w1,r1,m1,w2,r2,m2])=>{
-  const examples=getKatakanaExamples(romaji,w1,r1,m1,w2,r2,m2);
-  return [k,romaji,row,'katakana',tier,examples[0].word,examples[0].reading,examples[0].meaning,examples[1].word,examples[1].reading,examples[1].meaning,buildMnemonic(k,row,'katakana',romaji)];
-});
-const YOON_SOURCE=BASE_YOON.flatMap(([h,k,romaji,row,w1,r1,m1,w2,r2,m2])=>{
-  const kExamples=getKatakanaYoonExamples(romaji,w1,r1,m1,w2,r2,m2);
-  return [
-    [h,romaji,row,'yoon','regular',w1,r1,m1,w2,r2,m2,buildMnemonic(h,row,'yoon',romaji)],
-    [k,romaji,row,'yoon','regular',kExamples[0].word,kExamples[0].reading,kExamples[0].meaning,kExamples[1].word,kExamples[1].reading,kExamples[1].meaning,buildMnemonic(k,row,'yoon',romaji)]
-  ];
+const KANA_LABELS = Object.assign({}, KANA_ROMAJI, {
+  'ゃ':'small ya',
+  'ゅ':'small yu',
+  'ょ':'small yo',
+  'っ':'small tsu',
 });
 
-const RECORDS=[...HIRAGANA_SOURCE,...KATAKANA_SOURCE,...YOON_SOURCE].map(([kana,romaji,row,dom,tier,word1,reading1,meaning1,word2,reading2,meaning2,mnemonic])=>({
-  id:makeId(kana),
-  kana,
-  action:romaji,
-  row,
-  dom,
-  tier,
-  word1,
-  reading1,
-  meaning1,
-  word2,
-  reading2,
-  meaning2,
-  mnemonic,
-  script:detectScript(kana),
-  counterpart:COUNTERPART_BY_KANA[kana]||null,
-}));
+const ROW_CHARS = {
+  'row-a':['あ','い','う','え','お'],
+  'row-k':['か','き','く','け','こ','が','ぎ','ぐ','げ','ご'],
+  'row-s':['さ','し','す','せ','そ','ざ','じ','ず','ぜ','ぞ'],
+  'row-t':['た','ち','つ','て','と','だ','ぢ','づ','で','ど','っ'],
+  'row-n':['な','に','ぬ','ね','の'],
+  'row-h':['は','ひ','ふ','へ','ほ','ば','び','ぶ','べ','ぼ','ぱ','ぴ','ぷ','ぺ','ぽ'],
+  'row-m':['ま','み','む','め','も'],
+  'row-y':['や','ゆ','よ','ゃ','ゅ','ょ'],
+  'row-r':['ら','り','る','れ','ろ'],
+  'row-w':['わ','を','ん'],
+};
 
-function inferFeature(record){
-  if(record.dom==='yoon')return'yoon';
-  if(['pa','pi','pu','pe','po'].includes(record.action))return'handakuten';
-  if(['ga','gi','gu','ge','go','za','ji','zu','ze','zo','da','de','do','ba','bi','bu','be','bo'].includes(record.action))return'dakuten';
-  return'plain';
-}
-RECORDS.forEach(record=>{record.feature=inferFeature(record)});
+const ROW_ROMAJI = {
+  'row-a':'a i u e o',
+  'row-k':'ka ki ku ke ko',
+  'row-s':'sa shi su se so',
+  'row-t':'ta chi tsu te to',
+  'row-n':'na ni nu ne no',
+  'row-h':'ha hi fu he ho',
+  'row-m':'ma mi mu me mo',
+  'row-y':'ya yu yo',
+  'row-r':'ra ri ru re ro',
+  'row-w':'wa wo n',
+};
 
-const RECORD_BY_ID=Object.fromEntries(RECORDS.map(record=>[record.id,record]));
-const KANA_TO_ID=Object.fromEntries(RECORDS.map(record=>[record.kana,record.id]));
-const ROW_POOL=ROWS.slice();
-const WORD_POOL=uniqueBy(RECORDS.flatMap(record=>[record.word1,record.word2]).filter(Boolean),item=>item);
+const VOICED_PAIRS = {
+  'が':'か','ぎ':'き','ぐ':'く','げ':'け','ご':'こ',
+  'ざ':'さ','じ':'し','ず':'す','ぜ':'せ','ぞ':'そ',
+  'だ':'た','ぢ':'ち','づ':'つ','で':'て','ど':'と',
+  'ば':'は','び':'ひ','ぶ':'ふ','べ':'へ','ぼ':'ほ',
+  'ぱ':'は','ぴ':'ひ','ぷ':'ふ','ぺ':'へ','ぽ':'ほ',
+  'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご',
+  'さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ',
+  'た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど',
+  'は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ',
+};
 
-const CONFUSABLE_GROUPS=[];
-function addKanaGroup(chars){
-  const ids=chars.map(kana=>KANA_TO_ID[kana]).filter(Boolean);
-  if(ids.length>1)CONFUSABLE_GROUPS.push(ids);
-}
+const CONFUSABLE_KANA = {
+  'は':['ほ'],'ほ':['は'],
+  'ぬ':['め'],'め':['ぬ'],
+  'る':['ろ'],'ろ':['る'],
+  'き':['さ'],'さ':['き'],
+  'わ':['ね','れ'],'ね':['わ','れ'],'れ':['わ','ね'],
+  'い':['り'],'り':['い'],
+  'あ':['お'],'お':['あ'],
+  'う':['つ'],'つ':['う'],
+};
 
-[
-  ['シ','ツ'],['ソ','ン'],['ア','マ'],['ク','タ','ケ'],['ヌ','ス'],['ウ','ワ','フ'],['コ','ユ'],['ナ','メ'],['チ','テ'],['セ','ヤ'],
-  ['は','ほ'],['ぬ','め'],['き','さ'],['わ','ね','れ'],['る','ろ'],['い','り'],['あ','お'],['た','な'],['う','つ'],['こ','て']
-].forEach(addKanaGroup);
+const LESS_COMMON_KANA = new Set(['ぬ','む','ゆ','を','れ','ろ','ぜ','ぢ','づ','ぺ','ぽ','ぱ','ぴ','ぷ']);
 
-[
-  ['か','が'],['き','ぎ'],['く','ぐ'],['け','げ'],['こ','ご'],
-  ['さ','ざ'],['し','じ'],['す','ず'],['せ','ぜ'],['そ','ぞ'],
-  ['た','だ'],['ち','ぢ'],['つ','づ'],['て','で'],['と','ど'],
-  ['は','ば','ぱ'],['ひ','び','ぴ'],['ふ','ぶ','ぷ'],['へ','べ','ぺ'],['ほ','ぼ','ぽ'],
-  ['カ','ガ'],['キ','ギ'],['ク','グ'],['ケ','ゲ'],['コ','ゴ'],
-  ['サ','ザ'],['シ','ジ'],['ス','ズ'],['セ','ゼ'],['ソ','ゾ'],
-  ['タ','ダ'],['チ','ヂ'],['ツ','ヅ'],['テ','デ'],['ト','ド'],
-  ['ハ','バ','パ'],['ヒ','ビ','ピ'],['フ','ブ','プ'],['ヘ','ベ','ペ'],['ホ','ボ','ポ']
-].forEach(addKanaGroup);
-
-RECORDS.forEach(record=>{if(record.counterpart)addKanaGroup([record.kana,record.counterpart])});
-
-const yoonByBase={};
-RECORDS.filter(record=>record.dom==='yoon').forEach(record=>{
-  const base=[...record.kana][0];
-  yoonByBase[base]=yoonByBase[base]||[];
-  yoonByBase[base].push(record.kana);
-});
-Object.values(yoonByBase).forEach(addKanaGroup);
-
-[
-  ['きゃ','ぎゃ'],['きゅ','ぎゅ'],['きょ','ぎょ'],
-  ['しゃ','じゃ'],['しゅ','じゅ'],['しょ','じょ'],
-  ['ひゃ','びゃ','ぴゃ'],['ひゅ','びゅ','ぴゅ'],['ひょ','びょ','ぴょ'],
-  ['キャ','ギャ'],['キュ','ギュ'],['キョ','ギョ'],
-  ['シャ','ジャ'],['シュ','ジュ'],['ショ','ジョ'],
-  ['ヒャ','ビャ','ピャ'],['ヒュ','ビュ','ピュ'],['ヒョ','ビョ','ピョ']
-].forEach(addKanaGroup);
-
-const ROW_IDS={};
-RECORDS.forEach(record=>{
-  ROW_IDS[record.row]=ROW_IDS[record.row]||[];
-  ROW_IDS[record.row].push(record.id);
-});
-
-const CONFUSABLE_MAP=(()=>{
-  const map=Object.fromEntries(RECORDS.map(record=>[record.id,[]]));
-  for(const group of CONFUSABLE_GROUPS){
-    for(const id of group){
-      group.forEach(peer=>{if(peer!==id&&!map[id].includes(peer))map[id].push(peer)});
-    }
+function rowIdForKana(kana){
+  for(const id of Object.keys(ROW_CHARS)){
+    if(ROW_CHARS[id].indexOf(kana) >= 0) return id;
   }
-  RECORDS.forEach(record=>{
-    const rowPeers=(ROW_IDS[record.row]||[]).filter(id=>id!==record.id);
-    rowPeers.forEach(peer=>{if(!map[record.id].includes(peer))map[record.id].push(peer)});
-    RECORDS.forEach(peer=>{
-      if(peer.id!==record.id&&peer.dom===record.dom&&!map[record.id].includes(peer.id)&&map[record.id].length<8)map[record.id].push(peer.id);
-    });
-    RECORDS.forEach(peer=>{
-      if(peer.id!==record.id&&!map[record.id].includes(peer.id)&&map[record.id].length<10)map[record.id].push(peer.id);
+  return 'row-a';
+}
+
+function voicingNodeForKana(kana){
+  if('がぎぐげご'.indexOf(kana) >= 0) return 'voicing-k-g';
+  if('ざじずぜぞ'.indexOf(kana) >= 0) return 'voicing-s-z';
+  if('だぢづでど'.indexOf(kana) >= 0) return 'voicing-t-d';
+  if('ばびぶべぼ'.indexOf(kana) >= 0) return 'voicing-h-b';
+  if('ぱぴぷぺぽ'.indexOf(kana) >= 0) return 'semi-voicing-h-p';
+  return null;
+}
+
+function kanaPrereqs(kana){
+  if(kana === 'っ') return ['small-tsu-rule'];
+  if(SMALL_Y_KANA.has(kana)) return ['yoon-blends'];
+  const prereqs = [rowIdForKana(kana)];
+  const voicing = voicingNodeForKana(kana);
+  if(voicing) prereqs.push(voicing);
+  return prereqs;
+}
+
+function romajiForKanaQuestion(kana){
+  return KANA_LABELS[kana] || KANA_ROMAJI[kana] || String(kana || '');
+}
+
+function toRomaji(word){
+  const chars = [...String(word || '')];
+  let out = '';
+  for(let i = 0; i < chars.length; i++){
+    const ch = chars[i];
+    const pair = ch + (chars[i + 1] || '');
+    if(ch === 'っ'){
+      const nextPair = (chars[i + 1] || '') + (chars[i + 2] || '');
+      const nextRomaji = DIGRAPH_ROMAJI[nextPair] || KANA_ROMAJI[chars[i + 1]] || '';
+      out += nextRomaji ? nextRomaji.charAt(0) : 't';
+      continue;
+    }
+    if(DIGRAPH_ROMAJI[pair]){
+      out += DIGRAPH_ROMAJI[pair];
+      i++;
+      continue;
+    }
+    if(SMALL_Y_KANA.has(ch)) {
+      out += KANA_LABELS[ch].replace('small ', '');
+      continue;
+    }
+    out += KANA_ROMAJI[ch] || ch;
+  }
+  return out;
+}
+
+const G1_SOURCE_ROWS = [
+  ['あおい', 'blue; green', '青', 'k-9752', 'regular'],
+  ['あおぞら', 'blue sky', '青空', 'k-9752', 'core'],
+  ['あかい', 'red', '赤', 'k-8d64', 'regular'],
+  ['あかちゃん', 'baby', '赤ちゃん', 'k-8d64', 'core'],
+  ['あがる', 'above; up; on top', '上', 'k-4e0a', 'regular'],
+  ['あし', 'foot; leg; enough', '足', 'k-8db3', 'regular'],
+  ['あめ', 'rain', '雨', 'k-96e8', 'regular'],
+  ['いきる', 'life; birth; raw', '生', 'k-751f', 'regular'],
+  ['いし', 'stone; rock', '石', 'k-77f3', 'regular'],
+  ['いしばし', 'stone bridge', '石橋', 'k-77f3', 'regular'],
+  ['いちにち', 'one day', '一日', 'k-4e00', 'core'],
+  ['いつつ', 'five', '五', 'k-4e94', 'regular'],
+  ['いと', 'thread; string', '糸', 'k-7cf8', 'regular'],
+  ['いぬ', 'dog', '犬', 'k-72ac', 'regular'],
+  ['いりぐち', 'entrance', '入口', 'k-53e3', 'core'],
+  ['うえ', 'above; up; on top', '上', 'k-4e0a', 'regular'],
+  ['うまれる', 'life; birth; raw', '生', 'k-751f', 'regular'],
+  ['おうさま', 'king', '王様', 'k-738b', 'regular'],
+  ['おおあめ', 'heavy rain', '大雨', 'k-96e8', 'core'],
+  ['おおきい', 'big; large', '大', 'k-5927', 'regular'],
+  ['おかね', 'money', 'お金', 'k-91d1', 'core'],
+  ['おがわ', 'stream', '小川', 'k-5ddd', 'core'],
+  ['おたま', 'ladle', 'お玉', 'k-7389', 'regular'],
+  ['おと', 'sound', '音', 'k-97f3', 'regular'],
+  ['おとこ', 'man; male', '男', 'k-7537', 'regular'],
+  ['おとな', 'adult', '大人', 'k-4eba', 'core'],
+  ['おんがく', 'music', '音楽', 'k-97f3', 'regular'],
+  ['おんな', 'woman', '女', 'k-5973', 'regular'],
+  ['かい', 'shell', '貝', 'k-8c9d', 'regular'],
+  ['かいがら', 'seashell', '貝殻', 'k-8c9d', 'regular'],
+  ['がくせい', 'student', '学生', 'k-5b66', 'regular'],
+  ['かじ', 'fire (disaster)', '火事', 'k-706b', 'core'],
+  ['がっこう', 'school', '学校', 'k-5b66', 'regular'],
+  ['かね', 'gold; money; metal', '金', 'k-91d1', 'regular'],
+  ['かわ', 'river', '川', 'k-5ddd', 'regular'],
+  ['かんじ', 'kanji', '漢字', 'k-5b57', 'regular'],
+  ['きゅうじつ', 'holiday', '休日', 'k-4f11', 'regular'],
+  ['くうき', 'air; atmosphere', '空気', 'k-7a7a', 'core'],
+  ['くがつ', 'September', '九月', 'k-4e5d', 'core'],
+  ['くさ', 'grass', '草', 'k-8349', 'regular'],
+  ['くだる', 'below; down', '下', 'k-4e0b', 'regular'],
+  ['くち', 'mouth', '口', 'k-53e3', 'regular'],
+  ['くるま', 'car; vehicle', '車', 'k-8eca', 'regular'],
+  ['けいと', 'yarn', '毛糸', 'k-7cf8', 'regular'],
+  ['げつようび', 'Monday', '月曜日', 'k-6708', 'core'],
+  ['こいぬ', 'puppy', '子犬', 'k-72ac', 'regular'],
+  ['ごがつ', 'May', '五月', 'k-4e94', 'core'],
+  ['ここのつ', 'nine', '九', 'k-4e5d', 'regular'],
+  ['ことし', 'this year', '今年', 'k-5e74', 'regular'],
+  ['こども', 'children', '子供', 'k-5b50', 'core'],
+  ['こんちゅう', 'insect', '昆虫', 'k-866b', 'regular'],
+  ['さがる', 'below; down', '下', 'k-4e0b', 'regular'],
+  ['さき', 'ahead; before; previous', '先', 'k-5148', 'regular'],
+  ['さんがつ', 'March', '三月', 'k-4e09', 'core'],
+  ['しがつ', 'April', '四月', 'k-56db', 'core'],
+  ['した', 'below; down', '下', 'k-4e0b', 'regular'],
+  ['しちがつ', 'July', '七月', 'k-4e03', 'core'],
+  ['じどうしゃ', 'automobile', '自動車', 'k-8eca', 'regular'],
+  ['じびか', 'ENT clinic', '耳鼻科', 'k-8033', 'regular'],
+  ['じゅうがつ', 'October', '十月', 'k-5341', 'core'],
+  ['しょうがっこう', 'elementary school', '小学校', 'k-5c0f', 'core'],
+  ['じょうず', 'skillful', '上手', 'k-4e0a', 'core'],
+  ['じょし', 'girl/woman', '女子', 'k-5b50', 'core'],
+  ['しろい', 'white', '白い', 'k-767d', 'core'],
+  ['しんりん', 'forest', '森林', 'k-68ee', 'regular'],
+  ['すいようび', 'Wednesday', '水曜日', 'k-6c34', 'core'],
+  ['せんえん', '1000 yen', '千円', 'k-5343', 'regular'],
+  ['せんせい', 'teacher', '先生', 'k-751f', 'regular'],
+  ['そうげん', 'grassland', '草原', 'k-8349', 'regular'],
+  ['そら', 'sky; empty', '空', 'k-7a7a', 'regular'],
+  ['たけ', 'bamboo', '竹', 'k-7af9', 'regular'],
+  ['だす', 'exit; go out; put out', '出', 'k-51fa', 'regular'],
+  ['ただしい', 'correct', '正しい', 'k-6b63', 'regular'],
+  ['たつ', 'to stand', '立つ', 'k-7acb', 'regular'],
+  ['たてる', 'stand; establish', '立', 'k-7acb', 'regular'],
+  ['たま', 'jewel; ball', '玉', 'k-7389', 'regular'],
+  ['たりる', 'to be enough', '足りる', 'k-8db3', 'core'],
+  ['だんし', 'boy; male', '男子', 'k-7537', 'core'],
+  ['たんぼ', 'rice paddy', '田んぼ', 'k-7530', 'regular'],
+  ['ちいさい', 'small; little', '小', 'k-5c0f', 'regular'],
+  ['ちから', 'power; strength; force', '力', 'k-529b', 'regular'],
+  ['ちからもち', 'strong person', '力持ち', 'k-529b', 'regular'],
+  ['ちくりん', 'bamboo grove', '竹林', 'k-6797', 'regular'],
+  ['ちゅうがっこう', 'middle school', '中学校', 'k-4e2d', 'core'],
+  ['つき', 'moon; month', '月', 'k-6708', 'regular'],
+  ['つち', 'earth; soil; ground', '土', 'k-571f', 'regular'],
+  ['でぐち', 'exit', '出口', 'k-53e3', 'core'],
+  ['でる', 'exit; go out; put out', '出', 'k-51fa', 'regular'],
+  ['てんき', 'weather', '天気', 'k-6c17', 'regular'],
+  ['とお', 'ten', '十', 'k-5341', 'regular'],
+  ['とし', 'year', '年', 'k-5e74', 'regular'],
+  ['どようび', 'Saturday', '土曜日', 'k-571f', 'core'],
+  ['なか', 'middle; inside; during', '中', 'k-4e2d', 'regular'],
+  ['ななつ', 'seven', '七', 'k-4e03', 'regular'],
+  ['なま', 'life; birth; raw', '生', 'k-751f', 'regular'],
+  ['なまえ', 'name', '名前', 'k-540d', 'regular'],
+  ['にがつ', 'February', '二月', 'k-4e8c', 'core'],
+  ['にほん', 'Japan', '日本', 'k-65e5', 'core'],
+  ['のぼる', 'above; up; on top', '上', 'k-4e0a', 'regular'],
+  ['はいる', 'enter; put in', '入', 'k-5165', 'regular'],
+  ['はちがつ', 'August', '八月', 'k-516b', 'core'],
+  ['はな', 'flower', '花', 'k-82b1', 'regular'],
+  ['はなび', 'fireworks', '花火', 'k-82b1', 'regular'],
+  ['はなみ', 'flower viewing', '花見', 'k-82b1', 'regular'],
+  ['はやい', 'early; fast', '早', 'k-65e9', 'regular'],
+  ['はやおき', 'early rising', '早起き', 'k-65e9', 'regular'],
+  ['はやし', 'grove; woods', '林', 'k-6797', 'regular'],
+  ['ひだり', 'left', '左', 'k-5de6', 'regular'],
+  ['ひだりて', 'left hand', '左手', 'k-5de6', 'regular'],
+  ['ひと', 'person', '人', 'k-4eba', 'regular'],
+  ['ひとつ', 'one', '一', 'k-4e00', 'regular'],
+  ['ひゃくえん', '100 yen', '百円', 'k-5186', 'regular'],
+  ['ふたつ', 'two', '二', 'k-4e8c', 'regular'],
+  ['ふみ', 'writing; sentence; text', '文', 'k-6587', 'regular'],
+  ['へた', 'unskillful', '下手', 'k-4e0b', 'core'],
+  ['まち', 'town', '町', 'k-753a', 'regular'],
+  ['まなぶ', 'study; learning', '学', 'k-5b66', 'regular'],
+  ['まるい', 'round', '円い', 'k-5186', 'regular'],
+  ['みえる', 'see; look', '見', 'k-898b', 'regular'],
+  ['みぎ', 'right', '右', 'k-53f3', 'regular'],
+  ['みぎて', 'right hand', '右手', 'k-53f3', 'core'],
+  ['みず', 'water', '水', 'k-6c34', 'regular'],
+  ['みっつ', 'three', '三', 'k-4e09', 'regular'],
+  ['みみ', 'ear', '耳', 'k-8033', 'regular'],
+  ['みる', 'see; look', '見', 'k-898b', 'regular'],
+  ['むし', 'insect; bug', '虫', 'k-866b', 'regular'],
+  ['むっつ', 'six', '六', 'k-516d', 'regular'],
+  ['むら', 'village', '村', 'k-6751', 'regular'],
+  ['もくてき', 'purpose', '目的', 'k-76ee', 'core'],
+  ['もくようび', 'Thursday', '木曜日', 'k-6728', 'core'],
+  ['もじ', 'character; letter', '文字', 'k-5b57', 'regular'],
+  ['もと', 'book; origin; true', '本', 'k-672c', 'regular'],
+  ['もり', 'forest', '森', 'k-68ee', 'regular'],
+  ['やすむ', 'rest', '休', 'k-4f11', 'regular'],
+  ['やっつ', 'eight', '八', 'k-516b', 'regular'],
+  ['やま', 'mountain', '山', 'k-5c71', 'regular'],
+  ['やまみち', 'mountain path', '山道', 'k-5c71', 'core'],
+  ['ゆう', 'evening', '夕', 'k-5915', 'regular'],
+  ['ゆうがた', 'evening', '夕方', 'k-5915', 'regular'],
+  ['よっつ', 'four', '四', 'k-56db', 'regular'],
+  ['よん', 'four', '四', 'k-56db', 'regular'],
+  ['りんどう', 'forest road', '林道', 'k-6797', 'regular'],
+  ['ろくがつ', 'June', '六月', 'k-516d', 'core'],
+];
+
+const SUPPLEMENT_ROWS = [
+  ['ありがとう', 'thank you', '有難う', 'supp-arigatou', 'core'],
+  ['こんにちは', 'hello', '今日は', 'supp-konnichiwa', 'core'],
+  ['すみません', 'excuse me', '済みません', 'supp-sumimasen', 'core'],
+  ['ざっし', 'magazine', '雑誌', 'supp-zasshi', 'regular'],
+  ['ぜんぶ', 'all', '全部', 'supp-zenbu', 'core'],
+  ['ちぢむ', 'shrink', '縮む', 'supp-chidimu', 'regular'],
+  ['つづく', 'continue', '続く', 'supp-tsuzuku', 'regular'],
+  ['おべんとう', 'lunch box', 'お弁当', 'supp-obentou', 'core'],
+  ['ぱん', 'bread', 'パン', 'supp-pan', 'core'],
+  ['ぴあの', 'piano', 'ピアノ', 'supp-piano', 'regular'],
+  ['てんぷら', 'tempura', '天ぷら', 'supp-tempura', 'regular'],
+  ['ぺん', 'pen', 'ペン', 'supp-pen', 'regular'],
+  ['さんぽ', 'walk', '散歩', 'supp-sanpo', 'regular'],
+  ['ほんをよむ', 'read a book', '本を読む', 'supp-honwoyomu', 'regular'],
+  ['みずをのむ', 'drink water', '水を飲む', 'supp-mizuwonomu', 'regular'],
+  ['へや', 'room', '部屋', 'supp-heya', 'core'],
+  ['これ', 'this', '此れ', 'supp-kore', 'core'],
+];
+
+const ENGLISH_OVERRIDES = {
+  'あがる':'go up',
+  'いきる':'live',
+  'うえ':'up',
+  'うまれる':'be born',
+  'おおきい':'big',
+  'おとこ':'man',
+  'かね':'money',
+  'かわ':'river',
+  'くだる':'go down',
+  'くるま':'car',
+  'ここのつ':'nine things',
+  'さがる':'go down',
+  'した':'down',
+  'そら':'sky',
+  'だす':'take out',
+  'たてる':'set upright',
+  'たま':'ball',
+  'たりる':'be enough',
+  'だんし':'boy',
+  'ちいさい':'small',
+  'ちから':'strength',
+  'つき':'moon',
+  'つち':'soil',
+  'でる':'go out',
+  'なか':'middle',
+  'ななつ':'seven things',
+  'なま':'raw',
+  'のぼる':'go up',
+  'はいる':'enter',
+  'はやし':'grove',
+  'ひとつ':'one thing',
+  'ふたつ':'two things',
+  'ふみ':'writing',
+  'じょし':'girl',
+  'みえる':'be visible',
+  'むし':'insect',
+  'むっつ':'six things',
+  'もじ':'letter',
+  'もと':'origin',
+  'やっつ':'eight things',
+  'ゆうがた':'late afternoon',
+  'よっつ':'four things',
+};
+
+const COMPONENT_HINTS = {
+  'ありがとう':'thanks',
+  'あお':'blue',
+  'あか':'red',
+  'あめ':'rain',
+  'いし':'stone',
+  'ばし':'bridge',
+  'いち':'one',
+  'にち':'day',
+  'いと':'thread',
+  'いり':'enter',
+  'ぐち':'entrance or exit',
+  'うえ':'up',
+  'おう':'king',
+  'さま':'honorific title',
+  'おお':'big or great',
+  'お':'honorific prefix',
+  'かね':'money',
+  'がわ':'river or side',
+  'たま':'ball or jewel',
+  'おん':'sound',
+  'がく':'study or music',
+  'がっこう':'school',
+  'せい':'student or life',
+  'くう':'sky or air',
+  'き':'air or spirit',
+  'がつ':'month',
+  'ようび':'day of the week',
+  'こ':'child',
+  'ども':'plural people',
+  'こん':'this',
+  'ちゅう':'middle or inside',
+  'さん':'three',
+  'し':'four or white',
+  'じ':'character or ear/nose/throat',
+  'じゅう':'ten',
+  'しょう':'small or elementary',
+  'しん':'deep or true',
+  'りん':'woods or forest',
+  'すい':'water',
+  'せん':'thousand',
+  'そう':'grass or whole',
+  'たけ':'bamboo',
+  'ただ':'correct',
+  'たつ':'stand',
+  'たりる':'be enough',
+  'たん':'field',
+  'ちから':'strength',
+  'もち':'holder or person with',
+  'つき':'moon',
+  'つち':'soil',
+  'てん':'heaven or weather',
+  'とし':'year',
+  'なまえ':'name',
+  'に':'two or Japan',
+  'はな':'flower',
+  'び':'fire or day suffix',
+  'み':'look or see',
+  'はや':'early',
+  'おき':'waking up',
+  'ひだり':'left',
+  'みぎ':'right',
+  'て':'hand',
+  'ひゃく':'hundred',
+  'ぶ':'part or all',
+  'まち':'town',
+  'まる':'round',
+  'みず':'water',
+  'みみ':'ear',
+  'もく':'wood or purpose',
+  'てき':'target or purpose',
+  'もり':'forest',
+  'やす':'rest',
+  'やま':'mountain',
+  'みち':'road or path',
+  'ゆう':'evening',
+  'がた':'time of day',
+  'よ':'four',
+  'ろく':'six',
+  'ざっし':'magazine',
+  'ぜん':'whole',
+  'ちぢむ':'shrink',
+  'つづく':'continue',
+  'べんとう':'lunch box',
+  'ぱん':'bread',
+  'ぴあの':'piano',
+  'てんぷら':'tempura',
+  'ぺん':'pen',
+  'さんぽ':'walk',
+  'ほん':'book',
+  'をよむ':'read it',
+  'をのむ':'drink it',
+  'へや':'room',
+  'これ':'this',
+  'こんにちは':'hello',
+  'すみません':'excuse me',
+};
+
+const PREFIX_HINTS = [
+  'こんにちは','すみません','ありがとう','しょう','ちゅう','みぎ','ひだり','ちから','べんとう',
+  'がっこう','ようび','なまえ','がた','ちゅう','お','ほん','みず','さん','ぜん','ざっし',
+  'へや','これ','てんぷら','ぴあの'
+];
+
+const SUFFIX_HINTS = [
+  'ようび','がっこう','べんとう','をよむ','をのむ','がた','ぐち','みち','ちゃん','がつ','てき',
+  'び','み','て','えん','りん','ぽ','し','き','や'
+];
+
+function sanitizeEnglish(reading, english){
+  if(ENGLISH_OVERRIDES[reading]) return ENGLISH_OVERRIDES[reading];
+  return String(english || '').split(';')[0].trim();
+}
+
+function buildSourceRows(rows){
+  return rows.map(row => ({
+    reading: row[0],
+    romaji: toRomaji(row[0]),
+    english: sanitizeEnglish(row[0], row[1]),
+    kanjiForm: row[2],
+    sourceKanjiId: row[3],
+    tier: row[4],
+  }));
+}
+
+const SOURCE_WORDS = buildSourceRows(G1_SOURCE_ROWS.concat(SUPPLEMENT_ROWS));
+
+function checkCoverage(records){
+  const counts = {};
+  records.forEach(record => {
+    [...record.reading].forEach(ch => {
+      if(!isKanaChar(ch)) return;
+      counts[ch] = (counts[ch] || 0) + 1;
     });
   });
-  return map;
-})();
+  const missingBasic = REQUIRED_BASIC.filter(ch => !counts[ch]);
+  const missingVoiced = REQUIRED_VOICED.filter(ch => !counts[ch]);
+  const underCoveredBasic = REQUIRED_BASIC.filter(ch => (counts[ch] || 0) < 2);
+  if(missingBasic.length || missingVoiced.length || underCoveredBasic.length){
+    console.warn('[kana] Coverage warning', {
+      missingBasic,
+      missingVoiced,
+      underCoveredBasic
+    });
+  }
+}
 
-function pickKanaDistractors(record,count){
-  const picked=[];
-  const used=new Set([record.kana]);
-  const pools=[
-    (CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]).filter(candidate=>candidate&&candidate.script===record.script),
-    (CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]),
-    RECORDS.filter(item=>item.script===record.script&&item.dom===record.dom),
-    (ROW_IDS[record.row]||[]).map(id=>RECORD_BY_ID[id]).filter(candidate=>candidate&&candidate.script===record.script),
-    RECORDS.filter(item=>item.script===record.script),
-    RECORDS.filter(item=>item.dom===record.dom),
-    RECORDS
-  ];
-  for(const pool of pools){
-    for(const candidate of pool){
-      if(!candidate||used.has(candidate.kana))continue;
-      picked.push(candidate.kana);
-      used.add(candidate.kana);
-      if(picked.length>=count)return picked;
+checkCoverage(SOURCE_WORDS);
+
+function sameRowKana(kana){
+  return (ROW_CHARS[rowIdForKana(kana)] || []).filter(candidate => candidate !== kana && !SMALL_KANA.has(candidate));
+}
+
+function sameRowOrConfusableKana(kana){
+  const pool = [];
+  sameRowKana(kana).forEach(candidate => pool.push(candidate));
+  if(VOICED_PAIRS[kana]) pool.push(VOICED_PAIRS[kana]);
+  (CONFUSABLE_KANA[kana] || []).forEach(candidate => pool.push(candidate));
+  if(kana === 'っ') pool.push('つ', 'ゃ', 'ゅ');
+  if(kana === 'ゃ') pool.push('ゅ', 'ょ', 'や');
+  if(kana === 'ゅ') pool.push('ゃ', 'ょ', 'ゆ');
+  if(kana === 'ょ') pool.push('ゃ', 'ゅ', 'よ');
+  if(kana === 'を') pool.push('わ', 'お', 'ん');
+  if(kana === 'ん') pool.push('わ', 'を', 'ぬ');
+  return uniqueBy(pool, item => item).filter(item => item !== kana);
+}
+
+function getSameRowDistractors(kana, count){
+  const pool = sameRowOrConfusableKana(kana);
+  const out = [];
+  for(const candidate of pool){
+    if(out.indexOf(candidate) >= 0 || candidate === kana) continue;
+    out.push(candidate);
+    if(out.length >= count) break;
+  }
+  if(out.length < count){
+    for(const rowId of Object.keys(ROW_CHARS)){
+      for(const candidate of ROW_CHARS[rowId]){
+        if(candidate === kana || out.indexOf(candidate) >= 0 || SMALL_KANA.has(candidate)) continue;
+        out.push(candidate);
+        if(out.length >= count) break;
+      }
+      if(out.length >= count) break;
     }
   }
-  return picked;
+  return out.slice(0, count);
 }
 
-function pickActionDistractors(record,count){
-  const picked=[];
-  const usedActions=new Set([normalizeLookup(record.action)]);
-  const usedIds=new Set([record.id]);
-  const pools=[
-    (CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]),
-    (ROW_IDS[record.row]||[]).map(id=>RECORD_BY_ID[id]),
-    RECORDS.filter(item=>item.dom===record.dom),
-    RECORDS
-  ];
-  for(const pool of pools){
-    for(const candidate of pool){
-      if(!candidate||usedIds.has(candidate.id))continue;
-      const actionKey=normalizeLookup(candidate.action);
-      if(usedActions.has(actionKey))continue;
-      picked.push(candidate);
-      usedIds.add(candidate.id);
-      usedActions.add(actionKey);
-      if(picked.length>=count)return picked;
+function kanaWrongRomaji(kana){
+  const correct = romajiForKanaQuestion(kana);
+  const pool = sameRowOrConfusableKana(kana).map(candidate => romajiForKanaQuestion(candidate));
+  return takeDistinct(pool, correct, 2, normalizeLookup);
+}
+
+function scoreKanaForTrickiness(kana){
+  let score = 0;
+  if(voicingNodeForKana(kana)) score += 100;
+  if(CONFUSABLE_KANA[kana]) score += 80;
+  if(LESS_COMMON_KANA.has(kana)) score += 60;
+  if(SMALL_KANA.has(kana)) score -= 100;
+  return score;
+}
+
+function pickTrickiestIndex(word){
+  const chars = [...String(word || '')];
+  let bestIndex = 0;
+  let bestScore = -Infinity;
+  chars.forEach((kana, index) => {
+    if(!isKanaChar(kana)) return;
+    const score = scoreKanaForTrickiness(kana) - index * 0.01;
+    if(score > bestScore){
+      bestScore = score;
+      bestIndex = index;
+    }
+  });
+  return bestIndex;
+}
+
+function pickBlankPositions(word){
+  const chars = [...String(word || '')];
+  const preferred = chars
+    .map((kana, index) => ({kana, index}))
+    .filter(entry => isKanaChar(entry.kana) && !SMALL_KANA.has(entry.kana));
+  const trickyIndex = pickTrickiestIndex(word);
+  const other = preferred.find(entry => entry.index !== trickyIndex) || preferred[preferred.length - 1];
+  if(!other) return [0, Math.min(1, chars.length - 1)];
+  return uniqueBy([trickyIndex, other.index, preferred[0].index], item => String(item)).slice(0, 2);
+}
+
+function buildBlank(word, position){
+  const chars = [...String(word || '')];
+  const answer = chars[position];
+  chars[position] = '□';
+  const distractors = getSameRowDistractors(answer, 2);
+  return {
+    latex: chars.join(''),
+    answer: answer,
+    choices: [answer].concat(distractors)
+  };
+}
+
+function splitWord(word){
+  const chars = [...String(word || '')];
+  if(chars.length <= 2) return [chars[0], chars.slice(1).join('') || chars[0]];
+
+  for(const prefix of PREFIX_HINTS.sort((a, b) => b.length - a.length)){
+    if(word.indexOf(prefix) === 0 && prefix.length < word.length){
+      return [prefix, word.slice(prefix.length)];
     }
   }
-  return picked;
+  for(const suffix of SUFFIX_HINTS.sort((a, b) => b.length - a.length)){
+    if(word.endsWith(suffix) && suffix.length < word.length){
+      return [word.slice(0, word.length - suffix.length), suffix];
+    }
+  }
+
+  let splitAt = Math.floor(chars.length / 2);
+  if(SMALL_KANA.has(chars[splitAt])) splitAt++;
+  if(splitAt <= 0) splitAt = 1;
+  if(splitAt >= chars.length) splitAt = chars.length - 1;
+  return [chars.slice(0, splitAt).join(''), chars.slice(splitAt).join('')];
 }
 
-function buildCounterpartWrongs(record,index){
-  const targetScript=record.script==='hiragana'?'katakana':'hiragana';
-  const sameFamilyPool=RECORDS
-    .filter(candidate=>candidate.script===targetScript&&(record.dom==='yoon'?candidate.dom==='yoon':candidate.dom!=='yoon')&&candidate.kana!==record.counterpart)
-    .map(candidate=>candidate.kana);
-  const fallbackPool=RECORDS
-    .filter(candidate=>candidate.script===targetScript&&candidate.kana!==record.counterpart)
-    .map(candidate=>candidate.kana);
-  const pool=sameFamilyPool.length>=2?sameFamilyPool:[...sameFamilyPool,...fallbackPool];
-  return pickDistinct(pool,record.counterpart,index,7);
+function describeChunk(chunk, record, index){
+  if(COMPONENT_HINTS[chunk]) return COMPONENT_HINTS[chunk];
+  if(index === 0) return `opening chunk in "${record.english}"`;
+  return `ending chunk in "${record.english}"`;
 }
 
-function buildWordWrongs(record,index){
-  const pool=(CONFUSABLE_MAP[record.id]||[])
-    .map(id=>RECORD_BY_ID[id])
-    .filter(Boolean)
-    .flatMap(candidate=>[candidate.word1,candidate.word2])
-    .concat(WORD_POOL)
-    .filter(Boolean);
-  return pickDistinct(pool,record.word1,index,9);
+function buildComponents(record){
+  const parts = splitWord(record.reading).filter(Boolean);
+  if(parts.length === 1){
+    return [
+      {s: parts[0], d: record.english},
+      {s: [...record.reading][0], d: 'opening kana sound'},
+    ];
+  }
+  return parts.slice(0, 2).map((chunk, index) => ({
+    s: chunk,
+    d: describeChunk(chunk, record, index),
+  }));
 }
 
-function buildRowQuestion(record){
-  if(record.feature==='yoon')return `Which base row does ${record.kana} belong to in this yoon combination?`;
-  if(record.feature==='dakuten')return `Which base row does ${record.kana} belong to after dakuten?`;
-  if(record.feature==='handakuten')return `Which base row does ${record.kana} belong to after handakuten?`;
-  return `Which row does ${record.kana} belong to?`;
+function explainParts(parts){
+  return parts.map(part => `${part.s} = ${part.d}`).join(' + ');
 }
 
-function buildFeatureVariable(record){
-  if(record.feature==='dakuten')return{s:'゛',d:'dakuten mark that voices the base consonant'};
-  if(record.feature==='handakuten')return{s:'゜',d:'handakuten mark that turns the h-row into a p sound'};
-  if(record.feature==='yoon')return{s:[...record.kana][1],d:'small ya yu or yo kana that blends the sound into yoon'};
-  if(record.script==='hiragana')return{s:record.counterpart,d:'katakana counterpart for the same sound'};
-  return{s:record.counterpart,d:'hiragana counterpart for the same sound'};
+function inferSemanticGroup(record){
+  const english = normalizeLookup(record.english);
+  const clue = record.kanjiForm;
+  if(/monday|wednesday|thursday|saturday|january|february|march|april|may|june|july|august|september|october|holiday|year|month|day|evening|weather/.test(english)) return 'time';
+  if(/onething|twothing|three|four|five|six|seven|eight|nine|ten/.test(english) || /一|二|三|四|五|六|七|八|九|十/.test(clue)) return 'numbers';
+  if(/student|teacher|adult|children|baby|person|man|woman|boy|girl|king/.test(english)) return 'people';
+  if(/hand|ear|mouth|foot|nose|eye/.test(english) || /手|耳|口|足|目|鼻/.test(clue)) return 'body';
+  if(/right|left|up|down|middle|entrance|exit|road|path|bridge/.test(english) || /右|左|上|下|中|口|道|橋/.test(clue)) return 'direction';
+  if(/school|kanji|letter|writing|learn|study|music/.test(english) || /学|校|字|文|音/.test(clue)) return 'school';
+  if(/rain|sky|air|river|mountain|bamboo|grass|forest|woods|soil|stone|fire|flower|moon|water|stream|shell|insect/.test(english) || /雨|空|川|山|竹|草|森|林|土|石|火|花|月|水|貝|虫/.test(clue)) return 'nature';
+  if(/money|yen/.test(english) || /円|金/.test(clue)) return 'money';
+  if(/car|automobile/.test(english) || /車/.test(clue)) return 'transport';
+  return 'general';
+}
+
+function relatedRecords(record){
+  return SOURCE_RECORDS
+    .filter(candidate => candidate.id !== record.id)
+    .map(candidate => {
+      let score = 0;
+      if(candidate.group === record.group) score += 50;
+      if([...candidate.reading][0] === [...record.reading][0]) score += 15;
+      if([...candidate.reading].length === [...record.reading].length) score += 10;
+      if(candidate.tier === record.tier) score += 5;
+      return {candidate, score};
+    })
+    .sort((a, b) => b.score - a.score || a.candidate.reading.localeCompare(b.candidate.reading, 'ja'))
+    .map(entry => entry.candidate);
+}
+
+function buildRomajiWrongs(record){
+  const chars = [...record.reading];
+  const trickyIndex = pickTrickiestIndex(record.reading);
+  const mutated = getSameRowDistractors(chars[trickyIndex], 4).map(candidate => {
+    const copy = chars.slice();
+    copy[trickyIndex] = candidate;
+    return toRomaji(copy.join(''));
+  });
+  const semantic = relatedRecords(record).map(candidate => candidate.romaji);
+  const fallback = [
+    record.romaji.replace(/i$/, 'e'),
+    record.romaji.replace(/u$/, 'o'),
+    record.romaji + 'n',
+    record.romaji.replace(/a(?!.*a)/, 'o'),
+  ];
+  return takeDistinct(mutated.concat(semantic).concat(fallback), record.romaji, 2, normalizeLookup);
+}
+
+function buildReverseWrongs(record){
+  const related = relatedRecords(record).filter(candidate => normalizeLookup(candidate.english) !== normalizeLookup(record.english));
+  const sameGroup = related.map(candidate => candidate.reading);
+  const sameLength = SOURCE_RECORDS
+    .filter(candidate => candidate.id !== record.id && [...candidate.reading].length === [...record.reading].length)
+    .map(candidate => candidate.reading);
+  return takeDistinct(sameGroup.concat(sameLength), record.reading, 2, normalizeLookup);
 }
 
 function buildScenario(record){
-  const blank=buildKanaBlank(record.word1,record.kana);
-  if(record.dom==='yoon')return `A reading card shows ${blank} meaning "${record.meaning1}". Which kana blend completes the word?`;
-  if(record.script==='katakana'||hasLongVowelMark(record.word1))return `A katakana practice card shows ${blank} meaning "${record.meaning1}". Which kana completes the word?`;
-  return `A beginner vocabulary card shows ${blank} meaning "${record.meaning1}". Which kana completes the word?`;
+  return `A clue card shows the written clue ${record.kanjiForm}. Which hiragana word matches it?`;
 }
 
-const COMMANDS=RECORDS.map((record,index)=>({
-  id:record.id,
-  action:record.action,
-  tier:record.tier,
-  dom:record.dom,
-  row:record.row,
-  script:record.script,
-  counterpart:record.counterpart,
-  feature:record.feature,
-  hint:`Row: ${record.row} | ${record.mnemonic}`,
-  explain:`${record.mnemonic}. Used in ${record.word1} (${record.reading1}) = ${record.meaning1}.`,
-  latex:record.kana,
-  blanks:[
-    {latex:buildKanaBlank(record.word1,record.kana),answer:record.kana,choices:[record.kana,record.kana,record.kana]},
-    {latex:buildKanaBlank(record.word2,record.kana),answer:record.kana,choices:[record.kana,record.kana,record.kana]},
-  ],
-  subconcepts:[
-    {
-      q:buildRowQuestion(record),
-      correct:record.row,
-      wrong:pickDistinct(ROW_POOL,record.row,index,5)
-    },
-    {
-      q:record.script==='hiragana'?`What is the katakana counterpart for ${record.kana}?`:`What is the hiragana counterpart for ${record.kana}?`,
-      correct:record.counterpart,
-      wrong:buildCounterpartWrongs(record,index)
-    },
-    {
-      q:`Which word contains ${record.kana}?`,
-      correct:record.word1,
-      wrong:buildWordWrongs(record,index)
-    }
-  ]
-}));
-
-const COMMAND_BY_ID=Object.fromEntries(COMMANDS.map(cmd=>[cmd.id,cmd]));
-
-function buildBlankChoices(cmd){
-  const record=RECORD_BY_ID[cmd.id];
-  if(!record)return [cmd.latex,cmd.latex,cmd.latex];
-  const candidates=[
-    ...(CONFUSABLE_MAP[record.id]||[]).map(id=>RECORD_BY_ID[id]).filter(candidate=>candidate&&candidate.script===record.script).map(candidate=>candidate.kana),
-    ...RECORDS.filter(candidate=>candidate.script===record.script&&candidate.dom===record.dom&&candidate.kana!==record.kana).map(candidate=>candidate.kana),
-    ...RECORDS.filter(candidate=>candidate.script===record.script&&candidate.kana!==record.kana).map(candidate=>candidate.kana),
-    ...RECORDS.filter(candidate=>candidate.kana!==record.kana).map(candidate=>candidate.kana)
-  ];
-  const wrongs=[];
-  const used=new Set([record.kana]);
-  for(const kana of candidates){
-    if(!kana||used.has(kana))continue;
-    wrongs.push(kana);
-    used.add(kana);
-    if(wrongs.length>=2)break;
+function commandById(allCommands, id){
+  for(const cmd of allCommands || []){
+    if(cmd && cmd.id === id) return cmd;
   }
-  return [record.kana,wrongs[0]||'?',wrongs[1]||'??'];
+  return null;
 }
 
-COMMANDS.forEach(cmd=>{
-  cmd.blanks.forEach(blank=>{blank.choices=buildBlankChoices(cmd)});
+function pickActionDistractors(cmd, allCommands, count){
+  const correct = stripActionLabel(cmd.action);
+  const current = RECORD_BY_ID[cmd.id];
+  const pools = [];
+  if(current){
+    pools.push(relatedRecords(current).map(record => commandById(allCommands, record.id) || COMMAND_BY_ID[record.id]).filter(Boolean));
+  }
+  pools.push((allCommands || []).filter(candidate => candidate.id !== cmd.id && candidate.dom === cmd.dom));
+  pools.push((allCommands || []).filter(candidate => candidate.id !== cmd.id));
+
+  const picked = [];
+  const seen = new Set([normalizeLookup(correct)]);
+  pools.forEach(pool => {
+    pool.forEach(candidate => {
+      const action = stripActionLabel(candidate.action);
+      const key = normalizeLookup(action);
+      if(!action || seen.has(key)) return;
+      seen.add(key);
+      picked.push(candidate);
+    });
+  });
+  return picked.slice(0, count);
+}
+
+function buildApplicationOptions(cmd, allCommands, confusionSet){
+  const byLatex = [];
+  const byAction = [];
+  const usedLatex = new Set();
+  const usedAction = new Set();
+
+  function addLatexOption(value){
+    if(!value || usedLatex.has(value)) return;
+    usedLatex.add(value);
+    byLatex.push(value);
+  }
+  function addActionOption(value){
+    const key = normalizeLookup(value);
+    if(!value || usedAction.has(key)) return;
+    usedAction.add(key);
+    byAction.push(value);
+  }
+
+  if(cmd.dom === 'kana'){
+    addLatexOption(cmd.latex);
+    confusionSet.forEach(id => {
+      const candidate = commandById(allCommands, id) || COMMAND_BY_ID[id];
+      if(candidate) addLatexOption(candidate.latex);
+    });
+    (allCommands || []).forEach(candidate => {
+      if(candidate.id !== cmd.id && candidate.dom === cmd.dom) addLatexOption(candidate.latex);
+    });
+    return byLatex.slice(0, 4);
+  }
+
+  addActionOption(stripActionLabel(cmd.action));
+  confusionSet.forEach(id => {
+    const candidate = commandById(allCommands, id);
+    if(candidate) addActionOption(stripActionLabel(candidate.action));
+  });
+  pickActionDistractors(cmd, allCommands, 6).forEach(candidate => addActionOption(stripActionLabel(candidate.action)));
+  return byAction.slice(0, 4);
+}
+
+const SOURCE_RECORDS = SOURCE_WORDS.map(source => {
+  const components = buildComponents(source);
+  return {
+    id: makeId(source.reading),
+    reading: source.reading,
+    romaji: source.romaji,
+    english: source.english,
+    kanjiForm: source.kanjiForm,
+    sourceKanjiId: source.sourceKanjiId,
+    tier: source.tier,
+    dom: 'kana',
+    group: inferSemanticGroup(source),
+    components: components,
+  };
 });
 
-COMMANDS.forEach(cmd=>{
-  cmd.subconcepts.forEach((sc,i)=>{
-    if((sc.wrong||[]).includes('unknown'))console.warn(`[kana] ${cmd.id} SC${i} has "unknown" wrong answer`);
-  });
-  cmd.blanks.forEach((blank,i)=>{
-    if(blank.choices[0]!==blank.answer)console.warn(`[kana] ${cmd.id} blank${i} choices[0] does not match answer`);
-    if(new Set(blank.choices).size!==blank.choices.length)console.warn(`[kana] ${cmd.id} blank${i} has duplicate choices`);
-  });
+const RECORD_BY_ID = Object.fromEntries(SOURCE_RECORDS.map(record => [record.id, record]));
+
+const COMMANDS = SOURCE_RECORDS.map(record => {
+  const blankPositions = pickBlankPositions(record.reading);
+  const reverseWrongs = buildReverseWrongs(record);
+  const trickyIndex = pickTrickiestIndex(record.reading);
+  const trickyKana = [...record.reading][trickyIndex];
+  const trickyWrongRomaji = kanaWrongRomaji(trickyKana);
+  return {
+    id: record.id,
+    action: record.english,
+    tier: record.tier,
+    dom: record.dom,
+    hint: `Kanji: ${record.kanjiForm} | Romaji: ${record.romaji}`,
+    explain: `${record.english}. ${explainParts(record.components)}.`,
+    latex: record.reading,
+    blanks: blankPositions.map(position => buildBlank(record.reading, position)),
+    subconcepts: [
+      {
+        q: `What is the romaji for ${record.reading}?`,
+        correct: record.romaji,
+        wrong: buildRomajiWrongs(record),
+      },
+      {
+        q: `What is the romaji for ${trickyKana}?`,
+        correct: romajiForKanaQuestion(trickyKana),
+        wrong: trickyWrongRomaji,
+      },
+      {
+        q: `Which word means "${record.english}"?`,
+        correct: record.reading,
+        wrong: reverseWrongs,
+      }
+    ]
+  };
 });
 
-const VARIABLE_BANK=Object.fromEntries(RECORDS.map(record=>[
+const COMMAND_BY_ID = Object.fromEntries(COMMANDS.map(cmd => [cmd.id, cmd]));
+
+const VARIABLE_BANK = Object.fromEntries(SOURCE_RECORDS.map(record => [
   record.id,
-  [
-    {s:record.row,d:ROW_DESCRIPTIONS[record.row]},
-    buildFeatureVariable(record)
-  ]
+  record.components.slice(0, 2).map(component => ({s: component.s, d: component.d}))
 ]));
 
 function buildConfusionSet(record){
-  const picks=[];
-  const used=new Set([record.id]);
-  const pools=[
-    (CONFUSABLE_MAP[record.id]||[]),
-    (ROW_IDS[record.row]||[]),
-    RECORDS.filter(item=>item.dom===record.dom).map(item=>item.id),
-    RECORDS.map(item=>item.id)
-  ];
-  for(const pool of pools){
-    for(const id of pool){
-      if(id===record.id||used.has(id))continue;
-      picks.push(id);
-      used.add(id);
-      if(picks.length>=3)return picks;
-    }
-  }
-  return picks;
+  const picked = [];
+  relatedRecords(record).forEach(candidate => {
+    if(picked.indexOf(candidate.id) >= 0 || candidate.id === record.id) return;
+    picked.push(candidate.id);
+  });
+  return picked.slice(0, 3);
 }
 
-const APPLICATION_BANK=Object.fromEntries(RECORDS.map(record=>[
+const APPLICATION_BANK = Object.fromEntries(SOURCE_RECORDS.map(record => [
   record.id,
-  [{scenario:buildScenario(record),confusionSet:buildConfusionSet(record)}]
+  [{scenario: buildScenario(record), confusionSet: buildConfusionSet(record)}]
 ]));
 
-const RELATIONSHIP_BANK={};
+const RELATIONSHIP_BANK = {};
+const AUTO_BLANK_SPECS = [];
+const DOM_LABELS = {'kana':['Kana Reading (ひらがな)']};
 
-const EXPLANATION_GLOSSARY=RECORDS.map(record=>({
-  keys:[record.kana],
-  title:`${record.kana} (${record.action})`,
-  lines:[
-    `Sound: ${record.action}.`,
-    `Row: ${record.row} | Pair: ${record.counterpart||'—'}`,
-    `Example: ${record.word1} (${record.reading1}) = ${record.meaning1}`
+const EXPLANATION_GLOSSARY = SOURCE_RECORDS.map(record => ({
+  keys: [record.reading, record.kanjiForm],
+  title: `${record.romaji} — ${record.english}`,
+  lines: [
+    `Meaning: ${record.english}.`,
+    `Kanji: ${record.kanjiForm} | Romaji: ${record.romaji}`,
+    `Components: ${explainParts(record.components)}`
   ]
 }));
 
-const AUTO_BLANK_SPECS=[];
-
-const DOM_LABELS={
-  'hiragana':['Hiragana (ひらがな)'],
-  'katakana':['Katakana (カタカナ)'],
-  'yoon':['Yoon Combinations (拗音)']
-};
-
-const SOUND_RECOGNITION_NODES={
-  'sound-a':{id:'sound-a',type:'conceptual',level:2,q:'Which kana makes the "a" sound (as in "father")?',correct:'あ / ア',wrong:['い / イ','う / ウ'],prereqs:['vowel-sounds']},
-  'sound-i':{id:'sound-i',type:'conceptual',level:2,q:'Which kana makes the "i" sound (as in "feet")?',correct:'い / イ',wrong:['え / エ','う / ウ'],prereqs:['vowel-sounds']},
-  'sound-u':{id:'sound-u',type:'conceptual',level:2,q:'Which kana makes the "u" sound (as in "rule")?',correct:'う / ウ',wrong:['お / オ','え / エ'],prereqs:['vowel-sounds']},
-  'sound-e':{id:'sound-e',type:'conceptual',level:2,q:'Which kana makes the "e" sound (as in "met")?',correct:'え / エ',wrong:['あ / ア','お / オ'],prereqs:['vowel-sounds']},
-  'sound-o':{id:'sound-o',type:'conceptual',level:2,q:'Which kana makes the "o" sound (as in "told")?',correct:'お / オ',wrong:['う / ウ','え / エ'],prereqs:['vowel-sounds']},
-  'sound-ka':{id:'sound-ka',type:'conceptual',level:2,q:'What sound does か / カ make?',correct:'ka',wrong:['sa','ta'],prereqs:['consonant-k']},
-  'sound-sa':{id:'sound-sa',type:'conceptual',level:2,q:'What sound does さ / サ make?',correct:'sa',wrong:['ka','ha'],prereqs:['consonant-s']},
-  'sound-ta':{id:'sound-ta',type:'conceptual',level:2,q:'What sound does た / タ make?',correct:'ta',wrong:['na','ra'],prereqs:['consonant-t']},
-  'sound-na':{id:'sound-na',type:'conceptual',level:2,q:'What sound does な / ナ make?',correct:'na',wrong:['ma','wa'],prereqs:['consonant-n']},
-  'sound-ha':{id:'sound-ha',type:'conceptual',level:2,q:'What sound does は / ハ make?',correct:'ha',wrong:['sa','ma'],prereqs:['consonant-h']},
-  'sound-ma':{id:'sound-ma',type:'conceptual',level:2,q:'What sound does ま / マ make?',correct:'ma',wrong:['na','ra'],prereqs:['consonant-m']},
-  'sound-ra':{id:'sound-ra',type:'conceptual',level:2,q:'What sound does ら / ラ make?',correct:'ra',wrong:['na','ya'],prereqs:['consonant-r']},
-  'sound-ya':{id:'sound-ya',type:'conceptual',level:2,q:'What sound does や / ヤ make?',correct:'ya',wrong:['ra','wa'],prereqs:['consonant-y']},
-};
-
-const VOICING_RECOGNITION_NODES={
-  'voice-k-to-g':{id:'voice-k-to-g',type:'conceptual',level:2,q:'What happens to the K-row when dakuten is added?',correct:'K sounds become G sounds (ka→ga, ki→gi, ku→gu, ke→ge, ko→go)',wrong:['K sounds become B sounds','K sounds become P sounds'],prereqs:['dakuten-rules','consonant-k']},
-  'voice-s-to-z':{id:'voice-s-to-z',type:'conceptual',level:2,q:'What happens to the S-row when dakuten is added?',correct:'S sounds become Z/J sounds (sa→za, shi→ji, su→zu, se→ze, so→zo)',wrong:['S sounds become T sounds','S sounds become P sounds'],prereqs:['dakuten-rules','consonant-s']},
-  'voice-t-to-d':{id:'voice-t-to-d',type:'conceptual',level:2,q:'What happens to the T-row when dakuten is added?',correct:'T sounds become D/J/Z sounds (ta→da, chi→ji, tsu→zu, te→de, to→do)',wrong:['T sounds become K sounds','T sounds become P sounds'],prereqs:['dakuten-rules','consonant-t']},
-  'voice-h-to-b':{id:'voice-h-to-b',type:'conceptual',level:2,q:'What happens to the H-row when dakuten is added?',correct:'H sounds become B sounds (ha→ba, hi→bi, fu→bu, he→be, ho→bo)',wrong:['H sounds become G sounds','H sounds become Y sounds'],prereqs:['dakuten-rules','consonant-h']},
-};
-
-const VOCAB_WORD_NODES={
-  'word-greetings':{id:'word-greetings',type:'conceptual',level:3,q:'Which kana starts the greeting おはよう?',correct:'お',wrong:['あ','え'],prereqs:['vowel-sounds']},
-  'word-animals':{id:'word-animals',type:'conceptual',level:3,q:'Which kana starts the word ねこ (cat)?',correct:'ね',wrong:['の','な'],prereqs:['consonant-n']},
-  'word-food':{id:'word-food',type:'conceptual',level:3,q:'Which kana starts the word すし (sushi)?',correct:'す',wrong:['し','せ'],prereqs:['consonant-s']},
-  'word-nature':{id:'word-nature',type:'conceptual',level:3,q:'Which kana starts the word やま (mountain)?',correct:'や',wrong:['ゆ','よ'],prereqs:['consonant-y']},
-  'word-body':{id:'word-body',type:'conceptual',level:3,q:'Which kana starts the word て (hand)?',correct:'て',wrong:['た','と'],prereqs:['consonant-t']},
-  'word-colors':{id:'word-colors',type:'conceptual',level:3,q:'Which kana starts the word あか (red)?',correct:'あ',wrong:['え','お'],prereqs:['vowel-sounds']},
-  'word-numbers':{id:'word-numbers',type:'conceptual',level:3,q:'Which kana starts いち (one)?',correct:'い',wrong:['う','え'],prereqs:['vowel-sounds']},
-  'word-loanwords':{id:'word-loanwords',type:'conceptual',level:3,q:'Which katakana starts コーヒー (coffee)?',correct:'コ',wrong:['カ','ケ'],prereqs:['consonant-k','system-recognition']},
-  'word-school':{id:'word-school',type:'conceptual',level:3,q:'Which kana starts せんせい (teacher)?',correct:'せ',wrong:['さ','し'],prereqs:['consonant-s']},
-  'word-family':{id:'word-family',type:'conceptual',level:3,q:'Which kana starts はは (mother)?',correct:'は',wrong:['ひ','ほ'],prereqs:['consonant-h']},
-};
-
-const CONFUSABLE_DISCRIMINATION_NODES={
-  'confuse-shi-tsu':{id:'confuse-shi-tsu',type:'conceptual',level:2,q:'How do you tell シ (shi) from ツ (tsu)?',correct:'シ has side strokes that rise from left to right; ツ has top strokes that fall into the body',wrong:['They are the same character','シ has 3 strokes and ツ has 2'],prereqs:['stroke-direction']},
-  'confuse-so-n':{id:'confuse-so-n',type:'conceptual',level:2,q:'How do you tell ソ (so) from ン (n)?',correct:'ソ starts from the top-right; ン starts from the top-left',wrong:['They are identical','ン adds a dakuten mark'],prereqs:['stroke-direction']},
-  'confuse-ha-ho':{id:'confuse-ha-ho',type:'conceptual',level:2,q:'How do you tell は (ha) from ほ (ho)?',correct:'は has two simple right-side strokes; ほ has a crossing middle stroke and a tail',wrong:['They sound the same','は has more strokes than ほ'],prereqs:['consonant-h']},
-  'confuse-nu-me':{id:'confuse-nu-me',type:'conceptual',level:2,q:'How do you tell ぬ (nu) from め (me)?',correct:'ぬ has a looped finish; め closes without the extra loop',wrong:['め is the one with the loop','They are in the same row'],prereqs:['kana-basics']},
-  'confuse-ru-ro':{id:'confuse-ru-ro',type:'conceptual',level:2,q:'How do you tell る (ru) from ろ (ro)?',correct:'る curls into a small hook at the bottom; ろ ends more cleanly',wrong:['ろ is the one with the hook','They are pronounced the same'],prereqs:['consonant-r']},
-  'confuse-ki-sa':{id:'confuse-ki-sa',type:'conceptual',level:2,q:'How do you tell き (ki) from さ (sa)?',correct:'き has separated horizontal strokes; さ curves down in one flowing body',wrong:['さ has more horizontal bars','They only differ by dakuten'],prereqs:['stroke-direction']},
-  'confuse-wa-ne-re':{id:'confuse-wa-ne-re',type:'conceptual',level:2,q:'How do you tell わ, ね, and れ apart?',correct:'わ loops low, ね has a full looped tail, and れ has a simpler hooked ending',wrong:['They are the same shape with different sizes','Only れ belongs to a kana row'],prereqs:['stroke-direction']},
-  'confuse-a-ma':{id:'confuse-a-ma',type:'conceptual',level:2,q:'How do you tell ア from マ?',correct:'ア has a single angled body; マ stacks three short strokes before the curve',wrong:['They are identical in print','マ uses dakuten'],prereqs:['stroke-direction']},
-  'confuse-ku-ta-ke':{id:'confuse-ku-ta-ke',type:'conceptual',level:2,q:'How do you tell ク, タ, and ケ apart?',correct:'ク is a single hooked form, タ adds a crossing slash, and ケ has separate vertical and diagonal strokes',wrong:['They differ only by font weight','ケ is just rotated ク'],prereqs:['stroke-direction']},
-  'confuse-u-wa-fu':{id:'confuse-u-wa-fu',type:'conceptual',level:2,q:'How do you tell ウ, ワ, and フ apart?',correct:'ウ has a roof with a centered drop, ワ hooks down leftward, and フ opens with two short top strokes',wrong:['They are all the same except for size','フ is the voiced version of ウ'],prereqs:['stroke-direction']},
-};
-
-const SOUND_NODE_IDS=Object.keys(SOUND_RECOGNITION_NODES);
-const VOICING_NODE_IDS=Object.keys(VOICING_RECOGNITION_NODES);
-const VOCAB_NODE_IDS=Object.keys(VOCAB_WORD_NODES);
-const CONFUSABLE_NODE_IDS=Object.keys(CONFUSABLE_DISCRIMINATION_NODES);
-const ROW_TO_SOUND_IDS={
-  'k-row':['sound-ka'],
-  's-row':['sound-sa'],
-  't-row':['sound-ta'],
-  'n-row':['sound-na'],
-  'h-row':['sound-ha'],
-  'm-row':['sound-ma'],
-  'r-row':['sound-ra'],
-  'y-row':['sound-ya'],
-};
-const ROW_TO_VOICING_ID={
-  'k-row':'voice-k-to-g',
-  's-row':'voice-s-to-z',
-  't-row':'voice-t-to-d',
-  'h-row':'voice-h-to-b',
-};
-const VOWEL_SOUND_RULES=[
-  [/あ|ア/,['sound-a']],
-  [/い|イ/,['sound-i']],
-  [/う|ウ/,['sound-u']],
-  [/え|エ/,['sound-e']],
-  [/お|オ/,['sound-o']],
-];
-const CONFUSABLE_ROUTING_RULES=[
-  [/シ|ツ|shi.*tsu|tsu.*shi/i,['confuse-shi-tsu']],
-  [/ソ|ン|so.*n\b/i,['confuse-so-n']],
-  [/は|ほ|ha.*ho|ho.*ha/i,['confuse-ha-ho']],
-  [/ぬ|め|nu.*me|me.*nu/i,['confuse-nu-me']],
-  [/る|ろ|ru.*ro|ro.*ru/i,['confuse-ru-ro']],
-  [/き|さ|ki.*sa|sa.*ki/i,['confuse-ki-sa']],
-  [/わ|ね|れ|wa.*ne|ne.*re|wa.*re/i,['confuse-wa-ne-re']],
-  [/ア|マ/,['confuse-a-ma']],
-  [/ク|タ|ケ/,['confuse-ku-ta-ke']],
-  [/ウ|ワ|フ/,['confuse-u-wa-fu']],
-];
-
-const SHARED_PREREQ_NODES={
-  'vowel-sounds':{id:'vowel-sounds',type:'computational',level:2,q:'What are the five Japanese vowels?',correct:'a i u e o',wrong:['a e i o u','ka ki ku ke ko'],prereqs:['kana-basics']},
-  'consonant-k':{id:'consonant-k',type:'computational',level:2,q:'What sounds belong to the k-row?',correct:'ka ki ku ke ko',wrong:['sa shi su se so','ta chi tsu te to'],prereqs:['kana-basics']},
-  'consonant-s':{id:'consonant-s',type:'computational',level:2,q:'What sounds belong to the s-row?',correct:'sa shi su se so',wrong:['ka ki ku ke ko','ha hi fu he ho'],prereqs:['kana-basics']},
-  'consonant-t':{id:'consonant-t',type:'computational',level:2,q:'What sounds belong to the t-row?',correct:'ta chi tsu te to',wrong:['na ni nu ne no','ra ri ru re ro'],prereqs:['kana-basics']},
-  'consonant-n':{id:'consonant-n',type:'computational',level:2,q:'What sounds belong to the n-row?',correct:'na ni nu ne no',wrong:['ma mi mu me mo','wa wo n'],prereqs:['kana-basics']},
-  'consonant-h':{id:'consonant-h',type:'computational',level:2,q:'What sounds belong to the h-row?',correct:'ha hi fu he ho',wrong:['ba bi bu be bo','pa pi pu pe po'],prereqs:['kana-basics']},
-  'consonant-m':{id:'consonant-m',type:'computational',level:2,q:'What sounds belong to the m-row?',correct:'ma mi mu me mo',wrong:['na ni nu ne no','ra ri ru re ro'],prereqs:['kana-basics']},
-  'consonant-r':{id:'consonant-r',type:'computational',level:2,q:'What sounds belong to the r-row?',correct:'ra ri ru re ro',wrong:['ya yu yo','wa wo n'],prereqs:['kana-basics']},
-  'consonant-y':{id:'consonant-y',type:'computational',level:2,q:'What sounds belong to the y-row?',correct:'ya yu yo',wrong:['wa wo n','ra ri ru re ro'],prereqs:['kana-basics']},
-  'consonant-w':{id:'consonant-w',type:'computational',level:2,q:'What sounds belong to the w-row?',correct:'wa wo',wrong:['ya yu yo','na ni nu ne no'],prereqs:['kana-basics']},
-  'dakuten-rules':{id:'dakuten-rules',type:'conceptual',level:2,q:'What does dakuten do?',correct:'Dakuten voices the consonant like k to g or s to z',wrong:['It deletes the vowel','It makes every sound silent'],prereqs:['kana-basics']},
-  'handakuten-rules':{id:'handakuten-rules',type:'conceptual',level:2,q:'What does handakuten do?',correct:'Handakuten turns h-row sounds into p-row sounds',wrong:['It changes vowels to y-sounds','It marks long vowels'],prereqs:['kana-basics']},
-  'yoon-rules':{id:'yoon-rules',type:'conceptual',level:2,q:'How are yoon combinations built?',correct:'Base kana plus small ya yu or yo makes one blended sound',wrong:['Two full-size kana are always read separately','Yoon only appears in katakana'],prereqs:['kana-basics']},
-  'hira-kata-pairs':{id:'hira-kata-pairs',type:'conceptual',level:2,q:'How do hiragana and katakana correspond?',correct:'Each sound has a hiragana form and a matching katakana form',wrong:['Only hiragana has sound pairs','Katakana has no matching sounds'],prereqs:['kana-basics']},
-  ...SOUND_RECOGNITION_NODES,
-  ...VOICING_RECOGNITION_NODES,
-  'stroke-direction':{id:'stroke-direction',type:'conceptual',level:3,q:'What is the usual Japanese stroke order direction?',correct:'Top to bottom and left to right',wrong:['Bottom to top and right to left','Any order is equally standard'],prereqs:['stroke-basics']},
-  'system-recognition':{id:'system-recognition',type:'conceptual',level:3,q:'When is katakana usually used?',correct:'For loanwords emphasis and many onomatopoeia',wrong:['For every native grammar ending','Only for handwritten notes'],prereqs:['kana-basics']},
-  ...VOCAB_WORD_NODES,
-  ...CONFUSABLE_DISCRIMINATION_NODES,
-  'kana-basics':{id:'kana-basics',type:'conceptual',level:5,q:'What are the two main phonetic scripts in Japanese?',correct:'Hiragana and Katakana',wrong:['Kanji and Romaji','Latin and Cyrillic'],prereqs:[]},
-  'stroke-basics':{id:'stroke-basics',type:'conceptual',level:5,q:'Why does stroke order matter?',correct:'It makes kana easier to read write and remember',wrong:['It changes the meaning of every word','It only matters for punctuation'],prereqs:[]}
-};
-
-function wireL1toL2(PREREQ_DAG){
-  const rules=[
-    [/a-row|vowel/i,['vowel-sounds']],
-    [/k-row|ka.*row/i,['consonant-k']],
-    [/s-row|sa.*row/i,['consonant-s']],
-    [/t-row|ta.*row/i,['consonant-t']],
-    [/n-row|na.*row/i,['consonant-n']],
-    [/h-row|ha.*row/i,['consonant-h']],
-    [/m-row|ma.*row/i,['consonant-m']],
-    [/r-row|ra.*row/i,['consonant-r']],
-    [/y-row|ya.*row/i,['consonant-y']],
-    [/w-row|wa.*row|wo\b/i,['consonant-w']],
-    [/dakuten|voiced|゛/i,['dakuten-rules']],
-    [/handakuten|semi|゜/i,['handakuten-rules']],
-    [/yoon|yōon|combination|small.*(?:ya|yu|yo|ゃ|ゅ|ょ)/i,['yoon-rules']],
-    [/katakana.*for|hiragana.*for|counterpart/i,['hira-kata-pairs']],
-    [/stroke|write|order/i,['stroke-direction']],
-    [/hiragana.*used|katakana.*used|native|foreign|loanword|script/i,['system-recognition']],
-    [/what sound|what.*romaji|pronounce|how.*read/i,SOUND_NODE_IDS],
-    [/what happens to the.*when dakuten is added|voicing/i,VOICING_NODE_IDS],
-    [/which word|word.*contains|starts with|word.*start|vocabulary|completes/i,VOCAB_NODE_IDS],
-    [/シ.*ツ|ツ.*シ|shi.*tsu|tsu.*shi/i,['confuse-shi-tsu']],
-    [/ソ.*ン|ン.*ソ|so.*n\b/i,['confuse-so-n']],
-    [/は.*ほ|ほ.*は|ha.*ho|ho.*ha/i,['confuse-ha-ho']],
-    [/ぬ.*め|め.*ぬ|nu.*me|me.*nu/i,['confuse-nu-me']],
-    [/る.*ろ|ろ.*る|ru.*ro|ro.*ru/i,['confuse-ru-ro']],
-    [/き.*さ|さ.*き|ki.*sa|sa.*ki/i,['confuse-ki-sa']],
-    [/わ.*ね|ね.*れ|わ.*れ|wa.*ne|ne.*re|wa.*re/i,['confuse-wa-ne-re']],
-    [/ア.*マ|マ.*ア/i,['confuse-a-ma']],
-    [/ク.*タ|タ.*ケ|ク.*ケ/i,['confuse-ku-ta-ke']],
-    [/ウ.*ワ|ワ.*フ|ウ.*フ/i,['confuse-u-wa-fu']],
-    [/word|contains|vocabulary|completes/i,['kana-basics']]
-  ];
-  for(const node of Object.values(PREREQ_DAG)){
-    if(node.level!==1||!node.autoGen||node.prereqs.length>0)continue;
-    const matched=new Set();
-    const text=`${node.q||''} ${node.correct||''}`;
-    for(const [re,ids] of rules){
-      if(re.test(text))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
-    }
-    if(ROW_TO_SOUND_IDS[node.correct]){
-      ROW_TO_SOUND_IDS[node.correct].forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
-    }
-    if(/dakuten|voiced|゛/i.test(text)&&ROW_TO_VOICING_ID[node.correct]&&PREREQ_DAG[ROW_TO_VOICING_ID[node.correct]]){
-      matched.add(ROW_TO_VOICING_ID[node.correct]);
-    }
-    for(const [re,ids] of VOWEL_SOUND_RULES){
-      if(re.test(node.q||''))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
-    }
-    for(const [re,ids] of CONFUSABLE_ROUTING_RULES){
-      if(re.test(node.q||''))ids.forEach(id=>{if(PREREQ_DAG[id])matched.add(id)});
-    }
-    if(matched.size===0&&PREREQ_DAG['kana-basics'])matched.add('kana-basics');
-    node.prereqs=[...matched];
-  }
+function buildHiraNodes(records){
+  const chars = uniqueBy(
+    records.flatMap(record => [...record.reading]).filter(isKanaChar),
+    ch => ch
+  );
+  const nodes = {};
+  chars.forEach(kana => {
+    const nodeId = `hira-${kana.charCodeAt(0).toString(16)}`;
+    nodes[nodeId] = {
+      id: nodeId,
+      type: 'conceptual',
+      level: 2,
+      q: `What is the romaji for ${kana}?`,
+      correct: romajiForKanaQuestion(kana),
+      wrong: kanaWrongRomaji(kana),
+      prereqs: kanaPrereqs(kana),
+    };
+  });
+  return nodes;
 }
 
-const KANA={
+const ROW_NODES = {
+  'row-a':{id:'row-a',type:'conceptual',level:3,q:'Name the a-row sounds.',correct:'a i u e o',wrong:['ka ki ku ke ko','sa shi su se so'],prereqs:['kana-foundation']},
+  'row-k':{id:'row-k',type:'conceptual',level:3,q:'Name the k-row sounds.',correct:'ka ki ku ke ko',wrong:['sa shi su se so','ta chi tsu te to'],prereqs:['kana-foundation']},
+  'row-s':{id:'row-s',type:'conceptual',level:3,q:'Name the s-row sounds.',correct:'sa shi su se so',wrong:['ka ki ku ke ko','na ni nu ne no'],prereqs:['kana-foundation']},
+  'row-t':{id:'row-t',type:'conceptual',level:3,q:'Name the t-row sounds.',correct:'ta chi tsu te to',wrong:['sa shi su se so','ha hi fu he ho'],prereqs:['kana-foundation']},
+  'row-n':{id:'row-n',type:'conceptual',level:3,q:'Name the n-row sounds.',correct:'na ni nu ne no',wrong:['ma mi mu me mo','ra ri ru re ro'],prereqs:['kana-foundation']},
+  'row-h':{id:'row-h',type:'conceptual',level:3,q:'Name the h-row sounds.',correct:'ha hi fu he ho',wrong:['ba bi bu be bo','pa pi pu pe po'],prereqs:['kana-foundation']},
+  'row-m':{id:'row-m',type:'conceptual',level:3,q:'Name the m-row sounds.',correct:'ma mi mu me mo',wrong:['na ni nu ne no','ra ri ru re ro'],prereqs:['kana-foundation']},
+  'row-y':{id:'row-y',type:'conceptual',level:3,q:'Name the y-row sounds.',correct:'ya yu yo',wrong:['wa wo n','ra ri ru re ro'],prereqs:['kana-foundation']},
+  'row-r':{id:'row-r',type:'conceptual',level:3,q:'Name the r-row sounds.',correct:'ra ri ru re ro',wrong:['na ni nu ne no','ya yu yo'],prereqs:['kana-foundation']},
+  'row-w':{id:'row-w',type:'conceptual',level:3,q:'Name the w-row sounds.',correct:'wa wo n',wrong:['ya yu yo','a i u e o'],prereqs:['kana-foundation']},
+};
+
+const VOICING_NODES = {
+  'voicing-k-g':{id:'voicing-k-g',type:'conceptual',level:3,q:'What happens when dakuten is added to the k-row?',correct:'K becomes G: ka to ga, ki to gi, ku to gu, ke to ge, ko to go',wrong:['K becomes S','K becomes T'],prereqs:['kana-foundation']},
+  'voicing-s-z':{id:'voicing-s-z',type:'conceptual',level:3,q:'What happens when dakuten is added to the s-row?',correct:'S becomes Z/J: sa to za, shi to ji, su to zu, se to ze, so to zo',wrong:['S becomes K','S becomes T'],prereqs:['kana-foundation']},
+  'voicing-t-d':{id:'voicing-t-d',type:'conceptual',level:3,q:'What happens when dakuten is added to the t-row?',correct:'T becomes D/J/Z: ta to da, chi to ji, tsu to zu, te to de, to to do',wrong:['T becomes K','T becomes B'],prereqs:['kana-foundation']},
+  'voicing-h-b':{id:'voicing-h-b',type:'conceptual',level:3,q:'What happens when dakuten is added to the h-row?',correct:'H becomes B: ha to ba, hi to bi, fu to bu, he to be, ho to bo',wrong:['H becomes G','H becomes M'],prereqs:['kana-foundation']},
+  'semi-voicing-h-p':{id:'semi-voicing-h-p',type:'conceptual',level:3,q:'What happens when handakuten is added to the h-row?',correct:'H becomes P: ha to pa, hi to pi, fu to pu, he to pe, ho to po',wrong:['H becomes D','H becomes R'],prereqs:['kana-foundation']},
+};
+
+const SPECIAL_NODES = {
+  'yoon-blends':{id:'yoon-blends',type:'conceptual',level:3,q:'How do small ya, yu, and yo change a kana?',correct:'They blend the syllable into a yoon sound such as kya, shu, or ryo',wrong:['They make the word plural','They erase the vowel'],prereqs:['kana-foundation']},
+  'small-tsu-rule':{id:'small-tsu-rule',type:'conceptual',level:3,q:'What does small tsu (っ) do?',correct:'It doubles the next consonant sound, like gakko or zasshi',wrong:['It adds a long vowel','It changes the word to katakana'],prereqs:['kana-foundation']},
+};
+
+const CONFUSABLE_NODES = {
+  'confuse-ha-ho':{id:'confuse-ha-ho',type:'conceptual',level:3,q:'How do you tell は from ほ?',correct:'は has two simple side strokes, while ほ has a crossing middle line and a tail',wrong:['They are the same kana','は is the voiced form of ほ'],prereqs:['row-h']},
+  'confuse-nu-me':{id:'confuse-nu-me',type:'conceptual',level:3,q:'How do you tell ぬ from め?',correct:'ぬ has an extra looped finish, while め closes more simply',wrong:['め is the looped one','They belong to the same exact reading'],prereqs:['row-n']},
+  'confuse-ki-sa':{id:'confuse-ki-sa',type:'conceptual',level:3,q:'How do you tell き from さ?',correct:'き has separated horizontal strokes, while さ flows in a single curved body',wrong:['さ has more bars than き','き and さ differ only by dakuten'],prereqs:['row-k','row-s']},
+  'confuse-wa-ne-re':{id:'confuse-wa-ne-re',type:'conceptual',level:3,q:'How do you tell わ, ね, and れ apart?',correct:'わ loops low, ね has a fuller looped tail, and れ ends in a simpler hook',wrong:['They are the same shape','Only れ is a real kana'],prereqs:['row-w','row-n','row-r']},
+  'confuse-ru-ro':{id:'confuse-ru-ro',type:'conceptual',level:3,q:'How do you tell る from ろ?',correct:'る curls into a hook, while ろ ends more cleanly',wrong:['ろ has the hook','They sound the same'],prereqs:['row-r']},
+  'confuse-i-ri':{id:'confuse-i-ri',type:'conceptual',level:3,q:'How do you tell い from り?',correct:'い opens with two separate strokes, while り starts with a longer left stroke and shorter right stroke',wrong:['り is just a voiced い','They belong to different scripts'],prereqs:['row-a','row-r']},
+  'confuse-a-o':{id:'confuse-a-o',type:'conceptual',level:3,q:'How do you tell あ from お?',correct:'あ has a fuller loop and crossing shape, while お opens with a curved left stroke and simpler right side',wrong:['お is just a smaller あ','They sound the same'],prereqs:['row-a']},
+  'confuse-u-tsu':{id:'confuse-u-tsu',type:'conceptual',level:3,q:'How do you tell う from つ?',correct:'う is more open and rounded, while つ sweeps farther to the left before curling down',wrong:['つ is the voiced form of う','They are from the same row'],prereqs:['row-a','row-t']},
+};
+
+const FOUNDATION_NODE = {
+  'kana-foundation':{id:'kana-foundation',type:'conceptual',level:4,q:'What are the two phonetic scripts in Japanese?',correct:'Hiragana and Katakana',wrong:['Kanji and Romaji','Latin and Greek'],prereqs:[]},
+};
+
+const SHARED_PREREQ_NODES = Object.assign(
+  {},
+  buildHiraNodes(SOURCE_RECORDS),
+  ROW_NODES,
+  VOICING_NODES,
+  SPECIAL_NODES,
+  CONFUSABLE_NODES,
+  FOUNDATION_NODE
+);
+
+function wireL1toL2(PREREQ_DAG){
+  const rules = [
+    [/which word means/i, ['kana-foundation']],
+    [/a-row|vowel/i, ['row-a']],
+    [/k-row/i, ['row-k']],
+    [/s-row/i, ['row-s']],
+    [/t-row/i, ['row-t']],
+    [/n-row/i, ['row-n']],
+    [/h-row/i, ['row-h']],
+    [/m-row/i, ['row-m']],
+    [/y-row/i, ['row-y']],
+    [/r-row/i, ['row-r']],
+    [/w-row|を\b|ん\b/i, ['row-w']],
+    [/dakuten|voiced/i, ['voicing-k-g','voicing-s-z','voicing-t-d','voicing-h-b']],
+    [/handakuten|semi-voiced|p-row/i, ['semi-voicing-h-p']],
+    [/small tsu|っ/i, ['small-tsu-rule']],
+    [/small ya|small yu|small yo|ゃ|ゅ|ょ|yoon/i, ['yoon-blends']],
+    [/は.*ほ|ほ.*は/i, ['confuse-ha-ho']],
+    [/ぬ.*め|め.*ぬ/i, ['confuse-nu-me']],
+    [/き.*さ|さ.*き/i, ['confuse-ki-sa']],
+    [/わ.*ね|ね.*れ|わ.*れ/i, ['confuse-wa-ne-re']],
+    [/る.*ろ|ろ.*る/i, ['confuse-ru-ro']],
+    [/い.*り|り.*い/i, ['confuse-i-ri']],
+    [/あ.*お|お.*あ/i, ['confuse-a-o']],
+    [/う.*つ|つ.*う/i, ['confuse-u-tsu']],
+  ];
+
+  Object.values(PREREQ_DAG).forEach(node => {
+    if(node.level !== 1 || !node.autoGen || (node.prereqs || []).length > 0) return;
+    const matched = new Set();
+    const question = String(node.q || '');
+    const answer = String(node.correct || '');
+    const kanaChars = [...question].filter(isKanaChar);
+    const singleKanaMatch = question.match(/romaji for\s+([ぁ-ん])\s*\?/i);
+
+    if(singleKanaMatch){
+      const kana = singleKanaMatch[1];
+      const nodeId = `hira-${kana.charCodeAt(0).toString(16)}`;
+      if(PREREQ_DAG[nodeId]) matched.add(nodeId);
+      kanaPrereqs(kana).forEach(id => { if(PREREQ_DAG[id]) matched.add(id); });
+    }
+
+    if(/romaji for/i.test(question) && kanaChars.length > 1){
+      uniqueBy(kanaChars.map(rowIdForKana), id => id).forEach(id => {
+        if(PREREQ_DAG[id]) matched.add(id);
+      });
+      kanaChars.map(voicingNodeForKana).filter(Boolean).forEach(id => {
+        if(PREREQ_DAG[id]) matched.add(id);
+      });
+      if(kanaChars.some(ch => ch === 'っ') && PREREQ_DAG['small-tsu-rule']) matched.add('small-tsu-rule');
+      if(kanaChars.some(ch => SMALL_Y_KANA.has(ch)) && PREREQ_DAG['yoon-blends']) matched.add('yoon-blends');
+    }
+
+    rules.forEach(([re, ids]) => {
+      if(re.test(question) || re.test(answer)){
+        ids.forEach(id => { if(PREREQ_DAG[id]) matched.add(id); });
+      }
+    });
+
+    if(matched.size === 0 && PREREQ_DAG['kana-foundation']) matched.add('kana-foundation');
+    node.prereqs = [...matched];
+  });
+}
+
+const KANA = {
   id:'kana',
-  name:'Hiragana & Katakana',
-  description:'Master all Japanese kana — hiragana, katakana, and combination characters',
+  name:'Kana Reading',
+  description:'Learn hiragana by reading Grade 1 vocabulary words',
   icon:'あ',
   inputMode:'quiz',
   prefixLabel:null,
-  title:'KANA かな',
+  title:'よみかた',
   subtitle:'DEFENSE',
   startButton:'はじめ',
-  instructions:'Identify kana by <b>romaji</b>, <b>row</b>, and <b>script pair</b>. Fill blanks in beginner words and distinguish confusable kana.',
-  instructionsSub:'208 kana cards — hiragana, katakana, and yoon combinations',
-  identifyPrompt:'What is the romaji for this character?',
-  variablePrompt:'What does <span id="var-symbol" style="display:inline-block"></span> represent in this kana?',
-  applicationPrompt:'Which kana makes this sound?',
-  commands:COMMANDS,
+  instructions:'Read Japanese words written in <b>hiragana</b>. Identify the English meaning, fill missing kana, and decompose misses into romaji and single-kana reading practice.',
+  instructionsSub:'Grade 1 vocabulary + beginner supplements · 160 cards · meaning → romaji → kana',
+  identifyPrompt:'What does this word mean?',
+  variablePrompt:'What does <span id="var-symbol" style="display:inline-block"></span> represent in this word?',
+  applicationPrompt:'Which word matches this written clue?',
+  commands: COMMANDS,
 
-  generateQuestion(cmd){
-    const difficulty=(typeof G!=='undefined'&&G&&G.difficulty)||'learn';
-    const baseWeights={
+  generateQuestion(cmd, allCommands){
+    const difficulty = (typeof G !== 'undefined' && G && G.difficulty) || 'learn';
+    const weightsByDifficulty = {
       learn:{identify:0.40,fillblank:0.25,variable:0.15,application:0.10},
       practice:{identify:0.25,fillblank:0.325,variable:0.15,application:0.175},
       challenge:{identify:0.10,fillblank:0.40,variable:0.15,application:0.25},
     };
-    const selected=baseWeights[difficulty]||baseWeights.learn;
-    const weights={identify:selected.identify};
-    if(cmd.blanks&&cmd.blanks.length)weights.fillblank=selected.fillblank;
-    if(this.variableBank&&this.variableBank[cmd.id]&&this.variableBank[cmd.id].length)weights.variable=selected.variable;
-    if(this.applicationBank&&this.applicationBank[cmd.id]&&this.applicationBank[cmd.id].length)weights.application=selected.application;
+    const selected = weightsByDifficulty[difficulty] || weightsByDifficulty.learn;
+    const weights = {identify:selected.identify};
+    if(cmd.blanks && cmd.blanks.length) weights.fillblank = selected.fillblank;
+    if(this.variableBank && this.variableBank[cmd.id] && this.variableBank[cmd.id].length) weights.variable = selected.variable;
+    if(this.applicationBank && this.applicationBank[cmd.id] && this.applicationBank[cmd.id].length) weights.application = selected.application;
 
-    const total=Object.values(weights).reduce((sum,value)=>sum+value,0)||1;
-    let roll=Math.random()*total;
-    let pick='identify';
-    for(const [type,weight] of Object.entries(weights)){
-      roll-=weight;
-      if(roll<=0){pick=type;break}
+    const total = Object.values(weights).reduce((sum, value) => sum + value, 0) || 1;
+    let roll = Math.random() * total;
+    let pick = 'identify';
+    Object.keys(weights).forEach(type => {
+      if(pick !== 'identify' && pick !== type) return;
+      if(roll <= 0) return;
+      roll -= weights[type];
+      if(roll <= 0) pick = type;
+    });
+
+    if(pick === 'identify'){
+      const distractors = pickActionDistractors(cmd, allCommands, 3);
+      const options = shuffleArr([stripActionLabel(cmd.action)].concat(distractors.map(candidate => stripActionLabel(candidate.action))));
+      const correctLabel = stripActionLabel(cmd.action);
+      const correctIdx = options.indexOf(correctLabel);
+      return {type:'identify',latex:cmd.latex,options:options,correctIdx:correctIdx,correctKey:['a','b','c','d'][correctIdx]};
     }
 
-    if(pick==='identify'){
-      const distractors=pickActionDistractors(RECORD_BY_ID[cmd.id],3);
-      const options=shuffleArr([cmd.action,...distractors.map(item=>item.action)]);
-      const correctIdx=options.indexOf(cmd.action);
-      return{type:'identify',latex:cmd.latex,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    if(pick === 'variable'){
+      const vars = this.variableBank[cmd.id];
+      const entry = vars[Math.floor(Math.random() * vars.length)];
+      const otherDescs = [];
+      Object.keys(this.variableBank || {}).forEach(id => {
+        if(id === cmd.id) return;
+        (this.variableBank[id] || []).forEach(candidate => {
+          if(candidate.d !== entry.d && otherDescs.indexOf(candidate.d) < 0) otherDescs.push(candidate.d);
+        });
+      });
+      const options = shuffleArr([entry.d].concat(shuffleArr(otherDescs).slice(0, 3)));
+      const correctIdx = options.indexOf(entry.d);
+      return {type:'variable',latex:cmd.latex,symbol:entry.s,options:options,correctIdx:correctIdx,correctKey:['a','b','c','d'][correctIdx]};
     }
 
-    if(pick==='variable'){
-      const vars=this.variableBank[cmd.id];
-      const entry=vars[Math.floor(Math.random()*vars.length)];
-      const otherDescs=[];
-      for(const [id,entries] of Object.entries(this.variableBank||{})){
-        if(id===cmd.id)continue;
-        for(const candidate of entries){
-          if(candidate.d!==entry.d&&!otherDescs.includes(candidate.d))otherDescs.push(candidate.d);
-        }
-      }
-      const options=shuffleArr([entry.d,...shuffleArr(otherDescs).slice(0,3)]);
-      const correctIdx=options.indexOf(entry.d);
-      return{type:'variable',latex:cmd.latex,symbol:entry.s,options,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
+    if(pick === 'application'){
+      const apps = this.applicationBank[cmd.id];
+      const app = apps[Math.floor(Math.random() * apps.length)];
+      const options = shuffleArr(buildApplicationOptions(cmd, allCommands || [], app.confusionSet || []));
+      const correctValue = cmd.dom === 'kana' ? cmd.latex : stripActionLabel(cmd.action);
+      const correctIdx = options.indexOf(correctValue);
+      return {type:'application',scenario:app.scenario,options:options,correctIdx:correctIdx,correctKey:['a','b','c','d'][correctIdx]};
     }
 
-    if(pick==='application'){
-      const apps=this.applicationBank[cmd.id];
-      const app=apps[Math.floor(Math.random()*apps.length)];
-      const options=[];
-      const used=new Set();
-      function addOption(text){
-        if(!text||used.has(text))return;
-        used.add(text);
-        options.push(text);
-      }
-      addOption(cmd.latex);
-      for(const id of app.confusionSet||[])addOption(COMMAND_BY_ID[id]&&COMMAND_BY_ID[id].latex);
-      for(const kana of pickKanaDistractors(RECORD_BY_ID[cmd.id],3))addOption(kana);
-      const shuffled=shuffleArr(options.slice(0,4));
-      const correctIdx=shuffled.indexOf(cmd.latex);
-      return{type:'application',scenario:app.scenario,options:shuffled,correctIdx,correctKey:['a','b','c','d'][correctIdx]};
-    }
-
-    const blank=cmd.blanks[Math.floor(Math.random()*cmd.blanks.length)];
-    const shuffled=shuffleArr([...blank.choices]);
-    const correctIdx=shuffled.indexOf(blank.answer);
-    return{type:'fillblank',latex:blank.latex,answer:blank.answer,choices:shuffled,correctIdx,fullLatex:cmd.latex};
+    const blank = cmd.blanks[Math.floor(Math.random() * cmd.blanks.length)];
+    const choices = shuffleArr(blank.choices.slice());
+    const correctIdx = choices.indexOf(blank.answer);
+    return {type:'fillblank',latex:blank.latex,answer:blank.answer,choices:choices,correctIdx:correctIdx,fullLatex:cmd.latex};
   },
 
-  formatPrompt(cmd){return cmd.latex},
-  formatAnswer(cmd){return cmd.action},
+  formatPrompt(cmd){ return cmd.latex || cmd.action; },
+  formatAnswer(cmd){ return cmd.action; },
 
-  validateBlank(input,answer){
-    function norm(s){return normalizeLookup(String(s||'')).replace(/[\\{}_^]/g,'')}
-    return norm(input)===norm(answer);
+  validateBlank(input, answer){
+    return normalizeLookup(input) === normalizeLookup(answer);
   },
 };
 
-KANA.variableBank=VARIABLE_BANK;
-KANA.applicationBank=APPLICATION_BANK;
-KANA.relationshipBank=RELATIONSHIP_BANK;
-KANA.explanationGlossary=EXPLANATION_GLOSSARY;
-KANA.autoBlankSpecs=AUTO_BLANK_SPECS;
-KANA.domLabels=DOM_LABELS;
-KANA.sharedPrereqNodes=SHARED_PREREQ_NODES;
-KANA.normalizeExplanationLookup=normalizeLookup;
-KANA.buildExplanationBank=function(){
-  const byId={},byLabel={};
-  EXPLANATION_GLOSSARY.forEach((entry,i)=>{
-    byId[i]=entry;
-    entry.keys.forEach(k=>{byLabel[normalizeLookup(k)]=entry});
+KANA.variableBank = VARIABLE_BANK;
+KANA.applicationBank = APPLICATION_BANK;
+KANA.relationshipBank = RELATIONSHIP_BANK;
+KANA.explanationGlossary = EXPLANATION_GLOSSARY;
+KANA.autoBlankSpecs = AUTO_BLANK_SPECS;
+KANA.domLabels = DOM_LABELS;
+KANA.sharedPrereqNodes = SHARED_PREREQ_NODES;
+KANA.normalizeExplanationLookup = normalizeLookup;
+KANA.buildExplanationBank = function(){
+  const byId = {};
+  const byLabel = {};
+  EXPLANATION_GLOSSARY.forEach((entry, index) => {
+    byId[index] = entry;
+    (entry.keys || []).forEach(key => {
+      byLabel[normalizeLookup(key)] = entry;
+    });
   });
-  return{byId,byLabel};
+  return {byId: byId, byLabel: byLabel};
 };
-KANA.wireL1toL2=wireL1toL2;
+KANA.wireL1toL2 = wireL1toL2;
 
-if(typeof process!=='undefined'&&process&&Array.isArray(process.argv)&&/(^|[\\/])kana-cartridge\.js$/.test(process.argv[2]||'')){
-  window.KANA_CARTRIDGE=KANA;
+if(typeof process !== 'undefined' && process && Array.isArray(process.argv) && /(^|[\\/])kana-cartridge\.js$/.test(process.argv[2] || '')){
+  window.KANA_CARTRIDGE = KANA;
 }
-window.KANA_DATA=KANA;
+
+window.KANA_DATA = KANA;
+
+if(typeof window.TD_CARTRIDGES !== 'undefined' && !window.KANJI_G1_DATA){
+  window.TD_CARTRIDGES = window.TD_CARTRIDGES || [];
+  const existingIndex = window.TD_CARTRIDGES.findIndex(cart => cart && cart.id === KANA.id);
+  if(existingIndex >= 0) window.TD_CARTRIDGES[existingIndex] = KANA;
+  else window.TD_CARTRIDGES.push(KANA);
+}
 
 })();
