@@ -1,7 +1,7 @@
 // Service Worker for AP Stats Formula Defense
 // Two caches: shell (app + CDN) and animations (Supabase MP4s)
 
-const CACHE_SHELL = 'td-shell-v8';
+const CACHE_SHELL = 'td-shell-v9';
 const CACHE_ANIM = 'td-anim-v1';
 
 // Same-origin assets pre-cached on install (guaranteed)
@@ -9,6 +9,7 @@ const PRECACHE_URLS = [
   './',
   './index.html',
   './ap-stats-cartridge.js',
+  './kana-cartridge.js',
   './kanji-g1-cartridge-v2.js',
   './kanji-g2-cartridge.js',
   './kanji-g3-cartridge.js',

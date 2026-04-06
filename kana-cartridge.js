@@ -744,8 +744,6 @@ KANA.buildExplanationBank=function(){
 };
 KANA.wireL1toL2=wireL1toL2;
 
-window.KANA_CARTRIDGE=KANA;
-window.TD_CARTRIDGES=window.TD_CARTRIDGES||[];
-window.TD_CARTRIDGES.push(KANA);
+window.KANA_DATA=KANA;
 
 })();
