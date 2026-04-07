@@ -90,9 +90,14 @@ const sources = GRADE_SOURCES.map(function(source){ return window[source.key]; }
 if(sources.length===0) return;
 
 const allCommands = [];
+const seenIds = new Set();
 const allDomLabels = {};
 sources.forEach(function(source){
-  allCommands.push.apply(allCommands, source.commands || []);
+  (source.commands || []).forEach(function(cmd){
+    if(seenIds.has(cmd.id)) return;
+    seenIds.add(cmd.id);
+    allCommands.push(cmd);
+  });
   Object.assign(allDomLabels, source.domLabels || {});
 });
 
