@@ -2322,12 +2322,139 @@ These findings informed the kana v2 design and are documented for future G1 cart
 - `dummy-cartridge.js` — deleted
 - `kanji-g1-cartridge.js` (v1) — deleted (superseded by v2)
 
+## Latest Update: Kanji Chain Drill Rewrite (April 6, 2026)
+
+Radically simplified the kanji learning model from a 5-type question system with DAG decomposition to a clean sequential chain. This is a fundamental pedagogical redesign.
+
+### The 4-Step Chain
+
+Every kanji enemy requires 4 sequential correct answers to kill:
+
+```
+Step 0 (● ○ ○ ○) reading:  山  → [やま | かわ | もり]       kanji → furigana (3 MC)
+Step 1 (● ● ○ ○) romaji:   やま → [yama | kawa | mori]     furigana → romaji (3 MC)
+Step 2 (● ● ● ○) meaning:  yama → [mountain | river | forest] romaji → english (3 MC)
+Step 3 (● ● ● ●) recall:   山  → [mountain | river | forest]  kanji → english (3 MC)
+```
+
+The final "recall" step loops back to the kanji glyph and asks for English directly — tests whether the student can bypass the intermediate steps.
+
+### Wrong-Answer Flow: Move On, Don't Get Stuck
+
+- **Correct** at any step → advance to next step, re-render immediately
+- **Correct at step 3** → full kill (score + death animation)
+- **Wrong at step 0** (kanji→furigana) → enemy removed, move to next kanji
+- **Wrong at step 1** (furigana→romaji) → **kana decomposition**: spawns individual kana practice enemies (hiragana→romaji, 1-step chain), original enemy advances to step 2
+- **Wrong at steps 2-3** → enemy removed, move to next kanji
+
+Philosophy: correct answers reward depth, wrong answers glide on. SRS handles re-presenting weak kanji later. No surge, no miss cap, no stuck enemies.
+
+### Kana Decomposition (Step 1 Wrong)
+
+When a student fails the furigana→romaji step, the reading is decomposed into individual kana characters:
+
+```
+やま → yama ✗
+  Spawns: [や → ?] (ya/ka/ma)    ← individual kana enemy
+          [ま → ?] (ma/ya/ka)    ← individual kana enemy
+  Original enemy advances to step 2 (yama → mountain)
+```
+
+- Each kana enemy is a 1-step chain (hiragana → romaji, 3 MC)
+- Kana enemies get their own SRS cards (`kana-XXXX` IDs via `ensureSrsCard()`)
+- Wrong on a kana enemy → removed, move on (SRS tracks it)
+- Correct on a kana enemy → kill with score
+- `spawnKanaDecomposition()` handles: digraph-aware parsing, deduplication, romaji pool for distractors
+- Kana maps (`kanaRomaji`, `digraphRomaji`) exported from grade cartridges through joyo merger
+
+### Compound Phase
+
+After individual kanji, compounds (jukugo) follow the same 4-step chain:
+
+```
+学校 → がっこう ✓ → gakkou ✓ → school ✓ → 学校 → school ✓ → KILL!
+```
+
+Compounds have `requires: ['k-5b66', 'k-6821']` — component kanji IDs. A compound only enters the pick pool when ALL component kanji have `pKnown >= 0.5` in SRS.
+
+### G1 Cartridge Rewritten
+
+`kanji-g1-cartridge-v2.js` completely rewritten (~354 lines, was ~1,883):
+- 80 individual kanji commands with 4-step chains
+- 100 curated G1 compound commands with 4-step chains + `requires`
+- Automatic romaji via `toRomaji()` with full Hepburn romanization (digraphs, sokuon)
+- `pickWrongs()` draws distractors from same-grade pool
+- All legacy banks deleted: no VARIABLE_BANK, APPLICATION_BANK, RELATIONSHIP_BANK, EXPLANATION_GLOSSARY, DAG, wireL1toL2
+
+### Engine Changes (index.html)
+
+All additive — AP Stats and legacy kanji cartridges (G2-G6) still work unchanged:
+
+- `setInputPanelContent()`: chain branch renders KaTeX for kanji steps, plain text for romaji/furigana, step dots (● ○), step labels
+- `handleChainChoice()`: correct advances chain, wrong at step 1 triggers kana decomposition, all other wrongs remove enemy
+- `spawnKanaDecomposition()`: decomposes furigana into individual kana enemies with SRS tracking
+- `ensureSrsCard()`: auto-creates SRS cards for dynamically spawned kana enemies
+- Enemy spawn: deep-clones chain per enemy, initializes `chainStep=0`
+- Keyboard: A/B/C keys for chain MC
+- Compound gating: `pickCommands()` skips commands with unmastered `requires`
+- CSS: `.chain-prompt`, `.chain-dots`, `.chain-options` with mobile responsive sizing
+
+### BKT Weights
+
+| Step | Weight | Rationale |
+|------|--------|-----------|
+| 0 reading | 0.7 | Important but not the final test |
+| 1 romaji | 0.5 | Reinforcement |
+| 2 meaning | 0.5 | Reinforcement |
+| 3 recall | 1.0 | Direct recognition — the real test |
+
+### What Was Deleted
+
+- All kanji-specific banks (VARIABLE, APPLICATION, RELATIONSHIP, GLOSSARY)
+- All kanji-specific DAG/prereq infrastructure (SHARED_PREREQ_NODES, wireL1toL2)
+- `reshuffleChainWrongs()` — wrong answers move on, no reshuffling needed
+- `chainMisses` tracking — no miss cap for chain enemies
+- Stroke order concepts — explicitly removed from kanji pedagogy
+
+### Spec Artifacts
+
+- `kanji-chain-spec.md` — full design spec
+- `codex-prompt-kanji-chain.md` — Codex implementation prompt for G1 + engine
+- `g2-kana-removal-spec.md` — spec for G2 chain rewrite + kana cartridge removal
+- `codex-prompt-g2-kana-removal.md` — Codex implementation prompt for G2 + kana removal
+
+### Important Code Areas (new/updated)
+
+- `index.html:146-151` — chain CSS (`.chain-prompt`, `.chain-dots`, `.chain-options`)
+- `index.html:3826-3849` — chain rendering in `setInputPanelContent()`
+- `index.html:4038` — `CHAIN_BKT_WEIGHTS=[0.7,0.5,0.5,1.0]`
+- `index.html:4039-4046` — `applyImmediateBktUpdate()`, `ensureSrsCard()`
+- `index.html:4047-4088` — `spawnKanaDecomposition()` (kana decomposition on step 1 miss)
+- `index.html:4090-4119` — `handleChainChoice()` (chain answer handler)
+- `index.html:4819-4827` — chain clone at enemy spawn
+- `index.html:5413-5422` — keyboard A/B/C handler for chain
+- `kanji-g1-cartridge-v2.js:37-118` — KANJI + COMPOUNDS source arrays
+- `kanji-g1-cartridge-v2.js:239-260` — `toRomaji()` Hepburn romanization
+- `kanji-g1-cartridge-v2.js:274-296` — `buildChain()` 4-step chain builder
+- `kanji-g1-cartridge-v2.js:298-330` — `buildCommands()` with compound `requires`
+- `kanji-g1-cartridge-v2.js:342` — `window.KANJI_G1_DATA` export with `kanaRomaji`/`digraphRomaji`
+- `kanji-joyo-cartridge.js:189-190` — merged kana maps for chain decomposition
+
+### Cartridge Inventory (current as of April 6, 2026)
+
+**Registered decks (2 total)**:
+
+| Deck | Cartridge ID | Commands | Source |
+|------|-------------|----------|--------|
+| AP Statistics | `ap-stats-formulas` | 81 | `ap-stats-cartridge.js` |
+| にほんご (Japanese) | `joyo-kanji` | ~1,346 | Merged from kana + G1 (chain) + G2-G6 (legacy) |
+
+**G1 uses the new chain format. G2-G6 still use legacy format (5-type questions, DAG). Kana still uses legacy format but is specced for removal (kana practice embedded in chain decomposition).**
+
 ## Likely Next Tasks
 
-- **G1 cartridge pedagogy fixes** — apply ChatGPT audit findings: script-consistent reading distractors, semantically targeted vocabulary wrongs, tighten wireL1toL2 regex, fix default-to-stroke fallback
-- **Apply same audit to G2-G6 cartridges** — reading distractors, vocabulary distractors, regex wiring likely have similar issues across all grades
-- **Kana coverage expansion** — extend kana vocab to G2+ words as students progress (currently only G1 words)
-- **Validator: level-monotonicity check** — implement Section 0 of `kanji-kana-dag-and-g2-spec.md`
+- **G2 chain rewrite + kana removal** — specced in `g2-kana-removal-spec.md` + `codex-prompt-g2-kana-removal.md`. Rewrite G2 to chain format, delete `kana-cartridge.js`, clean up merger.
+- **G3-G6 chain rewrites** — same pattern as G1/G2, one grade at a time
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design
 - **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
 - Quality review rendered animations — verify pedagogical accuracy per formula
