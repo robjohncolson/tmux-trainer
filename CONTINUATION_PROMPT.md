@@ -2440,23 +2440,117 @@ All additive — AP Stats and legacy kanji cartridges (G2-G6) still work unchang
 - `kanji-g1-cartridge-v2.js:342` — `window.KANJI_G1_DATA` export with `kanaRomaji`/`digraphRomaji`
 - `kanji-joyo-cartridge.js:189-190` — merged kana maps for chain decomposition
 
+## Latest Update: G2 Chain Rewrite + Kana Deck Removal (April 6, 2026)
+
+Rewrote `kanji-g2-cartridge.js` from the legacy 5-type question system to the G1-style 4-step chain drill. Removed the standalone kana deck entirely — kana practice is now embedded in chain decomposition (step 1 wrong → spawn individual kana enemies).
+
+### G2 chain rewrite
+
+- 160 individual kanji commands with 4-step chains
+- 121 curated compounds with `requires` gating (G1+G2 kanji set)
+- 281 total commands (was 160 in legacy format — compounds are new)
+- Same file structure as G1: IIFE, shared kana/romaji helpers, `PRIOR_KANJI` set, `buildChain()`, `buildCommands()`, `window.KANJI_G2_DATA` export
+- All legacy infrastructure deleted: VARIABLE_BANK, APPLICATION_BANK, RELATIONSHIP_BANK, EXPLANATION_GLOSSARY, SHARED_PREREQ_NODES, wireL1toL2, subconcepts, blanks, generateQuestion, validateBlank
+
+### Kana deck removal
+
+- `kana-cartridge.js` deleted (1,194 lines)
+- `index.html`: removed `<script src="./kana-cartridge.js">` tag
+- `kanji-joyo-cartridge.js`: removed `KANA_DATA` source, `deck=kana` legacy redirect, `td-srs-kana` migration key, kana domain remap logic
+- `sw.js`: removed `./kana-cartridge.js` from precache, cache bumped to `td-shell-v11`
+- Zero remaining references to `KANA_DATA`, `kana-cartridge.js`, `td-srs-kana`, or `deck=kana` in runtime files
+
+### Validation
+
+- `node --check` on G2 cartridge and joyo merger
+- 160 kanji + 121 compounds, 281 total commands
+- 0 duplicate IDs, all chains have 4 steps, all compound `requires` non-empty
+- No dangling kana references in touched files
+
+## Latest Update: G3-G6 Chain Rewrite + Merger Deduplication (April 6, 2026)
+
+Rewrote all remaining legacy grade cartridges to the 4-step chain format. The entire にほんご deck is now on the chain system.
+
+### Per-grade results
+
+| Grade | Kanji | Compounds | Total | Lines (old → new) |
+|-------|-------|-----------|-------|--------------------|
+| G3 | 200 | 200 | 400 | 4,015 → 567 |
+| G4 | 202 | 195 | 397 | 4,290 → 564 |
+| G5 | 193 | 181 | 374 | 4,353 → 541 |
+| G6 | 191 | 189 | 380 | 2,191 → 547 |
+
+Each grade follows the exact G2 pattern:
+- IIFE with shared kana/romaji helpers
+- `PRIOR_KANJI` set accumulating all prior grades
+- `KANJI` array extracted from legacy `G{N}_SOURCE` (kanji, first kun reading, meaning, tier)
+- `COMPOUNDS` array extracted from `exampleWord`/`exampleReading`/`exampleMeaning`, deduplicated
+- `buildCommands()` with `validKanji` filtering for compound `requires`
+- Empty legacy bank stubs for merger compatibility
+
+### Merger deduplication
+
+- 10 cross-grade compound duplicates found (e.g. 児童 in G3+G4, 危険 in G5+G6)
+- Added `seenIds` Set in `kanji-joyo-cartridge.js` merger — earlier grade keeps the entry
+- Zero duplicates in merged deck after fix
+
+### Net deletion
+
+~12,600 lines of legacy code removed across G3-G6 (DAG, banks, subconcepts, blanks, generateQuestion, validateBlank, componentSpec parsing, scenario text).
+
+### Spec artifacts
+
+- `g3-g6-chain-rewrite-spec.md` — shared spec for all 4 grades
+- `codex-prompt-g3-chain.md` through `codex-prompt-g6-chain.md` — per-grade Codex prompts
+
 ### Cartridge Inventory (current as of April 6, 2026)
 
 **Registered decks (2 total)**:
 
-| Deck | Cartridge ID | Commands | Source |
-|------|-------------|----------|--------|
-| AP Statistics | `ap-stats-formulas` | 81 | `ap-stats-cartridge.js` |
-| にほんご (Japanese) | `joyo-kanji` | ~1,346 | Merged from kana + G1 (chain) + G2-G6 (legacy) |
+| Deck | Cartridge ID | Commands | Deep Link |
+|------|-------------|----------|-----------|
+| AP Statistics | `ap-stats-formulas` | 81 | `https://tmux-trainer.vercel.app/#deck=ap-stats-formulas` |
+| にほんご (Japanese) | `joyo-kanji` | 2,002 | `https://tmux-trainer.vercel.app/#deck=joyo-kanji` |
 
-**G1 uses the new chain format. G2-G6 still use legacy format (5-type questions, DAG). Kana still uses legacy format but is specced for removal (kana practice embedded in chain decomposition).**
+**にほんご deck breakdown**:
+
+| Source | Kanji | Compounds | Total |
+|--------|-------|-----------|-------|
+| G1 | 80 | 100 | 180 |
+| G2 | 160 | 121 | 281 |
+| G3 | 200 | 200 | 400 |
+| G4 | 202 | 195 | 397 |
+| G5 | 193 | 181 | 374 |
+| G6 | 191 | 189 | 380 |
+| **Total** | **1,026** | **976** (after dedup) | **2,002** |
+
+**All grades use the 4-step chain format. No legacy format cartridges remain. `kana-cartridge.js` deleted.**
+
+### Data files feeding the にほんご deck
+
+| File | Role | Lines |
+|------|------|-------|
+| `kanji-g1-cartridge-v2.js` | Grade 1 kanji + compounds | 361 |
+| `kanji-g2-cartridge.js` | Grade 2 kanji + compounds | 448 |
+| `kanji-g3-cartridge.js` | Grade 3 kanji + compounds | 567 |
+| `kanji-g4-cartridge.js` | Grade 4 kanji + compounds | 564 |
+| `kanji-g5-cartridge.js` | Grade 5 kanji + compounds | 541 |
+| `kanji-g6-cartridge.js` | Grade 6 kanji + compounds | 547 |
+| `kanji-joyo-cartridge.js` | Merger (reads all above, deduplicates) | ~195 |
+
+### Important code areas (new/updated)
+
+- `kanji-g2-cartridge.js` — full chain rewrite (448 lines)
+- `kanji-g3-cartridge.js` through `kanji-g6-cartridge.js` — full chain rewrites
+- `kanji-joyo-cartridge.js:92-98` — `seenIds` deduplication in merger
+- `kanji-joyo-cartridge.js:138-155` — updated cartridge metadata (no kana references)
+- `index.html:342-350` — cartridge script tags (no kana)
+- `sw.js:4` — cache `td-shell-v11`
 
 ## Likely Next Tasks
 
-- **G2 chain rewrite + kana removal** — specced in `g2-kana-removal-spec.md` + `codex-prompt-g2-kana-removal.md`. Rewrite G2 to chain format, delete `kana-cartridge.js`, clean up merger.
-- **G3-G6 chain rewrites** — same pattern as G1/G2, one grade at a time
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design
-- **Accessibility pass** — ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
+- **Accessibility pass** ��� ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
 - Quality review rendered animations — verify pedagogical accuracy per formula
 - Particle pooling for main particles (trail ghosts already pooled)
 - Event listener cleanup on screen transitions (memory leak prevention)
