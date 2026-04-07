@@ -143,6 +143,12 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .hint-mc-btn .mc-key{display:inline;font-weight:900;color:#ffcc66;margin-right:4px}
 .mc-grid.answer-pending,.hint-mc-grid.answer-pending{pointer-events:none}
 .q-type-badge{font-size:8px;letter-spacing:2px;color:#996622;background:#ff8c0011;border:1px solid #ff8c0022;border-radius:3px;padding:1px 4px;display:inline-block;margin-bottom:2px}
+.chain-prompt{font-size:3rem;text-align:center;padding:.5rem 0;color:#ffcc66;font-weight:700}
+.chain-dots{text-align:center;font-size:1.2rem;color:#ffcc66;margin:.3rem 0;letter-spacing:.3em}
+.chain-dots .chain-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-left:.5em}
+.chain-options{display:flex;flex-direction:column;gap:.5rem;padding:.5rem}
+.chain-options .mc-btn{font-size:1.3rem;min-height:56px;width:100%}
+.chain-options .mc-text{font-size:1.2rem;line-height:1.3}
 @keyframes float-up{0%{transform:translateY(0) translateX(-50%);opacity:1}100%{transform:translateY(-50px) translateX(-50%);opacity:0}}
 .flash-msg{position:fixed;top:35%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;z-index:15;pointer-events:none;animation:float-up .8s ease-out forwards;text-shadow:0 0 20px currentColor}
 /* Typed input */
@@ -248,6 +254,10 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .prompt-text{font-size:clamp(13px,3.5vw,18px)}
 .prompt-label{font-size:8px;letter-spacing:2px}
 .q-type-badge{font-size:7px}
+.chain-prompt{font-size:2.4rem}
+.chain-options{padding:0 4px}
+.chain-options .mc-btn{font-size:1.1rem}
+.chain-options .mc-text{font-size:clamp(12px,3.2vw,18px)}
 .input-help{display:none}
 .latex-display .katex{font-size:1em}
 .hud-item.hud-mobile-hide{display:none}
@@ -2036,7 +2046,15 @@ function srsMiss(card,wave,bktOutcome){
 function pickCommands(pool,srs,count,wave){
   const exam=getExamUrgency();
   const due=[],overdue=[],fresh=[],notDue=[],decayed=[];
-  pool.forEach(cmd=>{const s=srs[cmd.id],ws=wave-s.lastSeen;
+  pool.forEach(cmd=>{
+    if(cmd.requires&&cmd.requires.length){
+      const ready=cmd.requires.every(reqId=>{
+        const card=srs[reqId];
+        return card&&card.pKnown>=0.5;
+      });
+      if(!ready)return;
+    }
+    const s=srs[cmd.id],ws=wave-s.lastSeen;
     // Cards that were mastered but decayed below threshold
     if(s.totalAttempts>0&&s.pKnown<0.65&&s.correct>=3)decayed.push(cmd);
     if(s.lastSeen===0&&s.correct===0)fresh.push(cmd);
@@ -3799,10 +3817,37 @@ function updateInput(){
 
   if(mode==='quiz'){
     // ── Quiz mode: identify (MC) or fill-blank ──
-    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
+    const chain=sel&&Array.isArray(sel.chain)&&sel.chain.length?sel.chain:null;
+    const chainStep=chain?Math.max(0,Math.min(sel.chainStep||0,chain.length-1)):0;
+    const stateKey='quiz-'+(sel?sel.id:'none')+'-'+(chain?'chain-'+chainStep:'legacy')+'-'+(EXPLAINER_STATE.open?EXPLAINER_STATE.key:'closed');
     if(stateKey===lastInputState)return;
     lastInputState=stateKey;
-    if(!sel||!sel.question){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
+    if(!sel||(!chain&&!sel.question)){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
+    if(chain){
+      const ch=chain[chainStep];
+      if(!ch){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
+      const stepLabels=['reading','romaji','meaning'];
+      const dots=chain.map((_,i)=>i<=chainStep?'●':'○').join(' ');
+      const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">⚡'+sel.speedMult.toFixed(1)+'x speed</span>':'';
+      let headerHtml='';
+      if(chainStep===0){
+        headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display chain-prompt" id="chain-latex"></div></div></div>';
+      }else{
+        headerHtml+='<div class="chain-prompt">'+ch.prompt+'</div>';
+      }
+      headerHtml+='<div class="chain-dots">'+dots+' <span class="chain-label">'+stepLabels[chainStep]+'</span>'+speedInfo+'</div>';
+      const answerDim=EXPLAINER_STATE.open?' style="opacity:0.3;pointer-events:none"':'';
+      const keys=['A','B','C'];
+      const options=shuffleArr([{text:ch.correct,isCorrect:true}].concat((ch.wrong||[]).slice(0,2).map(text=>({text,isCorrect:false}))));
+      const bodyHtml='<div class="chain-options"'+answerDim+'>'+options.map((opt,i)=>{
+        const flag=opt.isCorrect?'true':'false';
+        return '<button class="mc-btn" data-chain-idx="'+i+'" data-choice="'+keys[i].toLowerCase()+'" data-correct="'+flag+'" onclick="handleChainChoice('+i+','+flag+')"><span class="mc-key">'+keys[i]+'</span><span class="mc-text">'+opt.text+'</span></button>';
+      }).join('')+'</div>';
+      setInputPanelContent(headerHtml,bodyHtml);
+      const chainLatex=document.getElementById('chain-latex');
+      if(chainLatex)renderLatex(ch.prompt,chainLatex);
+      return;
+    }
     const q=sel.question;
     const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">\u26a1'+sel.speedMult.toFixed(1)+'x speed</span>':'';
     let headerHtml='',bodyHtml='';
@@ -3987,6 +4032,60 @@ function reshuffleQuestionOptions(enemy){
     q.correctKey=(q.options.length<=2?['a','b']:['a','b','c'])[q.correctIdx];
   }
   // Bust the render cache so updateInput() repaints with new option order
+  lastInputState='';
+  updateInput();
+}
+const CHAIN_BKT_WEIGHTS=[1.0,0.7,0.5];
+function applyImmediateBktUpdate(card,outcome,cmd){
+  if(!card||!outcome)return;
+  bktUpdate(card,outcome,cmd);
+  card.lastSeen=G.wave;
+  card.lastUpdated=Date.now();
+  card.rev=(card.rev||0)+1;
+  saveSRS();
+}
+function reshuffleChainWrongs(enemy){
+  const cmd=enemy&&enemy.cmd;
+  const chain=enemy&&enemy.chain;
+  if(!cmd||!Array.isArray(chain)||chain.length===0)return;
+  const step=Math.max(0,Math.min(enemy.chainStep||0,chain.length-1));
+  const ch=chain[step];
+  if(!ch)return;
+  const existing=Array.isArray(ch.wrong)?ch.wrong.slice():[];
+  const pool=(activeCartridge&&activeCartridge.commands?activeCartridge.commands:COMMANDS)
+    .filter(c=>c&&c.dom===cmd.dom&&Array.isArray(c.chain)&&c.id!==cmd.id&&c.chain[step])
+    .map(c=>c.chain[step].correct)
+    .filter(Boolean);
+  const next=shuffleArr([...new Set(pool)].filter(value=>value!==ch.correct)).slice(0,2);
+  if(next.length===2)ch.wrong=next;
+  else if(existing.length>=2)ch.wrong=existing.slice(0,2);
+}
+function handleChainChoice(idx,isCorrect){
+  if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
+  const enemy=G.selectedId?G.enemies.find(en=>en.id===G.selectedId):null;
+  if(!enemy||!Array.isArray(enemy.chain)||enemy.chain.length===0)return;
+  const cmd=enemy.cmd||COMMANDS.find(c=>c.id===enemy.cmdId);
+  if(!cmd)return;
+  const step=Math.max(0,Math.min(enemy.chainStep||0,enemy.chain.length-1));
+  const weight=CHAIN_BKT_WEIGHTS[step]||0.5;
+  if(isCorrect){
+    enemy.chainStep=step+1;
+    if(enemy.chainStep>=enemy.chain.length){
+      handleHit(enemy,{questionType:'chain',choiceCount:3,bktWeightOverride:weight});
+      return;
+    }
+    applyImmediateBktUpdate(G.srs[cmd.id],{wasCorrect:true,questionType:'chain',remainingChoices:3,bktWeight:weight,wave:G.wave,_cmd:cmd},cmd);
+    SFX.hit(0.2);
+    lastInputState='';
+    updateInput();
+    return;
+  }
+  enemy.chainMisses[step]=(enemy.chainMisses[step]||0)+1;
+  enemy.missCount=enemy.chainMisses[step];
+  handleMiss(enemy,{skipDAG:true,skipTreePenalty:step>0,missCapOverride:step===0?2:3,bktWeightOverride:weight,choiceCount:3,questionType:'chain'});
+  const liveEnemy=G.enemies.find(en=>en.id===enemy.id);
+  if(!liveEnemy||liveEnemy.t>=1)return;
+  reshuffleChainWrongs(liveEnemy);
   lastInputState='';
   updateInput();
 }
@@ -4732,9 +4831,19 @@ function trySpawn(now){
   if(now-lastSpawnTime<delay)return;
   const cmd=G.waveCommands[G.spawnIdx];
   const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now(),speedMult:1,missCount:0};
+  if(Array.isArray(cmd.chain)&&cmd.chain.length){
+    enemy.chainStep=0;
+    enemy.chainMisses=cmd.chain.map(()=>0);
+    enemy.chain=cmd.chain.map(step=>({
+      type:step.type,
+      prompt:step.prompt,
+      correct:step.correct,
+      wrong:(step.wrong||[]).slice(),
+    }));
+  }
   // Generate question + cache label for quiz-mode cartridges
   if(activeCartridge&&activeCartridge.inputMode==='quiz'){
-    if(activeCartridge.generateQuestion)enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
+    if(!enemy.chain&&activeCartridge.generateQuestion)enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
     enemy.label=getEnemyLabel(cmd);
   }
   G.enemies.push(enemy);
@@ -4831,7 +4940,8 @@ function findSubconceptIndex(enemy){
   return idx>=0?idx:null;
 }
 let lastAnswerTime=0;
-function handleHit(enemy){
+function handleHit(enemy,opts){
+  opts=opts||{};
   const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
   const responseTime=Date.now()-G.commandStartTime;
   const attempts=G.attemptsOnCurrent+1;
@@ -4863,9 +4973,9 @@ function handleHit(enemy){
   SFX.killMelody();
   if(!(enemy.splitDepth>=1))G.treeDepth=Math.min(10,G.treeDepth+1);
   SFX.setTreeDepth(G.treeDepth);
-  const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
-  const hitQType=enemy.question?enemy.question.type:'identify';
-  const hitBktWeight=(hitQType==='application'||hitQType==='relationship')?0.7:1.0;
+  const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:(opts.choiceCount||4);
+  const hitQType=opts.questionType||(enemy.question?enemy.question.type:'identify');
+  const hitBktWeight=opts.bktWeightOverride!=null?opts.bktWeightOverride:(hitQType==='application'||hitQType==='relationship'?0.7:1.0);
   const bktCtx={wasCorrect:true,questionType:hitQType,remainingChoices:baseChoices,bktWeight:hitBktWeight,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:enemy.dagNodeId||null,wave:G.wave,responseTimeMs:responseTime,_cmd:enemy.cmd};
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
   saveSRS(); // debounced per-answer save
@@ -4882,22 +4992,23 @@ function handleHit(enemy){
   flash('+'+pts+(speedMult>=1.5?' \u26a1':''),speedMult>=2?AMB.css.white:AMB.css.glow);
 }
 
-function handleMiss(enemy){
+function handleMiss(enemy,opts){
+  opts=opts||{};
   const now=Date.now();if(now-lastAnswerTime<300)return;lastAnswerTime=now;
   SFX.miss();
   // Tree depth: only penalize for L0 misses — prereq exploration should be free
   const missDepth=enemy.splitDepth||0;
-  if(missDepth===0){G.treeDepth=Math.max(0,G.treeDepth-1);SFX.setTreeDepth(G.treeDepth)}
+  if(missDepth===0&&!opts.skipTreePenalty){G.treeDepth=Math.max(0,G.treeDepth-1);SFX.setTreeDepth(G.treeDepth)}
   G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
   G.attemptsOnCurrent++;
-  const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:4;
+  const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:(opts.choiceCount||4);
   // Check canNodeSplit BEFORE bktUpdate (critical: encounters must be read before increment)
   const nodeId=enemy.dagNodeId||null;
   const card=G.srs[enemy.cmd.id]||{};
   const depth=enemy.splitDepth||0;
-  const qType=enemy.question?enemy.question.type:'identify';
+  const qType=opts.questionType||(enemy.question?enemy.question.type:'identify');
   // Application/relationship misses: skip DAG decomposition (student confused WHICH formula, not its internals)
-  const skipDAG=qType==='application'||qType==='relationship';
+  const skipDAG=!!opts.skipDAG||qType==='application'||qType==='relationship';
   let nodeCanSplit=false;
   if(!skipDAG){
     if(nodeId&&depth>=1){
@@ -4908,7 +5019,7 @@ function handleMiss(enemy){
     }
   }
   // BKT update — 0.7x weight for application/relationship (tests transfer, not recall)
-  const bktWeight=skipDAG?0.7:1.0;
+  const bktWeight=opts.bktWeightOverride!=null?opts.bktWeightOverride:(skipDAG?0.7:1.0);
   const bktCtx={wasCorrect:false,questionType:qType,remainingChoices:baseChoices,bktWeight,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:nodeId,wave:G.wave,_cmd:enemy.cmd};
   G.srs[enemy.cmd.id]=srsMiss(G.srs[enemy.cmd.id],G.wave,bktCtx);
   saveSRS();
@@ -4945,7 +5056,7 @@ function handleMiss(enemy){
   const mc=enemy.missCount||0;
   // L0 main formulas: 2-miss cap → forced breach (punishes random guessing)
   // L1+ prereqs: 3-miss cap → forced breach (gentler, learning mode)
-  const missCap=depth===0?2:3;
+  const missCap=opts.missCapOverride!=null?opts.missCapOverride:(depth===0?2:3);
   if(isQuizMode&&mc>=missCap){
     enemy.t=1.01; // force immediate breach on next checkBreach
     flash('TOO MANY MISSES! LOST A LIFE \u26a0','#ff0000');
@@ -5299,6 +5410,16 @@ window.addEventListener('keydown',e=>{
   if(mode==='quiz'){
     // Quiz mode keyboard handling
     if(EXPLAINER_STATE.open)return; // answers locked during learning mode
+    if(Array.isArray(enemy.chain)&&enemy.chain.length){
+      const k=e.key.toLowerCase();
+      if(['a','b','c'].includes(k)){
+        e.preventDefault();
+        const idx=k.charCodeAt(0)-97;
+        const buttons=document.querySelectorAll('.chain-options .mc-btn');
+        if(buttons[idx])buttons[idx].click();
+      }
+      return;
+    }
     const q=enemy.question;
     if(!q)return;
 

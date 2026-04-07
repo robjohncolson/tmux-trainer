@@ -98,16 +98,32 @@ if(kanaSource){
 }
 if(sources.length===0) return;
 
-const sourceWithQuestions = sources.find(function(source){
+const allCommands = [];
+const allDomLabels = {};
+sources.forEach(function(source){
+  allCommands.push.apply(allCommands, source.commands || []);
+  Object.assign(allDomLabels, source.domLabels || {});
+});
+
+const legacySources = sources.filter(function(source){
+  return typeof source.generateQuestion === 'function' ||
+    typeof source.validateBlank === 'function' ||
+    source.variableBank ||
+    source.applicationBank ||
+    source.relationshipBank ||
+    (source.explanationGlossary && source.explanationGlossary.length) ||
+    (source.sharedPrereqNodes && Object.keys(source.sharedPrereqNodes).length);
+});
+const sourceWithQuestions = legacySources.find(function(source){
   return typeof source.generateQuestion === 'function';
-}) || sources[0];
-const explanationNormalizer = sources.find(function(source){
+}) || legacySources[0] || null;
+const explanationNormalizer = legacySources.find(function(source){
   return typeof source.normalizeExplanationLookup === 'function';
 });
 const normalizeExplanationLookup = explanationNormalizer
   ? explanationNormalizer.normalizeExplanationLookup
   : fallbackNormalizeExplanationLookup;
-const mergedGlossary = sources.reduce(function(all, source){
+const mergedGlossary = legacySources.reduce(function(all, source){
   return all.concat(source.explanationGlossary || []);
 }, []);
 
@@ -124,7 +140,7 @@ function buildExplanationBank(){
 }
 
 function wireL1toL2(dag){
-  sources.forEach(function(source){
+  legacySources.forEach(function(source){
     if(typeof source.wireL1toL2 === 'function') source.wireL1toL2(dag);
   });
 }
@@ -139,39 +155,35 @@ const KANJI_JOYO = {
   title:'にほんご',
   subtitle:'DEFENSE',
   startButton:'出陣',
-  instructions:'Identify kanji by <b>meaning</b>, <b>reading</b>, and <b>components</b>. Fill blanks in real vocabulary compounds. Wrong answers decompose into radical and reading sub-questions.',
-  instructionsSub:'Kana + Grades 1-6 — 1,234 cards — Select levels on the PLAY tab',
+  instructions:'Kana keeps the existing quiz flow. Grade 1 kanji use a 3-step chain: glyph → reading → meaning. Higher grades still use the legacy mixed kanji drills until they are rewritten.',
+  instructionsSub:'Kana + Grades 1-6 — mixed deck — Select levels on the PLAY tab',
   identifyPrompt:'What is the meaning of this kanji?',
   variablePrompt:'What does <span id="var-symbol" style="display:inline-block"></span> represent in this kanji?',
   applicationPrompt:'Which kanji fits this context?',
-  commands:sources.reduce(function(all, source){
-    return all.concat(source.commands || []);
-  }, []),
-  generateQuestion:sourceWithQuestions.generateQuestion,
-  formatPrompt:sourceWithQuestions.formatPrompt,
-  formatAnswer:sourceWithQuestions.formatAnswer,
-  validateBlank:sourceWithQuestions.validateBlank,
+  commands:allCommands,
+  generateQuestion:sourceWithQuestions && sourceWithQuestions.generateQuestion,
+  formatPrompt:sourceWithQuestions && sourceWithQuestions.formatPrompt ? sourceWithQuestions.formatPrompt : function(cmd){ return cmd.latex || cmd.action; },
+  formatAnswer:sourceWithQuestions && sourceWithQuestions.formatAnswer ? sourceWithQuestions.formatAnswer : function(cmd){ return cmd.action; },
+  validateBlank:sourceWithQuestions && sourceWithQuestions.validateBlank ? sourceWithQuestions.validateBlank : function(input, answer){ return String(input || '').trim() === String(answer || '').trim(); },
 };
 
-KANJI_JOYO.variableBank = Object.assign.apply(Object, [{}].concat(sources.map(function(source){
+KANJI_JOYO.variableBank = Object.assign.apply(Object, [{}].concat(legacySources.map(function(source){
   return source.variableBank || {};
 })));
-KANJI_JOYO.applicationBank = Object.assign.apply(Object, [{}].concat(sources.map(function(source){
+KANJI_JOYO.applicationBank = Object.assign.apply(Object, [{}].concat(legacySources.map(function(source){
   return source.applicationBank || {};
 })));
-KANJI_JOYO.relationshipBank = Object.assign.apply(Object, [{}].concat(sources.map(function(source){
+KANJI_JOYO.relationshipBank = Object.assign.apply(Object, [{}].concat(legacySources.map(function(source){
   return source.relationshipBank || {};
 })));
 KANJI_JOYO.explanationGlossary = mergedGlossary;
-KANJI_JOYO.autoBlankSpecs = sources.reduce(function(all, source){
+KANJI_JOYO.autoBlankSpecs = legacySources.reduce(function(all, source){
   return all.concat(source.autoBlankSpecs || []);
 }, []);
-KANJI_JOYO.sharedPrereqNodes = Object.assign.apply(Object, [{}].concat(sources.map(function(source){
+KANJI_JOYO.sharedPrereqNodes = Object.assign.apply(Object, [{}].concat(legacySources.map(function(source){
   return source.sharedPrereqNodes || {};
 })));
-KANJI_JOYO.domLabels = Object.assign.apply(Object, [{}].concat(sources.map(function(source){
-  return source.domLabels || {};
-})));
+KANJI_JOYO.domLabels = allDomLabels;
 KANJI_JOYO.normalizeExplanationLookup = normalizeExplanationLookup;
 KANJI_JOYO.buildExplanationBank = buildExplanationBank;
 KANJI_JOYO.wireL1toL2 = wireL1toL2;
