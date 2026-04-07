@@ -3826,11 +3826,11 @@ function updateInput(){
     if(chain){
       const ch=chain[chainStep];
       if(!ch){resetExplanationState();setInputPanelContent('<div class="prompt-text">Waiting for enemies...</div>','');return}
-      const stepLabels=['reading','romaji','meaning'];
+      const stepLabels=['reading','romaji','meaning','recall'];
       const dots=chain.map((_,i)=>i<=chainStep?'●':'○').join(' ');
       const speedInfo=sel.speedMult>1?' <span style="color:#ff4422;font-size:10px">⚡'+sel.speedMult.toFixed(1)+'x speed</span>':'';
       let headerHtml='';
-      if(chainStep===0){
+      if(ch.type==='kanji-to-furigana'||ch.type==='kanji-to-english'){
         headerHtml+='<div class="latex-shell"><div class="latex-scroll"><div class="latex-display chain-prompt" id="chain-latex"></div></div></div>';
       }else{
         headerHtml+='<div class="chain-prompt">'+ch.prompt+'</div>';
@@ -4035,7 +4035,7 @@ function reshuffleQuestionOptions(enemy){
   lastInputState='';
   updateInput();
 }
-const CHAIN_BKT_WEIGHTS=[1.0,0.7,0.5];
+const CHAIN_BKT_WEIGHTS=[0.7,0.5,0.5,1.0];
 function applyImmediateBktUpdate(card,outcome,cmd){
   if(!card||!outcome)return;
   bktUpdate(card,outcome,cmd);
@@ -4044,21 +4044,48 @@ function applyImmediateBktUpdate(card,outcome,cmd){
   card.rev=(card.rev||0)+1;
   saveSRS();
 }
-function reshuffleChainWrongs(enemy){
-  const cmd=enemy&&enemy.cmd;
-  const chain=enemy&&enemy.chain;
-  if(!cmd||!Array.isArray(chain)||chain.length===0)return;
-  const step=Math.max(0,Math.min(enemy.chainStep||0,chain.length-1));
-  const ch=chain[step];
-  if(!ch)return;
-  const existing=Array.isArray(ch.wrong)?ch.wrong.slice():[];
-  const pool=(activeCartridge&&activeCartridge.commands?activeCartridge.commands:COMMANDS)
-    .filter(c=>c&&c.dom===cmd.dom&&Array.isArray(c.chain)&&c.id!==cmd.id&&c.chain[step])
-    .map(c=>c.chain[step].correct)
-    .filter(Boolean);
-  const next=shuffleArr([...new Set(pool)].filter(value=>value!==ch.correct)).slice(0,2);
-  if(next.length===2)ch.wrong=next;
-  else if(existing.length>=2)ch.wrong=existing.slice(0,2);
+function ensureSrsCard(id){
+  if(!G.srs[id])G.srs[id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0};
+  return G.srs[id];
+}
+function spawnKanaDecomposition(parentEnemy){
+  const cart=activeCartridge||{};
+  const kanaMap=cart.kanaRomaji||{};
+  const digraphMap=cart.digraphRomaji||{};
+  const reading=parentEnemy.chain&&parentEnemy.chain[0]?parentEnemy.chain[0].correct:'';
+  if(!reading)return;
+  // Break reading into kana characters, respecting digraphs
+  const chars=[...reading];
+  const SMALL_Y=new Set(['ゃ','ゅ','ょ']);
+  const kanaList=[];
+  for(let i=0;i<chars.length;i++){
+    const pair=chars[i]+(chars[i+1]||'');
+    if(digraphMap[pair]){kanaList.push({kana:pair,romaji:digraphMap[pair]});i++;continue;}
+    if(SMALL_Y.has(chars[i]))continue; // skip orphaned small kana
+    if(chars[i]==='っ')continue; // skip sokuon (doubles next consonant, not a standalone card)
+    const rom=kanaMap[chars[i]];
+    if(rom)kanaList.push({kana:chars[i],romaji:rom});
+  }
+  // Deduplicate by kana character
+  const seen=new Set();
+  const unique=kanaList.filter(k=>{if(seen.has(k.kana))return false;seen.add(k.kana);return true;});
+  if(unique.length===0)return;
+  // Build romaji pool for wrong answers
+  const allRomaji=Object.values(kanaMap).concat(Object.values(digraphMap));
+  const pool=[...new Set(allRomaji)];
+  // Spawn one 1-step chain enemy per unique kana
+  unique.forEach(function(k,i){
+    const kanaId='kana-'+k.kana.codePointAt(0).toString(16);
+    ensureSrsCard(kanaId);
+    const wrongs=pool.filter(r=>r!==k.romaji).sort(()=>Math.random()-0.5).slice(0,2);
+    const syntheticCmd={id:kanaId,action:k.romaji,tier:'core',dom:parentEnemy.cmd?parentEnemy.cmd.dom:'g1',latex:k.kana,
+      chain:[{type:'kana-to-romaji',prompt:k.kana,correct:k.romaji,wrong:wrongs}]};
+    const enemy={id:++G.nextEnemyId,cmd:syntheticCmd,t:Math.min(parentEnemy.t+0.02+i*0.03,0.85),spawned:Date.now(),speedMult:1,missCount:0,
+      chainStep:0,chain:[{type:'kana-to-romaji',prompt:k.kana,correct:k.romaji,wrong:wrongs.slice()}]};
+    enemy.label=k.kana+' → ?';
+    G.enemies.push(enemy);
+    addEnemyMesh(enemy);
+  });
 }
 function handleChainChoice(idx,isCorrect){
   if(G.screen!=='game'||QUIZ_ANSWER_FEEDBACK.locked||EXPLAINER_STATE.open)return;
@@ -4080,12 +4107,22 @@ function handleChainChoice(idx,isCorrect){
     updateInput();
     return;
   }
-  enemy.chainMisses[step]=(enemy.chainMisses[step]||0)+1;
-  enemy.missCount=enemy.chainMisses[step];
-  handleMiss(enemy,{skipDAG:true,skipTreePenalty:step>0,missCapOverride:step===0?2:3,bktWeightOverride:weight,choiceCount:3,questionType:'chain'});
-  const liveEnemy=G.enemies.find(en=>en.id===enemy.id);
-  if(!liveEnemy||liveEnemy.t>=1)return;
-  reshuffleChainWrongs(liveEnemy);
+  // Wrong answer: mark wrong in BKT
+  applyImmediateBktUpdate(G.srs[cmd.id],{wasCorrect:false,questionType:'chain',remainingChoices:3,bktWeight:weight,wave:G.wave,_cmd:cmd},cmd);
+  SFX.miss();
+  // Step 1 (furigana→romaji) wrong: decompose into individual kana cards, then continue chain
+  if(step===1&&enemy.chain[step]&&enemy.chain[step].type==='furigana-to-romaji'){
+    spawnKanaDecomposition(enemy);
+    enemy.chainStep=2; // skip to romaji→english, kana cards cover the gap
+    lastInputState='';
+    updateInput();
+    return;
+  }
+  // All other wrong answers: remove enemy, move on
+  removeEnemyMesh(enemy.id);
+  G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
+  resetExplanationState();
+  G.inputState='idle';G.attemptsOnCurrent=0;G.typedBuffer='';
   lastInputState='';
   updateInput();
 }
@@ -4833,7 +4870,6 @@ function trySpawn(now){
   const enemy={id:++G.nextEnemyId,cmd,t:0,spawned:Date.now(),speedMult:1,missCount:0};
   if(Array.isArray(cmd.chain)&&cmd.chain.length){
     enemy.chainStep=0;
-    enemy.chainMisses=cmd.chain.map(()=>0);
     enemy.chain=cmd.chain.map(step=>({
       type:step.type,
       prompt:step.prompt,

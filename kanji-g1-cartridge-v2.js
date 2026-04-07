@@ -292,6 +292,12 @@
         correct: meaning,
         wrong: pickWrongs(pools.meanings, meaning, 2),
       },
+      {
+        type: 'kanji-to-english',
+        prompt: prompt,
+        correct: meaning,
+        wrong: pickWrongs(pools.meanings, meaning, 2),
+      },
     ];
   }
 
@@ -338,6 +344,8 @@
     name: 'Grade 1',
     domLabels: { g1: ['Grade 1 (一年)'] },
     commands: buildCommands(),
+    kanaRomaji: KANA_ROMAJI,
+    digraphRomaji: DIGRAPH_ROMAJI,
     variableBank: {},
     applicationBank: {},
     relationshipBank: {},

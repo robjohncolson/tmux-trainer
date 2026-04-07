@@ -187,6 +187,9 @@ KANJI_JOYO.domLabels = allDomLabels;
 KANJI_JOYO.normalizeExplanationLookup = normalizeExplanationLookup;
 KANJI_JOYO.buildExplanationBank = buildExplanationBank;
 KANJI_JOYO.wireL1toL2 = wireL1toL2;
+// Merge kana→romaji maps from grade sources for chain decomposition
+KANJI_JOYO.kanaRomaji = Object.assign.apply(Object, [{}].concat(sources.map(function(s){ return s.kanaRomaji || {}; })));
+KANJI_JOYO.digraphRomaji = Object.assign.apply(Object, [{}].concat(sources.map(function(s){ return s.digraphRomaji || {}; })));
 
 window.KANJI_JOYO_CARTRIDGE = KANJI_JOYO;
 window.TD_CARTRIDGES = window.TD_CARTRIDGES || [];
