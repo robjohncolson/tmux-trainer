@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <title>AP Stats Formula Defense</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -13,7 +13,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;padding:10px 16px;pointer-events:none}
 .hud-item{text-align:center;pointer-events:none}
 #h-pause-btn{display:none}
-.hud-label{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600}
+.hud-label{font-size:9px;letter-spacing:2px;color:#8a5a20;font-weight:600}
 .hud-val{font-size:18px;font-weight:700;color:#ff8c00;text-shadow:0 0 8px #ff8c0066}
 .hud-val.score-pop{animation:score-pop .28s ease-out}
 #tier-bar{position:fixed;top:52px;left:0;right:0;z-index:10;text-align:center;pointer-events:none;font-size:10px}
@@ -27,13 +27,13 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 #ip-body::-webkit-scrollbar-thumb{background:#ff8c0044;border-radius:4px}
 #ip-header:empty,#ip-body:empty{display:none}
 #ip-header:empty+#ip-body{border-top:1px solid #ff8c0018;border-radius:12px;padding-top:10px}
-.prompt-label{font-size:9px;letter-spacing:3px;color:#5a3800;font-weight:600}
+.prompt-label{font-size:9px;letter-spacing:3px;color:#8a5a20;font-weight:600}
 .prompt-text{font-size:18px;font-weight:700;color:#ffcc66;margin:4px 0;text-shadow:0 0 10px #ff8c0044}
 .input-boxes{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
-.input-box{padding:6px 16px;border:1.5px solid #3d1f00;border-radius:4px;font-size:16px;font-weight:600;color:#5a3800;background:#0d0500;min-width:64px;text-align:center;transition:all .2s}
+.input-box{padding:6px 16px;border:1.5px solid #3d1f00;border-radius:4px;font-size:16px;font-weight:600;color:#8a5a20;background:#0d0500;min-width:64px;text-align:center;transition:all .2s}
 .input-box.active{border-color:#ff8c00;color:#ff8c00;box-shadow:0 0 10px #ff8c0044}
 .input-box.done{border-color:#ff8c0088;color:#ff8c00;background:#ff8c0011}
-.input-help{font-size:10px;color:#3d1f00;margin-top:8px;display:none;line-height:1.4}
+.input-help{font-size:10px;color:#7a4a15;margin-top:8px;display:none;line-height:1.4}
 .shortcut-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .shortcut-badge{font-family:inherit;font-size:10px;color:#7799aa;background:transparent;border:1px solid #58C4DD33;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
 .shortcut-badge:hover{border-color:#58C4DD;color:#58C4DD}
@@ -44,7 +44,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .explain-chip{font-family:inherit;font-size:10px;font-weight:700;color:#ffcc66;background:#1a0800;border:1px solid #5a2800;border-radius:999px;padding:5px 10px;cursor:pointer;transition:all .15s}
 .explain-chip:hover{border-color:#ff8c00;color:#ff8c00;background:#2d1200}
 .menu-tabs{display:flex;gap:0;margin:12px 0 8px;border-bottom:2px solid #3d1f0044;max-width:360px}
-.menu-tab{flex:1;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:2px;color:#5a3800;background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;transition:all .15s;margin-bottom:-2px}
+.menu-tab{flex:1;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:2px;color:#8a5a20;background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;transition:all .15s;margin-bottom:-2px}
 .menu-tab:hover{color:#ff8c00}
 .menu-tab.active{color:#ff8c00;border-bottom-color:#ff8c00}
 .cart-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:20px auto;max-width:500px}
@@ -93,15 +93,15 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .btn{font-family:inherit;font-size:15px;font-weight:700;color:#0d0500;background:#ff8c00;border:none;padding:12px 36px;cursor:pointer;letter-spacing:3px;text-transform:uppercase;box-shadow:0 0 20px #ff8c0066;margin-top:16px}
 .btn:hover{background:#ffaa22}
 #overlay .desc{font-size:12px;line-height:1.7;color:#996622;max-width:380px;text-align:center;margin-bottom:12px}
-#overlay .sub{font-size:11px;color:#5a3800;margin-top:12px;text-align:center}
+#overlay .sub{font-size:11px;color:#8a5a20;margin-top:12px;text-align:center}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;width:100%;max-width:320px}
 .stat-box{background:#1a0800;border:1px solid #ff8c0022;border-radius:4px;padding:10px 6px;text-align:center}
-.stat-box .sl{font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-bottom:3px}
+.stat-box .sl{font-size:9px;letter-spacing:2px;color:#8a5a20;font-weight:600;margin-bottom:3px}
 .stat-box .sv{font-size:20px;font-weight:700;color:#ff8c00}
 .mastery-bar{display:flex;height:14px;border-radius:3px;overflow:hidden;border:1px solid #ff8c0022;margin:4px 0}
 .mastery-legend{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-size:9px;margin-bottom:10px}
 .weak-item{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#996622;margin-bottom:3px;padding:3px 8px;background:#1a0800;border-radius:3px;border:1px solid #ffffff08}
-#queue-bar{position:fixed;bottom:80px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#5a3800}
+#queue-bar{position:fixed;bottom:80px;left:0;right:0;z-index:9;text-align:center;pointer-events:none;font-size:9px;letter-spacing:2px;color:#8a5a20}
 .q-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin:0 2px;opacity:.7}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
 @keyframes score-pop{
@@ -153,20 +153,20 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .flash-msg{position:fixed;top:35%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;z-index:15;pointer-events:none;animation:float-up .8s ease-out forwards;text-shadow:0 0 20px currentColor}
 /* Typed input */
 .typed-input{padding:8px 16px;border:1.5px solid #ff8c00;border-radius:4px;font-size:18px;font-weight:700;color:#ff8c00;background:#0d0500;min-width:280px;text-align:center;font-family:inherit;outline:none;box-shadow:0 0 10px #ff8c0044;caret-color:#ffcc66}
-.typed-input::placeholder{color:#3d1f00}
+.typed-input::placeholder{color:#7a4a15}
 /* Domain pills */
 .domain-pills{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:420px;margin:10px auto}
-.domain-pill{font-family:inherit;font-size:10px;font-weight:600;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:12px;padding:3px 10px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.domain-pill{font-family:inherit;font-size:10px;font-weight:600;color:#8a5a20;background:transparent;border:1.5px solid #3d1f00;border-radius:12px;padding:3px 10px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
 .domain-pill.active{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018;box-shadow:0 0 6px #ff8c0022}
 .domain-pill:hover{border-color:#ff8c00}
 /* Difficulty radios */
 .diff-group{display:flex;gap:8px;justify-content:center;margin:10px auto}
-.diff-btn{font-family:inherit;font-size:11px;font-weight:600;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s;text-align:center}
+.diff-btn{font-family:inherit;font-size:11px;font-weight:600;color:#8a5a20;background:transparent;border:1.5px solid #3d1f00;border-radius:6px;padding:6px 14px;cursor:pointer;transition:all .15s;text-align:center}
 .diff-btn.active{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018;box-shadow:0 0 8px #ff8c0022}
 .diff-btn:hover{border-color:#ff8c00}
 .btn:active,.mc-btn:active,.hint-mc-btn:active,.domain-pill:active,.diff-btn:active,.touch-btn:active{transform:scale(.96);transition:transform .05s}
 .diff-btn .diff-label{font-size:11px;font-weight:700;letter-spacing:1px}
-.diff-btn .diff-desc{font-size:8px;color:#5a3800;margin-top:2px}
+.diff-btn .diff-desc{font-size:8px;color:#8a5a20;margin-top:2px}
 .btn.btn-secondary{color:#ff8c00;background:transparent;border:1.5px solid #ff8c0033;box-shadow:none}
 .btn.btn-secondary:hover{background:#ff8c0018}
 .menu-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
@@ -182,11 +182,11 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .dvd-score-value{font-size:28px;font-weight:900;letter-spacing:2px;color:#ffcc66;text-shadow:0 0 16px #ff8c0066}
 .dvd-score-note{font-size:10px;letter-spacing:2px;color:#996622;margin-top:6px}
 .wave-selector{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 18px}
-.wave-btn{font-family:inherit;font-size:11px;font-weight:700;color:#5a3800;background:transparent;border:1.5px solid #3d1f00;border-radius:999px;padding:7px 12px;cursor:pointer;transition:all .15s}
+.wave-btn{font-family:inherit;font-size:11px;font-weight:700;color:#8a5a20;background:transparent;border:1.5px solid #3d1f00;border-radius:999px;padding:7px 12px;cursor:pointer;transition:all .15s}
 .wave-btn.active,.wave-btn:hover{color:#ff8c00;border-color:#ff8c00;background:#ff8c0018}
 .music-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr);gap:16px;align-items:start}
 .music-card{background:#130700;border:1px solid #ff8c0022;border-radius:12px;padding:14px}
-.music-card-title{font-size:10px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:10px}
+.music-card-title{font-size:10px;letter-spacing:2px;color:#8a5a20;font-weight:700;margin-bottom:10px}
 .music-card-subtitle{font-size:11px;color:#996622;line-height:1.5;margin-bottom:10px}
 .chord-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .music-field{display:flex;flex-direction:column;gap:6px}
@@ -222,9 +222,9 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .seq-cell--snare-off{background:#0d0500}
 .seq-cell--hat{border-color:#aaaaaa66;background:#ffffff0c}.seq-cell--hat .seq-bar{height:50%;background:#ffffffaa;border-radius:50%;width:50%;left:25%}
 .seq-cell--hat-off{background:#0d0500}
-.seq-section-header{font-size:8px;letter-spacing:2px;color:#5a3800;font-weight:700;text-align:center;padding:4px 0 2px;margin:0}
+.seq-section-header{font-size:8px;letter-spacing:2px;color:#8a5a20;font-weight:700;text-align:center;padding:4px 0 2px;margin:0}
 .seq-nums{display:flex;gap:3px;margin-left:66px}
-.seq-num{flex:1;text-align:center;font-size:8px;color:#5a3800;font-weight:600}
+.seq-num{flex:1;text-align:center;font-size:8px;color:#8a5a20;font-weight:600}
 .seq-divider{height:1px;background:#3d1f0033;margin:2px 0 2px 66px}
 @keyframes dvd-x{from{left:16px}to{left:calc(100% - var(--dvd-w) - 16px)}}
 @keyframes dvd-y{from{top:92px}to{top:calc(100% - var(--dvd-h) - 24px)}}
@@ -262,6 +262,7 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 .latex-display .katex{font-size:1em}
 .hud-item.hud-mobile-hide{display:none}
 #h-sync{font-size:8px!important;max-width:20px;overflow:hidden}
+#h-sync.sync-error{max-width:none;font-size:9px!important}
 #h-pause-btn{display:none!important}
 #queue-bar{bottom:auto;top:55px;font-size:8px}
 #overlay h1{font-size:clamp(24px,8vw,56px);letter-spacing:clamp(4px,2vw,14px)}
@@ -327,10 +328,10 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <body>
 <canvas id="game-canvas"></canvas>
 <div id="hud" style="display:none">
-  <div class="hud-item"><div class="hud-val" id="h-score" style="font-size:22px">0</div><div id="h-sub" style="font-size:9px;color:#5a3800;letter-spacing:1px"><span id="h-wave">W1</span> <span id="h-streak"></span></div></div>
+  <div class="hud-item"><div class="hud-val" id="h-score" style="font-size:22px">0</div><div id="h-sub" style="font-size:9px;color:#8a5a20;letter-spacing:1px"><span id="h-wave">W1</span> <span id="h-streak"></span></div></div>
   <div class="hud-item"><div class="hud-val" id="h-lives" style="font-size:18px;letter-spacing:2px"></div></div>
   <div class="hud-item" id="h-save-warn" style="display:none"><div class="hud-val" style="color:#ff2222;font-size:11px">!</div></div>
-  <div class="hud-item" id="h-sync" style="display:none"></div>
+  <div class="hud-item" id="h-sync" style="pointer-events:auto"></div>
   <div class="hud-item" id="h-mastery" style="display:none"></div>
   <div class="hud-item" style="pointer-events:auto"><button id="pause-btn" onclick="if(G.screen==='game'&&!G.waveComplete){G.paused=!G.paused;if(G.paused)showPauseScreen();else resumeFromPause()}" style="background:none;border:none;color:#ff8c0088;font-size:16px;cursor:pointer;padding:4px 8px;font-family:inherit;letter-spacing:2px;-webkit-tap-highlight-color:transparent">PAUSE</button></div>
 </div>
@@ -340,18 +341,48 @@ body.hi-contrast #overlay img,body.hi-contrast #overlay canvas,body.hi-contrast 
 <div id="input-panel" style="display:none"><div id="selected-label" style="display:none"></div><div id="melody-bar" style="display:none"></div><div id="ip-header"></div><div id="ip-body"></div></div>
 <div id="queue-bar" style="display:none"></div>
 <div id="overlay"></div>
+<div id="sr-status" aria-live="polite" style="position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0"></div>
 
-<script src="./apstats-units.js"></script>
-<script src="./apstats-topic-map.js"></script>
-<script src="./ap-stats-cartridge.js"></script>
-<script src="./kanji-g1-cartridge-v2.js"></script>
-<script src="./kanji-g2-cartridge.js"></script>
-<script src="./kanji-g3-cartridge.js"></script>
-<script src="./kanji-g4-cartridge.js"></script>
-<script src="./kanji-g5-cartridge.js"></script>
-<script src="./kanji-g6-cartridge.js"></script>
-<script src="./kanji-joyo-cartridge.js"></script>
+<script src="./apstats-units.js" onerror="console.error('cartridge failed: apstats-units.js')"></script>
+<script src="./apstats-topic-map.js" onerror="console.error('cartridge failed: apstats-topic-map.js')"></script>
+<script src="./ap-stats-cartridge.js" onerror="console.error('cartridge failed: ap-stats-cartridge.js')"></script>
+<script src="./kanji-g1-cartridge-v2.js" onerror="console.error('cartridge failed: kanji-g1-cartridge-v2.js')"></script>
+<script src="./kanji-g2-cartridge.js" onerror="console.error('cartridge failed: kanji-g2-cartridge.js')"></script>
+<script src="./kanji-g3-cartridge.js" onerror="console.error('cartridge failed: kanji-g3-cartridge.js')"></script>
+<script src="./kanji-g4-cartridge.js" onerror="console.error('cartridge failed: kanji-g4-cartridge.js')"></script>
+<script src="./kanji-g5-cartridge.js" onerror="console.error('cartridge failed: kanji-g5-cartridge.js')"></script>
+<script src="./kanji-g6-cartridge.js" onerror="console.error('cartridge failed: kanji-g6-cartridge.js')"></script>
+<script src="./kanji-joyo-cartridge.js" onerror="console.error('cartridge failed: kanji-joyo-cartridge.js')"></script>
 <script>
+// Service Worker registration — kept in its own script block so a crash in the
+// main inline script can never block SW registration/updates (boot resilience).
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});}
+</script>
+<script>
+// ── Boot guard: three.js CDN must have loaded (offline first run = permanent black screen otherwise) ──
+if(typeof THREE==='undefined'){
+  (function(){
+    var ov=document.getElementById('overlay');
+    if(ov)ov.innerHTML='<h1>OFFLINE</h1><div class="desc">Connect to the internet once to download the game engine, then reload.</div>';
+  })();
+  throw new Error('three.js failed to load — offline without cached engine');
+}
+// ── Global error handlers: embedded students have no console; show a tiny one-shot banner ──
+let _errBannerShown=false;
+function _showErrBanner(){
+  if(_errBannerShown)return;
+  _errBannerShown=true;
+  try{
+    const b=document.createElement('div');
+    b.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9999;background:#2d1200;border:1px solid #ff4422;border-radius:8px;color:#ffcc66;font-family:inherit;font-size:11px;letter-spacing:1px;padding:8px 14px;cursor:pointer';
+    b.textContent='⚠ Something broke — reload the page';
+    b.title='Dismiss';
+    b.onclick=function(){b.remove()};
+    document.body.appendChild(b);
+  }catch(e){}
+}
+window.addEventListener('error',function(e){console.error(e.error||e.message||e);_showErrBanner()});
+window.addEventListener('unhandledrejection',function(e){console.error(e.reason||e);_showErrBanner()});
 // ═══════════════════════════════════════════════
 //  AMBER PALETTE
 // ═══════════════════════════════════════════════
@@ -376,7 +407,18 @@ const AMB_LIGHT={
   css:{black:'#d8e4f0',dark:'#8899aa',mid:'#556677',bright:'#884400',hot:'#cc5500',glow:'#ff7700',white:'#443322'},
   sky:{dark:[0.75,0.82,0.92],mid:[0.85,0.90,0.95],bright:[0.95,0.97,1.0]}
 };
-let hiContrastActive=localStorage.getItem('td-hi-contrast')==='1';
+
+// ── Safe localStorage wrappers — blocked third-party storage (Chrome incognito inside the
+//    Desk iframe) throws SecurityError on ANY localStorage access and would kill the script ──
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+function lsRemove(k){try{localStorage.removeItem(k)}catch(e){}}
+// ── Network: every fetch gets a timeout (default 8 s) via AbortController ──
+function fetchWithTimeout(url,opts,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||8000);return fetch(url,Object.assign({},opts,{signal:c.signal})).finally(()=>clearTimeout(t))}
+// ── Escape server-derived strings before innerHTML (stored-XSS guard) ──
+function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+let hiContrastActive=lsGet('td-hi-contrast')==='1';
 function applyThemeToScene(){
   const p=hiContrastActive?AMB_LIGHT:AMB_DARK;
   // Update AMB references used by JS-generated markup
@@ -1369,12 +1411,12 @@ function getAnimationAvailability(cmdId){
 function fetchAnimationManifest(){
   if(animationManifestLoading||animationManifest!==null)return;
   animationManifestLoading=true;
-  fetch(ANIMATION_BASE+'/manifest.json').then(r=>r.ok?r.json():null).then(data=>{
-    if(data&&Array.isArray(data.animations)){
-      animationManifest=new Set(data.animations);
-    }else{
-      animationManifest=new Set();
-    }
+  fetchWithTimeout(ANIMATION_BASE+'/manifest.json').then(r=>{
+    if(!r.ok)throw new Error('manifest http '+r.status); // e.g. SW-synthesized 503 — treat as failure, not empty manifest
+    return r.json();
+  }).then(data=>{
+    if(!data||!Array.isArray(data.animations))throw new Error('manifest malformed');
+    animationManifest=new Set(data.animations);
     animationManifestLoading=false;
     // If explainer is open, re-render to show/hide WATCH button
     if(EXPLAINER_STATE.open){lastInputState='';updateInput();}
@@ -1394,7 +1436,7 @@ function loadAnimation(cmdId){
   lastInputState='';updateInput();
   const url=ANIMATION_BASE+'/'+encodeURIComponent(cmdId)+'.mp4';
   // HEAD check for unknown availability, direct play for known
-  const check=avail==='unknown'?fetch(url,{method:'HEAD'}).then(r=>{if(!r.ok)throw new Error('not found');return url}):Promise.resolve(url);
+  const check=avail==='unknown'?fetchWithTimeout(url,{method:'HEAD'}).then(r=>{if(!r.ok)throw new Error('not found');return url}):Promise.resolve(url);
   check.then(videoUrl=>{
     if(EXPLAINER_STATE.videoNonce!==nonce)return;
     EXPLAINER_STATE.videoUrl=videoUrl;
@@ -1942,8 +1984,14 @@ function pickScore(srsCard,wave){
 // ═══════════════════════════════════════════════
 //  SRS — Enhanced with time + attempts
 // ═══════════════════════════════════════════════
-const EXAM_DATE=new Date('2026-05-07T23:59:59');
-function initSRS(cmds){const s={};(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0}});return s}
+// Exam date: localStorage override → per-cartridge metadata → null (no exam pressure).
+function getExamDate(){
+  const o=lsGet('td-exam-date');
+  if(o)return new Date(o+'T23:59:59');
+  const d=(typeof activeCartridge!=='undefined'&&activeCartridge&&activeCartridge.examDate);
+  return d?new Date(d+'T23:59:59'):null;
+}
+function initSRS(cmds){const s={};const ep=(typeof G!=='undefined'&&G)?(G.resetRev||0):0;(cmds||COMMANDS).forEach(c=>{s[c.id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0,epoch:ep}});return s}
 // Time-based knowledge decay — mastery fades if not reviewed
 function applyTimeDecay(srs){
   const now=Date.now();
@@ -1968,16 +2016,20 @@ function applyTimeDecay(srs){
   }
   return changed;
 }
-// Exam deadline urgency — modifies question selection pressure
+// Exam deadline urgency — modifies question selection pressure.
+// No exam date, an invalid date, or a date in the past → quiesce (normal mode, no banner).
 function getExamUrgency(){
-  const daysLeft=Math.max(0,(EXAM_DATE.getTime()-Date.now())/86400000);
+  const examDate=getExamDate();
+  if(!examDate||!Number.isFinite(examDate.getTime()))return{urgency:0,daysLeft:null,mode:'normal'};
+  const daysLeft=(examDate.getTime()-Date.now())/86400000;
+  if(daysLeft<0)return{urgency:0,daysLeft:null,mode:'normal'};
   if(daysLeft>35)return{urgency:0,daysLeft:Math.round(daysLeft),mode:'normal'};
   if(daysLeft>14)return{urgency:0.3,daysLeft:Math.round(daysLeft),mode:'focused'};
   if(daysLeft>3)return{urgency:0.7,daysLeft:Math.round(daysLeft),mode:'intensive'};
   return{urgency:1.0,daysLeft:Math.round(daysLeft),mode:'cram'};
 }
 function sanitizeSrsCard(card,defaults){
-  const d=defaults||{ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0};
+  const d=defaults||{ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0,epoch:0};
   const c={...d,...card};
   c.ease=Number.isFinite(c.ease)?Math.max(1.3,Math.min(5,c.ease)):d.ease;
   c.interval=Number.isFinite(c.interval)?Math.max(0,Math.min(20,Math.floor(c.interval))):d.interval;
@@ -2011,6 +2063,7 @@ function sanitizeSrsCard(card,defaults){
   }else c.dagState={};
   c.lastUpdated=Number.isFinite(c.lastUpdated)?Math.max(0,c.lastUpdated):0;
   c.rev=Number.isFinite(c.rev)?Math.max(0,Math.floor(c.rev)):0;
+  c.epoch=Number.isFinite(c.epoch)?Math.max(0,Math.floor(c.epoch)):0; // reset-epoch (FIX 1) — defaults to 0
   return c;
 }
 function srsHit(card,wave,timeMs,attempts,bktOutcome){
@@ -2035,17 +2088,19 @@ function srsHit(card,wave,timeMs,attempts,bktOutcome){
   else if(c.streak>=2)c.mastery=2;
   else if(c.streak>=1)c.mastery=Math.max(c.mastery,1);
   if(bktOutcome)bktUpdate(c,bktOutcome,bktOutcome._cmd);
-  c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;
+  c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;c.epoch=G.resetRev||0;
   return c;
 }
 function srsMiss(card,wave,bktOutcome){
   const c={...card,subPKnown:{...(card.subPKnown||{})},dagState:JSON.parse(JSON.stringify(card.dagState||{}))};c.wrong++;c.streak=0;c.lastSeen=wave;c.interval=0;
   c.ease=Math.max(1.3,card.ease-.2);c.mastery=Math.max(0,card.mastery-1);
   c.totalAttempts++;if(bktOutcome)bktUpdate(c,bktOutcome,bktOutcome._cmd);
-  c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;return c;
+  c.lastUpdated=Date.now();c.rev=(card.rev||0)+1;c.epoch=G.resetRev||0;return c;
 }
-function pickCommands(pool,srs,count,wave){
-  const exam=getExamUrgency();
+// Shared bucket classification — pickCommands, the daily mission pool (E2) and
+// the rust-buster wave (E5) all read the same buckets. A card can be both
+// decayed and due/overdue (decayed is non-exclusive, matching the original logic).
+function classifyPool(pool,srs,wave){
   const due=[],overdue=[],fresh=[],notDue=[],decayed=[];
   pool.forEach(cmd=>{
     if(cmd.requires&&cmd.requires.length){
@@ -2055,13 +2110,21 @@ function pickCommands(pool,srs,count,wave){
       });
       if(!ready)return;
     }
-    const s=srs[cmd.id],ws=wave-s.lastSeen;
+    const s=srs[cmd.id];
+    if(!s)return;
+    const ws=wave-s.lastSeen;
     // Cards that were mastered but decayed below threshold
     if(s.totalAttempts>0&&s.pKnown<0.65&&s.correct>=3)decayed.push(cmd);
     if(s.lastSeen===0&&s.correct===0)fresh.push(cmd);
     else if(ws>=s.interval+2)overdue.push(cmd);
     else if(ws>=s.interval)due.push(cmd);
     else notDue.push(cmd)});
+  return{due:due,overdue:overdue,fresh:fresh,notDue:notDue,decayed:decayed};
+}
+function pickCommands(pool,srs,count,wave){
+  const exam=getExamUrgency();
+  const buckets=classifyPool(pool,srs,wave);
+  const due=buckets.due,overdue=buckets.overdue,fresh=buckets.fresh,notDue=buckets.notDue,decayed=buckets.decayed;
   const picked=[],used=new Set();
   function add(c){if(used.has(c.id))return false;picked.push(c);used.add(c.id);return true}
   // Near exam: prioritize decayed cards first (bring back forgotten material)
@@ -2109,6 +2172,11 @@ function saveSRS(immediate){
           const mem=G.srs[id];
           const disk=persisted[id];
           if(!disk){merged[id]=mem;continue}
+          // Pre-reset disk cards must never resurrect: a disk card from an older
+          // epoch loses to memory regardless of rev (otherwise a remote-reset
+          // purge is silently undone by this very merge).
+          const curEpoch=G.resetRev||0;
+          if((disk.epoch||0)<curEpoch&&(mem.epoch||0)>=curEpoch){merged[id]=mem;continue}
           // Compare rev first (monotonic), then lastUpdated as tiebreak
           const memRev=mem.rev||0,diskRev=disk.rev||0;
           if(memRev>diskRev){merged[id]=mem}
@@ -2116,14 +2184,21 @@ function saveSRS(immediate){
           else{merged[id]=(mem.lastUpdated||0)>=(disk.lastUpdated||0)?mem:disk}
         }
         // Preserve any extra cards on disk (e.g. from another session adding commands)
-        for(const id of Object.keys(persisted)){if(!merged[id])merged[id]=persisted[id]}
+        // — unless they are pre-reset leftovers, which stay dead.
+        for(const id of Object.keys(persisted)){
+          if(!merged[id]&&((persisted[id]&&persisted[id].epoch)||0)>=(G.resetRev||0))merged[id]=persisted[id];
+        }
       }catch(e){merged=G.srs}
     }
     localStorage.setItem(key,JSON.stringify(merged));
     G.srs=merged; // sync in-memory with merged result
     G.srsError=false;
+    // Persist resetRev alongside the SRS (memory-only resetRev silently reverted resets)
+    lsSet('td-resetrev-'+activeCartridge.id,String(G.resetRev||0));
+    // Persist gamification meta (spec §5.1)
+    if(G.meta)lsSet('td-meta-'+activeCartridge.id,JSON.stringify(G.meta));
     // Cloud push on immediate saves (fire-and-forget)
-    if(immediate&&getIdentity())syncToCloud();
+    if(immediate&&getRosterSession())pushTrainerState();
   }catch(e){G.srsError=true}
 }
 function getRunStateKey(){
@@ -2136,8 +2211,10 @@ function clearRunState(){
 }
 function buildRunStateSnapshot(){
   if(!activeCartridge||G.screen!=='game')return null;
+  // v2: slim refs — no SRS map (it is independently persisted under td-srs-<deckId>),
+  // enemies as scalar refs rehydrated from COMMANDS/PREREQ_DAG, waveCommands as cmd ids.
   return{
-    version:1,
+    version:2,
     cartridgeId:activeCartridge.id,
     savedAt:Date.now(),
     wave:G.wave,
@@ -2145,12 +2222,21 @@ function buildRunStateSnapshot(){
     lives:G.lives,
     streak:G.streak,
     maxStreak:G.maxStreak,
-    srs:G.srs,
-    enemies:G.enemies,
+    enemies:G.enemies.map(e=>({
+      id:e.id,
+      cmdId:e.cmd&&e.cmd.id,
+      t:e.t,
+      speedMult:e.speedMult||1,
+      missCount:e.missCount||0,
+      splitDepth:e.splitDepth||0,
+      ancestorId:e.ancestorId!=null?e.ancestorId:null,
+      dagNodeId:e.dagNodeId||null,
+      chainStep:e.chainStep!=null?e.chainStep:null,
+    })),
     selectedId:G.selectedId,
     inputState:G.inputState,
     treeDepth:G.treeDepth,
-    waveCommands:G.waveCommands,
+    waveCommands:G.waveCommands.map(c=>c&&c.id).filter(Boolean),
     spawnIdx:G.spawnIdx,
     waveComplete:G.waveComplete,
     totalCorrect:G.totalCorrect,
@@ -2164,6 +2250,7 @@ function buildRunStateSnapshot(){
     difficulty:G.difficulty,
     topicFilter:G.topicFilter||null,
     topicFilterId:G.topicFilterId||null,
+    missionMode:G.missionMode||null,
     melody:SFX.getMelody(),
     mbrot:{
       intensity:MBROT.intensity,
@@ -2181,6 +2268,15 @@ function saveRunState(){
   const snapshot=buildRunStateSnapshot();
   if(!key||!snapshot)return false;
   try{
+    // Multi-tab guard: skip the write if another tab checkpointed a further-ahead
+    // run within the last 5 s (cheap last-writer-wins mitigation)
+    const rawExisting=lsGet(key);
+    if(rawExisting){
+      try{
+        const existing=JSON.parse(rawExisting);
+        if(existing&&existing.savedAt>Date.now()-5000&&existing.wave>snapshot.wave)return false;
+      }catch(e){}
+    }
     localStorage.setItem(key,JSON.stringify(snapshot));
     G.runStateError=false;
     return true;
@@ -2190,10 +2286,11 @@ function loadRunState(){
   const key=getRunStateKey();
   if(!key)return null;
   try{
-    const saved=localStorage.getItem(key);
+    const saved=lsGet(key);
     if(!saved)return null;
     const parsed=JSON.parse(saved);
     if(!parsed||parsed.cartridgeId!==activeCartridge.id)return null;
+    if(parsed.version!==2){lsRemove(key);return null} // old v1 checkpoints are abandoned by design
     return parsed;
   }catch(e){return null}
 }
@@ -2201,7 +2298,7 @@ function syncHighScore(){
   if(!activeCartridge)return{prevHigh:0,highScore:0,isNewHigh:false};
   flushPendingScoreAwards();
   const hsKey='td-highscore-'+activeCartridge.id;
-  const prevHigh=parseInt(localStorage.getItem(hsKey)||'0',10);
+  const prevHigh=Math.max(0,parseInt(lsGet(hsKey)||'0',10)||0); // NaN guard — a poisoned value would disable high scores forever
   const currentScore=Math.max(0,Math.floor(Number(G.score)||0));
   const highScore=Math.max(prevHigh,currentScore);
   const isNewHigh=currentScore>prevHigh;
@@ -2217,7 +2314,9 @@ function syncRunCheckpoint(){
   return recordState;
 }
 function loadSRS(cartridge){
-  const saved=localStorage.getItem('td-srs-'+cartridge.id);
+  // Restore the persisted reset epoch (saved on every saveSRS write)
+  G.resetRev=Math.max(0,parseInt(lsGet('td-resetrev-'+cartridge.id)||'0',10)||0);
+  const saved=lsGet('td-srs-'+cartridge.id);
   const fresh=initSRS(cartridge.commands);
   if(!saved)return fresh;
   try{
@@ -2249,7 +2348,7 @@ function loadSRS(cartridge){
   }catch(e){return fresh}
 }
 function getCartridgeProgress(cartridgeId){
-  const saved=localStorage.getItem('td-srs-'+cartridgeId);
+  const saved=lsGet('td-srs-'+cartridgeId);
   if(!saved)return{total:0,seen:0,mastered:0};
   try{
     const srs=JSON.parse(saved);
@@ -2263,171 +2362,1255 @@ function getCartridgeProgress(cartridgeId){
 }
 function returnToTitleFromRun(){
   if(G.screen!=='game'&&G.screen!=='victory'&&G.screen!=='gameover')return;
-  G.topicFilter=null;G.topicFilterId=null;
+  G.topicFilter=null;G.topicFilterId=null;G.missionMode=null;
   syncRunCheckpoint();
   showTitleScreen('game');
 }
 
 // ═══════════════════════════════════════════════
-//  CLOUD AUTH + SYNC
+//  ROSTER IDENTITY + CLOUD SYNC (roster-server)
+//  The legacy cloud-sync backend is fully retired; roster-server owns identity,
+//  per-deck trainer state, the section leaderboard, and grade-inert ledger rows.
 // ═══════════════════════════════════════════════
-const SYNC_SERVER='https://lrsl-driller-production.up.railway.app';
+const ROSTER_SERVER='https://roster-production-12c1.up.railway.app';
+const DESK_ORIGIN='https://robjohncolson.github.io';
+const ROSTER_SESSION_KEY='td-roster.v1';
 const ANIMATION_BASE='https://hgvnytaqmuybzbotosyj.supabase.co/storage/v1/object/public/videos/animations/ap-stats-formulas';
 let animationManifest=null; // null=not loaded, Set=loaded IDs
 let animationManifestLoading=false;
-let cloudSyncReady=false;
-let cloudSyncInFlight=false;
-function getIdentity(){
+
+// ── Session model (spec §1.1) — the PIN is never an argument and never stored ──
+function getRosterSession(){
+  const raw=lsGet(ROSTER_SESSION_KEY);
+  if(!raw)return null;
   try{
-    const username=localStorage.getItem('td-cloud-username');
-    const realName=localStorage.getItem('td-cloud-realname');
-    const password=sessionStorage.getItem('td-cloud-pw');
-    if(username)return{username,realName:realName||'',password:password||''};
-  }catch(e){}
-  // Also check lrsl-driller shared identity
-  try{
-    const shared=JSON.parse(localStorage.getItem('userIdentity')||'null');
-    if(shared&&shared.username)return{username:shared.username,realName:shared.realName||'',password:shared.password||''};
+    const s=JSON.parse(raw);
+    if(s&&typeof s==='object'&&s.token&&s.studentId&&s.username)return s;
   }catch(e){}
   return null;
 }
-function setIdentity(username,realName,password){
-  try{
-    localStorage.setItem('td-cloud-username',username);
-    localStorage.setItem('td-cloud-realname',realName||'');
-    sessionStorage.setItem('td-cloud-pw',password);
-    // Also set shared identity for lrsl-driller cross-app compat
-    localStorage.setItem('userIdentity',JSON.stringify({username,realName:realName||'',password}));
-  }catch(e){}
+function setRosterSession(s){
+  if(!s||!s.token)return;
+  lsSet(ROSTER_SESSION_KEY,JSON.stringify(s));
+  if(s.section)lsSet('td-last-section',String(s.section)); // anonymous RANKS read-only board (FIX 10g)
+  resetCloudState();
+  ensureDeckOwnership(); // shared-device guard — must run BEFORE the post-sign-in pull (FIX 2)
 }
-function clearIdentity(){
-  try{
-    localStorage.removeItem('td-cloud-username');
-    localStorage.removeItem('td-cloud-realname');
-    sessionStorage.removeItem('td-cloud-pw');
-  }catch(e){}
-  cloudSyncReady=false;
+function clearRosterSession(){
+  lsRemove(ROSTER_SESSION_KEY);
+  purgeLegacyIdentity();
+  resetCloudState();
+  // Sign-out does NOT wipe progress — the same student returning keeps their work (FIX 2)
 }
-async function verifyUser(username,password){
-  const resp=await fetch(SYNC_SERVER+'/api/users/verify',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({username,password})
-  });
-  return resp.json();
+// ── Shared-device guard (FIX 2): td-owner-<deckId> stamps which student the local
+//    progress belongs to. A DIFFERENT student signing in wipes that deck's local
+//    progress before pulling their own cloud state. Anonymous progress with no
+//    stamp is adopted by the first signer (intended). ──
+function wipeDeckLocalProgress(deckId){
+  ['td-srs-','td-meta-','td-resetrev-','td-highscore-','td-run-state-','td-xpday-','td-xpmile-'].forEach(function(p){lsRemove(p+deckId)});
+  // Bust the in-memory XP trackers so they re-read the (now empty) keys
+  _xpDayCache=null;_xpDayDeck='';
+  _xpMileCache=null;_xpMileDeck='';
 }
-async function syncToCloud(){
-  const id=getIdentity();
-  if(!id||!id.username||!activeCartridge||!cloudSyncReady||cloudSyncInFlight)return;
-  cloudSyncInFlight=true;
-  updateSyncIndicator('syncing');
-  try{
-    const entries=Object.values(G.srs);
-    const mastered=entries.filter(s=>s.mastery>=4).length;
-    const seen=entries.filter(s=>s.totalAttempts>0).length;
-    const hs=parseInt(localStorage.getItem('td-highscore-'+activeCartridge.id)||'0',10);
-    await fetch(SYNC_SERVER+'/api/progress/cartridge-sync',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        username:id.username,
-        cartridgeId:'td-'+activeCartridge.id,
-        stars:{gold:mastered,silver:seen,bronze:0,tin:0},
-        totalWeightedScore:hs,
-        modeProgress:{schemaVersion:1,srs:G.srs,highScore:hs,resetRev:G.resetRev||0}
-      })
-    });
-    updateSyncIndicator('synced');
-  }catch(e){
-    updateSyncIndicator('offline');
-  }finally{cloudSyncInFlight=false}
+function ensureDeckOwnership(){
+  const session=getRosterSession();
+  if(!session||typeof activeCartridge==='undefined'||!activeCartridge)return;
+  const key='td-owner-'+activeCartridge.id;
+  const owner=lsGet(key);
+  if(owner&&owner!==String(session.studentId)){
+    wipeDeckLocalProgress(activeCartridge.id);
+    G.resetRev=0;
+    G.srs=initSRS(activeCartridge.commands);
+    G.meta=defaultMeta();
+  }
+  lsSet(key,String(session.studentId));
 }
-async function pullFromCloud(){
-  const id=getIdentity();
-  if(!id||!id.username||!activeCartridge)return;
-  updateSyncIndicator('syncing');
+function purgeLegacyIdentity(){
+  // One-time legacy purge (also runs at every boot): kills the old identity keys
+  // and the plaintext-password store.
+  lsRemove('td-cloud-username');
+  lsRemove('td-cloud-realname');
+  lsRemove('userIdentity');
+  try{sessionStorage.removeItem('td-cloud-pw')}catch(e){}
+}
+
+// ── Per-deck cloud sync state — swapped out wholesale on deck change / login / logout.
+//    In-flight requests capture the old object, so their writes land harmlessly. ──
+let cloud={ready:false,inFlight:false,dirty:false,pullInFlight:false,baseUpdatedAt:null,retries:0,retryTimer:null,lastPushAt:0,lastPushStartAt:0,throttleTimer:null,notProvisioned:false};
+function resetCloudState(){
+  if(cloud.retryTimer)clearTimeout(cloud.retryTimer);
+  if(cloud.throttleTimer)clearTimeout(cloud.throttleTimer);
+  cloud={ready:false,inFlight:false,dirty:false,pullInFlight:false,baseUpdatedAt:null,retries:0,retryTimer:null,lastPushAt:0,lastPushStartAt:0,throttleTimer:null,notProvisioned:false};
+}
+
+// ── Gamification meta (spec §5.1) — synced generically now, populated by a later phase ──
+function defaultMeta(){
+  return{
+    xp:{total:0,weekIso:'',weeklyXp:0},
+    streak:{current:0,best:0,lastDayIso:'',freezes:0},
+    daily:{lastMissionIso:'',missionsCompleted:0},
+    quests:{claimed:{},crests:{}},
+    topicBest:{},
+  };
+}
+function loadMeta(deckId){
+  const d=defaultMeta();
+  const raw=lsGet('td-meta-'+deckId);
+  if(!raw)return d;
   try{
-    const resp=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(id.username)+'/td-'+activeCartridge.id);
-    const result=await resp.json();
-    if(result.found&&result.data&&result.data.mode_progress&&result.data.mode_progress.srs){
-      const remote=result.data.mode_progress.srs;
-      const remoteResetRev=result.data.mode_progress.resetRev||0;
-      const localResetRev=G.resetRev||0;
-      // If remote was reset more recently, discard local cards older than reset
-      const effectiveResetRev=Math.max(remoteResetRev,localResetRev);
-      G.resetRev=effectiveResetRev;
-      // Per-card merge: higher rev wins, then lastUpdated
-      for(const cardId of Object.keys(G.srs)){
-        const local=G.srs[cardId];
-        const rem=remote[cardId];
-        if(!rem)continue;
-        if((rem.rev||0)<effectiveResetRev&&(local.rev||0)>=effectiveResetRev)continue;
-        if((local.rev||0)<effectiveResetRev&&(rem.rev||0)>=effectiveResetRev){G.srs[cardId]=sanitizeSrsCard(rem);continue}
-        const remRev=rem.rev||0,locRev=local.rev||0;
-        if(remRev>locRev)G.srs[cardId]=sanitizeSrsCard(rem);
-        else if(remRev===locRev&&(rem.lastUpdated||0)>(local.lastUpdated||0))G.srs[cardId]=sanitizeSrsCard(rem);
-      }
-      // Pick up remote-only cards not in local SRS
-      for(const cardId of Object.keys(remote)){
-        if(!G.srs[cardId]&&(remote[cardId].rev||0)>=effectiveResetRev)G.srs[cardId]=sanitizeSrsCard(remote[cardId]);
-      }
-      saveSRS(true);
+    const p=JSON.parse(raw);
+    if(!p||typeof p!=='object')return d;
+    if(p.xp&&typeof p.xp==='object')Object.assign(d.xp,p.xp);
+    if(p.streak&&typeof p.streak==='object')Object.assign(d.streak,p.streak);
+    if(p.daily&&typeof p.daily==='object')Object.assign(d.daily,p.daily);
+    if(p.quests&&typeof p.quests==='object'){
+      if(p.quests.claimed&&typeof p.quests.claimed==='object')d.quests.claimed=p.quests.claimed;
+      if(p.quests.crests&&typeof p.quests.crests==='object')d.quests.crests=p.quests.crests;
     }
-    cloudSyncReady=true;
-    updateSyncIndicator('synced');
+    if(p.topicBest&&typeof p.topicBest==='object')d.topicBest=p.topicBest;
+    return d;
+  }catch(e){return d}
+}
+
+// ═══════════════════════════════════════════════
+//  GAMIFICATION ENGINE (spec §5, Phase E)
+//  XP / levels / streaks / daily mission are deck-generic.
+//  Topic quests / heatmap / weekly challenge / pacing / co-op gate on
+//  topicFeaturesActive() (ap-stats-formulas + AP_STATS_TOPIC_MAP only).
+// ═══════════════════════════════════════════════
+function topicFeaturesActive(){
+  return !!(typeof activeCartridge!=='undefined'&&activeCartridge&&activeCartridge.id==='ap-stats-formulas'&&window.AP_STATS_TOPIC_MAP);
+}
+// ── E-PURE-BEGIN — pure helpers (extracted verbatim by the node smoke test) ──
+function currentIsoWeek(d){
+  // Proper ISO-8601 week: week 1 contains the year's first Thursday.
+  const src=d?new Date(d.getTime()):new Date();
+  const t=new Date(src.getFullYear(),src.getMonth(),src.getDate());
+  const dayNum=(t.getDay()+6)%7; // Mon=0..Sun=6
+  t.setDate(t.getDate()-dayNum+3); // shift to this week's Thursday
+  const week1=new Date(t.getFullYear(),0,4);
+  const weekNo=1+Math.round(((t.getTime()-week1.getTime())/86400000-3+((week1.getDay()+6)%7))/7);
+  return t.getFullYear()+'-W'+String(weekNo).padStart(2,'0');
+}
+function todayLocalIso(d){
+  const t=d?new Date(d.getTime()):new Date();
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+}
+function levelForXp(total){
+  return Math.floor(Math.sqrt(Math.max(0,Number(total)||0)/150))+1;
+}
+function weekdayGapBetween(fromIso,toIso){
+  // Count weekdays in (from, to] — Sat/Sun skipped entirely (school-week streaks).
+  const from=new Date(fromIso+'T12:00:00');
+  const to=new Date(toIso+'T12:00:00');
+  if(!Number.isFinite(from.getTime())||!Number.isFinite(to.getTime()))return null;
+  if(to.getTime()===from.getTime())return 0;
+  if(to.getTime()<from.getTime())return null; // clock went backwards — caller no-ops
+  let gap=0;
+  const d=new Date(from.getTime());
+  for(let guard=0;guard<3660;guard++){
+    d.setDate(d.getDate()+1);
+    if(d.getTime()>to.getTime())break;
+    const dow=d.getDay();
+    if(dow!==0&&dow!==6)gap++;
+  }
+  return gap;
+}
+function stampStreakDay(streak,todayIso){
+  // School-week streak stamp (spec §5.2). Mutates `streak`, returns what happened.
+  // gap 0 (same day or weekend-only span) → no-op; gap 1 → extend; gap 2+ → auto-spend
+  // one freeze per missed weekday or reset to 1. 7-multiples bank a freeze (cap 2).
+  const out={stamped:false,freezeEarned:false,freezesUsed:0,gap:null,current:Number(streak&&streak.current)||0};
+  if(!streak||typeof todayIso!=='string'||!todayIso)return out;
+  const last=typeof streak.lastDayIso==='string'?streak.lastDayIso:'';
+  if(last===todayIso)return out; // already stamped today
+  let gap=null;
+  if(last){
+    gap=weekdayGapBetween(last,todayIso);
+    if(gap===null)return out; // unparseable / time went backwards — leave untouched
+  }
+  out.gap=gap;
+  if(gap===0){
+    // Weekend completion: neither breaks nor extends; roll the anchor forward
+    streak.lastDayIso=todayIso;
+    return out;
+  }
+  if(gap===null){
+    streak.current=1; // first ever stamp
+  }else if(gap===1){
+    streak.current=(Number(streak.current)||0)+1;
+  }else{
+    const missed=gap-1;
+    const fz=Number(streak.freezes)||0;
+    if(fz>=missed){
+      streak.freezes=fz-missed;
+      out.freezesUsed=missed;
+      streak.current=(Number(streak.current)||0)+1;
+    }else{
+      streak.current=1;
+    }
+  }
+  streak.lastDayIso=todayIso;
+  streak.best=Math.max(Number(streak.best)||0,streak.current);
+  if(streak.current>0&&streak.current%7===0){
+    const before=Number(streak.freezes)||0;
+    streak.freezes=Math.min(2,before+1);
+    if(streak.freezes>before)out.freezeEarned=true;
+  }
+  out.stamped=true;
+  out.current=streak.current;
+  return out;
+}
+function computeAnswerXp(o){
+  // Per-correct-answer XP (spec §5.2): base 10 + BKT delta bonus (cap 25)
+  // + first-silver 50 + first-gold 100 + decayed-rescue 15; ×2 weekly challenge,
+  // ×1.5 rust-buster wave 1; 0 past the per-card daily cap.
+  o=o||{};
+  if(o.capped)return 0;
+  let xp=10;
+  xp+=Math.min(25,Math.round(Math.max(0,Number(o.pkDelta)||0)*100));
+  if(o.crossedSilver)xp+=50;
+  if(o.crossedGold)xp+=100;
+  if(o.decayed)xp+=15;
+  if(o.weekly)xp*=2;
+  else if(o.rust)xp=Math.round(xp*1.5);
+  return xp;
+}
+function weeklyChallengeIndex(isoWeek,unitCount){
+  const m=/^(\d+)-W(\d+)$/.exec(String(isoWeek)||'');
+  if(!m||!(unitCount>0))return 0;
+  return(parseInt(m[1],10)*52+parseInt(m[2],10))%unitCount;
+}
+// ── E-PURE-END ──
+
+function awardXp(amount,reason){
+  const amt=Math.max(0,Math.round(Number(amount)||0));
+  if(!amt)return 0;
+  if(!G.meta)G.meta=defaultMeta();
+  const week=currentIsoWeek();
+  if(G.meta.xp.weekIso!==week){G.meta.xp.weekIso=week;G.meta.xp.weeklyXp=0} // rolling weekly reset
+  G.meta.xp.total=(Number(G.meta.xp.total)||0)+amt;
+  G.meta.xp.weeklyXp=(Number(G.meta.xp.weeklyXp)||0)+amt;
+  G.runXp=(Number(G.runXp)||0)+amt;
+  saveSRS(false); // debounced — persists meta alongside SRS
+  return amt;
+}
+// ── Anti-grind: per-card cap of 3 XP-scoring answers per local day (local-only tracker) ──
+let _xpDayCache=null,_xpDayDeck='';
+function xpDayAllow(deckId,cardId){
+  const day=todayLocalIso();
+  if(!_xpDayCache||_xpDayDeck!==deckId||_xpDayCache.day!==day){
+    let p=null;
+    try{p=JSON.parse(lsGet('td-xpday-'+deckId)||'null')}catch(e){p=null}
+    if(!p||typeof p!=='object'||p.day!==day||!p.counts||typeof p.counts!=='object')p={day:day,counts:{}};
+    _xpDayCache=p;_xpDayDeck=deckId;
+  }
+  const n=Number(_xpDayCache.counts[cardId])||0;
+  if(n>=3)return false;
+  _xpDayCache.counts[cardId]=n+1;
+  lsSet('td-xpday-'+deckId,JSON.stringify(_xpDayCache));
+  return true;
+}
+// ── First-crossing milestones (silver/gold) — local-only, never re-awarded on this device ──
+let _xpMileCache=null,_xpMileDeck='';
+function xpMilestoneOnce(deckId,cardId,tier){
+  if(!_xpMileCache||_xpMileDeck!==deckId){
+    let p=null;
+    try{p=JSON.parse(lsGet('td-xpmile-'+deckId)||'null')}catch(e){p=null}
+    if(!p||typeof p!=='object'||!p.s||typeof p.s!=='object'||!p.g||typeof p.g!=='object')p={s:{},g:{}};
+    _xpMileCache=p;_xpMileDeck=deckId;
+  }
+  if(_xpMileCache[tier][cardId])return false;
+  _xpMileCache[tier][cardId]=1;
+  lsSet('td-xpmile-'+deckId,JSON.stringify(_xpMileCache));
+  return true;
+}
+function awardAnswerXp(enemy,before,after){
+  if(!activeCartridge||!enemy||!enemy.cmd||!before||!after)return 0;
+  const deckId=activeCartridge.id,cardId=enemy.cmd.id;
+  const capped=!xpDayAllow(deckId,cardId); // SRS still updated normally either way
+  const crossedSilver=!capped&&(before.mastery||0)<3&&(after.mastery||0)>=3&&xpMilestoneOnce(deckId,cardId,'s');
+  const crossedGold=!capped&&(before.mastery||0)<4&&(after.mastery||0)>=4&&xpMilestoneOnce(deckId,cardId,'g');
+  const xp=computeAnswerXp({
+    capped:capped,
+    pkDelta:(Number(after.pKnown)||0)-(Number(before.pKnown)||0),
+    crossedSilver:crossedSilver,
+    crossedGold:crossedGold,
+    decayed:!!(G.waveDecayedIds&&G.waveDecayedIds.has(cardId)),
+    weekly:!!(G.topicFilterId&&/^week-/.test(G.topicFilterId)),
+    rust:!!(G.rustBusterWave&&G.wave===1),
+  });
+  if(xp>0)awardXp(xp,'answer');
+  return xp;
+}
+function topicRunLabel(id){
+  return /^week-/.test(String(id))?'WEEK '+String(id).slice(5):'DRILL '+id;
+}
+// ── Daily Quick Mission (E2): 3-wave run over due/overdue/decayed cards ──
+function startDailyMission(){
+  if(!activeCartridge)return;
+  if(G.meta&&G.meta.daily&&G.meta.daily.lastMissionIso===todayLocalIso())return; // done today
+  const srs=loadSRS(activeCartridge);
+  applyTimeDecay(srs);
+  const b=classifyPool(COMMANDS,srs,1);
+  const ids=[],seen=new Set();
+  const take=function(c){if(!seen.has(c.id)){seen.add(c.id);ids.push(c.id)}};
+  b.overdue.forEach(take);b.due.forEach(take);b.decayed.forEach(take);
+  if(ids.length<12){
+    b.fresh.forEach(function(c){if(ids.length<12)take(c)});
+    b.notDue.slice().sort(function(a,bb){return(srs[a.id].pKnown||0)-(srs[bb.id].pKnown||0)})
+      .forEach(function(c){if(ids.length<12)take(c)});
+  }
+  G.topicFilter=ids.length?ids:null;
+  G.topicFilterId=null; // not a topic drill — HUD shows the DAILY badge instead
+  G.missionMode='daily';
+  startGame();
+}
+function countDueTomorrow(){
+  // Day-based reading of the SRS schedule: due = lastUpdated + interval days,
+  // counted when it lands inside tomorrow's local calendar day.
+  let n=0;
+  const now=new Date();
+  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1).getTime();
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+2).getTime();
+  for(const id of Object.keys(G.srs||{})){
+    const c=G.srs[id];
+    if(!c||!(c.totalAttempts>0)||!(c.lastUpdated>0))continue;
+    const due=c.lastUpdated+Math.max(0,Number(c.interval)||0)*86400000;
+    if(due>=start&&due<end)n++;
+  }
+  return n;
+}
+// ── Weekly challenge (E4, AP only): deterministic unit rotation from the ISO week ──
+let _cmdUnitMap=null; // cmdId → array of unit numbers (lazy, topic map is static)
+function apUnitsOrdered(){
+  const tm=window.AP_STATS_TOPIC_MAP||{};
+  const units=[],seen=new Set();
+  Object.keys(tm).forEach(function(tid){
+    const u=tid.split('-')[0];
+    if(!seen.has(u)){seen.add(u);units.push(u)}
+  });
+  return units;
+}
+function weeklyChallenge(){
+  if(!topicFeaturesActive())return null;
+  const units=apUnitsOrdered();
+  if(!units.length)return null;
+  const unit=units[weeklyChallengeIndex(currentIsoWeek(),units.length)];
+  return{unit:unit,label:'UNIT '+unit};
+}
+function unitCmdIds(unit){
+  const tm=window.AP_STATS_TOPIC_MAP||{};
+  const ids=[],seen=new Set();
+  Object.keys(tm).forEach(function(tid){
+    if(tid.split('-')[0]!==String(unit))return;
+    (tm[tid]||[]).forEach(function(cid){
+      if(seen.has(cid))return;
+      seen.add(cid);
+      if(COMMANDS.some(function(c){return c.id===cid}))ids.push(cid);
+    });
+  });
+  return ids;
+}
+function startWeeklyChallenge(){
+  const wk=weeklyChallenge();
+  if(!wk)return;
+  const ids=unitCmdIds(wk.unit);
+  if(!ids.length)return;
+  G.topicFilter=ids;
+  G.topicFilterId='week-U'+wk.unit; // 'week-' prefix arms the ×2 XP multiplier
+  G.missionMode=null;
+  if(G.difficulty!=='challenge')G.difficulty='challenge'; // harder of current vs challenge preset
+  startGame();
+}
+// ── Pacing meter (E4, AP only) ──
+function buildPacingHtml(){
+  if(!topicFeaturesActive())return'';
+  const total=COMMANDS.length;
+  let mastered=0,firstLU=Infinity;
+  for(const id of Object.keys(G.srs||{})){
+    const c=G.srs[id];
+    if(!c)continue;
+    if((c.mastery||0)>=3)mastered++;
+    const lu=Number(c.lastUpdated)||0;
+    if(lu>0&&lu<firstLU)firstLU=lu;
+  }
+  let line=mastered+' / '+total+' formulas mastered';
+  if(getExamDate()&&mastered>0&&firstLU<Infinity){
+    const weeks=(Date.now()-firstLU)/(7*86400000);
+    const rate=weeks>0?mastered/weeks:0;
+    if(rate>0.05&&mastered<total){ // guard div-by-zero / rate≈0 → no projection
+      const finish=new Date(Date.now()+((total-mastered)/rate)*7*86400000);
+      const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+      line+=' · on pace to finish '+MONTHS[finish.getMonth()]+' '+finish.getFullYear();
+    }
+  }
+  return'<div style="font-size:10px;color:#996622;margin:4px 0;letter-spacing:1px">'+line+'</div>';
+}
+// ── Topic quests + unit crests (E3, AP only) ──
+function checkUnitCrests(){
+  if(!topicFeaturesActive()||!G.meta)return null;
+  const tm=window.AP_STATS_TOPIC_MAP;
+  const byUnit={};
+  Object.keys(tm).forEach(function(tid){
+    const u=tid.split('-')[0];
+    (byUnit[u]=byUnit[u]||[]).push(tid);
+  });
+  let awarded=null;
+  Object.keys(byUnit).forEach(function(u){
+    const key='U'+u;
+    if(G.meta.quests.crests[key])return;
+    if(byUnit[u].every(function(tid){return!!G.meta.quests.claimed[tid]})){
+      G.meta.quests.crests[key]=new Date().toISOString();
+      awardXp(400,'crest-'+key);
+      awarded=u;
+    }
+  });
+  return awarded;
+}
+function claimTopicQuest(topicId){
+  if(!topicFeaturesActive()||!G.meta)return;
+  if(G.meta.quests.claimed[topicId])return;
+  const ids=((window.AP_STATS_TOPIC_MAP||{})[topicId]||[]).filter(function(id){return G.srs&&G.srs[id]});
+  if(!ids.length||!ids.every(function(id){return(G.srs[id].mastery||0)>=3}))return; // re-verify completion
+  G.meta.quests.claimed[topicId]=new Date().toISOString();
+  awardXp(150,'quest-'+topicId);
+  SFX.combo();
+  postLedgerRecord('TR-'+activeCartridge.id+'-QUEST-'+topicId,{topicId:topicId},1);
+  sendTrainerEvent({event:'quest-claim',topicId:topicId}); // matches Desk labels (FIX 10a)
+  const crest=checkUnitCrests();
+  saveSRS(false);
+  pushTrainerState({urgent:true}); // self-gates on session+ready; quest claims bypass the throttle (FIX 6)
+  const srEl=document.getElementById('sr-status');
+  if(srEl)srEl.textContent='Topic '+topicId+' quest claimed, 150 XP.'+(crest?' Unit '+crest+' crest earned, 400 XP.':'');
+  if(G.screen==='title')showTitleScreen('title'); // re-render BROWSE (badge + crest strip)
+  if(crest){SFX.victory();flash('🛡 UNIT '+crest+' CREST · +400 XP','#ffcc66')}
+  else flash('★ QUEST CLAIMED · +150 XP','#ffcc66');
+}
+// ── weakUnit for the leaderboard summary (E6, AP only) ──
+function computeWeakUnit(){
+  if(!topicFeaturesActive())return null;
+  if(!_cmdUnitMap){
+    _cmdUnitMap={};
+    const tm=window.AP_STATS_TOPIC_MAP;
+    Object.keys(tm).forEach(function(tid){
+      const u=tid.split('-')[0];
+      (tm[tid]||[]).forEach(function(cid){
+        if(!_cmdUnitMap[cid])_cmdUnitMap[cid]=[];
+        if(_cmdUnitMap[cid].indexOf(u)<0)_cmdUnitMap[cid].push(u);
+      });
+    });
+  }
+  const sums={},counts={};
+  for(const id of Object.keys(G.srs||{})){
+    const c=G.srs[id];
+    if(!c||!((c.totalAttempts||0)>0||(c.rev||0)>0))continue; // seen cards only
+    const units=_cmdUnitMap[id];
+    if(!units)continue;
+    units.forEach(function(u){
+      sums[u]=(sums[u]||0)+(Number(c.pKnown)||0.1);
+      counts[u]=(counts[u]||0)+1;
+    });
+  }
+  let weak=null,weakAvg=Infinity;
+  Object.keys(counts).forEach(function(u){
+    const avg=sums[u]/counts[u];
+    if(avg<weakAvg){weakAvg=avg;weak=u}
+  });
+  return weak?'U'+weak:null;
+}
+
+function getStoredHighScore(){
+  if(!activeCartridge)return 0;
+  return Math.max(0,parseInt(lsGet('td-highscore-'+activeCartridge.id)||'0',10)||0);
+}
+// ── Wire format (spec §3.1): srs syncs as per-card 5-tuples
+//    { "<cardId>": [rev, pKnown_x1000, mastery, lastUpdated_epochMin, epoch] }
+//    epoch = G.resetRev at the time the card was last answered (per-card reset epoch, FIX 1).
+//    Legacy 4-tuples are read tolerantly as epoch 0.
+//    Local storage format (td-srs-<deckId>) is unchanged; dagState/subPKnown stay device-local. ──
+function srsTupleFor(c){
+  return[
+    Math.max(0,Math.floor(Number(c.rev)||0)),
+    Math.round((Number(c.pKnown)||0)*1000),
+    Math.max(0,Math.min(5,Math.floor(Number(c.mastery)||0))),
+    Math.floor((Number(c.lastUpdated)||0)/60000), // floor, not round — a self-roundtrip must never look newer (FIX 5a)
+    Math.max(0,Math.floor(Number(c.epoch)||0)),
+  ];
+}
+function srsToWire(srs){
+  const out={};
+  if(!srs||typeof srs!=='object')return out;
+  const curEpoch=(typeof G!=='undefined'&&G)?(G.resetRev||0):0;
+  for(const id of Object.keys(srs)){
+    const c=srs[id];
+    if(!c)continue;
+    // Only answered, current-epoch cards go to the wire (joyo-kanji: 2,002 cards).
+    // Pre-reset cards never upload — that is how resets propagate instead of reverting (FIX 1).
+    if((Number(c.rev)||0)<=0)continue;
+    if((Number(c.epoch)||0)<curEpoch)continue;
+    out[id]=srsTupleFor(c);
+  }
+  return out;
+}
+// Per-card epoch merge of remote wire tuples into G.srs (FIX 1).
+// effectiveEpoch = max(local resetRev, remote resetRev):
+//   - remote tuples stamped before the newest reset are ignored entirely (no reset-revert);
+//   - if the REMOTE reset is newer, local pre-reset cards are purged to fresh and
+//     G.resetRev is raised + persisted (resets propagate across devices);
+//   - current-epoch tuples merge by the existing rev-wins / tie→newer-lastUpdated rule.
+function mergeWireIntoLocal(wireSrs,remoteResetRev){
+  const localResetRev=Math.max(0,Math.floor(Number(G.resetRev)||0));
+  const remRR=Math.max(0,Math.floor(Number(remoteResetRev)||0));
+  const effectiveEpoch=Math.max(localResetRev,remRR);
+  if(wireSrs&&typeof wireSrs==='object'){
+    for(const cardId of Object.keys(wireSrs)){
+      const tuple=wireSrs[cardId];
+      if(!Array.isArray(tuple)||tuple.length<4)continue;
+      const remRev=Math.max(0,Math.floor(Number(tuple[0])||0));
+      const remPK=Math.max(.001,Math.min(.999,(Number(tuple[1])||0)/1000));
+      const remMastery=Math.max(0,Math.min(5,Math.floor(Number(tuple[2])||0)));
+      const remLU=Math.max(0,(Number(tuple[3])||0)*60000);
+      const tupleEpoch=tuple.length>=5?Math.max(0,Math.floor(Number(tuple[4])||0)):0; // legacy 4-tuple → epoch 0
+      if(tupleEpoch<effectiveEpoch)continue; // pre-reset remnant — ignored entirely
+      const local=G.srs[cardId];
+      if(!local){
+        // Remote-only card: instantiate via the default card-init shape, then overlay
+        G.srs[cardId]=sanitizeSrsCard({pKnown:remPK,pKnownDirect:remPK,mastery:remMastery,lastUpdated:remLU,rev:remRev,epoch:tupleEpoch,totalAttempts:remRev>0?1:0});
+        continue;
+      }
+      const locRev=local.rev||0;
+      let remoteWins=false;
+      if((local.epoch||0)<effectiveEpoch)remoteWins=true; // local is pre-reset — take remote
+      else if(remRev>locRev)remoteWins=true;              // higher rev wins
+      else if(remRev===locRev&&remLU>(local.lastUpdated||0))remoteWins=true; // tie → newer lastUpdated
+      if(!remoteWins)continue;
+      local.rev=remRev;
+      local.epoch=tupleEpoch;
+      local.pKnown=remPK;
+      local.pKnownDirect=remPK; // BKT bootstrap — composite recompute must not revert the pulled value
+      local.mastery=remMastery;
+      local.lastUpdated=remLU;
+      if(remRev>0&&!(local.totalAttempts>0))local.totalAttempts=1; // mark studied so progress/decay apply
+      G.srs[cardId]=sanitizeSrsCard(local);
+    }
+  }
+  // Reset propagation (spec §3.2 rule 7): a newer REMOTE reset purges local pre-reset cards.
+  if(remRR>localResetRev){
+    for(const id of Object.keys(G.srs)){
+      const c=G.srs[id];
+      if(c&&(c.epoch||0)<effectiveEpoch)G.srs[id]=sanitizeSrsCard({epoch:effectiveEpoch}); // re-init fresh at the new epoch
+    }
+    G.resetRev=effectiveEpoch;
+    if(typeof activeCartridge!=='undefined'&&activeCartridge){
+      lsSet('td-resetrev-'+activeCartridge.id,String(effectiveEpoch));
+      // Rewrite the disk copy NOW: the stale pre-reset cards on disk would
+      // otherwise win saveSRS's rev merge and resurrect the purged progress.
+      lsSet('td-srs-'+activeCartridge.id,JSON.stringify(G.srs));
+    }
+  }
+}
+// Cross-device merge for non-SRS fields (spec §3.2 rule 9), applied on every pull and 409-retry.
+function mergeMetaFromRemote(remote){
+  if(!remote||typeof remote!=='object')return;
+  if(!G.meta)G.meta=defaultMeta();
+  const m=G.meta;
+  const rxp=(remote.xp&&typeof remote.xp==='object')?remote.xp:{};
+  const rstreak=(remote.streak&&typeof remote.streak==='object')?remote.streak:{};
+  const rdaily=(remote.daily&&typeof remote.daily==='object')?remote.daily:{};
+  const rquests=(remote.quests&&typeof remote.quests==='object')?remote.quests:{};
+  // max(): xp.total, streak.best, streak.freezes, daily.missionsCompleted, hs
+  m.xp.total=Math.max(Number(m.xp.total)||0,Number(rxp.total)||0);
+  m.streak.best=Math.max(Number(m.streak.best)||0,Number(rstreak.best)||0);
+  m.streak.freezes=Math.max(Number(m.streak.freezes)||0,Number(rstreak.freezes)||0);
+  m.daily.missionsCompleted=Math.max(Number(m.daily.missionsCompleted)||0,Number(rdaily.missionsCompleted)||0);
+  const remoteHs=Math.max(0,Math.floor(Number(remote.hs)||0));
+  if(activeCartridge&&remoteHs>getStoredHighScore())lsSet('td-highscore-'+activeCartridge.id,String(remoteHs));
+  // week-aware: xp.weeklyXp — same weekIso → max; different → newer weekIso's pair
+  const lw=typeof m.xp.weekIso==='string'?m.xp.weekIso:'';
+  const rw=typeof rxp.weekIso==='string'?rxp.weekIso:'';
+  const rWeekly=Number(rxp.weeklyXp)||0;
+  if(rw===lw)m.xp.weeklyXp=Math.max(Number(m.xp.weeklyXp)||0,rWeekly);
+  else if(rw>lw){m.xp.weekIso=rw;m.xp.weeklyXp=rWeekly}
+  // newest-lastDayIso wins for streak.current+lastDayIso; newest for daily.lastMissionIso
+  const rLastDay=typeof rstreak.lastDayIso==='string'?rstreak.lastDayIso:'';
+  if(rLastDay>(m.streak.lastDayIso||'')){m.streak.current=Number(rstreak.current)||0;m.streak.lastDayIso=rLastDay}
+  const rLastMission=typeof rdaily.lastMissionIso==='string'?rdaily.lastMissionIso:'';
+  if(rLastMission>(m.daily.lastMissionIso||''))m.daily.lastMissionIso=rLastMission;
+  // union: quests.claimed / quests.crests — earlier ISO timestamp wins per key
+  ['claimed','crests'].forEach(k=>{
+    const rmap=(rquests[k]&&typeof rquests[k]==='object')?rquests[k]:{};
+    if(!m.quests[k]||typeof m.quests[k]!=='object')m.quests[k]={};
+    for(const key of Object.keys(rmap)){
+      const rv=rmap[key];
+      if(typeof rv!=='string')continue;
+      const lv=m.quests[k][key];
+      if(typeof lv!=='string'||rv<lv)m.quests[k][key]=rv;
+    }
+  });
+  // per-key max(): topicBest (Phase E3)
+  const rbest=(remote.topicBest&&typeof remote.topicBest==='object')?remote.topicBest:{};
+  if(!m.topicBest||typeof m.topicBest!=='object')m.topicBest={};
+  for(const tk of Object.keys(rbest)){
+    const rv=Math.max(0,Math.floor(Number(rbest[tk])||0));
+    if(rv>(Number(m.topicBest[tk])||0))m.topicBest[tk]=rv;
+  }
+}
+// lb is never merged — recomputed from merged state before each push (spec §5.1).
+function computeLb(){
+  const meta=G.meta||defaultMeta();
+  let gold=0,seenCount=0;
+  const srs=G.srs||{};
+  for(const id of Object.keys(srs)){
+    const c=srs[id];
+    if(!c)continue;
+    if((c.mastery||0)>=4)gold++;
+    if((c.rev||0)>0)seenCount++;
+  }
+  return{
+    gold:gold,
+    seen:seenCount,
+    hs:getStoredHighScore(),
+    weeklyXp:Number(meta.xp.weeklyXp)||0,
+    streak:Number(meta.streak.current)||0,
+    level:levelForXp(meta.xp.total),
+    weakUnit:computeWeakUnit(), // AP only — null elsewhere
+  };
+}
+function buildWireState(){
+  const meta=G.meta||defaultMeta();
+  return{
+    v:1,
+    srs:srsToWire(G.srs),
+    resetRev:G.resetRev||0,
+    hs:getStoredHighScore(),
+    xp:meta.xp,
+    streak:meta.streak,
+    daily:meta.daily,
+    quests:meta.quests,
+    topicBest:meta.topicBest||{},
+    lb:computeLb(),
+  };
+}
+function hasLocalProgress(){
+  if(getStoredHighScore()>0)return true;
+  if(G.meta&&G.meta.xp&&(Number(G.meta.xp.total)||0)>0)return true;
+  const srs=G.srs||{};
+  for(const id of Object.keys(srs)){
+    const c=srs[id];
+    if(c&&((c.rev||0)>0||(c.totalAttempts||0)>0))return true;
+  }
+  return false;
+}
+// ── Pull: pushes arm ONLY after a successful pull (spec §3.2 rule 3) ──
+async function pullTrainerState(){
+  const session=getRosterSession();
+  if(!session||!activeCartridge)return;
+  if(cloud.pullInFlight)return;
+  const cl=cloud; // capture — deck switch / logout swaps the object out from under us
+  const deckId=activeCartridge.id;
+  cl.pullInFlight=true;
+  updateSyncIndicator('syncing');
+  try{
+    const resp=await fetchWithTimeout(ROSTER_SERVER+'/trainer/state/'+encodeURIComponent(deckId),{headers:{'Authorization':'Bearer '+session.token}});
+    if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return; // deck switched mid-pull — discard
+    if(resp.status===401){expireSession();return}
+    if(resp.status===503){
+      // Pre-migration server (spec §7): degrade silently — neutral signed-in indicator,
+      // no retries, no error UI. The next title render re-pulls naturally. (FIX 4)
+      cl.notProvisioned=true;
+      cl.retries=0;
+      if(cl.retryTimer){clearTimeout(cl.retryTimer);cl.retryTimer=null}
+      updateSyncIndicator();
+      return;
+    }
+    if(!resp.ok)throw new Error('pull http '+resp.status);
+    const result=await resp.json();
+    if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return;
+    if(!result||result.ok!==true)throw new Error('pull: unrecognized body');
+    cl.retries=0;
+    cl.notProvisioned=false;
+    lsSet('td-owner-'+deckId,String(session.studentId)); // ownership stamp on every pull (FIX 2)
+    if(result.found&&result.state&&typeof result.state==='object'){
+      if(cl.baseUpdatedAt!=null&&result.updatedAt===cl.baseUpdatedAt){
+        // Nothing remote changed since our last sync — skip the merge entirely so
+        // minute-rounded tuples can't erode local BKT state via self-roundtrip (FIX 5b)
+        cl.ready=true;
+        updateSyncIndicator();
+        if(cl.dirty)pushTrainerState({urgent:true});
+        return;
+      }
+      const remote=result.state;
+      mergeWireIntoLocal(remote.srs||{},remote.resetRev); // handles epochs + reset propagation (FIX 1)
+      mergeMetaFromRemote(remote);
+      cl.baseUpdatedAt=result.updatedAt||null;
+      cl.ready=true;
+      saveSRS(false);
+      if(G.screen==='title')showTitleScreen('title');
+      pushTrainerState({urgent:true}); // upload the merged superset (bypasses the push throttle)
+    }else{
+      cl.ready=true;
+      cl.baseUpdatedAt=null;
+      updateSyncIndicator();
+      if(hasLocalProgress())pushTrainerState({urgent:true});
+    }
   }catch(e){
-    cloudSyncReady=true; // allow pushes even if pull fails
-    updateSyncIndicator('offline');
+    if(cl===cloud&&activeCartridge&&activeCartridge.id===deckId){
+      updateSyncIndicator('offline');
+      schedulePullRetry();
+    }
+  }finally{cl.pullInFlight=false}
+}
+function schedulePullRetry(){
+  // Backoff 5 s / 15 s / 60 s, then give up until the next title render / 'online' / tap-to-retry
+  if(cloud.retries>=3){updateSyncIndicator('error');return}
+  const delays=[5000,15000,60000];
+  const wait=delays[Math.min(cloud.retries,delays.length-1)];
+  cloud.retries++;
+  if(cloud.retryTimer)clearTimeout(cloud.retryTimer);
+  cloud.retryTimer=setTimeout(function(){
+    cloud.retryTimer=null;
+    if(getRosterSession()&&!cloud.ready)pullTrainerState();
+  },wait);
+}
+// ── Push: full-replace PUT with optimistic concurrency (spec §2.2/§3.2 rule 9).
+//    Background pushes (per-answer saveSRS) coalesce to ≤1 PUT per 20 s; urgent
+//    pushes (mission complete, quest claim, end-screen, post-pull merged upload)
+//    bypass the throttle (FIX 6). ──
+const PUSH_THROTTLE_MS=20000;
+async function pushTrainerState(opts){
+  const urgent=!!(opts&&opts.urgent);
+  const session=getRosterSession();
+  if(!session||!cloud.ready||!activeCartridge){cloud.dirty=true;return}
+  if(cloud.inFlight){cloud.dirty=true;return}
+  if(!urgent){
+    const since=Date.now()-(cloud.lastPushStartAt||0);
+    if(since<PUSH_THROTTLE_MS){
+      // Throttled: mark dirty + arm a single timer for the remainder of the window
+      cloud.dirty=true;
+      if(!cloud.throttleTimer){
+        const cl0=cloud;
+        cl0.throttleTimer=setTimeout(function(){
+          cl0.throttleTimer=null;
+          if(cl0===cloud&&cloud.dirty&&getRosterSession())pushTrainerState();
+        },Math.max(250,PUSH_THROTTLE_MS-since));
+      }
+      return;
+    }
+  }
+  const cl=cloud;
+  const deckId=activeCartridge.id;
+  // Captured BEFORE buildWireState(): answers landing while the PUT is in flight
+  // stay >= the hide-flush cutoff and are never lost (FIX 6)
+  const pushStartedAt=Date.now();
+  cl.lastPushStartAt=pushStartedAt;
+  cl.inFlight=true;
+  cl.dirty=false;
+  let failed=false;
+  updateSyncIndicator('syncing');
+  const putState=()=>fetchWithTimeout(ROSTER_SERVER+'/trainer/state/'+encodeURIComponent(deckId),{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token:session.token,state:buildWireState(),baseUpdatedAt:cl.baseUpdatedAt}),
+  });
+  try{
+    let resp=await putState();
+    if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return;
+    if(resp.status===401){expireSession();return}
+    if(resp.status===409){
+      // Stale base: re-pull, merge both ways, retry the PUT once
+      const gr=await fetchWithTimeout(ROSTER_SERVER+'/trainer/state/'+encodeURIComponent(deckId),{headers:{'Authorization':'Bearer '+session.token}});
+      if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return;
+      if(gr.status===401){expireSession();return}
+      if(!gr.ok)throw new Error('409 re-pull http '+gr.status);
+      const gd=await gr.json();
+      if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return;
+      if(gd&&gd.found&&gd.state&&typeof gd.state==='object'){
+        mergeWireIntoLocal(gd.state.srs||{},gd.state.resetRev); // per-card epochs + reset propagation (FIX 1)
+        mergeMetaFromRemote(gd.state);
+        saveSRS(false);
+      }
+      cl.baseUpdatedAt=(gd&&gd.updatedAt)||null;
+      resp=await putState();
+      if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return;
+      if(resp.status===401){expireSession();return}
+      if(resp.status===409){
+        // Still stale after one merge+retry — another device is actively writing.
+        // Force-overwriting with the 409's stamp would drop that device's
+        // intervening write (our snapshot predates it). Defer to a fresh
+        // pull→merge→push cycle, which folds their write in first.
+        console.warn('[sync] PUT stale twice; deferring to fresh pull/merge cycle');
+        failed=true; // suppress the trailing push; the pull below owns recovery
+        cl.dirty=true;
+        cl.ready=false;
+        pullTrainerState();
+        return;
+      }
+    }
+    if(resp.status===503){
+      // Pre-migration server (spec §7): silent degrade — no retry loop, neutral indicator (FIX 4)
+      cl.notProvisioned=true;
+      updateSyncIndicator();
+      return;
+    }
+    if(resp.status===413){
+      // Payload too large: retrying can never succeed — stop timers, surface, don't re-dirty (FIX 10c)
+      if(cl.retryTimer){clearTimeout(cl.retryTimer);cl.retryTimer=null}
+      updateSyncIndicator('error','deck too large to sync');
+      return;
+    }
+    if(resp.status===400){
+      // Deterministic rejection (deck not in the server allowlist / bad id):
+      // retrying the identical payload can never succeed.
+      if(cl.retryTimer){clearTimeout(cl.retryTimer);cl.retryTimer=null}
+      updateSyncIndicator('error','deck not syncable');
+      return;
+    }
+    if(!resp.ok)throw new Error('push http '+resp.status); // 5xx land here
+    const data=await resp.json();
+    // 'synced' truthfulness (FIX 10e): the await may have outlived this deck/session
+    if(cl!==cloud||!activeCartridge||activeCartridge.id!==deckId)return;
+    cl.baseUpdatedAt=(data&&data.updatedAt)||cl.baseUpdatedAt;
+    cl.lastPushAt=pushStartedAt; // start-of-push stamp, NOT response time (FIX 6)
+    lsSet('td-owner-'+deckId,String(session.studentId)); // ownership stamp on every push (FIX 2)
+    updateSyncIndicator('synced'); // ONLY shown after a 2xx push (spec §3.3)
+  }catch(e){
+    failed=true;
+    if(cl===cloud&&activeCartridge&&activeCartridge.id===deckId){
+      updateSyncIndicator('offline');
+      cl.dirty=true;
+      if(!cl.retryTimer){
+        cl.retryTimer=setTimeout(function(){
+          cl.retryTimer=null;
+          if(cl===cloud&&getRosterSession()&&cl.dirty)pushTrainerState();
+        },15000);
+      }
+    }
+  }finally{
+    cl.inFlight=false;
+    // Trailing push: a save landed while this push was in flight.
+    // After a failure the 15 s retry timer owns the follow-up instead (no hot loop).
+    if(cl.dirty&&!failed&&cl===cloud)setTimeout(function(){if(cloud.dirty)pushTrainerState()},250);
   }
 }
-function updateSyncIndicator(state){
+function expireSession(){
+  // Expired 30-day token (401): clear, nudge sign-in; embedded contexts silently re-handshake.
+  // Remember the rejected token so a parent replaying the SAME dead session can't
+  // re-trigger an infinite 401 pull loop (FIX 3).
+  const dead=getRosterSession();
+  if(dead&&dead.token)G._deadToken=dead.token;
+  clearRosterSession();
+  updateSyncIndicator();
+  G._sessionExpired=true;
+  if(isEmbedded()){
+    try{window.parent.postMessage({type:'roster-identity-request'},DESK_ORIGIN)}catch(e){}
+  }
+  if(G.screen==='title')showTitleScreen('title');
+}
+// \u2500\u2500 Sync indicator (spec \u00a73.3): synced / syncing / offline (retrying) / error \u2014 tap to retry / signed out.
+//    Renders both the HUD pill (#h-sync) and the MORE-tab mirror line (#more-sync) (FIX 9). \u2500\u2500
+function _syncRetry(){
+  if(!getRosterSession())return;
+  cloud.retries=0;
+  if(!cloud.ready)pullTrainerState();else pushTrainerState({urgent:true});
+}
+function updateSyncIndicator(state,msg){
+  G._syncState=state||'';
+  G._syncMsg=msg||'';
+  const session=getRosterSession();
+  let text='',color='#996622',clickable=false;
+  if(!session){text=''} // signed out / anonymous \u2014 indicator hides itself
+  else if(state==='syncing'){text='\u2601 Syncing...';color='#ffcc66'}
+  else if(state==='synced'){text='\u2601 \u2713';color='#44ff88'} // ONLY set after a 2xx push
+  else if(state==='offline'){text='\u26a0 Offline (retrying)';color='#ff6644'}
+  else if(state==='error'){text='\u26a0 '+(msg||'Sync error')+' \u2014 tap to retry';color='#ff4422';clickable=true}
+  else{text='\u2601 '+(session.realName||session.username)} // neutral signed-in
   const el=document.getElementById('h-sync');
-  if(!el)return;
-  if(state==='syncing'){el.textContent='\u2601 Syncing...';el.style.color='#ffcc66'}
-  else if(state==='synced'){el.textContent='\u2601 \u2713';el.style.color='#44ff88'}
-  else if(state==='offline'){el.textContent='\u26a0 Offline';el.style.color='#ff6644'}
-  else{
-    const id=getIdentity();
-    el.textContent=id?'\u2601 '+id.username:'';
-    el.style.color='#996622';
+  if(el){
+    el.onclick=clickable?_syncRetry:null;
+    el.style.cursor=clickable?'pointer':'';
+    el.textContent=text;
+    el.style.color=color;
+    el.classList.toggle('sync-error',clickable); // mobile CSS un-clips the pill in error state
+  }
+  const more=document.getElementById('more-sync');
+  if(more){
+    more.style.color=color;
+    if(clickable)more.innerHTML=escapeHtml('\u26a0 '+(msg||'Sync error'))+' <button class="btn btn-secondary" style="font-size:9px;padding:2px 8px;margin-left:4px" onclick="_syncRetry()">[RETRY]</button>';
+    else more.textContent=text;
   }
 }
-// Flush sync on page hide
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'&&getIdentity()&&activeCartridge&&G.screen==='game'){
-    saveSRS(true);syncToCloud();
-  }
+// \u2500\u2500 Page-hide flush (spec \u00a73.2 rule 6). The run checkpoint runs for ANONYMOUS users
+//    too \u2014 the old flush was identity-gated and skipped the run checkpoint entirely. \u2500\u2500
+function flushTrainerStateOnHide(){
+  try{
+    if(G.screen==='game'&&activeCartridge)syncRunCheckpoint();
+  }catch(e){}
+  try{
+    const session=getRosterSession();
+    if(!session||!cloud.ready||!activeCartridge)return;
+    const meta=G.meta||defaultMeta();
+    const cutoff=cloud.lastPushAt||0;
+    const srs=G.srs||{};
+    const dirty=[];
+    for(const id of Object.keys(srs)){
+      const c=srs[id];
+      if(!c||(c.rev||0)<=0)continue;
+      if((c.lastUpdated||0)>=cutoff)dirty.push({id:id,c:c});
+    }
+    // No-op gate: a plain tab switch with nothing new since the last 2xx push
+    // must not PATCH \u2014 each no-op PATCH bumps server updated_at and forces a
+    // 409 round-trip on the next PUT.
+    if(dirty.length===0&&!cloud.dirty&&(cloud.lastPushAt||0)>0)return;
+    // Keepalive bodies are capped (~64 KB): newest-first, stop before ~55,000 chars,
+    // drop the rest \u2014 meta fields always ship (FIX 10b).
+    dirty.sort(function(a,b){return(b.c.lastUpdated||0)-(a.c.lastUpdated||0)});
+    const baseDelta={lb:computeLb(),hs:getStoredHighScore(),resetRev:G.resetRev||0,xp:meta.xp,streak:meta.streak,daily:meta.daily,quests:meta.quests,topicBest:meta.topicBest||{},srs:{}};
+    let budget=55000-JSON.stringify({token:session.token,delta:baseDelta}).length;
+    const dirtySrs={};
+    for(let i=0;i<dirty.length;i++){
+      const tuple=srsTupleFor(dirty[i].c);
+      const cost=JSON.stringify(dirty[i].id).length+JSON.stringify(tuple).length+2; // "id":[...],
+      if(cost>budget)break;
+      budget-=cost;
+      dirtySrs[dirty[i].id]=tuple;
+    }
+    baseDelta.srs=dirtySrs;
+    // Plain fetch with keepalive \u2014 fetchWithTimeout would abort the keepalive request.
+    // PATCH (server-side per-card merge), never a full-replace PUT from this path.
+    fetch(ROSTER_SERVER+'/trainer/state/'+encodeURIComponent(activeCartridge.id),{
+      method:'PATCH',
+      keepalive:true,
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:session.token,delta:baseDelta}),
+    }).catch(function(){});
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden')flushTrainerStateOnHide();
+});
+window.addEventListener('pagehide',flushTrainerStateOnHide);
+window.addEventListener('online',function(){
+  const session=getRosterSession();
+  if(!session)return;
+  if(!cloud.ready){cloud.retries=0;pullTrainerState()}
+  else if(cloud.dirty)pushTrainerState();
 });
 
-async function handleLogin(){
+// \u2500\u2500 Standalone sign-in (MORE tab, spec \u00a71.2) \u2500\u2500
+async function handleRosterLogin(){
   const userEl=document.getElementById('login-user');
-  const pwEl=document.getElementById('login-pw');
+  const pinEl=document.getElementById('login-pw');
   const errEl=document.getElementById('login-error');
-  if(!userEl||!pwEl)return;
-  const username=userEl.value.trim();
-  const password=pwEl.value;
-  if(!username||!password){if(errEl)errEl.textContent='Enter username and password';return}
-  if(errEl)errEl.textContent='Verifying...';
+  const btnEl=document.getElementById('login-btn');
+  const secEl=document.getElementById('login-section');
+  if(!userEl||!pinEl)return;
+  const username=(userEl.value||'').trim();
+  const pin=pinEl.value;
+  if(!username||!pin){if(errEl)errEl.textContent='Pick your name and enter your PIN';return}
+  if(errEl)errEl.innerHTML='';
+  let wakeTimer=null;
+  if(btnEl){
+    btnEl.disabled=true;
+    btnEl.textContent='[ SIGNING IN… ]';
+    wakeTimer=setTimeout(function(){btnEl.textContent='[ Waking the class server… ]'},4000);
+  }
+  const done=function(){
+    if(wakeTimer)clearTimeout(wakeTimer);
+    if(btnEl){btnEl.disabled=false;btnEl.textContent='[ SIGN IN ]'}
+  };
+  const fail=function(msg,retry){
+    done();
+    if(errEl)errEl.innerHTML=escapeHtml(msg)+(retry?' <button class="btn btn-secondary" style="font-size:9px;padding:2px 8px;margin-left:4px" onclick="handleRosterLogin()">RETRY</button>':'');
+  };
   try{
-    const result=await verifyUser(username,password);
-    if(result.valid){
-      setIdentity(result.username,result.real_name||'',password);
-      if(errEl)errEl.textContent='';
-      // Pull remote SRS, merge, then push local state so leaderboard is accurate
-      if(activeCartridge&&G.srs&&Object.keys(G.srs).length>0){
-        await pullFromCloud();
-        await syncToCloud();
-      }
-      showTitleScreen('title');
-    }else{
-      if(errEl)errEl.textContent=result.error||'Login failed';
-    }
+    const resp=await fetchWithTimeout(ROSTER_SERVER+'/roster/verify',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:username,password:pin}),
+    });
+    if(resp.status===401){fail('Wrong username or PIN.',false);return}
+    if(resp.status===429){fail('Too many tries — locked for a bit. Wait ~15 minutes and try again.',false);return}
+    if(!resp.ok){fail('Class server hiccup — try again in a minute.',true);return}
+    let result=null;
+    try{result=await resp.json()}catch(e){fail('Class server hiccup — try again in a minute.',true);return}
+    if(!result||!result.ok||!result.token||!result.studentId){fail('Class server hiccup — try again in a minute.',true);return}
+    done();
+    // verify omits username in the response — keep what the user typed
+    setRosterSession({
+      studentId:result.studentId,
+      username:username,
+      realName:result.realName||'',
+      section:result.section||((secEl&&secEl.value)||''),
+      token:result.token,
+      role:result.role||'student',
+      spriteHue:result.spriteHue!=null?result.spriteHue:null,
+      mustChangePassword:!!result.mustChangePassword,
+      signedInAt:new Date().toISOString(),
+    });
+    showTitleScreen('title');
+    pullTrainerState();
   }catch(e){
-    if(errEl)errEl.textContent='Server unreachable — play offline';
+    if(e&&e.name==='AbortError')fail('Server is waking up (can take ~30 s)…',true);
+    else fail('Class server hiccup — try again in a minute.',true);
   }
 }
-function handleLogout(){
-  clearIdentity();
-  cloudSyncReady=false;
+function handleRosterSignOut(){
+  clearRosterSession();
   showTitleScreen('title');
+}
+function _loginUserFallbackToText(){
+  // Roster fetch failed: swap to a free-text username input (mirrors the old fallback)
+  const sel=document.getElementById('login-user');
+  if(!sel||sel.tagName==='INPUT')return;
+  const inp=document.createElement('input');
+  inp.type='text';
+  inp.id='login-user';
+  inp.placeholder='Username';
+  inp.autocomplete='off';
+  inp.className=sel.className;
+  inp.style.cssText=sel.style.cssText;
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')handleRosterLogin()});
+  sel.replaceWith(inp);
+}
+async function _loadRosterStudents(section){
+  const sel=document.getElementById('login-user');
+  if(!sel)return;
+  if(sel.tagName==='SELECT')sel.innerHTML='<option value="">Loading students…</option>';
+  try{
+    const r=await fetchWithTimeout(ROSTER_SERVER+'/roster/section/'+encodeURIComponent(section));
+    if(!r.ok)throw new Error('http '+r.status);
+    const d=await r.json();
+    const students=(d&&Array.isArray(d.students))?d.students:[];
+    const cur=document.getElementById('login-user');
+    if(!cur||cur.tagName!=='SELECT')return; // tab re-rendered or already in text mode
+    if(!students.length){_loginUserFallbackToText();return}
+    cur.innerHTML='<option value="">— Pick your name —</option>'+students.map(function(s){
+      return'<option value="'+escapeHtml(s.username)+'">'+escapeHtml(s.realName||s.username)+' ('+escapeHtml(s.username)+')</option>';
+    }).join('');
+  }catch(e){_loginUserFallbackToText()}
+}
+async function initRosterLoginForm(){
+  const pinEl=document.getElementById('login-pw');
+  if(pinEl)pinEl.addEventListener('keydown',function(e){if(e.key==='Enter')handleRosterLogin()});
+  const secEl=document.getElementById('login-section');
+  if(!secEl)return;
+  try{
+    const r=await fetchWithTimeout(ROSTER_SERVER+'/roster/open-sections');
+    if(!r.ok)throw new Error('http '+r.status);
+    const d=await r.json();
+    const sections=(d&&Array.isArray(d.sections))?d.sections:[];
+    const cur=document.getElementById('login-section');
+    if(!cur)return; // tab re-rendered
+    if(!sections.length){cur.style.display='none';_loginUserFallbackToText();return}
+    cur.innerHTML=sections.map(function(s){
+      return'<option value="'+escapeHtml(s.value)+'">'+escapeHtml(s.label||s.value)+'</option>';
+    }).join('');
+    if(sections.length===1){
+      cur.style.display='none'; // auto-select + hide when exactly one section
+      cur.value=sections[0].value;
+    }else{
+      cur.style.display='';
+    }
+    cur.onchange=function(){_loadRosterStudents(cur.value)};
+    _loadRosterStudents(cur.value||sections[0].value);
+  }catch(e){
+    const cur=document.getElementById('login-section');
+    if(cur)cur.style.display='none';
+    _loginUserFallbackToText();
+  }
+}
+
+// ── Section leaderboard data source (RANKS tab, spec §5.4) ──
+function renderRosterLeaderboard(el){
+  const session=getRosterSession();
+  G._teacherView=false;
+  // Anonymous read-only board (FIX 10g): a remembered section renders the board
+  // with a gentle sign-in note; no stamp keeps the original sign-in message.
+  const lbSection=session?session.section:lsGet('td-last-section');
+  if(!session&&!lbSection){
+    el.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">Sign in (MORE tab) to see your class leaderboard.</div>';
+    return;
+  }
+  if(!activeCartridge){el.innerHTML='';return}
+  const teacherBar=(session&&session.role==='teacher')?'<div style="text-align:center;margin-bottom:6px"><button class="btn btn-secondary" style="font-size:9px;padding:3px 10px" onclick="_toggleTeacherView()">[ TEACHER VIEW ]</button></div>':'';
+  const anonNote=session?'':'<div style="color:#996622;font-size:10px;text-align:center;margin-bottom:6px">Read-only — sign in (MORE tab) to appear on the board.</div>';
+  el.innerHTML='<div style="font-size:10px;color:#996622;text-align:center">Loading leaderboard...</div>';
+  fetchWithTimeout(ROSTER_SERVER+'/trainer/leaderboard/'+encodeURIComponent(lbSection)+'/'+encodeURIComponent(activeCartridge.id))
+    .then(async function(resp){
+      const cur=document.getElementById('leaderboard-content');
+      if(!cur)return;
+      if(G._teacherView)return; // teacher switched views while this fetch was in flight — don't clobber
+      if(resp.status===503){cur.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">Class leaderboard isn’t set up yet.</div>';return}
+      if(!resp.ok)throw new Error('lb http '+resp.status);
+      const data=await resp.json();
+      if(G._teacherView)return; // re-check: the toggle may have flipped during the body parse
+      // Teachers never rank on the student board (FIX 10h) — role is null-safe (absent until the server ships it)
+      const rows=((data&&Array.isArray(data.rows))?data.rows.slice():[]).filter(function(r){return!(r&&r.role==='teacher')});
+      if(!rows.length){cur.innerHTML=teacherBar+anonNote+'<div style="color:#996622;font-size:11px;text-align:center">No scores yet. Play a run to appear here!</div>';return}
+      const lbOf=function(r){return(r&&r.lb&&typeof r.lb==='object')?r.lb:{}};
+      rows.sort(function(a,b){
+        return((Number(lbOf(b).weeklyXp)||0)-(Number(lbOf(a).weeklyXp)||0))||((Number(lbOf(b).gold)||0)-(Number(lbOf(a).gold)||0));
+      });
+      let t='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+      t+='<tr style="color:#5a3800;font-size:9px;letter-spacing:1px;text-align:left"><th style="padding:4px 6px">#</th><th style="padding:4px 6px">NAME</th><th style="padding:4px 6px;text-align:right">LVL</th><th style="padding:4px 6px;text-align:right">WEEKLY XP</th><th style="padding:4px 6px;text-align:right">★</th><th style="padding:4px 6px;text-align:right">STREAK</th><th style="padding:4px 6px;text-align:right">BEST</th><th style="padding:4px 6px;text-align:right">SEEN</th></tr>';
+      rows.forEach(function(r,i){
+        const lb=lbOf(r);
+        const isMe=!!(session&&session.username&&r.username&&String(r.username).toLowerCase()===String(session.username).toLowerCase()); // case-insensitive, null-safe (FIX 10d)
+        const bg=isMe?'#ff8c0018':'transparent';
+        const c=i===0?'#ffcc66':i<3?'#ff8c00':'#996622';
+        const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+        t+='<tr style="color:'+c+';background:'+bg+';border-bottom:1px solid #3d1f0022">';
+        t+='<td style="padding:5px 6px;font-weight:700">'+medal+(i+1)+'</td>';
+        t+='<td style="padding:5px 6px">'+escapeHtml(r.realName||r.username||'')+(isMe?' <span style="font-size:8px;color:#44ff88">YOU</span>':'')+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right">'+(Number(lb.level)||1)+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right;font-weight:700">'+(Number(lb.weeklyXp)||0).toLocaleString()+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right;color:#44ff88">'+(Number(lb.gold)||0)+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right">'+(Number(lb.streak)||0)+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right">'+(Number(lb.hs)||0).toLocaleString()+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right;color:#996622">'+(Number(lb.seen)||0)+'/'+COMMANDS.length+'</td>';
+        t+='</tr>';
+      });
+      t+='</table>';
+      // ── Section co-op goal (E6, AP only): dumb client-side aggregate of lb.gold ──
+      if(topicFeaturesActive()){
+        const wk=weeklyChallenge();
+        if(wk){
+          const target=unitCmdIds(wk.unit).length*Math.max(1,rows.length);
+          let goldSum=0;rows.forEach(function(r){goldSum+=Number(lbOf(r).gold)||0});
+          const pct=target>0?Math.max(0,Math.min(100,Math.round(goldSum/target*100))):0;
+          t+='<div style="margin-top:12px">';
+          t+='<div style="font-size:9px;letter-spacing:1px;color:#996622">'+escapeHtml(String(lbSection||'CLASS').toUpperCase())+' UNIT '+escapeHtml(wk.unit)+' PUSH: '+goldSum+'/'+target+' ★</div>';
+          t+='<div style="height:8px;background:#1a0800;border:1px solid #3d1f0044;border-radius:4px;overflow:hidden;margin-top:3px"><div style="width:'+pct+'%;height:100%;background:#ffcc66"></div></div>';
+          if(target>0&&goldSum>=target)t+='<div style="font-size:10px;color:#44ff88;margin-top:3px;text-align:center">🎉 GOAL REACHED</div>';
+          t+='</div>';
+        }
+      }
+      cur.innerHTML=teacherBar+anonNote+t;
+    })
+    .catch(function(){
+      if(G._teacherView)return; // never clobber an open TEACHER VIEW with the class-board error state
+      const cur=document.getElementById('leaderboard-content');
+      if(cur)cur.innerHTML='<div style="color:#ff6644;font-size:10px;text-align:center">⚠ Server offline <button class="btn btn-secondary" style="font-size:9px;padding:2px 8px;margin-left:6px" onclick="_lbRetry()">RETRY</button></div>';
+    });
+}
+function _lbRetry(){
+  const el=document.getElementById('leaderboard-content');
+  if(el)renderRosterLeaderboard(el);
+}
+// ── Teacher snapshot (E6, spec §5.4): bearer-token summary, engagement signal only ──
+function _relTime(iso){
+  if(!iso)return'never';
+  const t=new Date(iso).getTime();
+  if(!Number.isFinite(t))return'never';
+  const days=Math.floor((Date.now()-t)/86400000);
+  if(days<=0)return'today';
+  return days+'d ago';
+}
+function _toggleTeacherView(){
+  const el=document.getElementById('leaderboard-content');
+  if(!el)return;
+  if(G._teacherView){renderRosterLeaderboard(el);return} // back to class view (resets flag)
+  renderTeacherView(el);
+}
+function _tvRetry(){
+  const el=document.getElementById('leaderboard-content');
+  if(el)renderTeacherView(el);
+}
+function renderTeacherView(el){
+  const session=getRosterSession();
+  if(!session||session.role!=='teacher'||!activeCartridge){if(el)renderRosterLeaderboard(el);return}
+  G._teacherView=true;
+  el.innerHTML='<div style="font-size:10px;color:#996622;text-align:center">Loading section summary...</div>';
+  fetchWithTimeout(ROSTER_SERVER+'/trainer/section/'+encodeURIComponent(session.section)+'/summary/'+encodeURIComponent(activeCartridge.id),{headers:{'Authorization':'Bearer '+session.token}})
+    .then(async function(resp){
+      const cur=document.getElementById('leaderboard-content');
+      if(!cur||!G._teacherView)return;
+      if(resp.status===401){cur.innerHTML='<div style="color:#ff6644;font-size:10px;text-align:center">Teacher token expired — sign in again.</div>';return}
+      if(resp.status===503){cur.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">Not provisioned yet.</div>';return}
+      if(!resp.ok)throw new Error('summary http '+resp.status);
+      const data=await resp.json();
+      const rows=(data&&Array.isArray(data.rows))?data.rows.slice():[];
+      rows.sort(function(a,b){return String(a.realName||a.username||'').localeCompare(String(b.realName||b.username||''))});
+      let t='<div style="text-align:center;margin-bottom:6px"><button class="btn btn-secondary" style="font-size:9px;padding:3px 10px" onclick="_toggleTeacherView()">[ ← CLASS VIEW ]</button></div>';
+      t+='<table style="width:100%;border-collapse:collapse;font-size:10px">';
+      t+='<tr style="color:#5a3800;font-size:9px;letter-spacing:1px;text-align:left"><th style="padding:4px 6px">NAME</th><th style="padding:4px 6px">LAST ACTIVE</th><th style="padding:4px 6px;text-align:right">LVL</th><th style="padding:4px 6px;text-align:right">WEEKLY XP</th><th style="padding:4px 6px;text-align:right">STREAK</th><th style="padding:4px 6px">WEAK UNIT</th></tr>';
+      if(!rows.length)t+='<tr><td colspan="6" style="padding:8px;color:#996622;text-align:center">No students yet.</td></tr>';
+      rows.forEach(function(r){
+        const lb=(r&&r.lb&&typeof r.lb==='object')?r.lb:null; // inactive students → dashes
+        t+='<tr style="color:#996622;border-bottom:1px solid #3d1f0022">';
+        t+='<td style="padding:5px 6px;color:#ff8c00">'+escapeHtml(r.realName||r.username||'')+'</td>';
+        t+='<td style="padding:5px 6px">'+escapeHtml(lb?_relTime(r.updatedAt):'never')+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right">'+(lb?(Number(lb.level)||1):'—')+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right">'+(lb?(Number(lb.weeklyXp)||0).toLocaleString():'—')+'</td>';
+        t+='<td style="padding:5px 6px;text-align:right">'+(lb?(Number(lb.streak)||0):'—')+'</td>';
+        t+='<td style="padding:5px 6px">'+(lb?escapeHtml(lb.weakUnit||'—'):'—')+'</td>';
+        t+='</tr>';
+      });
+      t+='</table>';
+      cur.innerHTML=t;
+    })
+    .catch(function(){
+      const cur=document.getElementById('leaderboard-content');
+      if(cur&&G._teacherView)cur.innerHTML='<div style="color:#ff6644;font-size:10px;text-align:center">⚠ Server offline <button class="btn btn-secondary" style="font-size:9px;padding:2px 8px;margin-left:6px" onclick="_tvRetry()">RETRY</button></div>';
+    });
+}
+
+// ── Grade-inert ledger helper (spec §2.3) — wired up by a later phase, all failures silent ──
+function postLedgerRecord(itemId,response,score){
+  const session=getRosterSession();
+  if(!session)return;
+  try{
+    fetchWithTimeout(ROSTER_SERVER+'/ledger/record',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:session.token,source:'trainer',itemId:itemId,response:response,score:score,attempt:1}),
+    }).then(function(r){if(!r.ok)console.debug('[ledger] skipped',r.status)})
+      .catch(function(e){console.debug('[ledger] skipped',e&&e.message)});
+  }catch(e){}
+}
+
+// ── Embedded handshake (spec §1.3, child side) — Desk iframe identity bridge ──
+function isEmbedded(){try{return window.parent!==window}catch(e){return false}}
+let _rosterHandshakeAnswered=false;
+function sendTrainerEvent(evt){
+  if(!isEmbedded())return;
+  try{
+    window.parent.postMessage(Object.assign({type:'trainer-event',deckId:activeCartridge&&activeCartridge.id,ts:Date.now()},evt||{}),DESK_ORIGIN);
+  }catch(e){}
+}
+if(isEmbedded()){
+  window.addEventListener('message',function(ev){
+    if(ev.origin!==DESK_ORIGIN)return;
+    if(ev.source!==window.parent)return; // never accept replies from arbitrary same-origin windows
+    const data=ev.data;
+    if(!data||data.type!=='roster-identity')return;
+    _rosterHandshakeAnswered=true;
+    const sess=data.session;
+    if(sess&&sess.token&&G._deadToken&&sess.token===G._deadToken){
+      // Parent replayed the token the server just 401'd — adopting it would loop
+      // 401 → expire → handshake → 401 forever. Stay signed out, tell the user (FIX 3).
+      G._sessionExpired=true;
+      if(G.screen==='title')showTitleScreen('title');
+      return;
+    }
+    if(sess&&sess.token){
+      G._deadToken=null; // a different (fresh) token clears the tombstone
+      // The parent's session is authoritative for the embedded context
+      setRosterSession(sess.signedInAt?sess:Object.assign({},sess,{signedInAt:new Date().toISOString()}));
+    }else{
+      clearRosterSession(); // signed-out Desk: run anonymous, no nag
+    }
+    if(G.screen==='title')showTitleScreen('title');
+    if(sess&&sess.token)pullTrainerState();
+  });
+  // Request identity at t=0/300ms/1s/3s, stopping once answered (covers listener races)
+  [0,300,1000,3000].forEach(function(ms){
+    setTimeout(function(){
+      if(_rosterHandshakeAnswered)return;
+      try{window.parent.postMessage({type:'roster-identity-request'},DESK_ORIGIN)}catch(e){}
+    },ms);
+  });
 }
 
 // ═══════════════════════════════════════════════
@@ -2442,7 +3625,12 @@ const G={
   attemptsOnCurrent:0,commandStartTime:0,
   typedBuffer:'',domainFilter:[],difficulty:'learn',paused:false,
   srsError:false,runStateError:false,sessionStartTime:0,resetRev:0,
-  composing:false,missStarCounter:0,
+  composing:false,missStarCounter:0,meta:null,
+  // Gamification (Phase E)
+  runXp:0,missionMode:null,waveMisses:0,
+  rustBusterWave:false,rustBusterIds:null,waveDecayedIds:null,_teacherView:false,
+  // Sync/session UI state (FIX 3 / FIX 9)
+  _deadToken:null,_syncState:'',_syncMsg:'',
 };
 const MELODY_STATE={
   notes:[],        // current recording buffer (0-8 entries: MIDI number or null for rest)
@@ -3723,7 +4911,13 @@ function updateHUD(){
   if(HUD.mastery){
     if(G.topicFilterId){
       HUD.mastery.style.display='block';
-      HUD.mastery.innerHTML='<span onclick="returnToTitleFromRun()" style="cursor:pointer;background:#1a0d0066;border:1px solid #ff8c0044;border-radius:4px;padding:2px 6px;color:#ff8c00;font-size:10px;letter-spacing:1px">\ud83d\udcd6 Topic '+G.topicFilterId+' \u00d7</span>';
+      HUD.mastery.innerHTML='<span onclick="returnToTitleFromRun()" style="cursor:pointer;background:#1a0d0066;border:1px solid #ff8c0044;border-radius:4px;padding:2px 6px;color:#ff8c00;font-size:10px;letter-spacing:1px">\ud83d\udcd6 '+escapeHtml(topicRunLabel(G.topicFilterId))+' \u00d7</span>';
+    }else if(G.missionMode==='daily'){
+      HUD.mastery.style.display='block';
+      HUD.mastery.innerHTML='<span style="background:#1a0d0066;border:1px solid #ffcc6644;border-radius:4px;padding:2px 6px;color:#ffcc66;font-size:10px;letter-spacing:1px">\u26a1 DAILY '+Math.min(G.wave,3)+'/3</span>';
+    }else if(G.rustBusterWave&&G.wave===1){
+      HUD.mastery.style.display='block';
+      HUD.mastery.innerHTML='<span style="background:#1a0d0066;border:1px solid #66aaff44;border-radius:4px;padding:2px 6px;color:#66aaff;font-size:10px;letter-spacing:1px">RUST-BUSTER WAVE</span>';
     }else{
       HUD.mastery.style.display='none';
     }
@@ -4058,10 +5252,11 @@ function applyImmediateBktUpdate(card,outcome,cmd){
   card.lastSeen=G.wave;
   card.lastUpdated=Date.now();
   card.rev=(card.rev||0)+1;
+  card.epoch=G.resetRev||0;
   saveSRS();
 }
 function ensureSrsCard(id){
-  if(!G.srs[id])G.srs[id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0};
+  if(!G.srs[id])G.srs[id]={ease:2.5,interval:0,streak:0,correct:0,wrong:0,lastSeen:0,mastery:0,avgTimeMs:0,totalAttempts:0,pKnownDirect:0.1,pKnown:0.1,pTransit:0.03,pGuess:0.25,pSlip:0.1,subPKnown:{},dagState:{},lastUpdated:0,rev:0,epoch:G.resetRev||0};
   return G.srs[id];
 }
 function spawnKanaDecomposition(parentEnemy){
@@ -4124,6 +5319,7 @@ function handleChainChoice(idx,isCorrect){
     return;
   }
   // Wrong answer: mark wrong in BKT
+  G.waveMisses=(G.waveMisses||0)+1; // every wrong chain choice voids the perfect-wave bonus (FIX 7) — incl. the step-1 decomposition path below
   applyImmediateBktUpdate(G.srs[cmd.id],{wasCorrect:false,questionType:'chain',remainingChoices:3,bktWeight:weight,wave:G.wave,_cmd:cmd},cmd);
   SFX.miss();
   // Step 1 (furigana→romaji) wrong: decompose into individual kana cards, then continue chain
@@ -4271,15 +5467,25 @@ function showPauseScreen(){
 }
 
 function loadCartridge(cart){
-  activeCartridge=cart;
-  COMMANDS=cart.commands;
+  // Disarm the previous deck's sync FIRST: if a throwing step below aborts the
+  // load, no armed timer/listener may push the old deck's state anywhere.
+  resetCloudState();
+  // Run every cartridge-contract step that can throw BEFORE touching globals,
+  // so a corrupt/skewed cartridge leaves the previous deck fully intact.
+  const cmds=cart.commands;
   Object.keys(PREREQ_DAG).forEach(k=>delete PREREQ_DAG[k]);
-  buildDAGFromSubconcepts(COMMANDS);
+  buildDAGFromSubconcepts(cmds);
   Object.assign(PREREQ_DAG,cart.sharedPrereqNodes);
   cart.wireL1toL2(PREREQ_DAG);
   validateDAG();
-  EXPLANATION_BANK=cart.buildExplanationBank(COMMANDS);
+  const bank=cart.buildExplanationBank(cmds);
+  // Past the throw surface — commit.
+  activeCartridge=cart;
+  COMMANDS=cmds;
+  EXPLANATION_BANK=bank;
   G.srs=loadSRS(activeCartridge);
+  G.meta=loadMeta(activeCartridge.id); // per-deck gamification meta
+  ensureDeckOwnership(); // shared-device guard (FIX 2) — wipes another student's local progress before the pull
   G.domainFilter=[];
   G.difficulty='learn';
   G._menuTab='play';
@@ -4311,10 +5517,23 @@ function showCartridgeSelector(){
   ov.innerHTML=html;
 }
 
+// Corrupt/skewed cartridge → full-stop LOAD ERROR overlay with reload guidance.
+// Used by bootInit's guarded paths AND the selector (same SW-version-skew failure).
+function showLoadError(e){
+  console.error('[Cartridge] load failed',e);
+  const overlay=document.getElementById('overlay');
+  if(overlay){
+    overlay.classList.remove('hidden');
+    overlay.innerHTML='<h1>LOAD ERROR</h1><div class="desc">'+escapeHtml((e&&e.message)||'Cartridge failed to load.')+'</div><div class="sub">Reload once to refresh the cached shell.</div>';
+  }
+}
+
 function selectCartridge(index){
   const cartridges=window.TD_CARTRIDGES||[];
   if(index<0||index>=cartridges.length)return;
-  loadCartridge(cartridges[index]);
+  try{
+    loadCartridge(cartridges[index]);
+  }catch(e){showLoadError(e);return}
   showTitleScreen('boot');
 }
 
@@ -4325,13 +5544,24 @@ function buildBrowseTabHtml(context){
   try{expanded=JSON.parse(localStorage.getItem('td-browse-expanded')||'null')}catch(e){expanded=null}
   if(expanded===null)expanded='unit1';
   let h='<div style="width:100%;max-width:420px;margin-top:8px">';
+  const claimedMap=(G.meta&&G.meta.quests&&G.meta.quests.claimed)||{};
+  const crestMap=(G.meta&&G.meta.quests&&G.meta.quests.crests)||{};
   units.forEach(unit=>{
     const isOpen=expanded===unit.unitId;
     const arrow=isOpen?'&#9660;':'&#9654;';
+    // Unit progress (E3): silver-starred fraction over the unit's mapped commands + crest badge
+    const unitNum=String(unit.unitId||'').replace('unit','');
+    const unitIds=[...new Set([].concat(...(unit.topics||[]).map(t=>topicMap[t.id]||[])))].filter(id=>G.srs&&G.srs[id]);
+    let unitProg='';
+    if(unitIds.length){
+      const silverDone=unitIds.filter(id=>(G.srs[id].mastery||0)>=3).length;
+      const crest=crestMap['U'+unitNum]?'🛡 ':'';
+      unitProg='<span style="color:'+(silverDone>=unitIds.length?'#ffcc66':'#996622')+';font-size:9px;margin-right:8px">'+crest+silverDone+'/'+unitIds.length+'★</span>';
+    }
     h+='<div style="margin-bottom:4px">';
     h+='<button onclick="_browseToggle(\''+unit.unitId+'\',\''+context+'\')" style="width:100%;background:#1a0d0066;border:1px solid #5a380044;border-radius:4px;padding:6px 10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:#ff8c00;font-family:inherit;font-size:11px;letter-spacing:1px;-webkit-tap-highlight-color:transparent">';
     h+='<span>'+arrow+' '+unit.displayName+'</span>';
-    h+='<span style="color:#5a3800;font-size:10px">'+unit.examWeight+'</span>';
+    h+='<span>'+unitProg+'<span style="color:#5a3800;font-size:10px">'+unit.examWeight+'</span></span>';
     h+='</button>';
     if(isOpen){
       h+='<div style="padding:4px 0 4px 8px">';
@@ -4342,13 +5572,29 @@ function buildBrowseTabHtml(context){
         const videoUrl=hasVideo?topic.videos[0].url:'';
         const desc=topic.description||topic.name;
         const shortDesc=desc.length>52?desc.slice(0,50)+'…':desc;
+        // Mastery heatmap (E3): topic name colored by live avg mastery; gray until seen
+        const liveIds=(cmds||[]).filter(id=>G.srs&&G.srs[id]);
+        let topicColor='#996622',dotColor='#5a3800',questHtml='';
+        if(liveIds.length){
+          const seenIds=liveIds.filter(id=>(G.srs[id].totalAttempts||0)>0);
+          if(seenIds.length){
+            const avg=liveIds.reduce((s,id)=>s+(G.srs[id].mastery||0),0)/liveIds.length;
+            dotColor=MASTERY_COLORS[Math.max(0,Math.min(5,Math.round(avg)))];
+            topicColor=dotColor;
+          }
+          const claimed=claimedMap[topic.id];
+          const complete=liveIds.every(id=>(G.srs[id].mastery||0)>=3);
+          if(claimed)questHtml='<span style="color:#ffcc66;font-size:13px;flex-shrink:0" title="Quest claimed">★</span>';
+          else if(complete)questHtml='<button onclick="claimTopicQuest(\''+topic.id+'\')" style="background:#2d1f00;border:1px solid #ffcc6666;border-radius:3px;padding:3px 7px;cursor:pointer;color:#ffcc66;font-family:inherit;font-size:10px;letter-spacing:1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent">CLAIM ★</button>';
+        }
         h+='<div data-topic-id="'+topic.id+'" style="display:flex;align-items:center;gap:6px;margin:3px 0;padding:4px 6px;background:#1a0d0033;border-radius:3px">';
-        h+='<div style="flex:1;min-width:0"><div style="font-size:10px;color:#996622;letter-spacing:1px">'+topic.name+'</div>';
+        h+='<div style="flex:1;min-width:0"><div style="font-size:10px;color:'+topicColor+';letter-spacing:1px"><span style="color:'+dotColor+'">●</span> '+topic.name+'</div>';
         h+='<div style="font-size:11px;color:#cc6600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" title="'+desc+'">'+shortDesc+'</div></div>';
         if(hasVideo)h+='<a href="'+videoUrl+'" target="_blank" rel="noopener" style="text-decoration:none;font-size:14px;flex-shrink:0" title="Watch lesson video">📖</a>';
         if(cmds&&cmds.length){
-          h+='<button onclick="_browseStartTopic(\''+topic.id+'\','+JSON.stringify(cmds)+')" style="background:#2d1200;border:1px solid #ff8c0044;border-radius:3px;padding:3px 7px;cursor:pointer;color:#ff8c00;font-family:inherit;font-size:10px;letter-spacing:1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent">DRILL '+cmds.length+'</button>';
+          h+='<button onclick="_browseStartTopic(\''+topic.id+'\')" style="background:#2d1200;border:1px solid #ff8c0044;border-radius:3px;padding:3px 7px;cursor:pointer;color:#ff8c00;font-family:inherit;font-size:10px;letter-spacing:1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent">DRILL '+cmds.length+'</button>';
         }
+        h+=questHtml;
         h+='</div>';
       });
       h+='</div>';
@@ -4366,7 +5612,10 @@ function _browseToggle(unitId,context){
   G._menuTab='browse';
   showTitleScreen(context||'title');
 }
-function _browseStartTopic(topicId,cmdIds){
+function _browseStartTopic(topicId){
+  // Command list is looked up by topic id — embedding JSON.stringify(cmds) in the
+  // double-quoted onclick attribute truncated it and made every DRILL button a no-op.
+  var cmdIds=(window.AP_STATS_TOPIC_MAP||{})[topicId]||[];
   var live=cmdIds.filter(function(id){return COMMANDS.some(function(c){return c.id===id})});
   G.topicFilter=live.length?live:null;
   G.topicFilterId=live.length?topicId:null;
@@ -4420,7 +5669,7 @@ function showTitleScreen(context){
   const titleHS=parseInt(localStorage.getItem('td-highscore-'+activeCartridge.id)||'0',10);
   const emphasizeHighScore=context==='game';
   const ov=document.getElementById('overlay');ov.classList.remove('hidden');
-  const identity=getIdentity();
+  const session=getRosterSession();
   const isTouch='ontouchstart' in window||navigator.maxTouchPoints>0;
   let html='<div class="title-shell">';
   html+='<h1>'+activeCartridge.title+'</h1>';
@@ -4438,12 +5687,26 @@ function showTitleScreen(context){
 
   // ═══ PLAY TAB ═══
   if(activeTab==='play'){
-    // Exam countdown + decay status
+    // Exam countdown + decay status (no banner when no exam date is set or it has passed)
     const examInfo=getExamUrgency();
-    const examColor=examInfo.daysLeft<=7?'#ff4422':examInfo.daysLeft<=14?'#ffcc66':'#996622';
-    html+='<div style="font-size:10px;color:'+examColor+';margin:6px 0;letter-spacing:1px">\ud83c\udfaf AP EXAM: '+examInfo.daysLeft+' days \u2014 <span style="text-transform:uppercase">'+examInfo.mode+'</span></div>';
-    if(identity)html+='<div style="font-size:10px;color:#44ff88;margin:2px 0;letter-spacing:1px">\u2601 '+identity.username+(identity.realName?' ('+identity.realName+')':'')+'</div>';
+    if(examInfo.daysLeft!=null){
+      const examColor=examInfo.daysLeft<=7?'#ff4422':examInfo.daysLeft<=14?'#ffcc66':'#996622';
+      html+='<div style="font-size:10px;color:'+examColor+';margin:6px 0;letter-spacing:1px">\ud83c\udfaf AP EXAM: '+examInfo.daysLeft+' days \u2014 <span style="text-transform:uppercase">'+examInfo.mode+'</span></div>';
+    }
+    // Pacing meter (E4, AP only) \u2014 coverage line, with a finish projection when an exam date exists
+    html+=buildPacingHtml();
+    // Weekly challenge banner (E4, AP only)
+    const wkChal=weeklyChallenge();
+    if(wkChal){
+      html+='<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0;font-size:10px;color:#ffcc66;letter-spacing:1px">\ud83d\udcc5 WEEK CHALLENGE: UNIT '+escapeHtml(wkChal.unit)+' \u00b7 2\u00d7 XP <button class="btn btn-secondary" id="btn-weekly" style="font-size:9px;padding:2px 10px">[ START ]</button></div>';
+    }
+    if(session)html+='<div style="font-size:10px;color:#44ff88;margin:2px 0;letter-spacing:1px">\u2601 '+escapeHtml(session.realName||session.username)+'</div>';
     else html+='<div style="font-size:10px;color:#996622;margin:2px 0;letter-spacing:1px;cursor:pointer" onclick="G._menuTab=\'settings\';showTitleScreen(\''+context+'\')">\u2601 <u>Sign in</u> to save progress across devices</div>';
+    // Unit crest strip (E3, AP only)
+    if(topicFeaturesActive()&&G.meta&&G.meta.quests&&G.meta.quests.crests){
+      const crests=Object.keys(G.meta.quests.crests).sort();
+      if(crests.length)html+='<div style="font-size:10px;color:#ffcc66;margin:2px 0;letter-spacing:2px">\ud83d\udee1 '+crests.map(escapeHtml).join(' \u00b7 ')+'</div>';
+    }
     // Domain filter pills
     if(allDomains.length>1){
       html+='<div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:600;margin-top:6px">DOMAINS</div>';
@@ -4469,7 +5732,7 @@ function showTitleScreen(context){
     const prog=getCartridgeProgress(activeCartridge.id);
     if(prog.seen>0){
       const gold=prog.mastered;
-      const silver=Object.values(JSON.parse(localStorage.getItem('td-srs-'+activeCartridge.id)||'{}')).filter(s=>s.mastery>=3&&s.mastery<4).length;
+      let silver=0;try{silver=Object.values(JSON.parse(lsGet('td-srs-'+activeCartridge.id)||'{}')).filter(s=>s.mastery>=3&&s.mastery<4).length}catch(e){}
       html+='<div style="margin-top:8px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">';
       if(gold>0)html+=gold+'\u2605 ';
       if(silver>0)html+=silver+'\u2606 ';
@@ -4479,12 +5742,22 @@ function showTitleScreen(context){
     }else if(titleHS>0&&!emphasizeHighScore){
       html+='<div style="margin-top:8px;font-size:11px;color:'+AMB.css.glow+';letter-spacing:2px">HIGH SCORE: <span style="font-weight:700;font-size:14px">'+titleHS.toLocaleString()+'</span></div>';
     }
+    // XP / level / streak chip (E1, deck-generic)
+    {
+      const gmeta=G.meta||defaultMeta();
+      const gstreak=Number(gmeta.streak.current)||0;
+      html+='<div style="margin-top:6px;font-size:11px;color:#ffcc66;letter-spacing:2px">LVL '+levelForXp(gmeta.xp.total)+' · '+(Number(gmeta.xp.total)||0).toLocaleString()+' XP'+(gstreak>0?' · 🔥 '+gstreak:'')+'</div>';
+    }
     if(savedRun){
       const lives=Math.max(0,Math.min(BASE_LIVES,Math.round(Number(savedRun.lives)||BASE_LIVES)));
       const hearts='\u2665'.repeat(lives)+'\u2661'.repeat(Math.max(0,BASE_LIVES-lives));
-      html+='<div style="margin-top:6px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+'</div>';
+      const contBadge=(typeof savedRun.topicFilterId==='string'&&savedRun.topicFilterId)?' · '+escapeHtml(topicRunLabel(savedRun.topicFilterId)):(savedRun.missionMode==='daily'?' · ⚡ DAILY':'');
+      html+='<div style="margin-top:6px;font-size:10px;color:'+AMB.css.mid+';letter-spacing:2px">CONTINUE: WAVE '+Math.max(1,Math.round(Number(savedRun.wave)||1))+' · SCORE '+Math.max(0,Math.round(Number(savedRun.score)||0)).toLocaleString()+' · '+hearts+contBadge+'</div>';
     }
+    // Daily mission button (E2, deck-generic)
+    const dailyDoneToday=!!(G.meta&&G.meta.daily&&G.meta.daily.lastMissionIso===todayLocalIso());
     html+='<div class="menu-actions">';
+    html+='<button class="btn btn-secondary" id="btn-daily"'+(dailyDoneToday?' disabled style="opacity:.45;cursor:default"':'')+'>'+(dailyDoneToday?'[ ✓ DONE TODAY ]':'[ ⚡ DAILY MISSION ]')+'</button>';
     if(savedRun)html+='<button class="btn" id="btn-continue">[ <u>C</u>ONTINUE ]</button>';
     html+='<button class="btn" id="btn-start">[ <u>D</u>EPLOY ]</button>';
     html+='</div>';
@@ -4501,15 +5774,21 @@ function showTitleScreen(context){
 
   // ═══ SETTINGS TAB ═══
   }else{
-    // Login
-    if(identity){
-      html+='<div class="login-status" style="color:#44ff88;margin-top:8px">\u2601 Logged in as <b>'+identity.username+'</b>'+(identity.realName?' ('+identity.realName+')':'')+'  <a href="#" onclick="event.preventDefault();handleLogout()" style="color:#996622;font-size:9px;margin-left:6px">LOG OUT</a></div>';
+    // Roster sign-in (spec \u00a71.2)
+    if(session){
+      html+='<div class="login-status" style="color:#44ff88;margin-top:8px">\u2601 Signed in as <b>'+escapeHtml(session.realName||session.username)+'</b> ('+escapeHtml(session.username)+')'+(session.section?' \u00b7 '+escapeHtml(session.section):'')+'</div>';
+      html+='<div id="more-sync" style="font-size:10px;margin-top:4px"></div>'; // sync-state mirror, populated by updateSyncIndicator (FIX 9)
+      if(session.mustChangePassword)html+='<div style="font-size:9px;color:#996622;margin-top:4px">Update your PIN in the Desk.</div>';
+      html+='<div class="login-actions" style="margin-top:6px"><button class="btn btn-secondary" onclick="handleRosterSignOut()">[ SIGN OUT ]</button></div>';
     }else{
-      html+='<div class="login-box"><div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:8px">CLOUD SYNC</div>';
-      html+='<select id="login-user" class="music-select" style="margin-bottom:8px"><option value="">Loading students...</option></select>';
-      html+='<input type="password" id="login-pw" placeholder="Password" autocomplete="current-password"/>';
-      html+='<div id="login-error" style="color:#ff4422;font-size:10px;min-height:14px;margin-bottom:4px"></div>';
-      html+='<div class="login-actions"><button class="btn" onclick="handleLogin()">[ LOG IN ]</button></div>';
+      const expiredMsg=G._sessionExpired?(isEmbedded()?'Session expired \u2014 sign out and back in on the Desk.':'Session expired \u2014 sign in again.'):'';
+      G._sessionExpired=false;
+      html+='<div class="login-box"><div style="font-size:9px;letter-spacing:2px;color:#5a3800;font-weight:700;margin-bottom:8px">CLASS SIGN-IN</div>';
+      html+='<select id="login-section" class="music-select" style="margin-bottom:8px;display:none"></select>';
+      html+='<select id="login-user" class="music-select" style="margin-bottom:8px"><option value="">Loading class roster\u2026</option></select>';
+      html+='<input type="password" id="login-pw" placeholder="PIN" inputmode="numeric" maxlength="4" autocomplete="off"/>';
+      html+='<div id="login-error" style="color:#ff4422;font-size:10px;min-height:14px;margin-bottom:4px">'+expiredMsg+'</div>';
+      html+='<div class="login-actions"><button class="btn" id="login-btn" onclick="handleRosterLogin()">[ SIGN IN ]</button></div>';
       html+='</div>';
     }
     // Music editor + HOW TO PLAY
@@ -4538,7 +5817,7 @@ function showTitleScreen(context){
 
   // QR code (MORE tab only)
   if(activeTab==='settings'&&typeof QRCode!=='undefined'){
-    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><div id="qr-target" style="display:inline-block"></div><div style="font-size:9px;color:#5a3800;margin-top:6px">Scan to play on any device</div><div style="margin-top:8px;font-size:10px"><a href="https://robjohncolson.github.io/tmux-trainer/" target="_blank" style="color:#ff8c00;text-decoration:none;letter-spacing:1px">robjohncolson.github.io/tmux-trainer</a></div><div style="margin-top:4px;font-size:9px"><a href="https://github.com/robjohncolson/tmux-trainer" target="_blank" style="color:#5a3800;text-decoration:none">\u2139 Source on GitHub</a></div></div>';
+    html+='<div id="qr-container" style="margin-top:16px;text-align:center"><div id="qr-target" style="display:inline-block"></div><div style="font-size:9px;color:#5a3800;margin-top:6px">Scan to play on any device</div><div style="margin-top:8px;font-size:10px"><a href="https://tmux-trainer.vercel.app/" target="_blank" style="color:#ff8c00;text-decoration:none;letter-spacing:1px">tmux-trainer.vercel.app</a></div><div style="margin-top:4px;font-size:9px"><a href="https://github.com/robjohncolson/tmux-trainer" target="_blank" style="color:#5a3800;text-decoration:none">\u2139 Source on GitHub</a></div></div>';
   }
   html+='</div>';
   if(titleHS>0&&emphasizeHighScore){
@@ -4551,73 +5830,21 @@ function showTitleScreen(context){
     if(continueBtn)continueBtn.onclick=continueGame;
     const startBtn=document.getElementById('btn-start');
     if(startBtn)startBtn.onclick=startGame;
+    const dailyBtn=document.getElementById('btn-daily');
+    if(dailyBtn&&!dailyBtn.disabled)dailyBtn.onclick=startDailyMission;
+    const weeklyBtn=document.getElementById('btn-weekly');
+    if(weeklyBtn)weeklyBtn.onclick=startWeeklyChallenge;
     updateDomainAllBtn();
   }else if(activeTab==='leaderboard'){
-    // Fetch leaderboard data from server
+    // Section leaderboard from roster-server (spec §5.4)
     const lbEl=document.getElementById('leaderboard-content');
-    if(lbEl){
-      const cartId='td-'+activeCartridge.id;
-      // Try batch endpoint first, fall back to sequential if not available
-      async function fetchLeaderboardRows(cartId){
-        try{
-          const br=await fetch(SYNC_SERVER+'/api/progress/leaderboard/'+cartId);
-          if(br.ok){const data=await br.json();if(Array.isArray(data))return data.map(d=>({username:d.username,realName:d.real_name||'',mastered:parseInt(d.gold_stars)||0,seen:parseInt(d.silver_stars)||0,highScore:d.highScore||d.high_score||0}))}
-        }catch(e){}
-        // Fallback: parallel per-user fetch (not sequential)
-        const ur=await fetch(SYNC_SERVER+'/api/users');const users=await ur.json();
-        if(!Array.isArray(users))return[];
-        const results=await Promise.allSettled(users.slice(0,30).map(async u=>{
-          const r=await fetch(SYNC_SERVER+'/api/progress/cartridge/'+encodeURIComponent(u.username)+'/'+cartId);
-          const d=await r.json();
-          if(d.found&&d.data){const mp=d.data.mode_progress||{};return{username:u.username,realName:u.real_name||'',mastered:parseInt(d.data.gold_stars)||0,seen:parseInt(d.data.silver_stars)||0,highScore:mp.highScore||0}}
-          return null;
-        }));
-        return results.filter(r=>r.status==='fulfilled'&&r.value).map(r=>r.value);
-      }
-      fetchLeaderboardRows(cartId).then(rows=>{
-        // Filter out users with no activity and sort by score
-        const active=rows.filter(r=>r.highScore>0||r.seen>0);
-        active.sort((a,b)=>b.highScore-a.highScore||b.seen-a.seen);
-        if(active.length===0){lbEl.innerHTML='<div style="color:#996622;font-size:11px;text-align:center">No scores yet. Play a game and sync to appear here!</div>';return}
-        let t='<table style="width:100%;border-collapse:collapse;font-size:11px">';
-        t+='<tr style="color:#5a3800;font-size:9px;letter-spacing:1px;text-align:left"><th style="padding:4px 6px">#</th><th style="padding:4px 6px">PLAYER</th><th style="padding:4px 6px;text-align:right">SCORE</th><th style="padding:4px 6px;text-align:right">SEEN</th><th style="padding:4px 6px;text-align:right">\u2605</th></tr>';
-        const me=identity?identity.username:null;
-        active.forEach((r,i)=>{
-          const isMe=r.username===me;
-          const bg=isMe?'#ff8c0018':'transparent';
-          const c=i===0?'#ffcc66':i<3?'#ff8c00':'#996622';
-          const medal=i===0?'\ud83e\udd47':i===1?'\ud83e\udd48':i===2?'\ud83e\udd49':'';
-          t+='<tr style="color:'+c+';background:'+bg+';border-bottom:1px solid #3d1f0022">';
-          t+='<td style="padding:5px 6px;font-weight:700">'+medal+(i+1)+'</td>';
-          t+='<td style="padding:5px 6px">'+(r.realName||r.username)+(isMe?' <span style="font-size:8px;color:#44ff88">YOU</span>':'')+'</td>';
-          t+='<td style="padding:5px 6px;text-align:right;font-weight:700">'+r.highScore.toLocaleString()+'</td>';
-          t+='<td style="padding:5px 6px;text-align:right;color:#996622">'+r.seen+'/66</td>';
-          t+='<td style="padding:5px 6px;text-align:right;color:#44ff88">'+r.mastered+'</td>';
-          t+='</tr>';
-        });
-        t+='</table>';
-        lbEl.innerHTML=t;
-      }).catch(()=>{lbEl.innerHTML='<div style="color:#ff6644;font-size:10px;text-align:center">\u26a0 Server offline</div>'});
-    }
+    if(lbEl)renderRosterLeaderboard(lbEl);
   }
   if(activeTab==='settings')renderQR('qr-target');
-  if(getIdentity()&&!cloudSyncReady)pullFromCloud();
-  updateSyncIndicator();
-  // Populate user dropdown if on settings tab
-  const userSelect=document.getElementById('login-user');
-  if(userSelect&&!getIdentity()){
-    fetch(SYNC_SERVER+'/api/users').then(r=>r.json()).then(users=>{
-      if(!Array.isArray(users))return;
-      userSelect.innerHTML='<option value="">— Select your name —</option>'+
-        users.map(u=>'<option value="'+u.username+'">'+u.username+(u.real_name?' — '+u.real_name:'')+(u.class_period?' (P'+u.class_period+')':'')+'</option>').join('');
-    }).catch(()=>{
-      userSelect.innerHTML='<option value="">Server offline</option>';
-      const inp=document.createElement('input');
-      inp.type='text';inp.id='login-user';inp.placeholder='Username';
-      inp.className=userSelect.className;inp.style.cssText=userSelect.style.cssText;
-      userSelect.replaceWith(inp);
-    });
-  }
+  if(getRosterSession()&&!cloud.ready)pullTrainerState();
+  updateSyncIndicator(G._syncState||undefined,G._syncMsg||undefined); // re-render the LAST sync state (FIX 9)
+  // Populate the sign-in pickers (signed-out MORE tab only)
+  if(activeTab==='settings'&&!getRosterSession())initRosterLoginForm();
 }
 
 function toggleDomain(dom){
@@ -4670,10 +5897,12 @@ function resetProgress(){
   if(confirm('Reset all progress for '+activeCartridge.name+'? This cannot be undone.')){
     localStorage.removeItem('td-srs-'+activeCartridge.id);
     clearRunState();
-    // Increment resetRev so cloud merge discards old cards
+    // Increment resetRev so cloud merge discards old cards; initSRS stamps every
+    // freshly-initialized card with epoch=G.resetRev (FIX 1)
     G.resetRev=(G.resetRev||0)+1;
     G.srs=initSRS(activeCartridge.commands);
-    saveSRS(true); // pushes reset state + resetRev to cloud
+    saveSRS(true); // persists reset state + resetRev
+    pushTrainerState({urgent:true}); // propagate the reset to the cloud without throttle delay
     SFX.click();
     showTitleScreen('title');
   }
@@ -4699,6 +5928,14 @@ function genWave(n){
     const filtered=pool.filter(c=>G.domainFilter.includes(c.dom));
     if(filtered.length>0)pool=filtered;
   }
+  // Rust-buster (E5): wave 1 of a stale normal run drills the decayed bucket
+  if(n===1&&G.rustBusterWave&&Array.isArray(G.rustBusterIds)&&G.rustBusterIds.length){
+    const rbSet=new Set(G.rustBusterIds);
+    const rbPool=COMMANDS.filter(c=>rbSet.has(c.id));
+    if(rbPool.length)pool=rbPool;
+  }
+  // Stamp this wave's decayed bucket so the answer handler can pay the +15 rescue bonus (E1)
+  G.waveDecayedIds=new Set(classifyPool(pool,G.srs,n).decayed.map(c=>c.id));
   return pickCommands(pool,G.srs,Math.min(4+n,16),n);
 }
 let bgmLaunchTimer=null;
@@ -4744,9 +5981,23 @@ function startGame(){
     unlockedTiers:['core'],attemptsOnCurrent:0,commandStartTime:0,typedBuffer:'',paused:false,sessionStartTime:Date.now()});
   G.topicFilter=_tf;G.topicFilterId=_tfi;
   G.missStarCounter=0;
+  G.runXp=0;G.waveMisses=0;G.waveDecayedIds=null; // Phase E run trackers
   clearMandelbrot();clearBornStars();
   fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   applyTimeDecay(G.srs);
+  // Rust-buster detection (E5) — normal runs only (not daily mission / topic / weekly)
+  G.rustBusterWave=false;G.rustBusterIds=null;
+  if(!G.missionMode&&!G.topicFilter){
+    let newest=0;
+    for(const id of Object.keys(G.srs)){
+      const c=G.srs[id];
+      if(c&&(c.totalAttempts||0)>0)newest=Math.max(newest,Number(c.lastUpdated)||0);
+    }
+    if(newest>0&&Date.now()-newest>=3*86400000){
+      const dec=classifyPool(COMMANDS,G.srs,1).decayed;
+      if(dec.length){G.rustBusterWave=true;G.rustBusterIds=dec.map(c=>c.id)}
+    }
+  }
   SFX.setTreeDepth(G.treeDepth);
   // Load persisted melody
   const melKey=getMelodyStorageKey();
@@ -4755,108 +6006,157 @@ function startGame(){
   lastSpawnTime=performance.now();
   lastInputState='';
   showGameUI();
+  if(G.rustBusterWave){
+    flash('RUST-BUSTER WAVE — knock the rust off','#66aaff');
+    const srRb=document.getElementById('sr-status');
+    if(srRb)srRb.textContent='Rust-buster wave: reviewing decayed cards at gentler speed.';
+  }
 }
 function continueGame(){
   const snapshot=loadRunState();
   if(!snapshot){startGame();return}
-  cancelQueuedBGMStart();
-  resetExplanationState();
-  SFX.stopMusicPreview();
-  SFX.stopBGM();
-  SFX.click();
-  G.enemies.forEach(e=>removeEnemyMesh(e.id));
-  const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
-  const mergedSrs=loadSRS(activeCartridge);
-  if(snapshot.srs&&typeof snapshot.srs==='object'){
-    for(const id of Object.keys(mergedSrs)){
-      if(!snapshot.srs[id])continue;
-      const snap=sanitizeSrsCard(snapshot.srs[id]);
-      const pers=mergedSrs[id];
-      // Keep card with higher rev; on tie, higher lastUpdated; on tie, persistent wins
-      const snapRev=snap.rev||0,persRev=pers.rev||0;
-      if(snapRev>persRev)mergedSrs[id]=snap;
-      else if(snapRev===persRev&&(snap.lastUpdated||0)>(pers.lastUpdated||0))mergedSrs[id]=snap;
-      // else: persistent wins (default)
+  // The whole restore is guarded: a malformed checkpoint clears itself and falls
+  // back to a fresh title instead of soft-bricking CONTINUE forever.
+  try{
+    cancelQueuedBGMStart();
+    resetExplanationState();
+    SFX.stopMusicPreview();
+    SFX.stopBGM();
+    SFX.click();
+    G.enemies.forEach(e=>removeEnemyMesh(e.id));
+    const allDomains=[...new Set(activeCartridge.commands.map(c=>c.dom).filter(Boolean))];
+    // v2 snapshots carry no SRS map; the independently persisted td-srs store is authoritative
+    const mergedSrs=loadSRS(activeCartridge);
+    const wave=Math.max(1,Math.min(12,Math.round(Number(snapshot.wave)||1)));
+    const restoredDomains=(Array.isArray(snapshot.domainFilter)?snapshot.domainFilter:[]).filter(dom=>allDomains.includes(dom));
+    const safeDomains=restoredDomains.length?restoredDomains:[...allDomains];
+    const safeDifficulty=['learn','practice','challenge'].includes(snapshot.difficulty)?snapshot.difficulty:'learn';
+    G.domainFilter=safeDomains.slice();
+    G.difficulty=safeDifficulty;
+    (function(){
+      var rawTF=Array.isArray(snapshot.topicFilter)&&snapshot.topicFilter.length?snapshot.topicFilter:null;
+      if(rawTF){
+        var live=rawTF.filter(function(id){return COMMANDS.some(function(c){return c.id===id})});
+        G.topicFilter=live.length?live:null;
+        G.topicFilterId=live.length?(typeof snapshot.topicFilterId==='string'&&snapshot.topicFilterId?snapshot.topicFilterId:null):null;
+      }else{G.topicFilter=null;G.topicFilterId=null;}
+    })();
+    G.srs=mergedSrs;
+    applyTimeDecay(G.srs);
+    G.sessionStartTime=Date.now();
+    // Phase E: clear stale run trackers BEFORE the genWave fallback below reads them
+    G.rustBusterWave=false;G.rustBusterIds=null;G.waveDecayedIds=null;G.runXp=0;G.waveMisses=0;
+    // Rehydrate enemies from slim v2 refs: cmd by id from COMMANDS, child questions
+    // rebuilt from PREREQ_DAG, chains from the canonical command. Refs that no longer
+    // resolve (deck content changed) are dropped; each enemy is validated.
+    const cmdLookup={};COMMANDS.forEach(c=>{cmdLookup[c.id]=c});
+    const restoredEnemies=[];
+    (Array.isArray(snapshot.enemies)?snapshot.enemies:[]).forEach(ref=>{
+      if(!ref||typeof ref!=='object')return;
+      const id=Math.round(Number(ref.id));
+      const t=Number(ref.t);
+      if(!Number.isFinite(id)||id<=0)return;
+      if(!Number.isFinite(t)||t<0||t>1)return;
+      const cmd=cmdLookup[ref.cmdId];
+      if(!cmd)return;
+      const depth=Math.max(0,Math.min(5,Math.round(Number(ref.splitDepth)||0)));
+      const enemy={id:id,cmd:cmd,t:t,spawned:Date.now(),
+        speedMult:Math.max(1,Math.min(4.5,Number(ref.speedMult)||1)),
+        missCount:Math.max(0,Math.round(Number(ref.missCount)||0))};
+      if(depth>=1){
+        const nodeId=typeof ref.dagNodeId==='string'?ref.dagNodeId:null;
+        const node=nodeId?PREREQ_DAG[nodeId]:null;
+        if(!node||!node.correct||!Array.isArray(node.wrong)||!node.wrong.length)return; // question can't be rebuilt - drop
+        enemy.isChild=true;
+        enemy.splitDepth=depth;
+        enemy.ancestorId=Number.isFinite(Number(ref.ancestorId))&&Number(ref.ancestorId)>0?Math.round(Number(ref.ancestorId)):id;
+        enemy.dagNodeId=nodeId;
+        const useTwo=depth>=3;
+        const wrongChoices=useTwo?[node.wrong[Math.floor(Math.random()*node.wrong.length)]]:node.wrong.slice();
+        const options=shuffleArr([node.correct,...wrongChoices]);
+        const correctIdx=options.indexOf(node.correct);
+        const keys=useTwo?['a','b']:['a','b','c'];
+        const labels=['⚡ Prereq','⚡ Prereq','⚡⚡ Builder','⚡⚡⚡ Foundation','Basic'];
+        enemy.question={type:'subconcept',text:node.q,options:options,correctIdx:correctIdx,correctKey:keys[correctIdx]};
+        enemy.label=labels[Math.min(depth,4)];
+      }else{
+        if(Array.isArray(cmd.chain)&&cmd.chain.length){
+          enemy.chainStep=Math.max(0,Math.min(cmd.chain.length-1,Math.round(Number(ref.chainStep)||0)));
+          enemy.chain=cmd.chain.map(step=>({type:step.type,prompt:step.prompt,correct:step.correct,wrong:(step.wrong||[]).slice()}));
+        }
+        if(activeCartridge&&activeCartridge.inputMode==='quiz'){
+          if(!enemy.chain&&activeCartridge.generateQuestion)enemy.question=activeCartridge.generateQuestion(cmd,COMMANDS);
+          enemy.label=getEnemyLabel(cmd);
+        }
+      }
+      restoredEnemies.push(enemy);
+    });
+    const maxEnemyId=restoredEnemies.reduce((max,e)=>Math.max(max,e.id),0);
+    const fallbackWaveCommands=genWave(wave);
+    const rehydratedWaveCommands=(Array.isArray(snapshot.waveCommands)?snapshot.waveCommands:[]).map(cid=>cmdLookup[cid]).filter(Boolean);
+    const restoredWaveCommands=rehydratedWaveCommands.length?rehydratedWaveCommands:fallbackWaveCommands;
+    Object.assign(G,{screen:'game',wave:wave,score:Math.max(0,Math.round(Number(snapshot.score)||0)),
+      lives:Math.max(0,Math.min(BASE_LIVES,Math.round(Number(snapshot.lives)||BASE_LIVES))),
+      streak:Math.max(0,Math.round(Number(snapshot.streak)||0)),
+      maxStreak:Math.max(0,Math.round(Number(snapshot.maxStreak)||0)),
+      srs:mergedSrs,enemies:restoredEnemies,selectedId:snapshot.selectedId||null,
+      inputState:snapshot.inputState||'idle',
+      treeDepth:Math.max(0,Math.min(10,Math.round(Number(snapshot.treeDepth)||3))),
+      waveCommands:restoredWaveCommands,spawnIdx:Math.max(0,Math.min(Math.round(Number(snapshot.spawnIdx)||0),restoredWaveCommands.length)),
+      waveComplete:!!snapshot.waveComplete,totalCorrect:Math.max(0,Math.round(Number(snapshot.totalCorrect)||0)),
+      totalWrong:Math.max(0,Math.round(Number(snapshot.totalWrong)||0)),combo:Math.max(1,Number(snapshot.combo)||1),
+      unlockedTiers:Array.isArray(snapshot.unlockedTiers)&&snapshot.unlockedTiers.length?snapshot.unlockedTiers.slice():getUnlockedTiersForWave(wave),
+      nextEnemyId:Math.max(Math.round(Number(snapshot.nextEnemyId)||0),maxEnemyId),
+      attemptsOnCurrent:Math.max(0,Math.round(Number(snapshot.attemptsOnCurrent)||0)),
+      commandStartTime:Date.now(),typedBuffer:typeof snapshot.typedBuffer==='string'?snapshot.typedBuffer:'',
+      domainFilter:safeDomains.slice(),difficulty:safeDifficulty,paused:false});
+    // Phase E: missionMode survives a checkpoint (the 3-wave cap stays armed)
+    G.missionMode=snapshot.missionMode==='daily'?'daily':null;
+    if(!G.enemies.find(e=>e.id===G.selectedId)){G.selectedId=null;G.inputState='idle'}
+    const savedMbrot=snapshot.mbrot&&typeof snapshot.mbrot==='object'?snapshot.mbrot:null;
+    if(savedMbrot){
+      MBROT.intensity=Math.max(0,Number(savedMbrot.intensity)||0);
+      MBROT.targetIntensity=Math.max(0,Number(savedMbrot.targetIntensity)||0);
+      MBROT.iterations=Math.max(8,Math.min(isReducedParticleMode()?48:96,Number(savedMbrot.iterations)||8));
+      MBROT.impacts=Math.max(0,Math.round(Number(savedMbrot.impacts)||0));
+      MBROT.zoom=Math.max(1.5,Math.min(3.5,Number(savedMbrot.zoom)||3.5));
+      MBROT.targetZoom=Math.max(1.5,Math.min(3.5,Number(savedMbrot.targetZoom)||MBROT.zoom));
+    }else{
+      clearMandelbrot();
     }
+    terrMat.uniforms.mbrotIntensity.value=MBROT.intensity;
+    terrMat.uniforms.mbrotIter.value=MBROT.iterations;
+    terrMat.uniforms.mbrotZoom.value=MBROT.zoom;
+    G.enemies.forEach((enemy,idx)=>{
+      if((enemy.splitDepth||0)>=1)addChildEnemyMesh(enemy,idx);
+      else addEnemyMesh(enemy);
+    });
+    lastSpawnTime=performance.now();
+    lastInputState='';
+    showGameUI();
+    updateSelectedLabel();
+    SFX.setKey(G.wave);
+    SFX.setTreeDepth(G.treeDepth);
+    // Load persisted melody
+    const melKey2=getMelodyStorageKey();
+    if(melKey2){try{const ml=JSON.parse(lsGet(melKey2));if(Array.isArray(ml))SFX.setMelody(ml)}catch(e){}}
+    queueBGMStart();
+  }catch(err){
+    console.error('[continue] restore failed; clearing checkpoint',err);
+    clearRunState();
+    showTitleScreen('boot');
   }
-  const wave=Math.max(1,Math.min(12,Math.round(Number(snapshot.wave)||1)));
-  const restoredDomains=(Array.isArray(snapshot.domainFilter)?snapshot.domainFilter:[]).filter(dom=>allDomains.includes(dom));
-  const safeDomains=restoredDomains.length?restoredDomains:[...allDomains];
-  const safeDifficulty=['learn','practice','challenge'].includes(snapshot.difficulty)?snapshot.difficulty:'learn';
-  G.domainFilter=safeDomains.slice();
-  G.difficulty=safeDifficulty;
-  (function(){
-    var rawTF=Array.isArray(snapshot.topicFilter)&&snapshot.topicFilter.length?snapshot.topicFilter:null;
-    if(rawTF){
-      var live=rawTF.filter(function(id){return COMMANDS.some(function(c){return c.id===id})});
-      G.topicFilter=live.length?live:null;
-      G.topicFilterId=live.length?(typeof snapshot.topicFilterId==='string'&&snapshot.topicFilterId?snapshot.topicFilterId:null):null;
-    }else{G.topicFilter=null;G.topicFilterId=null;}
-  })();
-  G.srs=mergedSrs;
-  applyTimeDecay(G.srs);
-  G.sessionStartTime=Date.now();
-  const fallbackWaveCommands=genWave(wave);
-  const restoredEnemies=Array.isArray(snapshot.enemies)?snapshot.enemies:[];
-  const maxEnemyId=restoredEnemies.reduce((max,e)=>Math.max(max,Math.round(Number(e&&e.id)||0)),0);
-  const restoredWaveCommands=Array.isArray(snapshot.waveCommands)&&snapshot.waveCommands.length?snapshot.waveCommands:fallbackWaveCommands;
-  Object.assign(G,{screen:'game',wave:wave,score:Math.max(0,Math.round(Number(snapshot.score)||0)),
-    lives:Math.max(0,Math.min(BASE_LIVES,Math.round(Number(snapshot.lives)||BASE_LIVES))),
-    streak:Math.max(0,Math.round(Number(snapshot.streak)||0)),
-    maxStreak:Math.max(0,Math.round(Number(snapshot.maxStreak)||0)),
-    srs:mergedSrs,enemies:restoredEnemies,selectedId:snapshot.selectedId||null,
-    inputState:snapshot.inputState||'idle',
-    treeDepth:Math.max(0,Math.min(10,Math.round(Number(snapshot.treeDepth)||3))),
-    waveCommands:restoredWaveCommands,spawnIdx:Math.max(0,Math.min(Math.round(Number(snapshot.spawnIdx)||0),restoredWaveCommands.length)),
-    waveComplete:!!snapshot.waveComplete,totalCorrect:Math.max(0,Math.round(Number(snapshot.totalCorrect)||0)),
-    totalWrong:Math.max(0,Math.round(Number(snapshot.totalWrong)||0)),combo:Math.max(1,Number(snapshot.combo)||1),
-    unlockedTiers:Array.isArray(snapshot.unlockedTiers)&&snapshot.unlockedTiers.length?snapshot.unlockedTiers.slice():getUnlockedTiersForWave(wave),
-    nextEnemyId:Math.max(Math.round(Number(snapshot.nextEnemyId)||0),maxEnemyId),
-    attemptsOnCurrent:Math.max(0,Math.round(Number(snapshot.attemptsOnCurrent)||0)),
-    commandStartTime:Date.now(),typedBuffer:typeof snapshot.typedBuffer==='string'?snapshot.typedBuffer:'',
-    domainFilter:safeDomains.slice(),difficulty:safeDifficulty,paused:false});
-  // Re-link cmd references to COMMANDS entries (JSON parse breaks prereqs/subconcepts refs)
-  const cmdLookup={};COMMANDS.forEach(c=>{cmdLookup[c.id]=c});
-  G.enemies.forEach(e=>{if(e.cmd&&e.cmd.id&&cmdLookup[e.cmd.id])e.cmd=cmdLookup[e.cmd.id]});
-  G.waveCommands=G.waveCommands.map(c=>cmdLookup[c.id]||c);
-  if(!G.enemies.find(e=>e.id===G.selectedId)){G.selectedId=null}
-  const savedMbrot=snapshot.mbrot&&typeof snapshot.mbrot==='object'?snapshot.mbrot:null;
-  if(savedMbrot){
-    MBROT.intensity=Math.max(0,Number(savedMbrot.intensity)||0);
-    MBROT.targetIntensity=Math.max(0,Number(savedMbrot.targetIntensity)||0);
-    MBROT.iterations=Math.max(8,Math.min(isReducedParticleMode()?48:96,Number(savedMbrot.iterations)||8));
-    MBROT.impacts=Math.max(0,Math.round(Number(savedMbrot.impacts)||0));
-    MBROT.zoom=Math.max(1.5,Math.min(3.5,Number(savedMbrot.zoom)||3.5));
-    MBROT.targetZoom=Math.max(1.5,Math.min(3.5,Number(savedMbrot.targetZoom)||MBROT.zoom));
-  }else{
-    clearMandelbrot();
-  }
-  terrMat.uniforms.mbrotIntensity.value=MBROT.intensity;
-  terrMat.uniforms.mbrotIter.value=MBROT.iterations;
-  terrMat.uniforms.mbrotZoom.value=MBROT.zoom;
-  G.enemies.forEach((enemy,idx)=>{
-    if((enemy.splitDepth||0)>=1)addChildEnemyMesh(enemy,idx);
-    else addEnemyMesh(enemy);
-  });
-  lastSpawnTime=performance.now();
-  lastInputState='';
-  showGameUI();
-  updateSelectedLabel();
-  SFX.setKey(G.wave);
-  SFX.setTreeDepth(G.treeDepth);
-  // Load persisted melody
-  const melKey2=getMelodyStorageKey();
-  if(melKey2){try{const ml=JSON.parse(localStorage.getItem(melKey2));if(Array.isArray(ml))SFX.setMelody(ml)}catch(e){}}
-  queueBGMStart();
 }
 function nextWave(){
   SFX.click();
   resetExplanationState();
   const nw=G.wave+1;
+  // Daily mission (E2): 3 waves then victory
+  if(G.missionMode==='daily'&&nw>3){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
   if(nw>12){SFX.stopBGM();SFX.victory();showEndScreen(true);return}
   G.enemies.forEach(e=>removeEnemyMesh(e.id));
   Object.assign(G,{wave:nw,enemies:[],selectedId:null,inputState:'idle',spawnIdx:0,
-    waveComplete:false,attemptsOnCurrent:0,typedBuffer:'',missStarCounter:0});
+    waveComplete:false,attemptsOnCurrent:0,typedBuffer:'',missStarCounter:0,waveMisses:0});
   clearBornStars(); // Mandelbrot persists across waves — permanent scar
   fallingStars.forEach(f=>{f.life=0;f.mesh.visible=false});
   G.waveCommands=genWave(nw);
@@ -4903,10 +6203,48 @@ function buildKnowledgeMapHtml(weakCmds,maxWidth){
 }
 function showEndScreen(victory){
   G.screen=victory?'victory':'gameover';
-  G.topicFilter=null;G.topicFilterId=null;
+  const completedTopicId=G.topicFilterId||null; // capture before the nulling below
+  const missionMode=G.missionMode||null;
+  G.topicFilter=null;G.topicFilterId=null;G.missionMode=null;
+  const den0=G.totalCorrect+G.totalWrong;
+  const acc01=den0>0?Math.round(G.totalCorrect/den0*1000)/1000:0;
+  // Per-topic best (E3) — recorded BEFORE the checkpoint so the save/push carries it
+  let topicBestInfo=null;
+  if(G.meta&&completedTopicId){
+    if(!G.meta.topicBest||typeof G.meta.topicBest!=='object')G.meta.topicBest={};
+    const prevBest=Number(G.meta.topicBest[completedTopicId])||0;
+    const sc=Math.max(0,Math.floor(Number(G.score)||0));
+    if(sc>prevBest){G.meta.topicBest[completedTopicId]=sc;topicBestInfo={best:sc,isNew:true}}
+    else topicBestInfo={best:prevBest,isNew:false};
+  }
+  // Daily mission completion (E2) — the ONLY streak stamp; before the checkpoint
+  let dailyDone=false,streakRes=null,dailyToday='';
+  if(victory&&missionMode==='daily'&&G.meta){
+    dailyToday=todayLocalIso();
+    if(G.meta.daily.lastMissionIso!==dailyToday){
+      awardXp(100,'daily-mission');
+      streakRes=stampStreakDay(G.meta.streak,dailyToday);
+      G.meta.daily.lastMissionIso=dailyToday;
+      G.meta.daily.missionsCompleted=(Number(G.meta.daily.missionsCompleted)||0)+1;
+      dailyDone=true;
+    }
+  }
   resetExplanationState();
   canvas.style.transform='';ipMinimized=false;
   const recordState=syncRunCheckpoint();
+  pushTrainerState({urgent:true}); // end-screen push bypasses the throttle (FIX 6); coalesces if one is in flight
+  // Desk-visible completion event (spec §5.4) — no-op outside the Desk iframe
+  (function(){
+    const evt={event:'run-complete',topicId:completedTopicId,score:G.score};
+    if(den0>0)evt.accuracy=acc01;
+    sendTrainerEvent(evt);
+  })();
+  if(dailyDone){
+    postLedgerRecord('TR-'+activeCartridge.id+'-DAILY-'+dailyToday,{waves:3,xp:G.runXp,accuracy:acc01},acc01);
+    sendTrainerEvent({event:'daily-mission',score:G.score,accuracy:acc01});
+    pushTrainerState({urgent:true}); // self-gates on session+ready; mission complete bypasses the throttle (FIX 6)
+  }
+  const srEl=document.getElementById('sr-status');if(srEl)srEl.textContent=(victory?'Victory.':'Game over.')+' Final score '+(Number(G.score)||0).toLocaleString();
   clearRunState();
   cancelQueuedBGMStart();
   // Clean up surviving enemies
@@ -4935,7 +6273,24 @@ function showEndScreen(victory){
   const sessionStr=sessionMin>0?sessionMin+'m '+sessionSecRem+'s':sessionSecRem+'s';
   const seenCards=Object.values(G.srs).filter(s=>s.totalAttempts>0&&s.avgTimeMs>0);
   const avgResp=seenCards.length>0?Math.round(seenCards.reduce((s,c)=>s+c.avgTimeMs,0)/seenCards.length/100)/10:0;
-  html+='<div class="stats-grid">'+[['SCORE',G.score.toLocaleString()+(isNewHigh?' \u2605':'')],['HIGH SCORE',highScore.toLocaleString()],['WAVE',G.wave+'/12'],['ACCURACY',acc+'%'],['STREAK',G.maxStreak],['TIME',sessionStr],['AVG RESP',avgResp>0?avgResp+'s':'--']].map(([l,v])=>'<div class="stat-box"><div class="sl">'+l+'</div><div class="sv">'+v+'</div></div>').join('')+'</div>';
+  html+='<div class="stats-grid">'+[['SCORE',G.score.toLocaleString()+(isNewHigh?' \u2605':'')],['HIGH SCORE',highScore.toLocaleString()],['WAVE',G.wave+'/'+(missionMode==='daily'?'3':'12')],['ACCURACY',acc+'%'],['STREAK',G.maxStreak],['TIME',sessionStr],['AVG RESP',avgResp>0?avgResp+'s':'--']].map(([l,v])=>'<div class="stat-box"><div class="sl">'+l+'</div><div class="sv">'+v+'</div></div>').join('')+'</div>';
+  // \u2500\u2500 Phase E summary lines: daily mission / XP / topic best \u2500\u2500
+  if(dailyDone){
+    html+='<div style="color:#44ff88;font-size:12px;font-weight:700;letter-spacing:2px;margin:4px 0">DAILY MISSION COMPLETE \u00b7 +'+(Number(G.runXp)||0).toLocaleString()+' XP</div>';
+    html+='<div style="color:#996622;font-size:10px;letter-spacing:1px;margin:2px 0">'+countDueTomorrow()+' cards come due tomorrow</div>';
+    let stLine='\ud83d\udd25 STREAK: '+(Number(G.meta.streak.current)||0)+' day'+((Number(G.meta.streak.current)||0)===1?'':'s');
+    if(streakRes){
+      if(streakRes.freezesUsed>0)stLine+=' \u00b7 \u2744 '+streakRes.freezesUsed+' freeze'+(streakRes.freezesUsed>1?'s':'')+' spent';
+      if(streakRes.freezeEarned)stLine+=' \u00b7 \u2744 streak freeze earned';
+      if(!streakRes.stamped&&streakRes.gap===0)stLine+=' \u00b7 weekend \u2014 streak safe';
+    }
+    html+='<div style="color:#ffcc66;font-size:10px;letter-spacing:1px;margin:2px 0 6px">'+stLine+'</div>';
+  }else if((Number(G.runXp)||0)>0){
+    html+='<div style="color:#ffcc66;font-size:11px;letter-spacing:2px;margin:4px 0">+'+(Number(G.runXp)||0).toLocaleString()+' XP this run</div>';
+  }
+  if(topicBestInfo){
+    html+='<div style="color:'+(topicBestInfo.isNew?'#44ff88':'#996622')+';font-size:10px;letter-spacing:2px;margin:2px 0 6px">TOPIC BEST ('+escapeHtml(topicRunLabel(completedTopicId))+'): '+topicBestInfo.best.toLocaleString()+(topicBestInfo.isNew?' \u2605 NEW':'')+'</div>';
+  }
   if(seen.length>0){
     const avgPK=seen.length>0?(seen.reduce((s,[,v])=>s+(v.pKnown||0.1),0)/seen.length):0;
     html+='<div style="width:100%;max-width:360px;position:relative"><div class="sl" style="text-align:center;margin-bottom:4px">MASTERY</div><div class="mastery-bar" style="position:relative">'+mc.map((n,i)=>n>0?'<div style="flex:'+n+';background:'+MASTERY_COLORS[i]+';opacity:'+(0.5+i*0.1)+'"></div>':'').join('')+'<div style="position:absolute;left:'+(avgPK*100)+'%;top:0;bottom:0;width:2px;background:#fff;opacity:.7" title="BKT Confidence: '+(avgPK*100).toFixed(0)+'%"></div></div><div class="mastery-legend">'+MASTERY_LABELS.map((l,i)=>mc[i]>0?'<span style="color:'+MASTERY_COLORS[i]+'">'+'\u25a0 '+l+' ('+mc[i]+')</span>':'').join('')+'</div></div>';
@@ -4951,7 +6306,7 @@ function showEndScreen(victory){
   html+=buildKnowledgeMapHtml(weak);
   html+='<button class="btn" onclick="startGame()">[ REDEPLOY ]</button>';
   html+='<div class="sub" style="margin-top:8px"><a href="#" onclick="event.preventDefault();showTitleScreen(\'game\')" style="color:#5a3800;text-decoration:none;font-size:10px;letter-spacing:2px">\u2190 BACK TO MENU</a></div>';
-  if(!getIdentity())html+='<div style="margin-top:10px;font-size:10px;color:#996622;letter-spacing:1px;cursor:pointer" onclick="G._menuTab=\'settings\';showTitleScreen(\'game\')">\u2601 <u>Sign in</u> to keep your progress across devices</div>';
+  if(!getRosterSession())html+='<div style="margin-top:10px;font-size:10px;color:#996622;letter-spacing:1px;cursor:pointer" onclick="G._menuTab=\'settings\';showTitleScreen(\'game\')">\u2601 <u>Sign in</u> to keep your progress across devices</div>';
   ov.innerHTML=html;
 }
 
@@ -4994,7 +6349,9 @@ function moveEnemies(){
   // Streak slowmo: time slows during hot streaks (reward for flow state)
   const streakSlow=G.streak>=10?0.5:G.streak>=5?0.7:G.streak>=3?0.85:1.0;
   const explainerSlow=(EXPLAINER_STATE.open&&!QUIZ_ANSWER_FEEDBACK.locked)?0.35:1.0;
-  const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow*explainerSlow;
+  // Rust-buster wave (E5): gentler speed while knocking the rust off wave 1
+  const rustSlow=(G.rustBusterWave&&G.wave===1)?0.75:1.0;
+  const speed=MOVE_SPEED_BASE*waveMult*masteryMult*streakSlow*explainerSlow*rustSlow;
   G.enemies.forEach(e=>{
     if(e.pendingCorrectHit)return;
     e.t+=speed*(e.speedMult||1);
@@ -5019,6 +6376,7 @@ function checkBreach(){
   });
   G.enemies=G.enemies.filter(e=>e.t<1);
   G.lives-=reached.length;G.streak=0;SFX.setStreak(0);G.combo=1;
+  G.waveMisses=(G.waveMisses||0)+reached.length; // breaches void the perfect-wave bonus (E5)
   if(G.lives<=0){G.lives=0;SFX.gameOver();showEndScreen(false)}
 }
 
@@ -5033,7 +6391,18 @@ function checkWaveComplete(){
     const hasRainbow=particles.some(p=>p.funnelToScore);
     const elapsed=performance.now()-lastEnemyKilledAt;
     if(!hasRainbow||elapsed>3000){
-      G.waveComplete=true;SFX.waveClear();syncRunCheckpoint();
+      G.waveComplete=true;SFX.waveClear();
+      // Comeback valve (E5): zero misses this wave + missing lives → +1 life
+      let perfectMsg='';
+      if((G.waveMisses||0)===0&&G.lives>0&&G.lives<BASE_LIVES){
+        G.lives++;
+        SFX.combo();
+        flash('+1 LIFE — PERFECT WAVE','#44ff88');
+        perfectMsg=' — perfect wave, one life restored';
+        updateHUD();
+      }
+      syncRunCheckpoint();
+      const srEl=document.getElementById('sr-status');if(srEl)srEl.textContent='Wave '+G.wave+' cleared'+perfectMsg;
       lastEnemyKilledAt=0;
     }
   }else{
@@ -5108,7 +6477,9 @@ function handleHit(enemy,opts){
   const hitQType=opts.questionType||(enemy.question?enemy.question.type:'identify');
   const hitBktWeight=opts.bktWeightOverride!=null?opts.bktWeightOverride:(hitQType==='application'||hitQType==='relationship'?0.7:1.0);
   const bktCtx={wasCorrect:true,questionType:hitQType,remainingChoices:baseChoices,bktWeight:hitBktWeight,subconceptIndex:enemy.splitDepth>=1&&enemy.subconcept?findSubconceptIndex(enemy):null,dagNodeId:enemy.dagNodeId||null,wave:G.wave,responseTimeMs:responseTime,_cmd:enemy.cmd};
+  const xpPrevCard=G.srs[enemy.cmd.id]; // BKT delta + mastery crossings read pre-answer state (E1)
   G.srs[enemy.cmd.id]=srsHit(G.srs[enemy.cmd.id],G.wave,responseTime,attempts,bktCtx);
+  awardAnswerXp(enemy,xpPrevCard,G.srs[enemy.cmd.id]);
   saveSRS(); // debounced per-answer save
   // Mesh removal is handled by death animation (startDeathAnimation detaches from enemyMeshes)
   G.enemies=G.enemies.filter(en=>en.id!==enemy.id);
@@ -5131,6 +6502,7 @@ function handleMiss(enemy,opts){
   const missDepth=enemy.splitDepth||0;
   if(missDepth===0&&!opts.skipTreePenalty){G.treeDepth=Math.max(0,G.treeDepth-1);SFX.setTreeDepth(G.treeDepth)}
   G.streak=0;SFX.setStreak(0);G.combo=1;G.totalWrong++;
+  G.waveMisses=(G.waveMisses||0)+1; // perfect-wave tracker (E5)
   G.attemptsOnCurrent++;
   const baseChoices=enemy.question?(enemy.question.options||enemy.question.choices||[]).length:(opts.choiceCount||4);
   // Check canNodeSplit BEFORE bktUpdate (critical: encounters must be read before increment)
@@ -5468,6 +6840,8 @@ window.addEventListener('keydown',e=>{
 
   // ── Selector screen shortcuts ──
   if(G.screen==='selector'){
+    const selTag=document.activeElement&&document.activeElement.tagName;
+    if(selTag==='INPUT'||selTag==='SELECT'||selTag==='TEXTAREA'||(document.activeElement&&document.activeElement.isContentEditable))return;
     const num=parseInt(e.key,10);
     if(num>=1&&num<=9){
       e.preventDefault();
@@ -5478,6 +6852,10 @@ window.addEventListener('keydown',e=>{
 
   // ── Title screen shortcuts ──
   if(G.screen==='title'&&!MUSIC_EDITOR.open){
+    // Guard ALL title shortcuts while typing in form fields (login user/password etc.) —
+    // otherwise pressing p/b/r/m/c/d switches tabs and wipes the form mid-entry.
+    const tag=document.activeElement&&document.activeElement.tagName;
+    if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'||(document.activeElement&&document.activeElement.isContentEditable))return;
     const k=e.key.toLowerCase();
     const tab=G._menuTab||'play';
     // Tab switching: P=play, B=browse (AP Stats only), R=ranks, M=more
@@ -6100,6 +7478,7 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
 //  INIT — boot
 // ═══════════════════════════════════════════════
 (function bootInit(){
+  purgeLegacyIdentity(); // one-time legacy identity purge (spec §1.1)
   var carts=window.TD_CARTRIDGES||[];
   if(window.AP_STATS_CARTRIDGE){
     var found=false;
@@ -6138,24 +7517,32 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
         try{localStorage.setItem('td-browse-expanded',JSON.stringify('unit'+uNum))}catch(e){}
       }
     }
+    // A corrupt/missing cartridge file must render LOAD ERROR, not a black screen (FIX 8 / spec §4.1)
+    var _bootLoadFail=showLoadError;
     if(deepCart){
-      loadCartridge(deepCart);
-      _applyTopicDeepLink(deepCart,topicParam);
-      showTitleScreen('boot');
-      if(topicParam&&deepCart.id==='ap-stats-formulas')_scrollToTopic(topicParam);
+      try{
+        loadCartridge(deepCart);
+        _applyTopicDeepLink(deepCart,topicParam);
+        showTitleScreen('boot');
+        if(topicParam&&deepCart.id==='ap-stats-formulas')_scrollToTopic(topicParam);
+      }catch(e){_bootLoadFail(e)}
     }else if(carts.length===1){
-      loadCartridge(carts[0]);
-      _applyTopicDeepLink(carts[0],topicParam);
-      showTitleScreen('boot');
-      if(topicParam&&carts[0].id==='ap-stats-formulas')_scrollToTopic(topicParam);
+      try{
+        loadCartridge(carts[0]);
+        _applyTopicDeepLink(carts[0],topicParam);
+        showTitleScreen('boot');
+        if(topicParam&&carts[0].id==='ap-stats-formulas')_scrollToTopic(topicParam);
+      }catch(e){_bootLoadFail(e)}
     }else if(topicParam){
       var apCart=null;
       for(var k=0;k<carts.length;k++){if(carts[k].id==='ap-stats-formulas'){apCart=carts[k];break}}
       if(apCart){
-        loadCartridge(apCart);
-        _applyTopicDeepLink(apCart,topicParam);
-        showTitleScreen('boot');
-        _scrollToTopic(topicParam);
+        try{
+          loadCartridge(apCart);
+          _applyTopicDeepLink(apCart,topicParam);
+          showTitleScreen('boot');
+          _scrollToTopic(topicParam);
+        }catch(e){_bootLoadFail(e)}
       }else{
         showCartridgeSelector();
       }
@@ -6163,9 +7550,27 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',handleR
       showCartridgeSelector();
     }
   }
+  // ── Focus badge (spec §1.4, FIX 10f): embedded iframes boot unfocused — keyboard
+  //    input silently goes nowhere until the player clicks. ──
+  try{
+    if(!document.hasFocus()){
+      var fb=document.createElement('div');
+      fb.id='focus-badge';
+      fb.style.cssText='position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9998;background:#1a0800;border:1px solid #ff8c0066;border-radius:8px;color:#ffcc66;font-family:inherit;font-size:11px;letter-spacing:2px;padding:6px 14px;pointer-events:none';
+      fb.textContent='▶ CLICK TO ACTIVATE KEYBOARD';
+      document.body.appendChild(fb);
+      var _rmFocusBadge=function(){
+        var b=document.getElementById('focus-badge');
+        if(b)b.remove();
+        window.removeEventListener('focus',_rmFocusBadge);
+        window.removeEventListener('pointerdown',_rmFocusBadge);
+      };
+      window.addEventListener('focus',_rmFocusBadge);
+      window.addEventListener('pointerdown',_rmFocusBadge);
+    }
+  }catch(e){}
 })();
-// Service Worker registration
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{});}
+// Service Worker registration moved to its own early <script> block (boot resilience).
 </script>
 </body>
 </html>

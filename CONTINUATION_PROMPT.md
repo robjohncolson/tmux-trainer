@@ -2547,14 +2547,62 @@ Each grade follows the exact G2 pattern:
 - `index.html:342-350` — cartridge script tags (no kana)
 - `sw.js:4` — cache `td-shell-v11`
 
+## Latest Update (2026-06-10) — Roster Identity + Stability + Gamification
+
+Full spec (authoritative, with teacher decisions + Codex/CC review trail): `desk-roster-alignment-spec.md`.
+
+### Identity (lrsl retired)
+
+- The lrsl-driller backend is fully removed from this app (zero `lrsl` references). Identity is now the Desk's roster system: username + 4-digit PIN against `https://roster-production-12c1.up.railway.app` (`ROSTER_SERVER` const).
+- Session in localStorage `td-roster.v1` (mirrors the Desk's `apstats_roster.v1` shape, incl. 30-day bearer token). PIN is never persisted; legacy plaintext keys (`userIdentity`, `td-cloud-*`) are purged at boot. Sign-out actually signs out.
+- Embedded in the Desk: postMessage handshake (child requests, Desk replies with session+token; both sides pin origin AND source). Desk-side listener lives in follow-alongs `ap_stats_roadmap_square_mode.html` (APP LAUNCHER block). Expired tokens can't loop (dead-token guard).
+- Shared-device guard: `td-owner-<deckId>` stamp — signing in as a different student wipes the previous student's local progress for that deck before pulling.
+
+### Cloud sync (roster-server `trainer_state`)
+
+- New endpoints on roster-server: GET/PUT/PATCH `/trainer/state/:deckId` (Bearer/body token, optimistic concurrency via `baseUpdatedAt`→409, PATCH delta for the keepalive page-hide flush), GET `/trainer/leaderboard/:section/:deckId` (public, client-stamped `lb`, non-authoritative), GET `/trainer/section/:section/summary/:deckId` (teacher token).
+- **Migration 0017 (`trainer_state` table) is USER-RUN in Supabase** — until run, all `/trainer` routes 503 and the client degrades silently. 0016 (`source='trainer'` ledger enum) may also still need running.
+- Wire format: compact per-card 5-tuples `[rev, pKnown×1000, mastery, lastUpdatedMin, epoch]` — kanji (2,002 cards) ≈ 60-120 KB. Per-card `epoch` (stamped from `resetRev`) makes resets propagate correctly across devices.
+- Sync engine rules: pushes arm only after a successful pull; `resp.ok` checked everywhere; 8 s timeouts (`fetchWithTimeout`); background pushes throttled to 1/20 s (urgent events bypass); in-flight queue with trailing push; deck-switch guards; 503 = not-provisioned = silent.
+
+### Gamification (all four bundles)
+
+- XP/levels (`levelForXp`), school-week streaks + freeze tokens, DAILY MISSION (3-wave due-card run = the streak stamp), topic quests + unit crests with CLAIM flow, BROWSE mastery heatmap, weekly unit challenge (ISO-week deterministic, 2× XP), pacing meter, comeback valves (perfect-wave +1 life, rust-buster return wave), per-topic best scores, section leaderboard (weekly XP default sort) + co-op bar + teacher snapshot view (role-gated).
+- All state in per-deck `G.meta` (localStorage `td-meta-<deckId>`), synced through `trainer_state` with monotonic merge rules (max/union/week-aware). Topic features gate on `ap-stats-formulas` + `AP_STATS_TOPIC_MAP`; kanji gets XP/streak/daily/comeback only. Everything works anonymously — identity only adds sync/leaderboard.
+- Grade-inert ledger rows (`source:'trainer'`, itemId prefix `TR-`, hyphenated) on daily-mission completion and quest claims; silent no-op until migration 0016 runs.
+
+### Stability pass (audited: 9 known + 18 novel defects, each adversarially verified; fixed)
+
+- Boot: `typeof THREE` guard (friendly offline message), SW registration in its own early script block, `lsGet/lsSet` safe storage (incognito/iframe SecurityError), `loadCartridge` try/catch → LOAD ERROR overlay, cartridge script `onerror`, global `error`/`unhandledrejection` banner.
+- Fixed: dead BROWSE DRILL buttons (quote bug), login-form hotkey steal + Enter-to-submit, QR/printed-link origin fork (both vercel.app now), leaderboard `/66` hardcode, high-score NaN poisoning, animation-manifest wedge + SW-503 empty-set, exam date → per-cartridge + auto-quiesce (`getExamDate`, localStorage override `td-exam-date`), run-state v2 (slim snapshots, version-checked, sanitized restore), multi-tab checkpoint guard, page-hide flush (runs for anonymous users; keepalive PATCH ≤55 KB), viewport zoom re-enabled, contrast bumps, `aria-live` announcements, XSS escaping on all server-derived strings.
+- Closed as already-mitigated: "event-listener cleanup on screen transitions" (all listeners attach once at boot by design).
+
+### New persistence keys
+
+`td-roster.v1` (session), `td-meta-<deckId>` (XP/streak/quests), `td-resetrev-<deckId>`, `td-owner-<deckId>`, `td-xpday-<deckId>` + `td-xpmile-<deckId>` (local-only XP caps/milestones), `td-last-section`, `td-exam-date` (optional override).
+
+### Important code areas (this update)
+
+- `index.html` ~:412-418 — `lsGet`/`lsSet`/`fetchWithTimeout`/`escapeHtml` helpers
+- `index.html` ~:2349-2400 — roster session model; ~:2790-3140 — sync engine + merges; ~:2447-2547 — gamification pure logic (E-PURE markers); ~:3416-3440 — embedded handshake
+- `sw.js:4` — cache `td-shell-v13`
+- follow-alongs: `roster-server/trainer.js` + `trainer-db.js` + `migrations/0017_trainer_state.sql` + `tests/trainer.test.js`; Desk bridge in `ap_stats_roadmap_square_mode.html` (~:12964, ~:13016-13104); CORS dependent-origins note in `CLAUDE.md` + `roster-server/docs/cors-allowlist.patch` (prepared, NOT applied)
+
+### Operational TODOs for the teacher
+
+1. Run `roster-server/migrations/0017_trainer_state.sql` in Supabase (and 0016 if not yet run).
+2. Seed real class sections in the roster before September (today only `PeriodX` with the test account exists).
+3. Set the 2027 exam date when published: cartridge `examDate` field or localStorage `td-exam-date` (`YYYY-MM-DD`).
+4. Optionally apply `roster-server/docs/cors-allowlist.patch` (CORS hardening; verify Desk + trainer afterward).
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design
-- **Accessibility pass** ��� ARIA labels, semantic HTML, WCAG 2.1 AA contrast (4.5:1), keyboard focus indicators
+- **Accessibility pass** — full ARIA/semantic/focus-trap pass (quick wins shipped 2026-06-10: zoom re-enabled, contrast bumps, aria-live announcements)
 - Quality review rendered animations — verify pedagogical accuracy per formula
 - Particle pooling for main particles (trail ghosts already pooled)
-- Event listener cleanup on screen transitions (memory leak prevention)
-- Further modularization (post-exam): `td-audio.js`, `td-progress.js`, `td-render.js`, `td-ui.js`
+- Cosmetic unlock track (melody slots / palettes / scene skins) as the XP/quest reward sink — deferred from the 2026-06-10 gamification pass
+- Further modularization: `td-audio.js`, `td-progress.js`, `td-render.js`, `td-ui.js`
 
 ## GitNexus Note
 
