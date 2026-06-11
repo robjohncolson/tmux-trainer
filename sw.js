@@ -1,7 +1,7 @@
 // Service Worker for AP Stats Formula Defense
 // Two caches: shell (app + CDN) and animations (Supabase MP4s)
 
-const CACHE_SHELL = 'td-shell-v14';
+const CACHE_SHELL = 'td-shell-v15';
 const CACHE_ANIM = 'td-anim-v1';
 
 // Same-origin assets pre-cached on install (guaranteed)
