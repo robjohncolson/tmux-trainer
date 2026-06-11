@@ -272,31 +272,13 @@
   }
 
   function buildChain(prompt, reading, meaning, pools) {
-    const romaji = toRomaji(reading);
     return [
       {
         type: 'kanji-to-furigana',
+        label: 'よみ',
         prompt: prompt,
         correct: reading,
         wrong: pickWrongs(pools.readings, reading, 2),
-      },
-      {
-        type: 'furigana-to-romaji',
-        prompt: reading,
-        correct: romaji,
-        wrong: pickWrongs(pools.romaji, romaji, 2),
-      },
-      {
-        type: 'romaji-to-english',
-        prompt: romaji,
-        correct: meaning,
-        wrong: pickWrongs(pools.meanings, meaning, 2),
-      },
-      {
-        type: 'kanji-to-english',
-        prompt: prompt,
-        correct: meaning,
-        wrong: pickWrongs(pools.meanings, meaning, 2),
       },
     ];
   }
@@ -316,6 +298,7 @@
     const kanjiCommands = KANJI.map(([kanji, reading, meaning, tier]) => ({
       id: kanjiId(kanji),
       action: meaning,
+      displayLabel: reading,
       tier: tier,
       dom: 'g1',
       latex: kanji,
@@ -325,6 +308,7 @@
     const compoundCommands = COMPOUNDS.map(([compound, reading, meaning, tier]) => ({
       id: compoundId(compound),
       action: meaning,
+      displayLabel: reading,
       tier: tier,
       dom: 'g1',
       latex: compound,
@@ -342,10 +326,8 @@
   window.KANJI_G1_DATA = {
     id: 'g1',
     name: 'Grade 1',
-    domLabels: { g1: ['Grade 1 (一年)'] },
+    domLabels: { g1: ['一年生'] },
     commands: buildCommands(),
-    kanaRomaji: KANA_ROMAJI,
-    digraphRomaji: DIGRAPH_ROMAJI,
     variableBank: {},
     applicationBank: {},
     relationshipBank: {},

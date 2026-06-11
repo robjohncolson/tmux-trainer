@@ -2595,6 +2595,33 @@ Full spec (authoritative, with teacher decisions + Codex/CC review trail): `desk
 3. Set the 2027 exam date when published: cartridge `examDate` field or localStorage `td-exam-date` (`YYYY-MM-DD`).
 4. Optionally apply `roster-server/docs/cors-allowlist.patch` (CORS hardening; verify Desk + trainer afterward).
 
+## Latest Update (2026-06-10, second release) — Kanji Immersion + JLPT N5 + Responsive Music
+
+Spec with decision/review trail: `kanji-immersion-n5-spec.md` (Codex-reviewed, 9 findings folded in; post-build adversarial gate fixed 3 mediums).
+
+### Chain redesign (immersion — no English, no romaji)
+
+- ALL kanji chains collapsed to a single step: kanji → furigana (`buildChain` in all six grade files). The furigana→romaji / romaji→english / kanji→english steps are deleted; english/romaji stay in source arrays as dormant gloss data.
+- Kana-decomposition mechanic retired (`spawnKanaDecomposition` + `kanaRomaji` merger plumbing deleted) — it existed to remediate romaji.
+- Steps carry their own `label` (positional `stepLabels` array gone); BKT weights are now generic (intermediate 0.6, final 1.0); commands carry `displayLabel` (reading) preferred by all display surfaces — `action` untouched.
+- Existing joyo mastery preserved deliberately (old step 0 was always the reading test). Old checkpoints restore at step 0 via the existing clamp.
+- handleChainChoice now respects the 300 ms anti-mash cooldown BEFORE mutating chain state (1-step chains made every kill a chain-final, exposing a wedge).
+
+### JLPT N5 deck (`jlpt-n5-cartridge.js`, 399 commands, all-Japanese UI)
+
+- Domains: かんじ 103 (core) · ことば 187 · どうし 59 · じょし 50 (regular, wave 4+). Vocab/verbs gated on component kanji via `requires` (pKnown ≥ 0.5); the raw-pool wave fallback now honors gating too.
+- Verbs: 5-step conjugation chains (よみ→ます形→て形→ない形→た形), authored per-class distractors, validated at load (groups, script purity, godan euphony families, する/くる/行く). 来る drills kana surfaces (きます/こない…) to expose the き/こ irregularity.
+- Particles: cloze sentences with full-width ［　］ blank, orthographic answers (は never わ).
+- PLAY tab shows a per-domain readiness meter (`progressMeter:'domains'` cartridge flag → `buildPacingHtml` domains branch).
+- Server: `jlpt-n5` added to roster-server `TRAINER_DECK_ALLOWLIST` (follow-alongs).
+- Known tooling debt: `validate-cartridge.js` predates the chain format (its subconcepts rule fails all kanji decks identically — AP unaffected); cartridge `instructions`/`startButton` fields have no rendering surface.
+
+### Responsive music (D1–D6)
+
+- Chain-step arpeggio (intermediate steps walk chord tones; kill resolves via killMelody), combo→drum intensity (open hi-hats at 3×), lives→tempo (base/runtime split — editor only ever sees `cfg.tempo`; runtime clamp 50–180), near-breach pad-filter dread, breach stinger with bus duck, per-deck music configs (`td-music-config-v1-<deckId>`; resolution: per-deck save → cartridge soundtrack → legacy global → stock).
+- Kanji decks ship a 12-wave 陰旋法-flavored soundtrack (`window.TD_KANJI_MUSIC` in the joyo file; N5 adopts via `musicConfigRef:'kanji'`). Editor RESET is deck-aware (restores the cartridge soundtrack, not stock).
+- `sw.js`: cache `td-shell-v14`, `jlpt-n5-cartridge.js` precached.
+
 ## Likely Next Tasks
 
 - **Mandelbrot terrain (v2)** — dedicated sprint: compute boundary path on CPU, map cubes to walk the edge, top-down camera design

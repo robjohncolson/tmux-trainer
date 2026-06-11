@@ -86,6 +86,67 @@ ensureGradeDataLoaded();
 migrateLegacyDeckHash();
 if(typeof localStorage!=='undefined') migratePerGradeSRS();
 
+// ── 12-wave kanji soundtrack (music D6) ────────────────────────────────────
+// Voiced toward 陰旋法 (in-scale / miyako-bushi) colors: raw-Hz triads built from
+// root+4th+b2 clusters, sus4/sus2 ("min-add9 without the 3rd") voicings, quartal
+// stacks and open fifths; pentatonic-leaning bass multipliers (root/m3/4th/5th only);
+// sparser hi-hat patterns than the stock soundtrack. Tension arc mirrors the
+// default's: calm open → W6 peak (嵐) → cool-down → W12 triumph (旭日).
+// Exposed as window.TD_KANJI_MUSIC so the JLPT N5 cartridge can adopt it with a
+// single `musicConfigRef:'kanji'` line (resolved by the engine's getWaveConfig
+// chain); attached below as KANJI_JOYO.musicConfig for this deck.
+const KANJI_MUSIC=[
+  {name:'夜明け (Dawn)',                    // W1 — serene A-insen open: Asus4 → Gsus4 → Dm/F → Esus4
+    chords:[[220,293.66,329.63],[196,261.63,293.66],[174.61,220,293.66],[164.81,220,246.94]],
+    bass:[1,0,0,0,1.5,0,0,0], pad:[.55,0,.25,0,.55,0,.85,0], tempo:78, padVol:.05, bassVol:.60, hihatVol:.08, hihat:[0,0,1,0,0,0,1,0],
+    kick:[1,0,0,0,1,0,0,0], snare:[0,0,0,0,0,0,1,0], kickVol:.26, snareVol:.18},
+  {name:'竹林 (Bamboo Grove)',              // W2 — sus2 colors: Aadd9(no3) → Gsus2 → Em → F
+    chords:[[220,246.94,329.63],[196,220,293.66],[164.81,196,246.94],[174.61,220,261.63]],
+    bass:[1,0,1,0,1.335,0,1.5,0], pad:[.55,0,.45,0,.55,0,.85,0], tempo:88, padVol:.05, bassVol:.60, hihatVol:.09, hihat:[1,0,0,0,1,0,0,0],
+    kick:[1,0,0,0,1,0,0,0], snare:[0,0,0,0,1,0,0,0], kickVol:.28, snareVol:.20},
+  {name:'神社 (Shrine)',                    // W3 — root+b2+4 miyako cluster on E (E F A) → Am → Dm → Esus4
+    chords:[[164.81,174.61,220],[220,261.63,329.63],[146.83,174.61,220],[164.81,220,246.94]],
+    bass:[1,0,0,1.335,0,0,1.5,0], pad:[.55,0,.25,0,.55,0,.85,0], tempo:82, padVol:.05, bassVol:.60, hihatVol:.08, hihat:[0,0,1,0,0,0,1,0],
+    kick:[1,0,0,0,0,0,1,0], snare:[0,0,0,0,1,0,0,0], kickVol:.27, snareVol:.19},
+  {name:'桜吹雪 (Sakura Blizzard)',         // W4 — hirajoshi 1-2-b3 cluster (A B C) → G → F → E5
+    chords:[[220,246.94,261.63],[196,246.94,293.66],[174.61,220,261.63],[164.81,246.94,329.63]],
+    bass:[1,1.5,0,1,1.335,0,1.5,1.189], pad:[.55,.25,.45,0,.55,0,.85,.25], tempo:96, padVol:.05, bassVol:.60, hihatVol:.10, hihat:[1,0,1,0,1,0,0,0],
+    kick:[1,0,0,1,1,0,0,0], snare:[0,0,0,0,1,0,0,0], kickVol:.29, snareVol:.22},
+  {name:'月見 (Moon Viewing)',              // W5 — Dsus2 → A root+4+b6 (A D F) → C/G → E root+b2+5 shimmer
+    chords:[[146.83,164.81,220],[220,293.66,349.23],[196,261.63,329.63],[164.81,174.61,246.94]],
+    bass:[1,0,1.189,0,1,0,1.335,0], pad:[.55,0,.45,0,.55,0,.85,0], tempo:84, padVol:.05, bassVol:.60, hihatVol:.08, hihat:[0,0,1,0,0,1,0,0],
+    kick:[1,0,0,0,1,0,0,1], snare:[0,0,0,0,0,0,1,0], kickVol:.27, snareVol:.19},
+  {name:'嵐 (Storm)',                       // W6 — PEAK: Fsus4 → D b2 cluster w/ tritone (D Eb A) → E+4+b5 grit → Eb
+    chords:[[174.61,233.08,261.63],[146.83,155.56,220],[164.81,220,233.08],[155.56,196,233.08]],
+    bass:[1,1,1.189,1,1,1.335,1,1.5], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:126, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,1,1,0,1,1],
+    kick:[1,0,1,0,1,0,1,0], snare:[0,0,0,0,1,0,0,1], kickVol:.32, snareVol:.27},
+  {name:'霧雨 (Drizzle)',                   // W7 — cool-down quartal stacks: Gsus4 → Bb/F → E-A-D → D-G-C
+    chords:[[196,261.63,293.66],[174.61,233.08,293.66],[164.81,220,293.66],[146.83,196,261.63]],
+    bass:[1,0,0,0,1.335,0,0,0], pad:[.55,0,.25,0,.45,0,.85,0], tempo:80, padVol:.05, bassVol:.60, hihatVol:.07, hihat:[0,0,1,0,0,0,0,0],
+    kick:[1,0,0,0,0,0,1,0], snare:[0,0,0,0,1,0,0,0], kickVol:.26, snareVol:.18},
+  {name:'祭り (Festival)',                  // W8 — matsuri drive: Asus4 → G-C-G → A 1-2-4 → E5
+    chords:[[220,293.66,329.63],[196,261.63,392],[220,246.94,293.66],[164.81,246.94,329.63]],
+    bass:[1,1,1.5,1,1.335,1,1.5,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:112, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+    kick:[1,0,0,1,0,1,0,0], snare:[0,0,1,0,0,0,1,0], kickVol:.31, snareVol:.25},
+  {name:'雪舞 (Snow Dance)',                // W9 — soft b6 region: Bb → F/A → Gm → Dm/F
+    chords:[[233.08,293.66,349.23],[220,261.63,349.23],[196,233.08,293.66],[174.61,220,293.66]],
+    bass:[1,0,0,1,0,0,1.189,0], pad:[.55,0,.45,0,.55,0,.85,0], tempo:86, padVol:.05, bassVol:.60, hihatVol:.08, hihat:[0,0,1,0,0,0,1,0],
+    kick:[1,0,0,0,1,0,0,0], snare:[0,0,0,0,0,0,1,0], kickVol:.27, snareVol:.19},
+  {name:'紅葉 (Autumn Leaves)',             // W10 — cascading open fifths: Asus2 → G5 → F5 → E5
+    chords:[[220,246.94,329.63],[196,293.66,392],[174.61,261.63,349.23],[164.81,246.94,329.63]],
+    bass:[1,0,1.5,0,1,0,1.335,1], pad:[.55,.25,.45,0,.55,.25,.85,0], tempo:104, padVol:.05, bassVol:.60, hihatVol:.10, hihat:[1,0,0,0,1,0,1,0],
+    kick:[1,0,0,1,0,0,1,0], snare:[0,0,0,0,1,0,0,0], kickVol:.29, snareVol:.23},
+  {name:'鶴の舞 (Crane Dance)',             // W11 — brightening into A-ritsu (F# enters): Bsus4 → D/A → Gmaj7(no5) → E-A-E
+    chords:[[246.94,329.63,369.99],[220,293.66,369.99],[196,246.94,369.99],[164.81,220,329.63]],
+    bass:[1,0,1,0,1.5,0,1.189,0], pad:[.55,0,.45,.25,.55,0,.85,.25], tempo:92, padVol:.05, bassVol:.60, hihatVol:.09, hihat:[0,0,1,0,1,0,0,0],
+    kick:[1,0,0,0,1,0,1,0], snare:[0,0,0,1,0,0,1,0], kickVol:.28, snareVol:.21},
+  {name:'旭日 (Rising Sun)',                // W12 — TRIUMPH: Asus4 → G → F → A octave-fifth blaze (A E A)
+    chords:[[220,293.66,329.63],[196,246.94,293.66],[174.61,220,261.63],[220,329.63,440]],
+    bass:[1,1.189,1.335,1.5,1.335,1.189,1,1], pad:[.55,.25,.45,.25,.55,.25,.85,.25], tempo:116, padVol:.05, bassVol:.60, hihatVol:.11, hihat:[1,0,1,0,1,0,1,0],
+    kick:[1,0,0,1,1,0,1,0], snare:[0,0,0,0,1,0,1,0], kickVol:.31, snareVol:.26},
+];
+if(typeof window!=='undefined') window.TD_KANJI_MUSIC = KANJI_MUSIC;
+
 const sources = GRADE_SOURCES.map(function(source){ return window[source.key]; }).filter(Boolean);
 if(sources.length===0) return;
 
@@ -151,7 +212,7 @@ const KANJI_JOYO = {
   title:'にほんご',
   subtitle:'DEFENSE',
   startButton:'出陣',
-  instructions:'All grades use a 4-step chain: glyph → reading → romaji → meaning → recall. Wrong reading answers spawn kana practice drills.',
+  instructions:'かんじのよみをえらんでてきをたおせ。',
   instructionsSub:'Grades 1-6 — mixed deck — Select levels on the PLAY tab',
   identifyPrompt:'What is the meaning of this kanji?',
   variablePrompt:'What does <span id="var-symbol" style="display:inline-block"></span> represent in this kanji?',
@@ -159,7 +220,7 @@ const KANJI_JOYO = {
   commands:allCommands,
   generateQuestion:sourceWithQuestions && sourceWithQuestions.generateQuestion,
   formatPrompt:sourceWithQuestions && sourceWithQuestions.formatPrompt ? sourceWithQuestions.formatPrompt : function(cmd){ return cmd.latex || cmd.action; },
-  formatAnswer:sourceWithQuestions && sourceWithQuestions.formatAnswer ? sourceWithQuestions.formatAnswer : function(cmd){ return cmd.action; },
+  formatAnswer:sourceWithQuestions && sourceWithQuestions.formatAnswer ? sourceWithQuestions.formatAnswer : function(cmd){ return cmd.displayLabel || cmd.action; },
   validateBlank:sourceWithQuestions && sourceWithQuestions.validateBlank ? sourceWithQuestions.validateBlank : function(input, answer){ return String(input || '').trim() === String(answer || '').trim(); },
 };
 
@@ -180,12 +241,10 @@ KANJI_JOYO.sharedPrereqNodes = Object.assign.apply(Object, [{}].concat(legacySou
   return source.sharedPrereqNodes || {};
 })));
 KANJI_JOYO.domLabels = allDomLabels;
+KANJI_JOYO.musicConfig = KANJI_MUSIC; // music D6: 12-wave 陰旋法 soundtrack (also window.TD_KANJI_MUSIC for the N5 deck)
 KANJI_JOYO.normalizeExplanationLookup = normalizeExplanationLookup;
 KANJI_JOYO.buildExplanationBank = buildExplanationBank;
 KANJI_JOYO.wireL1toL2 = wireL1toL2;
-// Merge kana→romaji maps from grade sources for chain decomposition
-KANJI_JOYO.kanaRomaji = Object.assign.apply(Object, [{}].concat(sources.map(function(s){ return s.kanaRomaji || {}; })));
-KANJI_JOYO.digraphRomaji = Object.assign.apply(Object, [{}].concat(sources.map(function(s){ return s.digraphRomaji || {}; })));
 
 window.KANJI_JOYO_CARTRIDGE = KANJI_JOYO;
 window.TD_CARTRIDGES = window.TD_CARTRIDGES || [];
